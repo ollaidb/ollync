@@ -6,9 +6,13 @@
 
 -- Fonction pour créer automatiquement un profil lors de l'inscription
 -- SECURITY DEFINER permet au trigger de contourner RLS
+-- IMPORTANT : Utilise uniquement les données de auth.users (raw_user_meta_data)
+-- Ne crée pas de noms automatiques depuis l'email
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Créer le profil uniquement avec les données de auth.users
+  -- Ne pas créer de noms automatiques
   INSERT INTO public.profiles (id, email, full_name, username)
   VALUES (
     NEW.id,
@@ -16,7 +20,10 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', NULL),
     COALESCE(NEW.raw_user_meta_data->>'username', NULL)
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    username = EXCLUDED.username;
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN

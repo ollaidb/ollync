@@ -7,6 +7,7 @@ import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { getDefaultSubMenus } from '../utils/defaultSubMenus'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
+import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './CategoryPage.css'
 
 interface Post {
@@ -65,17 +66,10 @@ const Vente = () => {
       return
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const categoryId = (category as any).id
 
-    let query = supabase
-      .from('posts')
-      .select(`
-        *,
-        user:profiles!posts_user_id_fkey(username, full_name, avatar_url),
-        category:categories!posts_category_id_fkey(name, slug)
-      `)
-      .eq('category_id', categoryId)
-      .match({ status: 'active' })
+    let subCategoryId: string | undefined
 
     if (submenu) {
       const { data: subCategory } = await supabase
@@ -85,18 +79,23 @@ const Vente = () => {
         .eq('category_id', categoryId)
         .single()
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (subCategory && (subCategory as any).id) {
-        query = query.eq('sub_category_id', (subCategory as any).id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        subCategoryId = (subCategory as any).id
       }
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
+    const posts = await fetchPostsWithRelations({
+      categoryId,
+      subCategoryId,
+      status: 'active',
+      limit: 50,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-    } else {
-      setPosts(data || [])
-    }
+    setPosts(posts)
     setLoading(false)
   }
 

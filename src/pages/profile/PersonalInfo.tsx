@@ -34,6 +34,12 @@ const PersonalInfo = () => {
     }
 
     setLoading(true)
+    
+    // Récupérer les données depuis auth.users (source de vérité pour les noms)
+    const authFullName = user.user_metadata?.full_name || null
+    const authUsername = user.user_metadata?.username || null
+    
+    // Récupérer les autres données depuis profiles
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -42,17 +48,19 @@ const PersonalInfo = () => {
 
     if (error) {
       console.error('Error fetching profile:', error)
-    } else if (data) {
-      setProfile({
-        username: data.username || '',
-        full_name: data.full_name || '',
-        email: data.email || user.email || '',
-        phone: data.phone || '',
-        bio: data.bio || '',
-        location: data.location || '',
-        avatar_url: data.avatar_url || ''
-      })
     }
+    
+    // Utiliser les données de auth.users pour les noms, profiles pour le reste
+    setProfile({
+      username: authUsername || data?.username || '',
+      full_name: authFullName || data?.full_name || '',
+      email: user.email || data?.email || '',
+      phone: data?.phone || '',
+      bio: data?.bio || '',
+      location: data?.location || '',
+      avatar_url: data?.avatar_url || ''
+    })
+    
     setLoading(false)
   }
 
@@ -60,26 +68,53 @@ const PersonalInfo = () => {
     if (!user) return
 
     setSaving(true)
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        username: profile.username,
-        full_name: profile.full_name,
-        email: profile.email,
-        phone: profile.phone,
-        bio: profile.bio,
-        location: profile.location,
-        avatar_url: profile.avatar_url,
-        updated_at: new Date().toISOString()
+    
+    try {
+      // 1. Mettre à jour auth.users pour full_name et username (source de vérité)
+      // Cela déclenchera automatiquement le trigger qui synchronisera vers profiles
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          full_name: profile.full_name || null,
+          username: profile.username || null
+        }
       })
 
-    if (error) {
-      console.error('Error updating profile:', error)
+      if (authError) {
+        console.error('Error updating auth user:', authError)
+        alert('Erreur lors de la mise à jour des informations d\'authentification')
+        setSaving(false)
+        return
+      }
+
+      // 2. Mettre à jour les autres champs dans profiles (phone, bio, location, avatar_url)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: profile.email,
+          phone: profile.phone,
+          bio: profile.bio,
+          location: profile.location,
+          avatar_url: profile.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+        alert('Erreur lors de la mise à jour du profil')
+      } else {
+        alert('Profil mis à jour avec succès')
+        // Recharger les données utilisateur pour avoir les dernières valeurs
+        const { data: { user: updatedUser } } = await supabase.auth.getUser()
+        if (updatedUser) {
+          fetchProfile()
+        }
+      }
+    } catch (err) {
+      console.error('Error saving profile:', err)
       alert('Erreur lors de la mise à jour du profil')
-    } else {
-      alert('Profil mis à jour avec succès')
     }
+    
     setSaving(false)
   }
 

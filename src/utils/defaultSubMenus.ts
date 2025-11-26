@@ -4,6 +4,8 @@
 export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string }>> = {
   match: [
     { name: 'Création de contenu', slug: 'creation-contenu' },
+    { name: 'Photo', slug: 'creation-contenu-photo' },
+    { name: 'Vidéo', slug: 'creation-contenu-video' },
     { name: 'Sortie', slug: 'sortie' },
     { name: 'Événement', slug: 'evenement' }
   ],

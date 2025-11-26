@@ -675,13 +675,69 @@ END $$;
 -- Insérer les catégories
 INSERT INTO categories (name, slug, icon, color) VALUES
   ('Match', 'match', 'Users', '#667eea'),
-  ('Recrutement', 'recrutement', 'Briefcase', '#f093fb'),
-  ('Projet', 'projet', 'Briefcase', '#4facfe'),
+  ('Recrutement', 'recrutement', 'Briefcase', '#9c27b0'),
+  ('Projet', 'projet', 'Briefcase', '#2196f3'),
   ('Service', 'service', 'Wrench', '#4facfe'),
   ('Vente', 'vente', 'ShoppingBag', '#f093fb'),
   ('Mission', 'mission', 'Target', '#43e97b'),
   ('Autre', 'autre', 'MoreHorizontal', '#ffa726')
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE
+SET name = EXCLUDED.name,
+    icon = EXCLUDED.icon,
+    color = EXCLUDED.color,
+    updated_at = NOW();
+
+-- Insérer les sous-catégories par défaut
+-- Match
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'match'), 'Création de contenu', 'creation-contenu'),
+  ((SELECT id FROM categories WHERE slug = 'match'), 'Sortie', 'sortie'),
+  ((SELECT id FROM categories WHERE slug = 'match'), 'Événement', 'evenement')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Recrutement
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'recrutement'), 'Modèle', 'modele'),
+  ((SELECT id FROM categories WHERE slug = 'recrutement'), 'Figurant', 'figurant')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Projet
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'projet'), 'Associer / Collaboration', 'associer-collaboration')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Service
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'service'), 'Échange de service', 'echange-service'),
+  ((SELECT id FROM categories WHERE slug = 'service'), 'Tâches', 'taches'),
+  ((SELECT id FROM categories WHERE slug = 'service'), 'Formation', 'formation')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Vente
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Échange', 'echange'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Vente de compte', 'vente-compte'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Gratuit', 'gratuit')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Mission
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'mission'), 'Colis', 'colis'),
+  ((SELECT id FROM categories WHERE slug = 'mission'), 'Vérification', 'verification')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- Autre
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'autre'), 'Non classé', 'non-classe'),
+  ((SELECT id FROM categories WHERE slug = 'autre'), 'Autre service', 'autre-service')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
 
 -- Message de confirmation
 DO $$

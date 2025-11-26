@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Grid, List, Filter, Loader } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
 import HeaderSimple from '../components/HeaderSimple'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
+import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './Feed.css'
 
 interface Post {
@@ -41,31 +41,21 @@ const Feed = () => {
 
   const fetchPosts = async (pageNum: number) => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        user:profiles!posts_user_id_fkey(username, full_name, avatar_url),
-        category:categories!posts_category_id_fkey(name, slug)
-      `)
-      .match({ status: 'active' })
-      .order('created_at', { ascending: false })
-      .range(pageNum * POSTS_PER_PAGE, (pageNum + 1) * POSTS_PER_PAGE - 1)
+    
+    const posts = await fetchPostsWithRelations({
+      status: 'active',
+      limit: POSTS_PER_PAGE,
+      offset: pageNum * POSTS_PER_PAGE,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-      setLoading(false)
-      return
+    if (pageNum === 0) {
+      setPosts(posts)
+    } else {
+      setPosts(prev => [...prev, ...posts])
     }
-
-    if (data) {
-      if (pageNum === 0) {
-        setPosts(data)
-      } else {
-        setPosts(prev => [...prev, ...data])
-      }
-      setHasMore(data.length === POSTS_PER_PAGE)
-    }
+    setHasMore(posts.length === POSTS_PER_PAGE)
     setLoading(false)
   }
 

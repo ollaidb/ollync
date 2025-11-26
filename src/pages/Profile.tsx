@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, Package, LucideIcon } from 'lucide-react'
+import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PageHeader from '../components/PageHeader'
@@ -40,7 +40,6 @@ const Profile = () => {
   const { id } = useParams<{ id?: string }>()
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
-  const [postsCount, setPostsCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   // Si un ID est fourni, c'est un profil public d'un autre utilisateur
@@ -71,7 +70,6 @@ const Profile = () => {
     }
 
     fetchProfile()
-    fetchPostsCount()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isPublicProfile])
 
@@ -89,45 +87,59 @@ const Profile = () => {
         .single()
 
       if (error) {
-        // Si le profil n'existe pas encore, ce n'est pas grave
-        if (error.code !== 'PGRST116') {
+        // Si le profil n'existe pas (code PGRST116), créer le profil depuis auth.users
+        if (error.code === 'PGRST116') {
+          console.log('Profil non trouvé, création depuis auth.users...')
+          
+          // Créer le profil avec les données de auth.users
+          const profileInsert = {
+            id: user.id,
+            email: user.email || null,
+            full_name: user.user_metadata?.full_name || null,
+            username: user.user_metadata?.username || null
+          }
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert(profileInsert as never)
+            .select('id, username, full_name, avatar_url')
+            .single()
+
+          if (createError) {
+            console.error('Error creating profile:', createError)
+            // Même en cas d'erreur, on crée un profil minimal pour l'affichage
+            setProfile({
+              id: user.id,
+              username: user.user_metadata?.username || null,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: null
+            })
+          } else if (newProfile) {
+            setProfile(newProfile)
+          }
+        } else {
           console.error('Error fetching profile:', error)
+          // En cas d'erreur, on crée un profil minimal
+          setProfile({
+            id: user.id,
+            username: user.user_metadata?.username || null,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: null
+          })
         }
-        // On crée un profil minimal avec les données de l'utilisateur
-        setProfile({
-          id: user.id,
-          username: null,
-          full_name: null,
-          avatar_url: null
-        })
       } else if (data) {
         setProfile(data)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
-      // En cas d'erreur, on crée quand même un profil minimal
+      // En cas d'erreur, on crée un profil minimal
       setProfile({
         id: user.id,
-        username: null,
-        full_name: null,
+        username: user.user_metadata?.username || null,
+        full_name: user.user_metadata?.full_name || null,
         avatar_url: null
       })
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchPostsCount = async () => {
-    if (!user) return
-
-    const { data, error } = await supabase
-      .from('posts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-
-    if (!error && data !== null) {
-      setPostsCount(data as unknown as number)
     }
   }
 
@@ -201,8 +213,10 @@ const Profile = () => {
   }
 
   const renderMenu = () => {
+    // Utiliser uniquement les données de profiles (synchronisées depuis auth.users)
+    // Ne pas utiliser de fallback avec l'email pour éviter les noms automatiques
     const displayName = user 
-      ? (profile?.full_name || profile?.username || user?.email?.split('@')[0] || 'Utilisateur')
+      ? (profile?.full_name || profile?.username || 'Utilisateur')
       : 'Se connecter'
 
     // Menu items de base (toujours disponibles)
@@ -227,22 +241,6 @@ const Profile = () => {
 
     // Menu items nécessitant une connexion
     const authMenuItems: MenuItem[] = user ? [
-      { 
-        id: 'public', 
-        icon: User, 
-        label: 'Mon Profil', 
-        path: '/profile/public',
-        onClick: () => navigate('/profile/public'),
-        requiresAuth: true
-      },
-      { 
-        id: 'posts', 
-        icon: Package, 
-        label: `Annonces (${postsCount})`, 
-        path: '/profile/public',
-        onClick: () => navigate('/profile/public'),
-        requiresAuth: true
-      },
       { 
         id: 'settings', 
         icon: SettingsIcon, 

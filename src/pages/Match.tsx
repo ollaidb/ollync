@@ -7,6 +7,7 @@ import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { getDefaultSubMenus } from '../utils/defaultSubMenus'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
+import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './CategoryPage.css'
 
 interface Post {
@@ -60,43 +61,81 @@ const Match = () => {
       .eq('slug', 'match')
       .single()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!category || !(category as any).id) {
       setLoading(false)
       return
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const categoryId = (category as any).id
 
-    let query = supabase
-      .from('posts')
-      .select(`
-        *,
-        user:profiles!posts_user_id_fkey(username, full_name, avatar_url),
-        category:categories!posts_category_id_fkey(name, slug)
-      `)
-      .eq('category_id', categoryId)
-      .match({ status: 'active' })
+    let subCategoryId: string | undefined
+    let mediaType: string | undefined
 
     if (submenu) {
-      const { data: subCategory } = await supabase
-        .from('sub_categories')
-        .select('id')
-        .eq('slug', submenu)
-        .eq('category_id', categoryId)
-        .single()
+      // Gérer les sous-catégories Photo et Vidéo pour Création de contenu
+      if (submenu === 'creation-contenu-photo') {
+        const { data: creationSubCat } = await supabase
+          .from('sub_categories')
+          .select('id')
+          .eq('slug', 'creation-contenu')
+          .eq('category_id', categoryId)
+          .single()
 
-      if (subCategory && (subCategory as any).id) {
-        query = query.eq('sub_category_id', (subCategory as any).id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (creationSubCat && (creationSubCat as any).id) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          subCategoryId = (creationSubCat as any).id
+          mediaType = 'photo'
+        }
+      } else if (submenu === 'creation-contenu-video') {
+        const { data: creationSubCat } = await supabase
+          .from('sub_categories')
+          .select('id')
+          .eq('slug', 'creation-contenu')
+          .eq('category_id', categoryId)
+          .single()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (creationSubCat && (creationSubCat as any).id) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          subCategoryId = (creationSubCat as any).id
+          mediaType = 'video'
+        }
+      } else {
+        const { data: subCategory } = await supabase
+          .from('sub_categories')
+          .select('id')
+          .eq('slug', submenu)
+          .eq('category_id', categoryId)
+          .single()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (subCategory && (subCategory as any).id) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          subCategoryId = (subCategory as any).id
+        }
       }
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
+    // Récupérer les posts avec relations
+    let posts = await fetchPostsWithRelations({
+      categoryId,
+      subCategoryId,
+      status: 'active',
+      limit: 50,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-    } else {
-      setPosts(data || [])
+    // Filtrer par media_type si nécessaire
+    if (mediaType) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      posts = posts.filter((post: any) => (post as any).media_type === mediaType)
     }
+
+    setPosts(posts)
     setLoading(false)
   }
 

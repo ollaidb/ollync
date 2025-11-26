@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share2, MessageCircle, MapPin, Calendar, Users, Euro, Edit, Trash2, Archive, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, Share2, MessageCircle, MapPin, Calendar, Users, Edit, Trash2, Archive, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import HeaderSimple from '../components/HeaderSimple'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { useAuth } from '../hooks/useSupabase'
+import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './PostDetails.css'
 
 interface Post {
@@ -63,6 +64,29 @@ const PostDetails = () => {
   const [applications, setApplications] = useState<Application[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [relatedPosts, setRelatedPosts] = useState<Array<{
+    id: string
+    title: string
+    description: string
+    price?: number | null
+    location?: string | null
+    images?: string[] | null
+    likes_count: number
+    comments_count: number
+    created_at: string
+    needed_date?: string | null
+    number_of_people?: number | null
+    delivery_available: boolean
+    user?: {
+      username?: string | null
+      full_name?: string | null
+      avatar_url?: string | null
+    } | null
+    category?: {
+      name: string
+      slug: string
+    } | null
+  }>>([])
 
   useEffect(() => {
     if (id) {
@@ -72,51 +96,152 @@ const PostDetails = () => {
         fetchApplications()
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user])
+
+  useEffect(() => {
+    if (post) {
+      fetchRelatedPosts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post])
 
   const fetchPost = async () => {
     if (!id) return
 
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        user:profiles!posts_user_id_fkey(id, username, full_name, avatar_url, bio),
-        category:categories!posts_category_id_fkey(name, slug),
-        sub_category:sub_categories!posts_sub_category_id_fkey(name, slug)
-      `)
-      .eq('id', id)
-      .single()
+    try {
+      // 1. Récupérer le post
+      const { data: postData, error: postError } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', id)
+        .single()
 
-    if (error) {
-      console.error('Error fetching post:', error)
+      if (postError) {
+        console.error('Error fetching post:', postError)
+        setLoading(false)
+        return
+      }
+
+      if (!postData) {
+        setLoading(false)
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const post = postData as any
+
+      // 2. Récupérer le profil de l'utilisateur
+      let userProfile = null
+      if (post.user_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, bio')
+          .eq('id', post.user_id)
+          .single()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (profileData) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const profile = profileData as any
+          userProfile = {
+            id: profile.id,
+            username: profile.username,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url,
+            bio: profile.bio
+          }
+        }
+      }
+
+      // 3. Récupérer la catégorie
+      let categoryData = null
+      if (post.category_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: catData } = await supabase
+          .from('categories')
+          .select('id, name, slug')
+          .eq('id', post.category_id)
+          .single()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (catData) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const category = catData as any
+          categoryData = {
+            name: category.name,
+            slug: category.slug
+          }
+        }
+      }
+
+      // 4. Récupérer la sous-catégorie
+      let subCategoryData = null
+      if (post.sub_category_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: subCatData } = await supabase
+          .from('sub_categories')
+          .select('id, name, slug')
+          .eq('id', post.sub_category_id)
+          .single()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (subCatData) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const subCategory = subCatData as any
+          subCategoryData = {
+            name: subCategory.name,
+            slug: subCategory.slug
+          }
+        }
+      }
+
+      // 5. Combiner les données
+      setPost({
+        ...post,
+        user: userProfile,
+        category: categoryData,
+        sub_category: subCategoryData
+      } as Post)
+
+      // 6. Incrémenter les vues
+      const currentViews = post.views_count || 0
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('posts') as any).update({ views_count: currentViews + 1 }).eq('id', id)
+    } catch (error) {
+      console.error('Error in fetchPost:', error)
+    } finally {
       setLoading(false)
-      return
     }
-
-    if (data) {
-      setPost(data)
-      // Incrémenter les vues
-      await supabase.rpc('increment', { row_id: id, table_name: 'posts', column_name: 'views_count' })
-        .catch(() => {
-          // Fallback si la fonction n'existe pas
-          supabase.from('posts').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id)
-        })
-    }
-    setLoading(false)
   }
 
   const checkLiked = async () => {
-    if (!user || !id) return
+    if (!user || !id) {
+      setLiked(false)
+      return
+    }
 
-    const { data } = await supabase
-      .from('likes')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('post_id', id)
-      .single()
+    try {
+      // Utiliser maybeSingle() au lieu de single() pour éviter les erreurs 406
+      const { data, error } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', id)
+        .maybeSingle()
 
-    setLiked(!!data)
+      // Si erreur ou pas de données, le post n'est pas liké
+      if (error || !data) {
+        setLiked(false)
+      } else {
+        setLiked(true)
+      }
+    } catch (error) {
+      // Si aucune donnée n'est trouvée, le post n'est pas liké
+      console.error('Error checking like:', error)
+      setLiked(false)
+    }
   }
 
   const handleLike = async () => {
@@ -125,15 +250,96 @@ const PostDetails = () => {
       return
     }
 
+    // Vérifier que l'utilisateur a un profil dans la base de données
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('Profil utilisateur introuvable:', profileError)
+        alert('Votre profil n\'existe pas dans la base de données. Veuillez vous reconnecter ou contacter le support.')
+        return
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du profil:', error)
+      alert('Erreur lors de la vérification de votre profil. Veuillez réessayer.')
+      return
+    }
+
     try {
       if (liked) {
-        await supabase.from('likes').delete().match({ user_id: user.id, post_id: id })
+        // Supprimer le like
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', id)
+
+        if (error) {
+          console.error('Error removing like:', error)
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          })
+          alert(`Erreur lors de la suppression du like: ${error.message}`)
+          return
+        }
+
         setLiked(false)
-        if (post) setPost({ ...post, likes_count: Math.max(0, post.likes_count - 1) })
+        if (post) {
+          const newLikesCount = Math.max(0, post.likes_count - 1)
+          setPost({ ...post, likes_count: newLikesCount })
+          
+          // Mettre à jour le compteur dans la base de données
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('posts') as any).update({ likes_count: newLikesCount }).eq('id', id)
+        }
+        
+        // Déclencher un événement personnalisé pour notifier les autres composants
+        window.dispatchEvent(new CustomEvent('likeChanged', { 
+          detail: { postId: id, liked: false } 
+        }))
       } else {
-        await supabase.from('likes').insert({ user_id: user.id, post_id: id })
-        setLiked(true)
-        if (post) setPost({ ...post, likes_count: post.likes_count + 1 })
+        // Ajouter le like
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.from('likes') as any)
+          .insert({ user_id: user.id, post_id: id })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error adding like:', error)
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          })
+          alert(`Erreur lors de l'ajout du like: ${error.message}`)
+          return
+        }
+
+        if (data) {
+          setLiked(true)
+          if (post) {
+            const newLikesCount = post.likes_count + 1
+            setPost({ ...post, likes_count: newLikesCount })
+            
+            // Mettre à jour le compteur dans la base de données
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from('posts') as any).update({ likes_count: newLikesCount }).eq('id', id)
+          }
+          
+          // Déclencher un événement personnalisé pour notifier les autres composants
+          window.dispatchEvent(new CustomEvent('likeChanged', { 
+            detail: { postId: id, liked: true } 
+          }))
+        }
       }
     } catch (error) {
       console.error('Error toggling like:', error)
@@ -149,11 +355,19 @@ const PostDetails = () => {
           url: window.location.href
         })
       } catch (error) {
-        console.error('Error sharing:', error)
+        // L'utilisateur a peut-être annulé, ce n'est pas une erreur
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error)
+        }
       }
     } else {
-      navigator.clipboard.writeText(window.location.href)
-      alert('Lien copié dans le presse-papier')
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        alert('Lien copié dans le presse-papier')
+      } catch (error) {
+        console.error('Error copying to clipboard:', error)
+        alert('Impossible de copier le lien')
+      }
     }
   }
 
@@ -187,8 +401,8 @@ const PostDetails = () => {
     if (!id || !user || post?.user_id !== user.id) return
 
     try {
-      const { error } = await supabase
-        .from('posts')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('posts') as any)
         .update({ status: 'archived' })
         .eq('id', id)
 
@@ -202,8 +416,8 @@ const PostDetails = () => {
 
   const handleAcceptApplication = async (applicationId: string) => {
     try {
-      const { error } = await supabase
-        .from('applications')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('applications') as any)
         .update({ status: 'accepted' })
         .eq('id', applicationId)
 
@@ -216,8 +430,8 @@ const PostDetails = () => {
 
   const handleRejectApplication = async (applicationId: string) => {
     try {
-      const { error } = await supabase
-        .from('applications')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('applications') as any)
         .update({ status: 'rejected' })
         .eq('id', applicationId)
 
@@ -241,6 +455,44 @@ const PostDetails = () => {
       .order('created_at', { ascending: false })
 
     if (data) setApplications(data)
+  }
+
+  const fetchRelatedPosts = async () => {
+    if (!post) return
+
+    try {
+      // Récupérer des annonces de la même catégorie, excluant l'annonce actuelle
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const postCategoryId = (post as any).category_id
+      
+      if (postCategoryId) {
+        const related = await fetchPostsWithRelations({
+          categoryId: postCategoryId,
+          status: 'active',
+          limit: 7,
+          orderBy: 'created_at',
+          orderDirection: 'desc'
+        })
+        // Filtrer pour exclure le post actuel
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const filtered = related.filter((p: any) => p.id !== post.id)
+        setRelatedPosts(filtered.slice(0, 6))
+      } else {
+        // Si pas de catégorie, récupérer les dernières annonces
+        const related = await fetchPostsWithRelations({
+          status: 'active',
+          limit: 7,
+          orderBy: 'created_at',
+          orderDirection: 'desc'
+        })
+        // Filtrer pour exclure le post actuel
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const filtered = related.filter((p: any) => p.id !== post.id)
+        setRelatedPosts(filtered.slice(0, 6))
+      }
+    } catch (error) {
+      console.error('Error fetching related posts:', error)
+    }
   }
 
   const isOwner = user && post && post.user_id === user.id
@@ -459,12 +711,16 @@ const PostDetails = () => {
             )}
 
             {/* Autres annonces */}
-            <div className="other-posts-section">
-              <h3>Autres annonces</h3>
-              <div className="other-posts-grid">
-                {/* Les autres annonces seront chargées ici */}
+            {relatedPosts.length > 0 && (
+              <div className="other-posts-section">
+                <h3>Autres annonces</h3>
+                <div className="other-posts-grid">
+                  {relatedPosts.map((relatedPost) => (
+                    <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

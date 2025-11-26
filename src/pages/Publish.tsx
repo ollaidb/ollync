@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PageHeader from '../components/PageHeader'
 import Footer from '../components/Footer'
+import { getDefaultSubMenus } from '../utils/defaultSubMenus'
 import './Publish.css'
 
 interface Category {
@@ -80,6 +81,7 @@ const Publish = () => {
     } else {
       setSubCategories([])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId])
 
   const fetchCategories = async () => {
@@ -107,13 +109,44 @@ const Publish = () => {
   }
 
   const fetchSubCategories = async (catId: string) => {
-    const { data } = await supabase
-      .from('sub_categories')
-      .select('id, name, slug')
-      .eq('category_id', catId)
-      .order('name')
+    try {
+      const category = categories.find(c => c.id === catId)
+      if (!category) return
 
-    if (data) setSubCategories(data)
+      const defaultSubMenus = getDefaultSubMenus(category.slug)
+      
+      const { data, error } = await supabase
+        .from('sub_categories')
+        .select('id, name, slug')
+        .eq('category_id', catId)
+        .order('name')
+
+      if (error || !data || data.length === 0) {
+        // Utiliser les sous-menus par défaut si erreur ou aucune donnée
+        // Convertir les sous-menus par défaut en format SubCategory
+        const defaultSubCategories: SubCategory[] = defaultSubMenus.map((subMenu, index) => ({
+          id: `default-${category.slug}-${index}`,
+          name: subMenu.name,
+          slug: subMenu.slug
+        }))
+        setSubCategories(defaultSubCategories)
+      } else {
+        setSubCategories(data)
+      }
+    } catch (error) {
+      console.error('Error fetching subcategories:', error)
+      // Utiliser les sous-menus par défaut en cas d'erreur
+      const category = categories.find(c => c.id === catId)
+      if (category) {
+        const defaultSubMenus = getDefaultSubMenus(category.slug)
+        const defaultSubCategories: SubCategory[] = defaultSubMenus.map((subMenu, index) => ({
+          id: `default-${category.slug}-${index}`,
+          name: subMenu.name,
+          slug: subMenu.slug
+        }))
+        setSubCategories(defaultSubCategories)
+      }
+    }
   }
 
   const handleImageUpload = async (files: FileList | null) => {
@@ -199,13 +232,17 @@ const Publish = () => {
     try {
       const isUrgent = calculateIsUrgent(neededDate)
 
+      // Ne pas envoyer sub_category_id si c'est une sous-catégorie par défaut (ID qui commence par "default-")
+      const finalSubCategoryId = subCategoryId && !subCategoryId.startsWith('default-') ? subCategoryId : null
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const postData: any = {
         user_id: user.id,
         category_id: categoryId,
-        sub_category_id: subCategoryId || null,
+        sub_category_id: finalSubCategoryId,
         title,
-        description,
+        description: description || '', // S'assurer que description n'est jamais null
+        content: description || '', // Ajouter content au cas où la colonne existe dans la DB
         location: location || null,
         needed_date: neededDate || null,
         number_of_people: numberOfPeople || null,
@@ -282,16 +319,25 @@ const Publish = () => {
                 </div>
               )}
 
-              {subCategories.length > 0 && (
+              {categoryId && subCategories.length > 0 && (
                 <div className="subcategories-section">
                   <h3>Sous-catégorie (optionnel)</h3>
+                  <p className="subcategories-hint">Choisissez une sous-catégorie pour mieux classer votre annonce</p>
                   <div className="subcategories-list">
                     {subCategories.map((subCat) => (
                       <button
                         key={subCat.id}
                         type="button"
                         className={`subcategory-btn ${subCategoryId === subCat.id ? 'selected' : ''}`}
-                        onClick={() => setSubCategoryId(subCat.id)}
+                        onClick={() => {
+                          if (subCategoryId === subCat.id) {
+                            // Désélectionner si déjà sélectionné
+                            setSubCategoryId('')
+                            setMediaType('') // Réinitialiser le type de média
+                          } else {
+                            setSubCategoryId(subCat.id)
+                          }
+                        }}
                       >
                         {subCat.name}
                       </button>
@@ -300,27 +346,50 @@ const Publish = () => {
                 </div>
               )}
 
-              {selectedCategory?.slug === 'match' && subCategoryId && (
-                <div className="media-type-section">
-                  <h3>Type de média (pour Création de contenu)</h3>
-                  <div className="media-type-buttons">
-                    <button
-                      type="button"
-                      className={`media-type-btn ${mediaType === 'photo' ? 'selected' : ''}`}
-                      onClick={() => setMediaType('photo')}
-                    >
-                      Photo
-                    </button>
-                    <button
-                      type="button"
-                      className={`media-type-btn ${mediaType === 'video' ? 'selected' : ''}`}
-                      onClick={() => setMediaType('video')}
-                    >
-                      Vidéo
-                    </button>
-                  </div>
-                </div>
-              )}
+              {selectedCategory?.slug === 'match' && subCategoryId && (() => {
+                // Vérifier si la sous-catégorie sélectionnée est "Création de contenu"
+                const selectedSubCat = subCategories.find(sc => sc.id === subCategoryId)
+                const isCreationContenu = selectedSubCat?.slug === 'creation-contenu'
+                
+                if (isCreationContenu) {
+                  // Afficher Photo et Vidéo comme sous-sous-catégories
+                  return (
+                    <div className="media-type-section">
+                      <h3>Type de média</h3>
+                      <p className="subcategories-hint">Choisissez Photo ou Vidéo</p>
+                      <div className="media-type-buttons">
+                        <button
+                          type="button"
+                          className={`media-type-btn ${mediaType === 'photo' ? 'selected' : ''}`}
+                          onClick={() => {
+                            if (mediaType === 'photo') {
+                              setMediaType('')
+                            } else {
+                              setMediaType('photo')
+                            }
+                          }}
+                        >
+                          Photo
+                        </button>
+                        <button
+                          type="button"
+                          className={`media-type-btn ${mediaType === 'video' ? 'selected' : ''}`}
+                          onClick={() => {
+                            if (mediaType === 'video') {
+                              setMediaType('')
+                            } else {
+                              setMediaType('video')
+                            }
+                          }}
+                        >
+                          Vidéo
+                        </button>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
 
               <div className="form-actions">
                 <button className="btn-primary" onClick={() => setStep(2)} disabled={!categoryId}>

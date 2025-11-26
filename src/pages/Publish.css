@@ -110,7 +110,13 @@
   font-size: 18px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
+}
+
+.subcategories-hint {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 16px 0;
 }
 
 .subcategories-list {

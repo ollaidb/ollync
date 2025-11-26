@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Users, ShoppingBag, Wrench, Target, MoreHorizontal, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import Footer from '../components/Footer'
 import './Menu.css'
 
 interface SubMenu {
@@ -172,6 +173,7 @@ const Menu = () => {
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     )
   }
@@ -202,6 +204,7 @@ const Menu = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

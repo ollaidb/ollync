@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
 import { Heart, MessageCircle, Share2, MapPin, Calendar, Users, Euro } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import './PostCard.css'
 
@@ -35,29 +35,147 @@ interface PostCardProps {
 }
 
 const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }: PostCardProps) => {
+  const navigate = useNavigate()
   const [liked, setLiked] = useState(isLiked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
+  const [checkingLike, setCheckingLike] = useState(true)
 
-  const handleLike = async () => {
+  // Vérifier si le post est liké par l'utilisateur actuel au chargement
+  useEffect(() => {
+    const checkLiked = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setCheckingLike(false)
+          return
+        }
+
+        // Utiliser maybeSingle() au lieu de single() pour éviter les erreurs 406
+        const { data, error } = await supabase
+          .from('likes')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('post_id', post.id)
+          .maybeSingle()
+
+        // Si erreur ou pas de données, le post n'est pas liké
+        if (error || !data) {
+          setLiked(false)
+        } else {
+          setLiked(true)
+        }
+        setCheckingLike(false)
+      } catch (error) {
+        console.error('Error checking like:', error)
+        setLiked(false)
+        setCheckingLike(false)
+      }
+    }
+
+    checkLiked()
+  }, [post.id])
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        // Rediriger vers la page de connexion
+        navigate('/auth/login')
+        return
+      }
+
+      // Vérifier que l'utilisateur a un profil dans la base de données
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('Profil utilisateur introuvable:', profileError)
+        alert('Votre profil n\'existe pas dans la base de données. Veuillez vous reconnecter.')
+        return
+      }
 
       if (liked) {
-        await supabase.from('likes').delete().match({ user_id: user.id, post_id: post.id })
+        // Supprimer le like
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', post.id)
+
+        if (error) {
+          console.error('Error removing like:', error)
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          })
+          return
+        }
+
+        setLiked(false)
         setLikesCount(prev => Math.max(0, prev - 1))
+        
+        // Mettre à jour le compteur dans la base de données
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('posts') as any).update({ likes_count: Math.max(0, likesCount - 1) }).eq('id', post.id)
+        
+        // Déclencher un événement personnalisé pour notifier les autres composants
+        window.dispatchEvent(new CustomEvent('likeChanged', { 
+          detail: { postId: post.id, liked: false } 
+        }))
+        
+        onLike?.()
       } else {
-        await supabase.from('likes').insert({ user_id: user.id, post_id: post.id })
-        setLikesCount(prev => prev + 1)
+        // Ajouter le like
+        const { data, error } = await supabase
+          .from('likes')
+          .insert({ user_id: user.id, post_id: post.id })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error adding like:', error)
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          })
+          return
+        }
+
+        if (data) {
+          setLiked(true)
+          setLikesCount(prev => prev + 1)
+          
+          // Mettre à jour le compteur dans la base de données
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('posts') as any).update({ likes_count: likesCount + 1 }).eq('id', post.id)
+          
+          // Déclencher un événement personnalisé pour notifier les autres composants
+          window.dispatchEvent(new CustomEvent('likeChanged', { 
+            detail: { postId: post.id, liked: true } 
+          }))
+          
+          onLike?.()
+        }
       }
-      setLiked(!liked)
-      onLike?.()
     } catch (error) {
       console.error('Error toggling like:', error)
     }
   }
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
     if (navigator.share) {
       try {
         await navigator.share({
@@ -66,11 +184,19 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
           url: `${window.location.origin}/post/${post.id}`
         })
       } catch (error) {
-        console.error('Error sharing:', error)
+        // L'utilisateur a peut-être annulé, ce n'est pas une erreur
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error)
+        }
       }
     } else {
-      navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)
-      alert('Lien copié dans le presse-papier')
+      try {
+        await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)
+        alert('Lien copié dans le presse-papier')
+      } catch (error) {
+        console.error('Error copying to clipboard:', error)
+        alert('Impossible de copier le lien')
+      }
     }
     onShare?.()
   }
@@ -89,9 +215,23 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
 
   const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Ne pas naviguer si on clique sur un bouton d'action ou dans la zone d'actions
+    const target = e.target as HTMLElement
+    if (target.closest('.post-card-actions') || 
+        target.closest('button') || 
+        target.tagName === 'BUTTON' ||
+        target.closest('.post-card-action') ||
+        target.closest('svg') ||
+        target.closest('path')) {
+      return
+    }
+    navigate(`/post/${post.id}`)
+  }
+
   if (viewMode === 'list') {
     return (
-      <Link to={`/post/${post.id}`} className="post-card post-card-list">
+      <div className="post-card post-card-list" onClick={handleCardClick}>
         {mainImage && (
           <div className="post-card-image">
             <img src={mainImage} alt={post.title} />
@@ -113,23 +253,20 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
             )}
             <span className="post-card-date">{formatDate(post.created_at)}</span>
           </div>
-          <div className="post-card-actions">
+          <div className="post-card-actions" onClick={(e) => e.stopPropagation()}>
             <button
+              type="button"
               className={`post-card-action ${liked ? 'liked' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                handleLike()
-              }}
+              onClick={handleLike}
+              disabled={checkingLike}
             >
               <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
               <span>{likesCount}</span>
             </button>
             <button
+              type="button"
               className="post-card-action"
-              onClick={(e) => {
-                e.preventDefault()
-                handleShare()
-              }}
+              onClick={handleShare}
             >
               <Share2 size={18} />
             </button>
@@ -139,12 +276,23 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
             </span>
           </div>
         </div>
-      </Link>
+      </div>
     )
   }
 
   return (
-    <Link to={`/post/${post.id}`} className="post-card post-card-grid">
+    <div 
+      className="post-card post-card-grid" 
+      onClick={handleCardClick} 
+      role="button" 
+      tabIndex={0} 
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleCardClick(e as any)
+        }
+      }}
+    >
       {mainImage && (
         <div className="post-card-image">
           <img src={mainImage} alt={post.title} />
@@ -175,22 +323,25 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
             </span>
           )}
         </div>
-        <div className="post-card-actions">
+        <div className="post-card-actions" onClick={(e) => e.stopPropagation()}>
           <button
+            type="button"
             className={`post-card-action ${liked ? 'liked' : ''}`}
             onClick={(e) => {
-              e.preventDefault()
-              handleLike()
+              e.stopPropagation()
+              handleLike(e)
             }}
+            disabled={checkingLike}
           >
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             <span>{likesCount}</span>
           </button>
           <button
+            type="button"
             className="post-card-action"
             onClick={(e) => {
-              e.preventDefault()
-              handleShare()
+              e.stopPropagation()
+              handleShare(e)
             }}
           >
             <Share2 size={18} />
@@ -201,7 +352,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
 

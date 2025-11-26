@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Calendar, Star, MessageSquare, Package } from 'lucide-react'
+import { MapPin, Calendar, Star, Package } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PostCard from '../../components/PostCard'
+import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import './PublicProfile.css'
 
 interface ProfileData {
@@ -95,7 +96,48 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       .single()
 
     if (error) {
-      console.error('Error fetching profile:', error)
+      // Si le profil n'existe pas (code PGRST116), créer le profil depuis auth.users
+      if (error.code === 'PGRST116') {
+        console.log('Profil non trouvé, tentative de création depuis auth.users...')
+        
+        // Vérifier si c'est le profil de l'utilisateur connecté
+        if (user && user.id === profileId) {
+          // Créer le profil avec les données de auth.users
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email || null,
+              full_name: user.user_metadata?.full_name || null,
+              username: user.user_metadata?.username || null
+            })
+            .select()
+            .single()
+
+          if (createError) {
+            console.error('Error creating profile:', createError)
+            // Même en cas d'erreur, on peut afficher un profil minimal
+            setProfile({
+              id: user.id,
+              username: user.user_metadata?.username || null,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: null,
+              bio: null,
+              location: null,
+              created_at: new Date().toISOString()
+            })
+          } else if (newProfile) {
+            setProfile(newProfile)
+            setLoading(false)
+            return
+          }
+        } else {
+          // Ce n'est pas le profil de l'utilisateur connecté, on ne peut pas le créer
+          console.warn('Profil introuvable et ce n\'est pas le profil de l\'utilisateur connecté')
+        }
+      } else {
+        console.error('Error fetching profile:', error)
+      }
     } else if (data) {
       setProfile(data)
     }
@@ -157,37 +199,20 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
   }
 
+
   const fetchPosts = async () => {
     if (!profileId) return
 
     setPostsLoading(true)
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        user:profiles!posts_user_id_fkey(username, full_name, avatar_url),
-        category:categories!posts_category_id_fkey(name, slug)
-      `)
-      .eq('user_id', profileId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-    
-    // S'assurer que les valeurs par défaut sont présentes
-    if (data) {
-      data.forEach(post => {
-        if (!post.likes_count) post.likes_count = 0
-        if (!post.comments_count) post.comments_count = 0
-        if (post.delivery_available === null || post.delivery_available === undefined) {
-          post.delivery_available = false
-        }
-      })
-    }
+    const posts = await fetchPostsWithRelations({
+      userId: profileId,
+      status: 'active',
+      limit: 50,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-    } else {
-      setPosts(data || [])
-    }
+    setPosts(posts)
     setPostsLoading(false)
   }
 
@@ -310,7 +335,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           onClick={() => setActiveTab('posts')}
         >
           <Package size={18} />
-          <span>Annonces ({posts.length})</span>
+          <span>{isOwnProfile ? 'Mes annonces' : 'Annonces'} ({posts.length})</span>
         </button>
         <button
           className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
