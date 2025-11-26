@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Palette, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import './Appearance.css'
 

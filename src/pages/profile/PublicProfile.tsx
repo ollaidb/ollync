@@ -35,9 +35,9 @@ interface Post {
     slug: string
   } | null
   user?: {
-    username: string | null
-    full_name: string | null
-    avatar_url: string | null
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
   } | null
 }
 
@@ -103,8 +103,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         // Vérifier si c'est le profil de l'utilisateur connecté
         if (user && user.id === profileId) {
           // Créer le profil avec les données de auth.users
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: newProfile, error: createError } = await (supabase.from('profiles') as any)
             .insert({
               id: user.id,
               email: user.email || null,
@@ -185,8 +185,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         setFollowersCount(prev => Math.max(0, prev - 1))
       }
     } else {
-      const { error } = await supabase
-        .from('follows')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('follows') as any)
         .insert({
           follower_id: user.id,
           following_id: profileId

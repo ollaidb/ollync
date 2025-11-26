@@ -51,14 +51,15 @@ const PersonalInfo = () => {
     }
     
     // Utiliser les données de auth.users pour les noms, profiles pour le reste
+    const profileData = data || {}
     setProfile({
-      username: authUsername || data?.username || '',
-      full_name: authFullName || data?.full_name || '',
-      email: user.email || data?.email || '',
-      phone: data?.phone || '',
-      bio: data?.bio || '',
-      location: data?.location || '',
-      avatar_url: data?.avatar_url || ''
+      username: authUsername || (profileData as { username?: string | null }).username || '',
+      full_name: authFullName || (profileData as { full_name?: string | null }).full_name || '',
+      email: user.email || (profileData as { email?: string | null }).email || '',
+      phone: (profileData as { phone?: string | null }).phone || '',
+      bio: (profileData as { bio?: string | null }).bio || '',
+      location: (profileData as { location?: string | null }).location || '',
+      avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || ''
     })
     
     setLoading(false)
@@ -87,8 +88,8 @@ const PersonalInfo = () => {
       }
 
       // 2. Mettre à jour les autres champs dans profiles (phone, bio, location, avatar_url)
-      const { error: profileError } = await supabase
-        .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase.from('profiles') as any)
         .upsert({
           id: user.id,
           email: profile.email,

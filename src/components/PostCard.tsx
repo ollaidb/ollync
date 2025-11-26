@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, MapPin, Calendar, Users, Euro } from 'lucide-react'
+import { Heart, MessageCircle, Share2, MapPin, Calendar, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -134,8 +134,8 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
         onLike?.()
       } else {
         // Ajouter le like
-        const { data, error } = await supabase
-          .from('likes')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.from('likes') as any)
           .insert({ user_id: user.id, post_id: post.id })
           .select()
           .single()

@@ -33,7 +33,8 @@ const Login = () => {
           .single()
 
         if (!profile) {
-          await supabase.from('profiles').insert({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('profiles') as any).insert({
             id: data.user.id,
             email: data.user.email
           })

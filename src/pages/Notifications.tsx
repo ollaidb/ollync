@@ -76,8 +76,8 @@ const Notifications = () => {
   }
 
   const markAsRead = async (id: string) => {
-    await supabase
-      .from('notifications')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('notifications') as any)
       .update({ read: true })
       .eq('id', id)
 
@@ -119,8 +119,8 @@ const Notifications = () => {
 
     if (unreadIds.length === 0) return
 
-    await supabase
-      .from('notifications')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('notifications') as any)
       .update({ read: true })
       .in('id', unreadIds)
 

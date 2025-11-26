@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HelpCircle, ChevronDown, ChevronUp, Mail, MessageSquare, Book, FileText } from 'lucide-react'
+import { ChevronDown, ChevronUp, Mail, MessageSquare, Book, FileText } from 'lucide-react'
 import './Help.css'
 
 interface FAQItem {
