@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "install-db": "node scripts/install.js",
+    "install-db:editor": "node scripts/install.js editor",
+    "install-db:psql": "./scripts/install-with-psql.sh",
+    "install-db:api": "node scripts/auto-install.js",
+    "check-db": "node scripts/check-and-create-tables.js",
+    "create-missing": "node scripts/create-missing-tables.js"
   },
   "dependencies": {
     "react": "^18.2.0",

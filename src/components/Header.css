@@ -145,6 +145,11 @@
   min-width: max-content;
 }
 
+.menu-category-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .menu-category {
   display: flex;
   flex-direction: column;
@@ -157,7 +162,7 @@
   padding: 8px 12px;
   min-width: 70px;
   transition: transform 0.2s ease;
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .menu-category:hover {
@@ -190,6 +195,84 @@
   color: #ff6600;
 }
 
+/* Dropdown des sous-menus */
+.submenu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  z-index: 1001;
+  min-width: 200px;
+  animation: fadeInDown 0.2s ease;
+}
+
+.submenu-dropdown-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.submenu-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.submenu-dropdown-item:hover {
+  background: #f5f5f5;
+  color: #ff6600;
+}
+
+.submenu-dropdown-item svg {
+  color: #999;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.submenu-dropdown-item:hover svg {
+  color: #ff6600;
+  transform: translateX(4px);
+}
+
+.submenu-dropdown-item-all {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  font-weight: 600;
+  color: #ff6600;
+}
+
+.submenu-dropdown-item-all:hover {
+  background: #fff5f0;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   .header-logo {
     font-size: 20px;
@@ -211,6 +294,17 @@
 
   .menu-category-label {
     font-size: 11px;
+  }
+
+  .submenu-dropdown {
+    min-width: 180px;
+    left: 0;
+    transform: none;
+  }
+
+  .submenu-dropdown-item {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 

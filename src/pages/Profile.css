@@ -1,0 +1,382 @@
+.profile-page {
+  padding: 0;
+  background: #f5f5f5;
+}
+
+.profile-container {
+  display: flex;
+  min-height: calc(100vh - 200px);
+}
+
+.profile-menu-page {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Carte de profil */
+.profile-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.profile-card-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #667eea;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.profile-card-name {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.profile-card-chevron {
+  color: #999;
+  flex-shrink: 0;
+}
+
+/* Liste des options */
+.profile-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+}
+
+.profile-menu-item {
+  width: 100%;
+  background: white;
+  border: none;
+  border-radius: 0;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+}
+
+.profile-menu-item:first-of-type {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.profile-menu-item:last-of-type {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.profile-menu-item:not(:last-of-type) {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-menu-item:hover {
+  background: #f8f9fa;
+}
+
+.profile-menu-item.active {
+  background: #f0f4ff;
+  color: #667eea;
+}
+
+.profile-menu-item.active .profile-menu-item-icon {
+  color: #667eea;
+}
+
+.profile-menu-item-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.profile-menu-item.active .profile-menu-item-icon {
+  color: #667eea;
+}
+
+.profile-menu-item-label {
+  flex: 1;
+  text-align: left;
+}
+
+.profile-menu-item-chevron {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.profile-menu-item.active .profile-menu-item-chevron {
+  color: #667eea;
+}
+
+/* Sous-items (pour Paramètres) */
+.profile-menu-subitems {
+  background: #f8f9fa;
+  padding: 0;
+}
+
+.profile-menu-subitem {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 12px 16px 12px 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  color: #666;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.profile-menu-subitem:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.profile-menu-subitem svg {
+  color: #999;
+  flex-shrink: 0;
+}
+
+/* Bouton de déconnexion */
+.profile-menu-item-logout {
+  color: #e74c3c;
+  margin-top: 8px;
+  border-radius: 12px;
+}
+
+.profile-menu-item-logout:hover {
+  background: #fee;
+  color: #c0392b;
+}
+
+.profile-menu-item-logout .profile-menu-item-icon {
+  color: #e74c3c;
+}
+
+.profile-menu-item-logout .profile-menu-item-chevron {
+  display: none;
+}
+
+/* Bouton de connexion */
+.profile-menu-item-login {
+  color: #667eea;
+  margin-top: 8px;
+  border-radius: 12px;
+}
+
+.profile-menu-item-login:hover {
+  background: #f0f4ff;
+  color: #5568d3;
+}
+
+.profile-menu-item-login .profile-menu-item-icon {
+  color: #667eea;
+}
+
+/* Sidebar (pour les autres pages) */
+.profile-sidebar {
+  width: 280px;
+  background: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px 0;
+}
+
+.profile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+}
+
+.profile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  color: #333;
+  font-size: 15px;
+  font-weight: 500;
+  position: relative;
+}
+
+.profile-nav-item:hover {
+  background: #e8e9ea;
+}
+
+.profile-nav-item.active {
+  background: #667eea;
+  color: white;
+}
+
+.profile-nav-item.active svg {
+  color: white;
+}
+
+.profile-nav-item svg {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.profile-nav-item.active .chevron {
+  margin-left: auto;
+  color: white;
+}
+
+.profile-nav-item-logout {
+  margin-top: 20px;
+  color: #e74c3c;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.profile-nav-item-logout:hover {
+  background: #fee;
+  color: #c0392b;
+}
+
+.profile-nav-item-logout svg {
+  color: #e74c3c;
+}
+
+.profile-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.profile-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #666;
+}
+
+.profile-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.profile-empty-state svg {
+  color: #999;
+  margin-bottom: 20px;
+}
+
+.profile-empty-state h2 {
+  font-size: 24px;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.profile-empty-state p {
+  font-size: 16px;
+  color: #666;
+  margin: 0 0 24px 0;
+}
+
+.profile-empty-state .btn-primary {
+  padding: 12px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.profile-empty-state .btn-primary:hover {
+  background: #5568d3;
+}
+
+@media (max-width: 768px) {
+  .profile-menu-page {
+    padding: 12px;
+  }
+
+  .profile-card {
+    padding: 14px;
+  }
+
+  .profile-card-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .profile-card-name {
+    font-size: 16px;
+  }
+
+  .profile-menu-item {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .profile-menu-subitem {
+    padding: 10px 14px 10px 46px;
+    font-size: 13px;
+  }
+}

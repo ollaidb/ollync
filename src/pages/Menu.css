@@ -60,6 +60,97 @@
   text-align: center;
 }
 
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.submenu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.submenu-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+.submenu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.submenu-item:hover {
+  border-color: var(--item-color);
+  background: #f0f4ff;
+  transform: translateX(4px);
+}
+
+.submenu-item-all {
+  margin-top: 8px;
+  border-color: var(--item-color);
+  background: linear-gradient(135deg, var(--item-color), var(--item-color));
+  color: white;
+}
+
+.submenu-item-all:hover {
+  background: linear-gradient(135deg, var(--item-color), var(--item-color));
+  opacity: 0.9;
+  transform: translateX(4px);
+}
+
+.submenu-item-all .submenu-name {
+  color: white;
+  font-weight: 600;
+}
+
+.submenu-item-all .submenu-arrow {
+  color: white;
+}
+
+.submenu-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.submenu-arrow {
+  color: #999;
+  transition: transform 0.2s ease;
+}
+
+.submenu-item:hover .submenu-arrow {
+  transform: translateX(4px);
+  color: var(--item-color);
+}
+
 @media (max-width: 768px) {
   .menu-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -83,6 +174,14 @@
 
   .menu-item-label {
     font-size: 14px;
+  }
+
+  .submenu-item {
+    padding: 14px 16px;
+  }
+
+  .submenu-name {
+    font-size: 15px;
   }
 }
 

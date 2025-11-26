@@ -18,6 +18,10 @@
   padding-top: 60px;
 }
 
+.main-content.without-header.category-page {
+  padding-top: 120px;
+}
+
 @media (max-width: 768px) {
   .main-content.with-header {
     padding-top: 170px;

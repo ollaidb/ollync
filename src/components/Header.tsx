@@ -1,37 +1,89 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Users, Wrench, ShoppingBag, Target, MoreHorizontal } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, ChevronRight } from 'lucide-react'
 import './Header.css'
 
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
-
-  const getPageTitle = () => {
-    const titles: { [key: string]: string } = {
-      '/': 'Accueil',
-      '/favorites': 'Favoris',
-      '/publish': 'Publication',
-      '/messages': 'Messages',
-      '/profile': 'Profil',
-      '/menu': 'Menu',
-      '/match': 'Match',
-      '/service': 'Service',
-      '/vente': 'Vente',
-      '/mission': 'Mission',
-      '/autre': 'Autre'
-    }
-    return titles[location.pathname] || 'Ollync'
-  }
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
 
   const menuCategories = [
-    { id: 'match', icon: Users, label: 'Match', path: '/match' },
-    { id: 'service', icon: Wrench, label: 'Service', path: '/service' },
-    { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' },
-    { id: 'mission', icon: Target, label: 'Mission', path: '/mission' },
-    { id: 'autre', icon: MoreHorizontal, label: 'Autre', path: '/autre' }
+    { 
+      id: 'match', 
+      icon: Users, 
+      label: 'Match', 
+      path: '/match',
+      subMenus: [
+        { name: 'Création de contenu', slug: 'creation-contenu' },
+        { name: 'Sortie', slug: 'sortie' },
+        { name: 'Événement', slug: 'evenement' }
+      ]
+    },
+    { 
+      id: 'recrutement', 
+      icon: Briefcase, 
+      label: 'Recrutement', 
+      path: '/recrutement',
+      subMenus: [
+        { name: 'Modèle', slug: 'modele' },
+        { name: 'Figurant', slug: 'figurant' }
+      ]
+    },
+    { 
+      id: 'projet', 
+      icon: Briefcase, 
+      label: 'Projet', 
+      path: '/projet',
+      subMenus: [
+        { name: 'Associer / Collaboration', slug: 'associer-collaboration' }
+      ]
+    },
+    { 
+      id: 'service', 
+      icon: Wrench, 
+      label: 'Service', 
+      path: '/service',
+      subMenus: [
+        { name: 'Échange de service', slug: 'echange-service' },
+        { name: 'Tâches', slug: 'taches' },
+        { name: 'Formation', slug: 'formation' }
+      ]
+    },
+    { 
+      id: 'vente', 
+      icon: ShoppingBag, 
+      label: 'Vente', 
+      path: '/vente',
+      subMenus: [
+        { name: 'Échange', slug: 'echange' },
+        { name: 'Vente de compte', slug: 'vente-compte' },
+        { name: 'Gratuit', slug: 'gratuit' }
+      ]
+    },
+    { 
+      id: 'mission', 
+      icon: Target, 
+      label: 'Mission', 
+      path: '/mission',
+      subMenus: [
+        { name: 'Colis', slug: 'colis' },
+        { name: 'Vérification', slug: 'verification' }
+      ]
+    },
+    { 
+      id: 'autre', 
+      icon: MoreHorizontal, 
+      label: 'Autre', 
+      path: '/autre',
+      subMenus: [
+        { name: 'Non classé', slug: 'non-classe' },
+        { name: 'Autre service', slug: 'autre-service' }
+      ]
+    }
   ]
 
-  const isHomePage = location.pathname === '/'
+  const isHomePage = location.pathname === '/' || location.pathname === '/home'
 
   return (
     <header className="header">
@@ -56,11 +108,15 @@ const Header = () => {
       {/* Section 2: Barre de recherche */}
       <div className="header-section-2">
         <div className="search-bar">
+          <Search className="search-icon" size={20} />
           <input
             type="text"
             placeholder="Rechercher sur Ollync"
             className="search-input"
           />
+          <button className="camera-btn" aria-label="Scanner">
+            <Camera size={20} />
+          </button>
         </div>
       </div>
 
@@ -70,15 +126,47 @@ const Header = () => {
           <div className="menu-scroll">
             {menuCategories.map((category) => {
               const Icon = category.icon
+              const isHovered = hoveredCategory === category.id
               return (
-                <button
+                <div
                   key={category.id}
-                  className="menu-category"
-                  onClick={() => navigate(category.path)}
+                  className="menu-category-wrapper"
+                  onMouseEnter={() => setHoveredCategory(category.id)}
+                  onMouseLeave={() => setHoveredCategory(null)}
                 >
-                  <Icon size={24} />
-                  <span className="menu-category-label">{category.label}</span>
-                </button>
+                  <button
+                    className="menu-category"
+                    onClick={() => navigate(category.path)}
+                  >
+                    <Icon size={24} />
+                    <span className="menu-category-label">{category.label}</span>
+                  </button>
+                  
+                  {/* Dropdown des sous-menus */}
+                  {isHovered && category.subMenus.length > 0 && (
+                    <div className="submenu-dropdown">
+                      <div className="submenu-dropdown-content">
+                        {category.subMenus.map((subMenu) => (
+                          <button
+                            key={subMenu.slug}
+                            className="submenu-dropdown-item"
+                            onClick={() => navigate(`${category.path}/${subMenu.slug}`)}
+                          >
+                            <span>{subMenu.name}</span>
+                            <ChevronRight size={16} />
+                          </button>
+                        ))}
+                        <button
+                          className="submenu-dropdown-item submenu-dropdown-item-all"
+                          onClick={() => navigate(category.path)}
+                        >
+                          <span>Voir tout</span>
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>

@@ -1,0 +1,30 @@
+.payment-methods-page {
+  padding: 0;
+  background: #f5f5f5;
+}
+
+.payment-methods-container {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+.empty-state-subtitle {
+  font-size: 14px;
+  color: #999;
+}
+

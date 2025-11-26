@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-11-26T03:39:44.028Z",
+  "tables": {
+    "categories": true,
+    "profiles": true,
+    "sub_categories": true,
+    "posts": true,
+    "likes": true,
+    "favorites": true,
+    "comments": true,
+    "shares": true,
+    "applications": true,
+    "follows": true,
+    "conversations": false,
+    "conversation_participants": false,
+    "messages": true,
+    "message_reads": true,
+    "notifications": true,
+    "matches": true
+  },
+  "existing": [
+    "categories",
+    "profiles",
+    "sub_categories",
+    "posts",
+    "likes",
+    "favorites",
+    "comments",
+    "shares",
+    "applications",
+    "follows",
+    "messages",
+    "message_reads",
+    "notifications",
+    "matches"
+  ],
+  "missing": [
+    "conversations",
+    "conversation_participants"
+  ]
+}
