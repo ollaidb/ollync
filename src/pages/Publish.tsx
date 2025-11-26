@@ -164,24 +164,61 @@ const Publish = () => {
 
     for (const file of newFiles) {
       try {
+        // Vérifier la taille du fichier (max 50MB)
+        if (file.size > 52428800) {
+          alert(`Le fichier ${file.name} est trop volumineux (max 50MB)`)
+          continue
+        }
+
+        // Vérifier le type de fichier
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if (!allowedTypes.includes(file.type)) {
+          alert(`Le type de fichier ${file.name} n'est pas supporté. Utilisez JPEG, PNG, GIF ou WebP.`)
+          continue
+        }
+
         const fileExt = file.name.split('.').pop()
         const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `posts/${fileName}`
+        // Le chemin doit être relatif au bucket, pas inclure "posts/"
+        const filePath = fileName
 
         const { error: uploadError } = await supabase.storage
           .from('posts')
-          .upload(filePath, file)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
 
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Error uploading image:', uploadError)
+          console.error('Error details:', {
+            message: uploadError.message,
+            name: uploadError.name
+          })
+          
+          if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+            alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
+          } else {
+            alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
+          }
+          continue
+        }
 
+        // Récupérer l'URL publique de l'image
         const { data: { publicUrl } } = supabase.storage
           .from('posts')
           .getPublicUrl(filePath)
 
-        uploadedUrls.push(publicUrl)
+        if (publicUrl) {
+          uploadedUrls.push(publicUrl)
+        } else {
+          console.error('Impossible de récupérer l\'URL publique de l\'image')
+          alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
+        }
       } catch (error) {
         console.error('Error uploading image:', error)
-        alert(`Erreur lors du téléchargement de ${file.name}`)
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+        alert(`Erreur lors du téléchargement de ${file.name}: ${errorMessage}`)
       }
     }
 
