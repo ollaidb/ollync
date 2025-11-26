@@ -1,0 +1,30 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding-bottom: 80px;
+  overflow-y: auto;
+}
+
+.main-content.with-header {
+  padding-top: 180px;
+}
+
+.main-content.without-header {
+  padding-top: 60px;
+}
+
+@media (max-width: 768px) {
+  .main-content.with-header {
+    padding-top: 170px;
+  }
+
+  .main-content.without-header {
+    padding-top: 60px;
+  }
+}
+
