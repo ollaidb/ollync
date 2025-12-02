@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Grid, List, Filter, Loader } from 'lucide-react'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './Feed.css'
 
@@ -76,9 +77,11 @@ const Feed = () => {
         {/* Header fixe */}
         <div className="feed-header-fixed">
           <div className="feed-header-content">
+            <BackButton />
             <div className="feed-header-branding">
               <h1 className="feed-title">Toutes les annonces</h1>
             </div>
+            <div className="feed-header-spacer"></div>
           </div>
         </div>
 

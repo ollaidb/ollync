@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { PublicationType } from '../../constants/publishData'
 import './PublishHeader.css'
@@ -10,17 +11,24 @@ interface PublishHeaderProps {
 }
 
 export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory }: PublishHeaderProps) => {
+  const navigate = useNavigate()
   const totalSteps = 5
   const progress = step > 0 ? ((step + 1) / totalSteps) * 100 : 0
+
+  const handleBack = () => {
+    if (step > 0) {
+      onBack()
+    } else {
+      navigate(-1)
+    }
+  }
 
   return (
     <div className="publish-header-container">
       <div className="publish-header-content">
-        {step > 0 && (
-          <button className="publish-back-button" onClick={onBack}>
-            <ArrowLeft size={24} />
-          </button>
-        )}
+        <button className="publish-back-button" onClick={handleBack}>
+          <ArrowLeft size={24} />
+        </button>
         <div className="publish-header-text">
           <h1 className="publish-title">Publier une annonce</h1>
           {breadcrumb && (

@@ -4,6 +4,7 @@ import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader } from 'l
 import { supabase } from '../lib/supabaseClient'
 import HeaderMinimal from '../components/HeaderMinimal'
 import Footer from '../components/Footer'
+import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import './Notifications.css'
 
@@ -188,8 +189,9 @@ const Notifications = () => {
         {/* Header fixe */}
         <div className="notifications-header-fixed">
           <div className="notifications-header-content">
+            <BackButton />
             <h1 className="notifications-title">Notifications</h1>
-            {notifications.filter((n) => !n.read).length > 0 && (
+            {notifications.filter((n) => !n.read).length > 0 ? (
               <button 
                 className="mark-all-read-btn"
                 onClick={markAllAsRead}
@@ -197,6 +199,8 @@ const Notifications = () => {
               >
                 Tout marquer comme lu
               </button>
+            ) : (
+              <div className="notifications-header-spacer"></div>
             )}
           </div>
         </div>

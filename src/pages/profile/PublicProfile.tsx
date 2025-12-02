@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Settings, Edit } from 'lucide-react'
+import { Edit, MessageCircle, Heart, Share2, MapPin, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PostCard from '../../components/PostCard'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import { ProfileAvatar } from '../../components/ProfilePage/ProfileAvatar'
-import { ProfileBadges } from '../../components/ProfilePage/ProfileBadges'
 import { ProfileStats } from '../../components/ProfilePage/ProfileStats'
 import { ProfileInfo } from '../../components/ProfilePage/ProfileInfo'
 import { ProfileTabs } from '../../components/ProfilePage/ProfileTabs'
@@ -25,6 +24,7 @@ interface ProfileData {
   created_at: string
   availability?: string | null
   skills?: string[]
+  services?: string[]
   languages?: Array<{ name: string; level: string }>
   badges?: string[]
 }
@@ -53,17 +53,14 @@ interface Post {
   } | null
 }
 
-interface Rating {
+interface Review {
   id: string
   rating: number
-  comment: string | null
+  comment?: string
   created_at: string
-  rater: {
-    username: string | null
-    full_name: string | null
-    avatar_url: string | null
-  } | null
-  mission_type?: string | null
+  reviewer_name?: string
+  reviewer_avatar?: string
+  mission_type?: string
 }
 
 const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOwnProfile?: boolean }) => {
@@ -72,40 +69,19 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
-  const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'annonces' | 'match' | 'avis'>('annonces')
   const [posts, setPosts] = useState<Post[]>([])
   const [matchPosts, setMatchPosts] = useState<Post[]>([])
-  const [reviews, setReviews] = useState<Rating[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
 
   const profileId = userId || user?.id
 
-  useEffect(() => {
-    if (profileId) {
-      fetchProfile()
-      fetchFollowersCount()
-      fetchFollowingCount()
-      if (!isOwnProfile && user) {
-        checkFollowing()
-      }
-    }
-  }, [profileId, user, isOwnProfile])
-
-  useEffect(() => {
-    if (profileId && activeTab === 'annonces') {
-      fetchPosts()
-    } else if (profileId && activeTab === 'match') {
-      fetchMatchPosts()
-    } else if (profileId && activeTab === 'avis') {
-      fetchReviews()
-    }
-  }, [profileId, activeTab])
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!profileId) return
 
     setLoading(true)
@@ -155,9 +131,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       setProfile(data)
     }
     setLoading(false)
-  }
+  }, [profileId, user])
 
-  const fetchFollowersCount = async () => {
+  const fetchFollowersCount = useCallback(async () => {
     if (!profileId) return
 
     const { count } = await supabase
@@ -168,9 +144,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     if (count !== null) {
       setFollowersCount(count)
     }
-  }
+  }, [profileId])
 
-  const fetchFollowingCount = async () => {
+  const fetchFollowingCount = useCallback(async () => {
     if (!profileId) return
 
     const { count } = await supabase
@@ -181,9 +157,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     if (count !== null) {
       setFollowingCount(count)
     }
-  }
+  }, [profileId])
 
-  const checkFollowing = async () => {
+  const checkFollowing = useCallback(async () => {
     if (!user || !profileId || isOwnProfile) return
 
     const { data } = await supabase
@@ -193,39 +169,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       .eq('following_id', profileId)
       .single()
 
-    setIsFollowing(!!data)
-  }
+    setIsFavorite(!!data)
+  }, [user, profileId, isOwnProfile])
 
-  const handleFollow = async () => {
-    if (!user || !profileId || isOwnProfile) return
 
-    if (isFollowing) {
-      const { error } = await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', user.id)
-        .eq('following_id', profileId)
-
-      if (!error) {
-        setIsFollowing(false)
-        setFollowersCount(prev => Math.max(0, prev - 1))
-      }
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('follows') as any)
-        .insert({
-          follower_id: user.id,
-          following_id: profileId
-        })
-
-      if (!error) {
-        setIsFollowing(true)
-        setFollowersCount(prev => prev + 1)
-      }
-    }
-  }
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     if (!profileId) return
 
     setPostsLoading(true)
@@ -245,9 +193,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
     setPosts(nonMatchPosts)
     setPostsLoading(false)
-  }
+  }, [profileId])
 
-  const fetchMatchPosts = async () => {
+  const fetchMatchPosts = useCallback(async () => {
     if (!profileId) return
 
     setPostsLoading(true)
@@ -267,9 +215,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
     setMatchPosts(matchPostsOnly)
     setPostsLoading(false)
-  }
+  }, [profileId])
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     if (!profileId) return
 
     setReviewsLoading(true)
@@ -287,19 +235,31 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       setReviews([])
     } else {
       // Transformer les données pour correspondre au format ReviewCard
-      const formattedReviews = (data || []).map((review: any) => ({
+      interface ReviewData {
+        id: string
+        rating: number
+        comment: string | null
+        mission_type: string | null
+        created_at: string
+        rater: {
+          username: string | null
+          full_name: string | null
+          avatar_url: string | null
+        } | null
+      }
+      const formattedReviews: Review[] = (data as ReviewData[] || []).map((review) => ({
         id: review.id,
-        reviewer_name: review.rater?.full_name || review.rater?.username || null,
-        reviewer_avatar: review.rater?.avatar_url || null,
+        reviewer_name: review.rater?.full_name || review.rater?.username || undefined,
+        reviewer_avatar: review.rater?.avatar_url || undefined,
         rating: review.rating,
-        comment: review.comment,
-        mission_type: review.mission_type || null,
+        comment: review.comment || undefined,
+        mission_type: review.mission_type || undefined,
         created_at: review.created_at
       }))
       setReviews(formattedReviews)
     }
     setReviewsLoading(false)
-  }
+  }, [profileId])
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId)
@@ -307,12 +267,93 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }
 
   const handleEditProfile = () => {
-    navigate('/profile/settings')
+    navigate('/profile/edit')
   }
 
-  const handleSettings = () => {
-    navigate('/profile/settings')
+  const handleContact = () => {
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+    if (!profileId) return
+    navigate(`/messages/new?user=${profileId}`)
   }
+
+  const handleToggleFavorite = async () => {
+    if (!user || !profileId || isOwnProfile) return
+
+    if (isFavorite) {
+      const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', profileId)
+
+      if (!error) {
+        setIsFavorite(false)
+        setFollowersCount(prev => Math.max(0, prev - 1))
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('follows') as any)
+        .insert({
+          follower_id: user.id,
+          following_id: profileId
+        })
+
+      if (!error) {
+        setIsFavorite(true)
+        setFollowersCount(prev => prev + 1)
+      }
+    }
+  }
+
+  const handleShare = async () => {
+    const profileUrl = `${window.location.origin}/profile/${profileId}`
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${displayName} - Profil`,
+          text: `Découvrez le profil de ${displayName}`,
+          url: profileUrl
+        })
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error)
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(profileUrl)
+        alert('Lien du profil copié dans le presse-papier')
+      } catch (error) {
+        console.error('Error copying to clipboard:', error)
+        alert('Impossible de copier le lien')
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (profileId) {
+      fetchProfile()
+      fetchFollowersCount()
+      fetchFollowingCount()
+      if (!isOwnProfile && user) {
+        checkFollowing()
+      }
+    }
+  }, [profileId, user, isOwnProfile, fetchProfile, fetchFollowersCount, fetchFollowingCount, checkFollowing])
+
+  useEffect(() => {
+    if (profileId && activeTab === 'annonces') {
+      fetchPosts()
+    } else if (profileId && activeTab === 'match') {
+      fetchMatchPosts()
+    } else if (profileId && activeTab === 'avis') {
+      fetchReviews()
+    }
+  }, [profileId, activeTab, fetchPosts, fetchMatchPosts, fetchReviews])
 
   if (loading) {
     return (
@@ -337,35 +378,82 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   return (
     <div className="public-profile-page">
-      {/* Header avec Settings */}
-      <div className="profile-header-bar">
-        <div style={{ flex: 1 }} />
-        <button
-          className="profile-settings-button"
-          onClick={handleSettings}
-          aria-label="Paramètres"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
+      {/* Header avec bouton modifier - seulement pour le propre profil */}
+      {isOwnProfile && (
+        <div className="profile-header-bar">
+          <div style={{ flex: 1 }} />
+          <button
+            className="profile-edit-button-header"
+            onClick={handleEditProfile}
+          >
+            <Edit size={18} />
+            <span>Modifier le profil</span>
+          </button>
+        </div>
+      )}
 
       <div className="public-profile-content-wrapper">
         {/* Profil Header */}
         <div className="public-profile-header">
-          <ProfileAvatar
-            avatar={profile.avatar_url}
-            fullName={profile.full_name}
-            username={profile.username}
-            onPress={() => setShowPhotoModal(true)}
-          />
+          {/* Photo de profil avec badge de vérification */}
+          <div className="profile-header-top">
+            <div className="profile-avatar-section">
+              <ProfileAvatar
+                avatar={profile.avatar_url}
+                fullName={profile.full_name}
+                username={profile.username}
+                onPress={() => setShowPhotoModal(true)}
+              />
+              {profile.badges && profile.badges.includes('verified') && (
+                <div className="verified-badge">
+                  <CheckCircle2 size={20} />
+                </div>
+              )}
+            </div>
 
-          <h1 className="profile-name">{displayName}</h1>
-          {profile.username && (
-            <p className="profile-username">@{profile.username}</p>
+            {/* Nom / Pseudo et Localisation */}
+            <div className="profile-header-info">
+              <h1 className="profile-name">{displayName}</h1>
+              {profile.username && (
+                <p className="profile-username">@{profile.username}</p>
+              )}
+              {profile.location && (
+                <div className="profile-location-header">
+                  <MapPin size={16} />
+                  <span>{profile.location}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Boutons d'action */}
+          {!isOwnProfile && user && (
+            <div className="profile-action-buttons">
+              <button
+                className="profile-action-button contact-button"
+                onClick={handleContact}
+              >
+                <MessageCircle size={18} />
+                <span>Contacter</span>
+              </button>
+              <button
+                className={`profile-action-button favorite-button ${isFavorite ? 'active' : ''}`}
+                onClick={handleToggleFavorite}
+              >
+                <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                <span>{isFavorite ? 'Favoris' : 'Ajouter'}</span>
+              </button>
+              <button
+                className="profile-action-button share-button"
+                onClick={handleShare}
+              >
+                <Share2 size={18} />
+                <span>Partager</span>
+              </button>
+            </div>
           )}
 
-          <ProfileBadges badges={profile.badges || []} />
-
+          {/* Stats */}
           <ProfileStats
             postsCount={posts.length}
             followersCount={followersCount}
@@ -373,30 +461,50 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             averageRating={averageRating}
           />
 
-          {/* Bouton Éditer le profil ou Suivre */}
-          {isOwnProfile ? (
-            <button
-              className="edit-profile-button"
-              onClick={handleEditProfile}
-            >
-              <Edit size={18} />
-              <span>Éditer le profil</span>
-            </button>
-          ) : user && (
-            <button
-              className={`follow-button ${isFollowing ? 'following' : ''}`}
-              onClick={handleFollow}
-            >
-              {isFollowing ? 'Ne plus suivre' : 'Suivre'}
-            </button>
+          {/* Bio courte */}
+          {profile.bio && (
+            <div className="profile-bio-section">
+              <p className="profile-bio-text">{profile.bio}</p>
+            </div>
           )}
 
+          {/* Compétences / Services */}
+          {(profile.skills && profile.skills.length > 0) || (profile.services && profile.services.length > 0) ? (
+            <div className="profile-skills-services-section">
+              {profile.skills && profile.skills.length > 0 && (
+                <div className="profile-skills-group">
+                  <h3 className="profile-section-title">Compétences</h3>
+                  <div className="profile-skills-tags">
+                    {profile.skills.map((skill, index) => (
+                      <span key={index} className="profile-skill-tag">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {profile.services && profile.services.length > 0 && (
+                <div className="profile-services-group">
+                  <h3 className="profile-section-title">Services</h3>
+                  <div className="profile-services-tags">
+                    {profile.services.map((service, index) => (
+                      <span key={index} className="profile-service-tag">
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {/* Informations supplémentaires (disponibilité, langues) */}
           <ProfileInfo
-            bio={profile.bio}
-            location={profile.location}
-            locationVisible={true}
+            bio={null}
+            location={null}
+            locationVisible={false}
             availability={profile.availability}
-            skills={profile.skills}
+            skills={[]}
             languages={profile.languages}
           />
         </div>

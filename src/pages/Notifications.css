@@ -39,6 +39,11 @@
   gap: 12px;
 }
 
+.notifications-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
 .notifications-header-actions {
   display: flex;
   align-items: center;

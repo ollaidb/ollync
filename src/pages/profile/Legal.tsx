@@ -1,10 +1,15 @@
 import { FileText, Shield, Lock, Scale } from 'lucide-react'
+import BackButton from '../../components/BackButton'
 import './Legal.css'
 
 const Legal = () => {
   return (
     <div className="legal-page">
-      <h2 className="legal-title">Pages légales</h2>
+      <div className="legal-page-header">
+        <BackButton />
+        <h2 className="legal-title">Pages légales</h2>
+        <div className="legal-header-spacer"></div>
+      </div>
 
       <div className="legal-section">
         <div className="legal-header">

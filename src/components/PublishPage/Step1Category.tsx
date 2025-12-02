@@ -22,13 +22,13 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
               style={{ '--category-color': category.color } as React.CSSProperties}
             >
               <div className="category-icon-wrapper">
-                <Icon size={24} />
+                <Icon size={20} />
               </div>
               <div className="category-content">
               <span className="category-name">{category.name}</span>
                 <span className="category-description">{category.description}</span>
               </div>
-              <ChevronRight size={20} className="category-arrow" />
+              <ChevronRight size={18} className="category-arrow" />
             </button>
           )
         })}

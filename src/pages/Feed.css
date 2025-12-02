@@ -26,11 +26,17 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
 }
 
 .feed-header-branding {
   flex: 1;
+}
+
+.feed-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .feed-title {

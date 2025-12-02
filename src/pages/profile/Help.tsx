@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Mail, MessageSquare, Book, FileText } from 'lucide-react'
+import BackButton from '../../components/BackButton'
 import './Help.css'
 
 interface FAQItem {
@@ -43,7 +44,11 @@ const Help = () => {
 
   return (
     <div className="help-page">
-      <h2 className="help-title">Centre d'aide</h2>
+      <div className="help-header">
+        <BackButton />
+        <h2 className="help-title">Centre d'aide</h2>
+        <div className="help-header-spacer"></div>
+      </div>
 
       <div className="help-section">
         <h3 className="help-section-title">

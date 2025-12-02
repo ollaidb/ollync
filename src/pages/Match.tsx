@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import SubMenuNavigation from '../components/SubMenuNavigation'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import { getDefaultSubMenus } from '../utils/defaultSubMenus'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -35,7 +36,7 @@ interface Post {
 }
 
 const Match = () => {
-  const { submenu } = useParams<{ submenu?: string }>()
+  const { submenu, subSubMenu } = useParams<{ submenu?: string; subSubMenu?: string }>()
   const [posts, setPosts] = useState<Post[]>([])
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +48,7 @@ const Match = () => {
     fetchSubMenus()
     fetchPosts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submenu])
+  }, [submenu, subSubMenu])
 
   const fetchSubMenus = async () => {
     const subMenusData = await fetchSubMenusForCategory('match')
@@ -137,6 +138,18 @@ const Match = () => {
       posts = posts.filter((post: any) => (post as any).media_type === mediaType)
     }
 
+    // Filtrer par sous-sous-menu si présent
+    if (subSubMenu) {
+      // Filtrer les posts en fonction du slug du sous-sous-menu
+      // On peut utiliser des tags, des métadonnées ou simplement filtrer par description/titre
+      posts = posts.filter((post) => {
+        const titleMatch = post.title?.toLowerCase().includes(subSubMenu.toLowerCase())
+        const descMatch = post.description?.toLowerCase().includes(subSubMenu.toLowerCase())
+        // Vous pouvez aussi ajouter un champ sub_sub_category_slug dans la table posts si nécessaire
+        return titleMatch || descMatch
+      })
+    }
+
     setPosts(posts)
     setFilteredPosts(posts)
     setLoading(false)
@@ -170,7 +183,9 @@ const Match = () => {
         {/* Header fixe */}
         <div className="category-header-fixed">
           <div className="category-header-content">
+            <BackButton />
             <h1 className="category-title">Match</h1>
+            <div className="category-header-spacer"></div>
           </div>
         </div>
 

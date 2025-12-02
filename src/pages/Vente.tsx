@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import SubMenuNavigation from '../components/SubMenuNavigation'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import { getDefaultSubMenus } from '../utils/defaultSubMenus'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -35,7 +36,7 @@ interface Post {
 }
 
 const Vente = () => {
-  const { submenu } = useParams<{ submenu?: string }>()
+  const { submenu, subSubMenu } = useParams<{ submenu?: string; subSubMenu?: string }>()
   const [posts, setPosts] = useState<Post[]>([])
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +48,7 @@ const Vente = () => {
     fetchSubMenus()
     fetchPosts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submenu])
+  }, [submenu, subSubMenu])
 
   const fetchSubMenus = async () => {
     const subMenusData = await fetchSubMenusForCategory('vente')
@@ -85,7 +86,7 @@ const Vente = () => {
       }
     }
 
-    const posts = await fetchPostsWithRelations({
+    let posts = await fetchPostsWithRelations({
       categoryId,
       subCategoryId,
       status: 'active',
@@ -93,6 +94,15 @@ const Vente = () => {
       orderBy: 'created_at',
       orderDirection: 'desc'
     })
+
+    // Filtrer par sous-sous-menu si présent
+    if (subSubMenu) {
+      posts = posts.filter((post) => {
+        const titleMatch = post.title?.toLowerCase().includes(subSubMenu.toLowerCase())
+        const descMatch = post.description?.toLowerCase().includes(subSubMenu.toLowerCase())
+        return titleMatch || descMatch
+      })
+    }
 
     setPosts(posts)
     setFilteredPosts(posts)
@@ -127,7 +137,9 @@ const Vente = () => {
         {/* Header fixe */}
         <div className="category-header-fixed">
           <div className="category-header-content">
+            <BackButton />
             <h1 className="category-title">Vente</h1>
+            <div className="category-header-spacer"></div>
           </div>
         </div>
 

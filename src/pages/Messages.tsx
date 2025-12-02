@@ -4,6 +4,7 @@ import { MessageCircle, Send, Loader, Search } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
+import BackButton from '../components/BackButton'
 import './Messages.css'
 
 interface Conversation {
@@ -209,7 +210,7 @@ const Messages = () => {
         .select('id, username, full_name, avatar_url')
         .in('id', senderIds)
 
-      const sendersMap = new Map((senders || []).map((s) => [s.id, s]))
+      const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((s) => [s.id, s]))
 
       setMessages((messagesData as Array<{ id: string; content: string; sender_id: string; created_at: string }>).map((msg) => ({
         ...msg,
@@ -256,8 +257,8 @@ const Messages = () => {
           .select('id, title')
           .in('id', postIds) : { data: null }
 
-        const usersMap = new Map((users || []).map((u) => [u.id, u]))
-        const postsMap = new Map((posts || []).map((p) => [p.id, (p as { title: string }).title]))
+        const usersMap = new Map((users as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((u) => [u.id, u]))
+        const postsMap = new Map((posts as Array<{ id: string; title: string }> || []).map((p) => [p.id, p.title]))
 
         // Pour chaque conversation, récupérer le dernier message et compter les non-lus
         const convsWithData = await Promise.all(
@@ -324,7 +325,7 @@ const Messages = () => {
       // Mettre à jour last_message_at de la conversation
       await supabase
         .from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
+        .update({ last_message_at: new Date().toISOString() } as never)
         .eq('id', selectedConversation.id)
 
       setMessage('')
@@ -353,7 +354,9 @@ const Messages = () => {
     return (
       <div className="messages-page-container">
         <div className="messages-header">
+          <BackButton />
           <h1 className="messages-title">Messages</h1>
+          <div className="messages-header-spacer"></div>
         </div>
         <div className="messages-content">
           <div className="empty-state">
@@ -456,7 +459,11 @@ const Messages = () => {
     <div className="messages-page-container">
       {/* Header */}
       <div className="messages-header">
-        <h1 className="messages-title">Messages</h1>
+        <div className="messages-header-title-row">
+          <BackButton />
+          <h1 className="messages-title">Messages</h1>
+          <div className="messages-header-spacer"></div>
+        </div>
         
         {/* Search Bar */}
         <div className="messages-search-bar">
@@ -485,7 +492,7 @@ const Messages = () => {
           </div>
         ) : (
           <div className="conversations-list">
-            {filteredConversations.map((conv, index) => (
+            {filteredConversations.map((conv) => (
               <div
                 key={conv.id}
                 className="conversation-item"

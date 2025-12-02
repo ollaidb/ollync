@@ -29,6 +29,12 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 12px;
+}
+
+.favorites-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .favorites-title {

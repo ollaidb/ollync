@@ -3,8 +3,9 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
-import PageHeader from '../components/PageHeader'
+import BackButton from '../components/BackButton'
 import PublicProfile from './profile/PublicProfile'
+import EditPublicProfile from './profile/EditPublicProfile'
 import Settings from './profile/Settings'
 import Security from './profile/Security'
 import Help from './profile/Help'
@@ -42,8 +43,10 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Si un ID est fourni, c'est un profil public d'un autre utilisateur
-  const isPublicProfile = !!id && id !== user?.id
+  // Si un ID est fourni dans /profile/public/:id, c'est un profil public d'un autre utilisateur
+  // Ou si un ID est fourni dans /profile/:id et que ce n'est pas l'utilisateur connecté
+  const isPublicProfileRoute = location.pathname.startsWith('/profile/public/')
+  const isPublicProfile = (isPublicProfileRoute && !!id) || (!!id && id !== user?.id)
   
   // Déterminer la section active basée sur l'URL
   const getCurrentSection = () => {
@@ -151,10 +154,14 @@ const Profile = () => {
   const renderContent = () => {
     // Si c'est un profil public, afficher directement le profil public
     if (isPublicProfile) {
-      return <PublicProfile userId={id} />
+      return <PublicProfile userId={id} isOwnProfile={id === user?.id} />
     }
 
     // Gérer les sous-pages
+    if (location.pathname === '/profile/edit') {
+      return <EditPublicProfile />
+    }
+
     if (location.pathname === '/profile/settings/personal-info') {
       return <PersonalInfo />
     }
@@ -198,7 +205,7 @@ const Profile = () => {
             </div>
           )
         }
-        return <PublicProfile userId={user.id} isOwnProfile={true} />
+        return <PublicProfile userId={user.id} isOwnProfile />
       case 'settings':
         return <Settings />
       case 'security':
@@ -372,7 +379,9 @@ const Profile = () => {
         {/* Header fixe */}
         <div className="profile-header-fixed">
           <div className="profile-header-content">
+            <BackButton />
             <h1 className="profile-title">Mon compte</h1>
+            <div className="profile-header-spacer"></div>
           </div>
         </div>
 

@@ -1,87 +1,100 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, ChevronRight } from 'lucide-react'
+import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import './Header.css'
+
+interface MenuCategory {
+  id: string
+  icon: React.ComponentType<{ size?: number }>
+  label: string
+  path: string
+  subMenus: Array<{ name: string; slug: string }>
+}
 
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
-
-  const menuCategories = [
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([
     { 
       id: 'match', 
       icon: Users, 
       label: 'Match', 
       path: '/match',
-      subMenus: [
-        { name: 'Création de contenu', slug: 'creation-contenu' },
-        { name: 'Sortie', slug: 'sortie' },
-        { name: 'Événement', slug: 'evenement' }
-      ]
+      subMenus: []
     },
     { 
       id: 'recrutement', 
       icon: Briefcase, 
       label: 'Recrutement', 
       path: '/recrutement',
-      subMenus: [
-        { name: 'Modèle', slug: 'modele' },
-        { name: 'Figurant', slug: 'figurant' }
-      ]
+      subMenus: []
     },
     { 
       id: 'projet', 
       icon: Briefcase, 
       label: 'Projet', 
       path: '/projet',
-      subMenus: [
-        { name: 'Associer / Collaboration', slug: 'associer-collaboration' }
-      ]
+      subMenus: []
     },
     { 
       id: 'service', 
       icon: Wrench, 
       label: 'Service', 
       path: '/service',
-      subMenus: [
-        { name: 'Échange de service', slug: 'echange-service' },
-        { name: 'Tâches', slug: 'taches' },
-        { name: 'Formation', slug: 'formation' }
-      ]
+      subMenus: []
     },
     { 
       id: 'vente', 
       icon: ShoppingBag, 
       label: 'Vente', 
       path: '/vente',
-      subMenus: [
-        { name: 'Échange', slug: 'echange' },
-        { name: 'Vente de compte', slug: 'vente-compte' },
-        { name: 'Gratuit', slug: 'gratuit' }
-      ]
+      subMenus: []
     },
     { 
       id: 'mission', 
       icon: Target, 
       label: 'Mission', 
       path: '/mission',
-      subMenus: [
-        { name: 'Colis', slug: 'colis' },
-        { name: 'Vérification', slug: 'verification' }
-      ]
+      subMenus: []
     },
     { 
       id: 'autre', 
       icon: MoreHorizontal, 
       label: 'Autre', 
       path: '/autre',
-      subMenus: [
-        { name: 'Non classé', slug: 'non-classe' },
-        { name: 'Autre service', slug: 'autre-service' }
-      ]
+      subMenus: []
     }
-  ]
+  ])
+
+  // Charger les sous-menus depuis la base de données
+  useEffect(() => {
+    const loadSubMenus = async () => {
+      const categoriesConfig = [
+        { id: 'match', icon: Users, label: 'Match', path: '/match' },
+        { id: 'recrutement', icon: Briefcase, label: 'Recrutement', path: '/recrutement' },
+        { id: 'projet', icon: Briefcase, label: 'Projet', path: '/projet' },
+        { id: 'service', icon: Wrench, label: 'Service', path: '/service' },
+        { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' },
+        { id: 'mission', icon: Target, label: 'Mission', path: '/mission' },
+        { id: 'autre', icon: MoreHorizontal, label: 'Autre', path: '/autre' }
+      ]
+
+      const updatedCategories = await Promise.all(
+        categoriesConfig.map(async (category) => {
+          const subMenus = await fetchSubMenusForCategory(category.id)
+          return {
+            ...category,
+            subMenus
+          }
+        })
+      )
+      setMenuCategories(updatedCategories)
+    }
+
+    loadSubMenus()
+  }, [])
 
   const isHomePage = location.pathname === '/' || location.pathname === '/home'
 
@@ -97,7 +110,7 @@ const Header = () => {
         </button>
         <button
           className="notification-btn"
-          onClick={() => navigate('/menu')}
+          onClick={() => navigate('/notifications')}
           aria-label="Notifications"
         >
           <Bell size={24} />

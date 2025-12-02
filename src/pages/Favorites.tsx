@@ -4,6 +4,7 @@ import { Heart, Loader, Search, User, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import { mapPosts } from '../utils/postMapper'
 import './Favorites.css'
 
@@ -296,7 +297,9 @@ const Favorites = () => {
       <div className="favorites-page">
         <div className="favorites-header-container">
           <div className="favorites-header">
+            <BackButton />
             <h1 className="favorites-title">Favoris</h1>
+            <div className="favorites-header-spacer"></div>
           </div>
         </div>
         <div className="favorites-content">
@@ -324,6 +327,7 @@ const Favorites = () => {
       <div className="favorites-header-container">
         <div className="favorites-header">
           <div className="favorites-header-content">
+            <BackButton />
             <div>
               <h1 className="favorites-title">Favoris</h1>
               <p className="favorites-subtitle">

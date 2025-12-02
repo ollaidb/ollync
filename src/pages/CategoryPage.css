@@ -26,7 +26,13 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .category-title {

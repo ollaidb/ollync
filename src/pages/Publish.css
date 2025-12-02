@@ -20,7 +20,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -33,7 +33,7 @@
 .publish-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 16px 20px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -502,7 +502,7 @@
   }
 
   .publish-content-wrapper {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
   }
 
   .publish-content {

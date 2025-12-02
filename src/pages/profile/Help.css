@@ -4,11 +4,24 @@
   margin: 0 auto;
 }
 
+.help-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
 .help-title {
   font-size: 28px;
   font-weight: 700;
   color: #333;
-  margin: 0 0 32px 0;
+  margin: 0;
+  flex: 1;
+}
+
+.help-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .help-section {

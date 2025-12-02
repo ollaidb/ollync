@@ -6,7 +6,6 @@ import Favorites from './pages/Favorites'
 import Publish from './pages/Publish'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
-import Menu from './pages/Menu'
 import Match from './pages/Match'
 import Recrutement from './pages/Recrutement'
 import Projet from './pages/Projet'
@@ -23,7 +22,6 @@ import './App.css'
 
 function AppContent() {
   const location = useLocation()
-  const isHomePage = location.pathname === '/' || location.pathname === '/home'
   const isAuthPage = location.pathname.startsWith('/auth/')
 
   return (
@@ -41,6 +39,8 @@ function AppContent() {
           <Route path="/messages/:id" element={<Messages />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/public" element={<Profile />} />
+          <Route path="/profile/public/:id" element={<Profile />} />
+          <Route path="/profile/edit" element={<Profile />} />
           <Route path="/profile/settings" element={<Profile />} />
           <Route path="/profile/settings/personal-info" element={<Profile />} />
           <Route path="/profile/settings/payment" element={<Profile />} />
@@ -52,21 +52,27 @@ function AppContent() {
           <Route path="/profile/help" element={<Profile />} />
           <Route path="/profile/legal" element={<Profile />} />
           <Route path="/profile/:id" element={<Profile />} />
-          <Route path="/menu" element={<Menu />} />
           <Route path="/match" element={<Match />} />
           <Route path="/match/:submenu" element={<Match />} />
+          <Route path="/match/:submenu/:subSubMenu" element={<Match />} />
           <Route path="/recrutement" element={<Recrutement />} />
           <Route path="/recrutement/:submenu" element={<Recrutement />} />
+          <Route path="/recrutement/:submenu/:subSubMenu" element={<Recrutement />} />
           <Route path="/projet" element={<Projet />} />
           <Route path="/projet/:submenu" element={<Projet />} />
+          <Route path="/projet/:submenu/:subSubMenu" element={<Projet />} />
           <Route path="/service" element={<Service />} />
           <Route path="/service/:submenu" element={<Service />} />
+          <Route path="/service/:submenu/:subSubMenu" element={<Service />} />
           <Route path="/vente" element={<Vente />} />
           <Route path="/vente/:submenu" element={<Vente />} />
+          <Route path="/vente/:submenu/:subSubMenu" element={<Vente />} />
           <Route path="/mission" element={<Mission />} />
           <Route path="/mission/:submenu" element={<Mission />} />
+          <Route path="/mission/:submenu/:subSubMenu" element={<Mission />} />
           <Route path="/autre" element={<Autre />} />
           <Route path="/autre/:submenu" element={<Autre />} />
+          <Route path="/autre/:submenu/:subSubMenu" element={<Autre />} />
           <Route path="/publier-annonce" element={<Publish />} />
           <Route path="/post/:id" element={<PostDetails />} />
           <Route path="/search" element={<Search />} />

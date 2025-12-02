@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share2, MessageCircle, MapPin, Check, X, ArrowLeft, Navigation } from 'lucide-react'
+import { Heart, Share2, MessageCircle, MapPin, Check, X, Navigation } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { formatRelativeDate } from '../utils/profileHelpers'
@@ -531,48 +532,30 @@ const PostDetails = () => {
 
   return (
     <div className="app">
-      <div className="post-details-page">
-        {/* Image principale en arrière-plan avec boutons flottants */}
-        {mainImage ? (
-          <div className="post-hero-image">
-            <img src={mainImage} alt={post.title} />
-            {/* Boutons flottants */}
-            <div className="post-hero-overlay">
-              {/* Bouton retour en haut à gauche */}
-              <button className="post-hero-btn post-hero-btn-back" onClick={() => navigate(-1)}>
-                <ArrowLeft size={24} />
-              </button>
-              {/* Boutons partage en haut à droite */}
-              <div className="post-hero-btn-group">
-                <button className="post-hero-btn" onClick={handleShare}>
-                  <Share2 size={20} />
-                </button>
-                <button className="post-hero-btn" onClick={handleLike}>
-                  <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
-                </button>
-              </div>
-              {/* Badge URGENT en bas à gauche */}
-              {post.is_urgent && (
-                <div className="post-urgent-badge">URGENT</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Barre de navigation fixe si pas d'image */
-          <div className="post-nav-bar">
-            <button className="post-nav-btn" onClick={() => navigate(-1)}>
-              <ArrowLeft size={24} />
-            </button>
-            <div className="post-nav-btn-group">
-              <button className="post-nav-btn" onClick={handleShare}>
+      <div className={`post-details-page ${mainImage ? 'has-hero-image' : ''}`}>
+        {/* Header fixe */}
+        <div className="post-details-header-fixed">
+          <div className="post-details-header-content">
+            <BackButton />
+            <div className="post-details-header-spacer"></div>
+            <div className="post-details-header-actions">
+              <button className="post-header-action-btn" onClick={handleShare}>
                 <Share2 size={20} />
               </button>
-              <button className="post-nav-btn" onClick={handleLike}>
+              <button className="post-header-action-btn" onClick={handleLike}>
                 <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Image principale (si disponible) */}
+        {mainImage && (
+          <div className="post-hero-image">
+            <img src={mainImage} alt={post.title} />
+            {/* Badge URGENT en bas à gauche */}
             {post.is_urgent && (
-              <div className="post-urgent-badge-inline">URGENT</div>
+              <div className="post-urgent-badge">URGENT</div>
             )}
           </div>
         )}
@@ -580,15 +563,12 @@ const PostDetails = () => {
         {/* Zone scrollable */}
         <div className="post-details-scrollable">
           <div className="post-details-content">
-            {/* Titre avec bouton cœur */}
+            {/* Titre */}
             <div className="post-title-section">
               <h1 className="post-title-main">{post.title}</h1>
-              <button
-                className={`post-like-btn ${liked ? 'active' : ''}`}
-                onClick={handleLike}
-              >
-                <Heart size={24} fill={liked ? 'currentColor' : 'none'} />
-              </button>
+              {post.is_urgent && !mainImage && (
+                <div className="post-urgent-badge-inline">URGENT</div>
+              )}
             </div>
 
             {/* Prix en grand */}
@@ -688,7 +668,7 @@ const PostDetails = () => {
             {post.user && (
               <div className="author-section">
                 <h3>À propos de l'auteur</h3>
-                <Link to={`/profile/${post.user.id}`} className="author-card">
+                <Link to={`/profile/public/${post.user.id}`} className="author-card">
                   {post.user.avatar_url && (
                     <img src={post.user.avatar_url} alt={post.user.full_name || ''} />
                   )}

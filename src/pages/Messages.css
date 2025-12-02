@@ -21,11 +21,32 @@
   padding-bottom: 16px;
 }
 
+.messages-header > *:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .messages-title {
   font-size: 28px;
   font-weight: 800;
   color: #111827;
-  margin: 0 0 16px 0;
+  margin: 0;
+  flex: 1;
+}
+
+.messages-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* Wrapper pour le titre et le bouton retour */
+.messages-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .messages-back-button {
