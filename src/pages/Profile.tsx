@@ -367,14 +367,23 @@ const Profile = () => {
   }
 
   return (
-    <div className="page">
-      <PageHeader title="Mon compte" />
-      <div className="page-content profile-page">
-        {loading && currentSection === 'menu' ? (
-          <div className="profile-loading">Chargement...</div>
-        ) : (
-          renderContent()
-        )}
+    <div className="app">
+      <div className="profile-page">
+        {/* Header fixe */}
+        <div className="profile-header-fixed">
+          <div className="profile-header-content">
+            <h1 className="profile-title">Mon compte</h1>
+          </div>
+        </div>
+
+        {/* Zone scrollable */}
+        <div className="profile-scrollable">
+          {loading && currentSection === 'menu' ? (
+            <div className="profile-loading">Chargement...</div>
+          ) : (
+            renderContent()
+          )}
+        </div>
       </div>
     </div>
   )

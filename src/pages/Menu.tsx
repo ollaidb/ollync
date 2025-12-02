@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Users, ShoppingBag, Wrench, Target, MoreHorizontal, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, ShoppingBag, Wrench, Target, MoreHorizontal, Briefcase, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import Footer from '../components/Footer'
 import './Menu.css'
@@ -107,6 +107,7 @@ const Menu = () => {
   const [searchParams] = useSearchParams()
   const categoryParam = searchParams.get('category')
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Si un paramètre de catégorie est présent dans l'URL, sélectionner automatiquement cette catégorie
   useEffect(() => {
@@ -130,46 +131,107 @@ const Menu = () => {
 
   const handleBackToCategories = () => {
     setSelectedCategory(null)
+    setSearchQuery('')
+  }
+
+  // Filtrer les catégories en fonction de la recherche
+  const filteredCategories = menuCategories.filter(category => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      category.label.toLowerCase().includes(query) ||
+      category.subMenus.some(subMenu => subMenu.name.toLowerCase().includes(query))
+    )
+  })
+
+  // Filtrer les sous-menus en fonction de la recherche
+  const filteredSubMenus = selectedCategory?.subMenus.filter(subMenu => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return subMenu.name.toLowerCase().includes(query)
+  }) || []
+
+  const clearSearch = () => {
+    setSearchQuery('')
   }
 
   // Si une catégorie est sélectionnée, afficher les sous-menus
   if (selectedCategory) {
     return (
-      <div className="page">
-        <PageHeader title={selectedCategory.label} />
-        <div className="page-content menu-page">
-          <div className="menu-container">
-            <button 
-              className="back-button"
-              onClick={handleBackToCategories}
-            >
-              <ChevronLeft size={20} />
-              <span>Retour aux catégories</span>
-            </button>
+      <div className="app">
+        <div className="menu-page">
+          {/* Header fixe */}
+          <div className="menu-header-fixed">
+            <div className="menu-header-content">
+              <button 
+                className="menu-back-button"
+                onClick={handleBackToCategories}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <h1 className="menu-title">{selectedCategory.label}</h1>
+              <div className="menu-header-spacer"></div>
+            </div>
+          </div>
+
+          {/* Zone scrollable */}
+          <div className="menu-scrollable">
+            <div className="menu-container">
+            {/* Barre de recherche pour les sous-menus */}
+            <div className="menu-search-wrapper">
+              <div className="menu-search-input">
+                <Search size={20} className="menu-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un sous-menu..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="menu-search-field"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="menu-search-clear"
+                    aria-label="Effacer la recherche"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            </div>
             
             <div className="submenu-list">
               <h3 className="submenu-title">Choisissez une option</h3>
-              {selectedCategory.subMenus.map((subMenu) => (
-                <button
-                  key={subMenu.slug}
-                  className="submenu-item"
-                  onClick={() => handleSubMenuClick(subMenu)}
-                  style={{ '--item-color': selectedCategory.color } as React.CSSProperties}
-                >
-                  <span className="submenu-name">{subMenu.name}</span>
-                  <ChevronRight size={20} className="submenu-arrow" />
-                </button>
-              ))}
-              
-              {/* Option pour accéder à la page principale de la catégorie */}
-              <button
-                className="submenu-item submenu-item-all"
-                onClick={() => navigate(selectedCategory.path)}
-                style={{ '--item-color': selectedCategory.color } as React.CSSProperties}
-              >
-                <span className="submenu-name">Voir tout</span>
-                <ChevronRight size={20} className="submenu-arrow" />
-              </button>
+              {filteredSubMenus.length > 0 ? (
+                <>
+                  {filteredSubMenus.map((subMenu) => (
+                    <button
+                      key={subMenu.slug}
+                      className="submenu-item"
+                      onClick={() => handleSubMenuClick(subMenu)}
+                      style={{ '--item-color': selectedCategory.color } as React.CSSProperties}
+                    >
+                      <span className="submenu-name">{subMenu.name}</span>
+                      <ChevronRight size={20} className="submenu-arrow" />
+                    </button>
+                  ))}
+                  
+                  {/* Option pour accéder à la page principale de la catégorie */}
+                  <button
+                    className="submenu-item submenu-item-all"
+                    onClick={() => navigate(selectedCategory.path)}
+                    style={{ '--item-color': selectedCategory.color } as React.CSSProperties}
+                  >
+                    <span className="submenu-name">Voir tout</span>
+                    <ChevronRight size={20} className="submenu-arrow" />
+                  </button>
+                </>
+              ) : (
+                <div className="menu-no-results">
+                  <p>Aucun résultat trouvé pour "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
             </div>
           </div>
         </div>
@@ -180,27 +242,65 @@ const Menu = () => {
 
   // Afficher les catégories principales
   return (
-    <div className="page">
-      <PageHeader title="Menu" />
-      <div className="page-content menu-page">
-        <div className="menu-container">
-          <div className="menu-grid">
-            {menuCategories.map((category) => {
-              const Icon = category.icon
-              return (
+    <div className="app">
+      <div className="menu-page">
+        {/* Header fixe */}
+        <div className="menu-header-fixed">
+          <div className="menu-header-content">
+            <h1 className="menu-title">Menu</h1>
+          </div>
+        </div>
+
+        {/* Zone scrollable */}
+        <div className="menu-scrollable">
+          <div className="menu-container">
+          {/* Barre de recherche pour les catégories */}
+          <div className="menu-search-wrapper">
+            <div className="menu-search-input">
+              <Search size={20} className="menu-search-icon" />
+              <input
+                type="text"
+                placeholder="Rechercher une catégorie..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="menu-search-field"
+              />
+              {searchQuery && (
                 <button
-                  key={category.id}
-                  className="menu-item"
-                  onClick={() => handleCategoryClick(category)}
-                  style={{ '--item-color': category.color } as React.CSSProperties}
+                  onClick={clearSearch}
+                  className="menu-search-clear"
+                  aria-label="Effacer la recherche"
                 >
-                  <div className="menu-icon-wrapper">
-                    <Icon size={32} />
-                  </div>
-                  <span className="menu-item-label">{category.label}</span>
+                  <X size={18} />
                 </button>
-              )
-            })}
+              )}
+            </div>
+          </div>
+
+          <div className="menu-grid">
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map((category) => {
+                const Icon = category.icon
+                return (
+                  <button
+                    key={category.id}
+                    className="menu-item"
+                    onClick={() => handleCategoryClick(category)}
+                    style={{ '--item-color': category.color } as React.CSSProperties}
+                  >
+                    <div className="menu-icon-wrapper">
+                      <Icon size={32} />
+                    </div>
+                    <span className="menu-item-label">{category.label}</span>
+                  </button>
+                )
+              })
+            ) : (
+              <div className="menu-no-results">
+                <p>Aucun résultat trouvé pour "{searchQuery}"</p>
+              </div>
+            )}
+          </div>
           </div>
         </div>
       </div>

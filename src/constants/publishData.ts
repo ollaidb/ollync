@@ -25,6 +25,7 @@ export interface PublicationType {
   slug: string
   icon: typeof Users
   color: string
+  description: string
   subcategories: Subcategory[]
 }
 
@@ -35,6 +36,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'match',
     icon: Users,
     color: '#667eea',
+    description: 'Connecter les gens selon leurs besoins',
     subcategories: [
       {
         id: 'tout',
@@ -84,6 +86,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'recrutement',
     icon: Briefcase,
     color: '#9c27b0',
+    description: 'Trouver des profils pour un projet',
     subcategories: [
       {
         id: 'tout',
@@ -113,6 +116,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'projet',
     icon: Briefcase,
     color: '#2196f3',
+    description: 'Collaborer, trouver des partenaires',
     subcategories: [
       {
         id: 'tout',
@@ -132,6 +136,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'service',
     icon: Wrench,
     color: '#4facfe',
+    description: 'Échange, aide, formations',
     subcategories: [
       {
         id: 'tout',
@@ -161,6 +166,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'vente',
     icon: ShoppingBag,
     color: '#f093fb',
+    description: 'Achat, échange ou don',
     subcategories: [
       {
         id: 'tout',
@@ -190,6 +196,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'mission',
     icon: Target,
     color: '#43e97b',
+    description: 'Livraisons, vérifications',
     subcategories: [
       {
         id: 'tout',
@@ -219,6 +226,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'autre',
     icon: MoreHorizontal,
     color: '#ffa726',
+    description: 'Catégories flexibles',
     subcategories: [
       {
         id: 'tout',

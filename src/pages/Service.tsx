@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import HeaderSimple from '../components/HeaderSimple'
 import SubMenuNavigation from '../components/SubMenuNavigation'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
@@ -37,7 +37,9 @@ interface Post {
 const Service = () => {
   const { submenu } = useParams<{ submenu?: string }>()
   const [posts, setPosts] = useState<Post[]>([])
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const defaultSubMenus = getDefaultSubMenus('service')
   const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>(defaultSubMenus)
 
@@ -97,32 +99,93 @@ const Service = () => {
     })
 
     setPosts(posts)
+    setFilteredPosts(posts)
     setLoading(false)
+  }
+
+  // Filtrer les posts en fonction de la recherche
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredPosts(posts)
+      return
+    }
+
+    const query = searchQuery.toLowerCase()
+    const filtered = posts.filter((post) => {
+      return (
+        post.title?.toLowerCase().includes(query) ||
+        post.description?.toLowerCase().includes(query) ||
+        post.location?.toLowerCase().includes(query)
+      )
+    })
+    setFilteredPosts(filtered)
+  }, [searchQuery, posts])
+
+  const clearSearch = () => {
+    setSearchQuery('')
   }
 
   return (
     <div className="app">
-      <HeaderSimple title="Service" />
-      <SubMenuNavigation category="service" subMenus={subMenus} />
-      <main className="main-content without-header category-page">
-        <div className="category-content">
+      <div className="category-page">
+        {/* Header fixe */}
+        <div className="category-header-fixed">
+          <div className="category-header-content">
+            <h1 className="category-title">Service</h1>
+          </div>
+        </div>
+
+        {/* Barre de recherche fixe */}
+        <div className="category-search-fixed">
+          <div className="category-search-wrapper">
+            <div className="category-search-input">
+              <Search size={20} className="category-search-icon" />
+              <input
+                type="text"
+                placeholder="Rechercher des annonces..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="category-search-field"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="category-search-clear"
+                  aria-label="Effacer la recherche"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* SubMenu Navigation fixe */}
+        <div className="category-submenu-fixed">
+          <SubMenuNavigation category="service" subMenus={subMenus} />
+        </div>
+
+        {/* Zone scrollable */}
+        <div className="category-scrollable">
+          <div className="category-content">
           {loading ? (
             <div className="loading-container">
               <p>Chargement...</p>
             </div>
-          ) : posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <div className="empty-state">
-              <p>Aucune annonce disponible</p>
+              <p>{searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucune annonce disponible'}</p>
             </div>
           ) : (
             <div className="posts-grid">
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <PostCard key={post.id} post={post} viewMode="grid" />
               ))}
             </div>
           )}
+          </div>
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   )

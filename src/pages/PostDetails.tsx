@@ -502,12 +502,18 @@ const PostDetails = () => {
   if (loading) {
     return (
       <div className="app">
-        <HeaderSimple title="Détails" />
-        <main className="main-content without-header">
-          <div className="loading-container">
-            <p>Chargement...</p>
+        <div className="post-details-page">
+          <div className="post-details-header-fixed">
+            <div className="post-details-header-content">
+              <h1 className="post-details-title">Détails</h1>
+            </div>
           </div>
-        </main>
+          <div className="post-details-scrollable">
+            <div className="loading-container">
+              <p>Chargement...</p>
+            </div>
+          </div>
+        </div>
         <Footer />
       </div>
     )
@@ -516,12 +522,18 @@ const PostDetails = () => {
   if (!post) {
     return (
       <div className="app">
-        <HeaderSimple title="Détails" />
-        <main className="main-content without-header">
-          <div className="empty-state">
-            <p>Annonce introuvable</p>
+        <div className="post-details-page">
+          <div className="post-details-header-fixed">
+            <div className="post-details-header-content">
+              <h1 className="post-details-title">Détails</h1>
+            </div>
           </div>
-        </main>
+          <div className="post-details-scrollable">
+            <div className="empty-state">
+              <p>Annonce introuvable</p>
+            </div>
+          </div>
+        </div>
         <Footer />
       </div>
     )
@@ -529,9 +541,17 @@ const PostDetails = () => {
 
   return (
     <div className="app">
-      <HeaderSimple title="Détails de l'annonce" />
-      <main className="main-content without-header">
-        <div className="post-details">
+      <div className="post-details-page">
+        {/* Header fixe */}
+        <div className="post-details-header-fixed">
+          <div className="post-details-header-content">
+            <h1 className="post-details-title">Détails de l'annonce</h1>
+          </div>
+        </div>
+
+        {/* Zone scrollable */}
+        <div className="post-details-scrollable">
+          <div className="post-details">
           {/* Carrousel d'images */}
           {images.length > 0 && (
             <div className="post-images">
@@ -740,7 +760,8 @@ const PostDetails = () => {
             </div>
           </div>
         )}
-      </main>
+        </div>
+      </div>
       <Footer />
     </div>
   )

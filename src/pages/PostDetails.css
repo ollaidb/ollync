@@ -1,7 +1,62 @@
+/* Page PostDetails - Structure principale */
+.post-details-page {
+  min-height: 100vh;
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Header fixe */
+.post-details-header-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: #FFFFFF;
+  border-bottom: none;
+}
+
+.post-details-header-content {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.post-details-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Zone scrollable */
+.post-details-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 66px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.post-details-scrollable::-webkit-scrollbar {
+  display: none;
+}
+
 .post-details {
   max-width: 1200px;
   margin: 0 auto;
   background: white;
+  padding: 0 20px;
 }
 
 .post-images {
@@ -452,6 +507,25 @@
 }
 
 @media (max-width: 768px) {
+  .post-details-header-content {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 12px;
+  }
+
+  .post-details-title {
+    font-size: 24px;
+  }
+
+  .post-details-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
+  }
+
+  .post-details {
+    padding: 0 16px;
+  }
+
   .post-title {
     font-size: 22px;
   }

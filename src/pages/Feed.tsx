@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Grid, List, Filter, Loader } from 'lucide-react'
-import HeaderSimple from '../components/HeaderSimple'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -73,10 +72,19 @@ const Feed = () => {
 
   return (
     <div className="app">
-      <HeaderSimple title="Toutes les annonces" />
-      <main className="main-content without-header">
-        <div className="feed-page">
-          <div className="feed-controls">
+      <div className="feed-page">
+        {/* Header fixe */}
+        <div className="feed-header-fixed">
+          <div className="feed-header-content">
+            <div className="feed-header-branding">
+              <h1 className="feed-title">Toutes les annonces</h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Contrôles fixes */}
+        <div className="feed-controls-fixed">
+          <div className="feed-controls-content">
             <div className="view-toggle">
               <button
                 className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -98,7 +106,10 @@ const Feed = () => {
               Filtres
             </button>
           </div>
+        </div>
 
+        {/* Zone scrollable */}
+        <div className="feed-scrollable">
           {loading && posts.length === 0 ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
@@ -135,7 +146,7 @@ const Feed = () => {
             </>
           )}
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   )

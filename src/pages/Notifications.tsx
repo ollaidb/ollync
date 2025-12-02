@@ -27,32 +27,26 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications()
-      subscribeToNotifications()
+    if (!user) {
+      setLoading(false)
+      return
     }
-  }, [user])
 
-  const fetchNotifications = async () => {
-    if (!user) return
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
 
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-
-    if (error) {
-      console.error('Error fetching notifications:', error)
-    } else {
-      setNotifications(data || [])
+      if (error) {
+        console.error('Error fetching notifications:', error)
+      } else {
+        setNotifications(data || [])
+      }
+      setLoading(false)
     }
-    setLoading(false)
-  }
-
-  const subscribeToNotifications = () => {
-    if (!user) return
 
     const channel = supabase
       .channel('notifications')
@@ -70,10 +64,12 @@ const Notifications = () => {
       )
       .subscribe()
 
+    fetchNotifications()
+
     return () => {
       supabase.removeChannel(channel)
     }
-  }
+  }, [user])
 
   const markAsRead = async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,28 +184,25 @@ const Notifications = () => {
 
   return (
     <div className="app">
-      <HeaderMinimal showNotifications={false} />
-      <main className="main-content without-header">
-        <div className="notifications-page">
-          <div className="notifications-header">
-            <h1>Notifications</h1>
-            <div className="notifications-header-actions">
-              {notifications.filter((n) => !n.read).length > 0 && (
-                <>
-                  <span className="unread-badge">
-                    {notifications.filter((n) => !n.read).length} non lue{notifications.filter((n) => !n.read).length > 1 ? 's' : ''}
-                  </span>
-                  <button 
-                    className="mark-all-read-btn"
-                    onClick={markAllAsRead}
-                    title="Tout marquer comme lu"
-                  >
-                    Tout marquer comme lu
-                  </button>
-                </>
-              )}
-            </div>
+      <div className="notifications-page">
+        {/* Header fixe */}
+        <div className="notifications-header-fixed">
+          <div className="notifications-header-content">
+            <h1 className="notifications-title">Notifications</h1>
+            {notifications.filter((n) => !n.read).length > 0 && (
+              <button 
+                className="mark-all-read-btn"
+                onClick={markAllAsRead}
+                title="Tout marquer comme lu"
+              >
+                Tout marquer comme lu
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Zone scrollable */}
+        <div className="notifications-scrollable">
 
           {loading ? (
             <div className="loading-container">
@@ -247,7 +240,7 @@ const Notifications = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
       <Footer />
     </div>
   )

@@ -1,62 +1,109 @@
 .step1-category {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.step-title {
-  font-size: 24px;
+.step-question {
+  font-size: 20px;
   font-weight: 700;
   color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.step-instruction {
+  font-size: 14px;
+  color: #6B7280;
   margin: 0 0 24px 0;
 }
 
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .category-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding: 24px 16px;
+  padding: 16px;
   border-radius: 12px;
-  border: 2px solid #E5E7EB;
+  border: 1px solid #E5E7EB;
   background-color: #FFFFFF;
   cursor: pointer;
   transition: all 0.2s;
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
 }
 
 .category-card:hover {
   border-color: var(--category-color, #6366F1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #F9FAFB;
 }
 
 .category-icon-wrapper {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background-color: var(--category-color, #6366F1);
-  background: linear-gradient(135deg, var(--category-color, #6366F1) 0%, rgba(99, 102, 241, 0.8) 100%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--category-color, #6366F1);
+  flex-shrink: 0;
+}
+
+.category-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
 }
 
 .category-name {
   font-size: 16px;
   font-weight: 600;
-  color: #374151;
-  text-align: center;
+  color: #111827;
+  text-align: left;
+}
+
+.category-description {
+  font-size: 14px;
+  color: #6B7280;
+  text-align: left;
+}
+
+.category-arrow {
+  color: #9CA3AF;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
-  .categories-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .step-question {
+    font-size: 18px;
+  }
+  
+  .step-instruction {
+    font-size: 13px;
+  }
+  
+  .category-card {
+    padding: 14px;
+  }
+  
+  .category-icon-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .category-name {
+    font-size: 15px;
+  }
+  
+  .category-description {
+    font-size: 13px;
   }
 }
 

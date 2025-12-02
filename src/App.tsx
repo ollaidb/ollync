@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Feed from './pages/Feed'
@@ -29,8 +28,7 @@ function AppContent() {
 
   return (
     <div className="app">
-      {isHomePage && <Header />}
-      <main className={`main-content ${isHomePage ? 'with-header' : 'without-header'}`}>
+      <main className={`main-content without-header`}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
