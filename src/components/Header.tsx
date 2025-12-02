@@ -107,14 +107,30 @@ const Header = () => {
 
       {/* Section 2: Barre de recherche */}
       <div className="header-section-2">
-        <div className="search-bar">
+        <div 
+          className="search-bar"
+          onClick={() => navigate('/search')}
+          style={{ cursor: 'pointer' }}
+        >
           <Search className="search-icon" size={20} />
           <input
             type="text"
             placeholder="Rechercher sur Ollync"
             className="search-input"
+            readOnly
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate('/search')
+            }}
           />
-          <button className="camera-btn" aria-label="Scanner">
+          <button 
+            className="camera-btn" 
+            aria-label="Scanner"
+            onClick={(e) => {
+              e.stopPropagation()
+              // Fonctionnalité du scanner à implémenter plus tard
+            }}
+          >
             <Camera size={20} />
           </button>
         </div>

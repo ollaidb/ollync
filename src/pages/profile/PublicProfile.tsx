@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Calendar, Star, Package } from 'lucide-react'
+import { Settings, Edit } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PostCard from '../../components/PostCard'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
+import { ProfileAvatar } from '../../components/ProfilePage/ProfileAvatar'
+import { ProfileBadges } from '../../components/ProfilePage/ProfileBadges'
+import { ProfileStats } from '../../components/ProfilePage/ProfileStats'
+import { ProfileInfo } from '../../components/ProfilePage/ProfileInfo'
+import { ProfileTabs } from '../../components/ProfilePage/ProfileTabs'
+import { EmptyState } from '../../components/ProfilePage/EmptyState'
+import { ReviewCard } from '../../components/ProfilePage/ReviewCard'
+import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import './PublicProfile.css'
 
 interface ProfileData {
@@ -15,6 +23,10 @@ interface ProfileData {
   bio: string | null
   location: string | null
   created_at: string
+  availability?: string | null
+  skills?: string[]
+  languages?: Array<{ name: string; level: string }>
+  badges?: string[]
 }
 
 interface Post {
@@ -51,6 +63,7 @@ interface Rating {
     full_name: string | null
     avatar_url: string | null
   } | null
+  mission_type?: string | null
 }
 
 const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOwnProfile?: boolean }) => {
@@ -58,13 +71,16 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const { user } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'posts' | 'reviews'>('posts')
+  const [activeTab, setActiveTab] = useState<'annonces' | 'match' | 'avis'>('annonces')
   const [posts, setPosts] = useState<Post[]>([])
+  const [matchPosts, setMatchPosts] = useState<Post[]>([])
   const [reviews, setReviews] = useState<Rating[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
 
   const profileId = userId || user?.id
 
@@ -72,16 +88,19 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     if (profileId) {
       fetchProfile()
       fetchFollowersCount()
+      fetchFollowingCount()
       if (!isOwnProfile && user) {
         checkFollowing()
       }
     }
-  }, [profileId, user])
+  }, [profileId, user, isOwnProfile])
 
   useEffect(() => {
-    if (profileId && activeTab === 'posts') {
+    if (profileId && activeTab === 'annonces') {
       fetchPosts()
-    } else if (profileId && activeTab === 'reviews') {
+    } else if (profileId && activeTab === 'match') {
+      fetchMatchPosts()
+    } else if (profileId && activeTab === 'avis') {
       fetchReviews()
     }
   }, [profileId, activeTab])
@@ -89,6 +108,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const fetchProfile = async () => {
     if (!profileId) return
 
+    setLoading(true)
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -96,13 +116,10 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       .single()
 
     if (error) {
-      // Si le profil n'existe pas (code PGRST116), créer le profil depuis auth.users
       if (error.code === 'PGRST116') {
         console.log('Profil non trouvé, tentative de création depuis auth.users...')
         
-        // Vérifier si c'est le profil de l'utilisateur connecté
         if (user && user.id === profileId) {
-          // Créer le profil avec les données de auth.users
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: newProfile, error: createError } = await (supabase.from('profiles') as any)
             .insert({
@@ -116,7 +133,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
           if (createError) {
             console.error('Error creating profile:', createError)
-            // Même en cas d'erreur, on peut afficher un profil minimal
             setProfile({
               id: user.id,
               username: user.user_metadata?.username || null,
@@ -131,9 +147,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             setLoading(false)
             return
           }
-        } else {
-          // Ce n'est pas le profil de l'utilisateur connecté, on ne peut pas le créer
-          console.warn('Profil introuvable et ce n\'est pas le profil de l\'utilisateur connecté')
         }
       } else {
         console.error('Error fetching profile:', error)
@@ -147,13 +160,26 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const fetchFollowersCount = async () => {
     if (!profileId) return
 
-    const { data, error } = await supabase
+    const { count } = await supabase
       .from('follows')
       .select('id', { count: 'exact', head: true })
       .eq('following_id', profileId)
 
-    if (!error && data !== null) {
-      setFollowersCount(data as unknown as number)
+    if (count !== null) {
+      setFollowersCount(count)
+    }
+  }
+
+  const fetchFollowingCount = async () => {
+    if (!profileId) return
+
+    const { count } = await supabase
+      .from('follows')
+      .select('id', { count: 'exact', head: true })
+      .eq('follower_id', profileId)
+
+    if (count !== null) {
+      setFollowingCount(count)
     }
   }
 
@@ -199,12 +225,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
   }
 
-
   const fetchPosts = async () => {
     if (!profileId) return
 
     setPostsLoading(true)
-    const posts = await fetchPostsWithRelations({
+    const fetchedPosts = await fetchPostsWithRelations({
       userId: profileId,
       status: 'active',
       limit: 50,
@@ -212,7 +237,35 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       orderDirection: 'desc'
     })
 
-    setPosts(posts)
+    // Filtrer les posts qui ne sont pas de type "match"
+    const nonMatchPosts = fetchedPosts.filter(post => {
+      const categorySlug = post.category?.slug
+      return categorySlug !== 'match'
+    })
+
+    setPosts(nonMatchPosts)
+    setPostsLoading(false)
+  }
+
+  const fetchMatchPosts = async () => {
+    if (!profileId) return
+
+    setPostsLoading(true)
+    const fetchedPosts = await fetchPostsWithRelations({
+      userId: profileId,
+      status: 'active',
+      limit: 50,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
+
+    // Filtrer uniquement les posts de type "match"
+    const matchPostsOnly = fetchedPosts.filter(post => {
+      const categorySlug = post.category?.slug
+      return categorySlug === 'match'
+    })
+
+    setMatchPosts(matchPostsOnly)
     setPostsLoading(false)
   }
 
@@ -231,10 +284,34 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
     if (error) {
       console.error('Error fetching reviews:', error)
+      setReviews([])
     } else {
-      setReviews(data || [])
+      // Transformer les données pour correspondre au format ReviewCard
+      const formattedReviews = (data || []).map((review: any) => ({
+        id: review.id,
+        reviewer_name: review.rater?.full_name || review.rater?.username || null,
+        reviewer_avatar: review.rater?.avatar_url || null,
+        rating: review.rating,
+        comment: review.comment,
+        mission_type: review.mission_type || null,
+        created_at: review.created_at
+      }))
+      setReviews(formattedReviews)
     }
     setReviewsLoading(false)
+  }
+
+  const handleLike = (postId: string) => {
+    console.log('Like post:', postId)
+    // La logique de like est gérée par PostCard
+  }
+
+  const handleEditProfile = () => {
+    navigate('/profile/settings')
+  }
+
+  const handleSettings = () => {
+    navigate('/profile/settings')
   }
 
   if (loading) {
@@ -259,58 +336,53 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     : 0
 
   return (
-    <div className="public-profile">
-      <div className="public-profile-header">
-        <div className="profile-avatar-wrapper">
-          <img
-            src={profile.avatar_url || '/default-avatar.png'}
-            alt={displayName}
-            className="profile-avatar"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
-            }}
+    <div className="public-profile-page">
+      {/* Header avec Settings */}
+      <div className="profile-header-bar">
+        <div style={{ flex: 1 }} />
+        <button
+          className="profile-settings-button"
+          onClick={handleSettings}
+          aria-label="Paramètres"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
+
+      <div className="public-profile-content-wrapper">
+        {/* Profil Header */}
+        <div className="public-profile-header">
+          <ProfileAvatar
+            avatar={profile.avatar_url}
+            fullName={profile.full_name}
+            username={profile.username}
+            onPress={() => setShowPhotoModal(true)}
           />
-        </div>
-        <div className="profile-info">
+
           <h1 className="profile-name">{displayName}</h1>
           {profile.username && (
             <p className="profile-username">@{profile.username}</p>
           )}
-          {profile.bio && (
-            <p className="profile-bio">{profile.bio}</p>
-          )}
-          <div className="profile-meta">
-            {profile.location && (
-              <div className="profile-meta-item">
-                <MapPin size={16} />
-                <span>{profile.location}</span>
-              </div>
-            )}
-            <div className="profile-meta-item">
-              <Calendar size={16} />
-              <span>Membre depuis {new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
-            </div>
-          </div>
-          <div className="profile-stats">
-            <div className="profile-stat">
-              <span className="stat-value">{followersCount}</span>
-              <span className="stat-label">Abonnés</span>
-            </div>
-            {reviews.length > 0 && (
-              <div className="profile-stat">
-                <span className="stat-value">
-                  {averageRating.toFixed(1)}
-                  <Star size={14} className="star-icon" />
-                </span>
-                <span className="stat-label">Note moyenne</span>
-              </div>
-            )}
-            <div className="profile-stat">
-              <span className="stat-value">{posts.length}</span>
-              <span className="stat-label">Annonces</span>
-            </div>
-          </div>
-          {!isOwnProfile && user && (
+
+          <ProfileBadges badges={profile.badges || []} />
+
+          <ProfileStats
+            postsCount={posts.length}
+            followersCount={followersCount}
+            followingCount={followingCount}
+            averageRating={averageRating}
+          />
+
+          {/* Bouton Éditer le profil ou Suivre */}
+          {isOwnProfile ? (
+            <button
+              className="edit-profile-button"
+              onClick={handleEditProfile}
+            >
+              <Edit size={18} />
+              <span>Éditer le profil</span>
+            </button>
+          ) : user && (
             <button
               className={`follow-button ${isFollowing ? 'following' : ''}`}
               onClick={handleFollow}
@@ -318,119 +390,101 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               {isFollowing ? 'Ne plus suivre' : 'Suivre'}
             </button>
           )}
-          {isOwnProfile && (
-            <button
-              className="edit-profile-button"
-              onClick={() => navigate('/profile/settings')}
-            >
-              Modifier le profil
-            </button>
+
+          <ProfileInfo
+            bio={profile.bio}
+            location={profile.location}
+            locationVisible={true}
+            availability={profile.availability}
+            skills={profile.skills}
+            languages={profile.languages}
+          />
+        </div>
+
+        <ProfileTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          postsCount={posts.length}
+          matchCount={matchPosts.length}
+          reviewsCount={reviews.length}
+        />
+
+        {/* Tab Content */}
+        <div className="profile-tab-content">
+          {/* Onglet Annonces */}
+          {activeTab === 'annonces' && (
+            <div>
+              {postsLoading ? (
+                <div className="loading-state">Chargement...</div>
+              ) : posts.length === 0 ? (
+                <EmptyState
+                  title="Aucune annonce"
+                  message="Vous n'avez pas encore publié d'annonce"
+                  icon="package"
+                />
+              ) : (
+                <div className="posts-list">
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Onglet Match */}
+          {activeTab === 'match' && (
+            <div>
+              {postsLoading ? (
+                <div className="loading-state">Chargement...</div>
+              ) : matchPosts.length === 0 ? (
+                <EmptyState
+                  title="Aucun match"
+                  message="Aucune annonce Match pour le moment"
+                  icon="users"
+                />
+              ) : (
+                <div className="posts-list">
+                  {matchPosts.map((post) => (
+                    <PostCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Onglet Avis */}
+          {activeTab === 'avis' && (
+            <div>
+              {reviewsLoading ? (
+                <div className="loading-state">Chargement...</div>
+              ) : reviews.length === 0 ? (
+                <EmptyState
+                  title="Aucun avis"
+                  message="Aucun avis pour le moment"
+                  icon="star"
+                />
+              ) : (
+                <div className="reviews-list">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      <div className="public-profile-tabs">
-        <button
-          className={`profile-tab ${activeTab === 'posts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('posts')}
-        >
-          <Package size={18} />
-          <span>{isOwnProfile ? 'Mes annonces' : 'Annonces'} ({posts.length})</span>
-        </button>
-        <button
-          className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
-          onClick={() => setActiveTab('reviews')}
-        >
-          <Star size={18} />
-          <span>Avis ({reviews.length})</span>
-        </button>
-      </div>
-
-      <div className="public-profile-content">
-        {activeTab === 'posts' && (
-          <div className="profile-posts">
-            {postsLoading ? (
-              <div className="loading-state">Chargement...</div>
-            ) : posts.length === 0 ? (
-              <div className="empty-state">
-                <Package size={48} />
-                <p>Aucune annonce pour le moment</p>
-              </div>
-            ) : (
-              <div className="posts-grid">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'reviews' && (
-          <div className="profile-reviews">
-            {reviewsLoading ? (
-              <div className="loading-state">Chargement...</div>
-            ) : reviews.length === 0 ? (
-              <div className="empty-state">
-                <Star size={48} />
-                <p>Aucun avis pour le moment</p>
-              </div>
-            ) : (
-              <div className="reviews-list">
-                {reviews.map((review) => (
-                  <div key={review.id} className="review-card">
-                    <div className="review-header">
-                      <div className="review-author">
-                        {review.rater?.avatar_url ? (
-                          <img
-                            src={review.rater.avatar_url}
-                            alt={review.rater.full_name || review.rater.username || 'Utilisateur'}
-                            className="review-avatar"
-                          />
-                        ) : (
-                          <div className="review-avatar-placeholder">
-                            {(review.rater?.full_name || review.rater?.username || 'U')[0].toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <p className="review-author-name">
-                            {review.rater?.full_name || review.rater?.username || 'Utilisateur anonyme'}
-                          </p>
-                          <p className="review-date">
-                            {new Date(review.created_at).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="review-rating">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={20}
-                            className={i < review.rating ? 'filled' : 'empty'}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    {review.comment && (
-                      <p className="review-comment">{review.comment}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <PhotoModal
+        visible={showPhotoModal}
+        avatar={profile.avatar_url}
+        fullName={profile.full_name}
+        username={profile.username}
+        onClose={() => setShowPhotoModal(false)}
+      />
     </div>
   )
 }
 
 export default PublicProfile
-

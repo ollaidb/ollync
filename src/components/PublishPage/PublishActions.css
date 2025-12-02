@@ -1,0 +1,48 @@
+.publish-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #FFFFFF;
+  border-top: 1px solid #F3F4F6;
+  padding: 16px 20px;
+  z-index: 100;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.publish-actions-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+}
+
+.publish-action-button {
+  flex: 1;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.publish-action-button.primary {
+  background-color: #6366F1;
+  color: #FFFFFF;
+}
+
+.publish-action-button.primary:hover {
+  background-color: #4F46E5;
+}
+
+.publish-action-button.secondary {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.publish-action-button.secondary:hover {
+  background-color: #E5E7EB;
+}
+

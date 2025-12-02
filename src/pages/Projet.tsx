@@ -34,6 +34,14 @@ interface Post {
   } | null
 }
 
+interface Category {
+  id: string
+}
+
+interface SubCategory {
+  id: string
+}
+
 const Projet = () => {
   const { submenu } = useParams<{ submenu?: string }>()
   const [posts, setPosts] = useState<Post[]>([])
@@ -61,13 +69,12 @@ const Projet = () => {
       .eq('slug', 'projet')
       .single()
 
-    if (!category || !(category as any).id) {
+    if (!category || !(category as Category).id) {
       setLoading(false)
       return
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const categoryId = (category as any).id
+    const categoryId = (category as Category).id
 
     let subCategoryId: string | undefined
 
@@ -79,10 +86,8 @@ const Projet = () => {
         .eq('category_id', categoryId)
         .single()
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (subCategory && (subCategory as any).id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        subCategoryId = (subCategory as any).id
+      if (subCategory && (subCategory as SubCategory).id) {
+        subCategoryId = (subCategory as SubCategory).id
       }
     }
 

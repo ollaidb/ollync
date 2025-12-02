@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Loader } from 'lucide-react'
+import { Heart, Loader, Search, User, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
-import PageHeader from '../components/PageHeader'
-import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { mapPosts } from '../utils/postMapper'
-import './Page.css'
 import './Favorites.css'
 
 interface Post {
@@ -34,17 +31,30 @@ interface Post {
   } | null
 }
 
+interface FollowedProfile {
+  id: string
+  username?: string | null
+  full_name?: string | null
+  avatar_url?: string | null
+  bio?: string | null
+  postsCount?: number
+  followers?: number
+}
+
 const Favorites = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [posts, setPosts] = useState<Post[]>([])
+  const [activeTab, setActiveTab] = useState<'posts' | 'profiles'>('posts')
+  const [favoritePosts, setFavoritePosts] = useState<Post[]>([])
+  const [followedProfiles, setFollowedProfiles] = useState<FollowedProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const [networkError, setNetworkError] = useState(false)
 
   const fetchLikedPosts = useCallback(async () => {
     if (!user) return
 
-    setLoading(true)
     try {
+      setNetworkError(false)
       // Récupérer les IDs des posts likés
       const { data: likes, error: likesError } = await supabase
         .from('likes')
@@ -54,13 +64,18 @@ const Favorites = () => {
 
       if (likesError) {
         console.error('Error fetching likes:', likesError)
-        setLoading(false)
+        // Vérifier si c'est une erreur réseau
+        if (likesError.message?.includes('Failed to fetch') || 
+            likesError.message?.includes('NetworkError') ||
+            likesError.message?.includes('network') ||
+            likesError.message?.includes('ERR_')) {
+          setNetworkError(true)
+        }
         return
       }
 
       if (!likes || likes.length === 0) {
-        setPosts([])
-        setLoading(false)
+        setFavoritePosts([])
         return
       }
 
@@ -77,7 +92,13 @@ const Favorites = () => {
 
       if (postsError) {
         console.error('Error fetching posts:', postsError)
-        setLoading(false)
+        // Vérifier si c'est une erreur réseau
+        if (postsError.message?.includes('Failed to fetch') || 
+            postsError.message?.includes('NetworkError') ||
+            postsError.message?.includes('network') ||
+            postsError.message?.includes('ERR_')) {
+          setNetworkError(true)
+        }
         return
       }
 
@@ -110,24 +131,129 @@ const Favorites = () => {
           categories: categoriesMap.get(post.category_id) || null
         }))
 
-        setPosts(mapPosts(postsWithRelations))
+        setFavoritePosts(mapPosts(postsWithRelations))
       } else {
-        setPosts([])
+        setFavoritePosts([])
       }
     } catch (error) {
       console.error('Error fetching liked posts:', error)
-    } finally {
-      setLoading(false)
+      // Gérer les erreurs réseau
+      if (error instanceof Error && 
+          (error.message.includes('Failed to fetch') || 
+           error.message.includes('NetworkError') ||
+           error.message.includes('network') ||
+           error.message.includes('ERR_'))) {
+        setNetworkError(true)
+      }
     }
   }, [user])
 
+  const fetchFollowedProfiles = useCallback(async () => {
+    if (!user) return
+
+    try {
+      setNetworkError(false)
+      // Récupérer les profils suivis
+      const { data: follows, error: followsError } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id)
+
+      if (followsError) {
+        console.error('Error fetching follows:', followsError)
+        // Vérifier si c'est une erreur réseau
+        if (followsError.message?.includes('Failed to fetch') || 
+            followsError.message?.includes('NetworkError') ||
+            followsError.message?.includes('network') ||
+            followsError.message?.includes('ERR_')) {
+          setNetworkError(true)
+        }
+        return
+      }
+
+      if (!follows || follows.length === 0) {
+        setFollowedProfiles([])
+        return
+      }
+
+      const followingIds = follows.map((f: { following_id: string }) => f.following_id)
+
+      // Récupérer les profils
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, bio')
+        .in('id', followingIds)
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError)
+        return
+      }
+
+      if (profiles && profiles.length > 0) {
+        // Pour chaque profil, récupérer le nombre de posts et de followers
+        const profilesWithCounts = await Promise.all(
+          profiles.map(async (profile: { id: string; username: string | null; full_name: string | null; avatar_url: string | null; bio: string | null }) => {
+            // Compter les posts
+            const { count: postsCount } = await supabase
+              .from('posts')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', profile.id)
+              .eq('status', 'active')
+
+            // Compter les followers
+            const { count: followersCount } = await supabase
+              .from('follows')
+              .select('id', { count: 'exact', head: true })
+              .eq('following_id', profile.id)
+
+            return {
+              id: profile.id,
+              username: profile.username,
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url,
+              bio: profile.bio,
+              postsCount: postsCount || 0,
+              followers: followersCount || 0
+            }
+          })
+        )
+
+        setFollowedProfiles(profilesWithCounts)
+      } else {
+        setFollowedProfiles([])
+      }
+    } catch (error) {
+      console.error('Error fetching followed profiles:', error)
+      // Gérer les erreurs réseau
+      if (error instanceof Error && 
+          (error.message.includes('Failed to fetch') || 
+           error.message.includes('NetworkError') ||
+           error.message.includes('network') ||
+           error.message.includes('ERR_'))) {
+        setNetworkError(true)
+      }
+    }
+  }, [user])
+
+  const loadFavorites = useCallback(async () => {
+    setLoading(true)
+    try {
+      await Promise.all([
+        fetchLikedPosts(),
+        fetchFollowedProfiles()
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchLikedPosts, fetchFollowedProfiles])
+
   useEffect(() => {
     if (user) {
-      fetchLikedPosts()
+      loadFavorites()
     } else {
       setLoading(false)
     }
-  }, [user, fetchLikedPosts])
+  }, [user, loadFavorites])
 
   // Écouter les changements de likes depuis d'autres pages
   useEffect(() => {
@@ -143,70 +269,210 @@ const Favorites = () => {
     }
   }, [user, fetchLikedPosts])
 
+  const handleUnfollow = async (profileId: string) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', profileId)
+
+      if (error) {
+        console.error('Error unfollowing profile:', error)
+        alert('Erreur lors de la suppression du suivi')
+      } else {
+        setFollowedProfiles(followedProfiles.filter((profile) => profile.id !== profileId))
+      }
+    } catch (error) {
+      console.error('Error unfollowing profile:', error)
+      alert('Erreur lors de la suppression du suivi')
+    }
+  }
+
   if (!user) {
     return (
-      <div className="page">
-        <PageHeader title="Mes Favoris" />
-        <div className="page-content">
-          <div className="page-body">
-            <div className="empty-state">
-              <Heart size={48} />
-              <h2>Vous n'êtes pas connecté</h2>
-              <p>Connectez-vous pour voir vos annonces likées</p>
-              <button 
-                className="btn-primary" 
-                onClick={() => navigate('/auth/login')}
-              >
-                Se connecter
-              </button>
-            </div>
+      <div className="favorites-page">
+        <div className="favorites-header-container">
+          <div className="favorites-header">
+            <h1 className="favorites-title">Favoris</h1>
           </div>
         </div>
-        <Footer />
+        <div className="favorites-content">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Heart size={48} />
+            </div>
+            <h2>Vous n'êtes pas connecté</h2>
+            <p>Connectez-vous pour voir vos favoris</p>
+            <button 
+              className="btn-primary" 
+              onClick={() => navigate('/auth/login')}
+            >
+              Se connecter
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="page">
-      <PageHeader title="Mes Favoris" />
-      <div className="page-content">
-        <div className="page-body favorites-page">
-          {loading ? (
-            <div className="loading-container">
-              <Loader className="spinner-large" size={48} />
-              <p>Chargement de vos favoris...</p>
+    <div className="favorites-page">
+      {/* Header */}
+      <div className="favorites-header-container">
+        <div className="favorites-header">
+          <div className="favorites-header-content">
+            <div>
+              <h1 className="favorites-title">Favoris</h1>
+              <p className="favorites-subtitle">
+                {activeTab === 'posts'
+                  ? `${favoritePosts.length} publication${favoritePosts.length > 1 ? 's' : ''}`
+                  : `${followedProfiles.length} profil${followedProfiles.length > 1 ? 's' : ''}`}
+              </p>
             </div>
-          ) : posts.length === 0 ? (
-            <div className="empty-state">
-              <Heart size={48} />
-              <h2>Aucun favori</h2>
-              <p>Vous n'avez pas encore liké d'annonces.</p>
-              <button 
-                className="btn-primary" 
-                onClick={() => navigate('/home')}
-              >
-                Découvrir des annonces
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="favorites-header">
-                <h2>{posts.length} annonce{posts.length > 1 ? 's' : ''} likée{posts.length > 1 ? 's' : ''}</h2>
-              </div>
-              <div className="posts-grid">
-                {posts.map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" isLiked={true} onLike={fetchLikedPosts} />
-                ))}
-              </div>
-            </>
-          )}
+            <button
+              className="search-button"
+              onClick={() => navigate('/search')}
+              aria-label="Rechercher"
+            >
+              <Search size={20} />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="favorites-tabs">
+            <button
+              className={`favorites-tab ${activeTab === 'posts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('posts')}
+            >
+              Publications
+            </button>
+            <button
+              className={`favorites-tab ${activeTab === 'profiles' ? 'active' : ''}`}
+              onClick={() => setActiveTab('profiles')}
+            >
+              Profils suivis
+            </button>
+          </div>
         </div>
       </div>
-      <Footer />
+
+      {/* Content */}
+      <div className="favorites-content">
+        {loading ? (
+          <div className="loading-container">
+            <Loader className="spinner-large" size={48} />
+            <p>Chargement...</p>
+          </div>
+         ) : networkError ? (
+           <div className="empty-state">
+             <div className="empty-state-icon empty-state-icon-network">
+               <WifiOff size={48} />
+             </div>
+             <h2>Problème de connexion</h2>
+             <p>Vérifiez votre connexion Internet et réessayez.</p>
+             <button 
+               className="btn-primary" 
+               onClick={() => {
+                 setNetworkError(false)
+                 setLoading(true)
+                 loadFavorites()
+               }}
+             >
+               Réessayer
+             </button>
+           </div>
+        ) : (
+          <>
+            {/* Publications Tab */}
+            {activeTab === 'posts' && (
+              <>
+                {favoritePosts.length > 0 ? (
+                  <div className="posts-grid">
+                    {favoritePosts.map((post) => (
+                      <PostCard 
+                        key={post.id} 
+                        post={post} 
+                        viewMode="grid" 
+                        isLiked={true} 
+                        onLike={fetchLikedPosts} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-state-icon empty-state-icon-posts">
+                      <Heart size={36} />
+                    </div>
+                    <h2>Aucune publication</h2>
+                    <p>Les publications que vous aimez apparaîtront ici</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Profils Tab */}
+            {activeTab === 'profiles' && (
+              <>
+                {followedProfiles.length > 0 ? (
+                  <div className="profiles-list">
+                    {followedProfiles.map((profile) => (
+                      <div
+                        key={profile.id}
+                        className="profile-card"
+                        onClick={() => navigate(`/profile/${profile.id}`)}
+                      >
+                        <img
+                          src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name || profile.username || 'User')}`}
+                          alt={profile.full_name || profile.username || 'User'}
+                          className="profile-avatar"
+                        />
+                        <div className="profile-info">
+                          <h3 className="profile-name">
+                            {profile.full_name || profile.username || 'Utilisateur'}
+                          </h3>
+                          {profile.bio && (
+                            <p className="profile-bio">{profile.bio}</p>
+                          )}
+                          <div className="profile-stats">
+                            <span className="profile-stat">
+                              {profile.postsCount || 0} annonces
+                            </span>
+                            <span className="profile-stat">
+                              {profile.followers || 0} abonnés
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          className="unfollow-button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleUnfollow(profile.id)
+                          }}
+                        >
+                          Suivi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-state-icon empty-state-icon-profiles">
+                      <User size={36} />
+                    </div>
+                    <h2>Aucun profil suivi</h2>
+                    <p>Les profils que vous suivez apparaîtront ici</p>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
 
 export default Favorites
-

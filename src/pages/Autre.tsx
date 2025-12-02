@@ -61,13 +61,16 @@ const Autre = () => {
       .eq('slug', 'autre')
       .single()
 
-    if (!category || !(category as any).id) {
+    interface CategoryWithId {
+      id: string
+    }
+
+    if (!category || !('id' in category)) {
       setLoading(false)
       return
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const categoryId = (category as any).id
+    const categoryId = (category as CategoryWithId).id
 
     let subCategoryId: string | undefined
 

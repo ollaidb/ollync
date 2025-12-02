@@ -1,0 +1,195 @@
+import { supabase } from '../lib/supabaseClient'
+
+interface FormData {
+  category: string | null
+  subcategory: string | null
+  option: string | null
+  platform: string | null
+  title: string
+  description: string
+  shortDescription: string
+  price: string
+  location: string
+  location_city: string
+  location_lat: number | null
+  location_lng: number | null
+  location_address: string
+  location_visible_to_participants_only: boolean
+  exchange_type: string
+  urgent: boolean
+  images: string[]
+  video: string | null
+  dateFrom: string
+  dateTo: string
+  deadline: string
+  maxParticipants: string
+  duration_minutes: string
+  visibility: string
+  [key: string]: any
+}
+
+export const getMyLocation = async (
+  formData: FormData,
+  setFormData: (updates: Partial<FormData>) => void
+) => {
+  if (!navigator.geolocation) {
+    alert('La géolocalisation n\'est pas supportée par votre navigateur')
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords
+      
+      try {
+        // Optionnel: utiliser une API de géocodage inverse pour obtenir l'adresse
+        const response = await fetch(
+          `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`
+        )
+        
+        // Pour l'instant, on stocke juste les coordonnées
+        setFormData({
+          location_lat: latitude,
+          location_lng: longitude,
+          location: `${latitude}, ${longitude}`
+        })
+      } catch (error) {
+        console.error('Error getting location:', error)
+        setFormData({
+          location_lat: latitude,
+          location_lng: longitude,
+          location: `${latitude}, ${longitude}`
+        })
+      }
+    },
+    (error) => {
+      console.error('Error getting location:', error)
+      alert('Impossible d\'obtenir votre localisation')
+    }
+  )
+}
+
+export const handlePublish = async (
+  formData: FormData,
+  navigate: (path: string) => void,
+  status: 'draft' | 'active'
+) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    const confirm = window.confirm('Vous devez être connecté pour publier. Voulez-vous vous connecter ?')
+    if (confirm) {
+      navigate('/auth/login')
+    }
+    return
+  }
+
+  // Vérifier que le profil existe
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      alert('Votre profil n\'existe pas. Veuillez contacter le support.')
+      return
+    }
+  } catch (error) {
+    console.error('Error checking profile:', error)
+    alert('Erreur lors de la vérification de votre profil.')
+    return
+  }
+
+  // Validation
+  if (!formData.category || !formData.title || !formData.description) {
+    alert('Veuillez remplir tous les champs obligatoires')
+    return
+  }
+
+  // Récupérer les IDs de catégorie et sous-catégorie depuis la base de données
+  let categoryId: string | null = null
+  let subCategoryId: string | null = null
+
+  try {
+    // Récupérer la catégorie
+    const { data: categoryData } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('slug', formData.category)
+      .single()
+
+    if (categoryData) {
+      categoryId = categoryData.id
+
+      // Récupérer la sous-catégorie si elle existe
+      if (formData.subcategory && formData.subcategory !== 'tout') {
+        const { data: subCategoryData } = await supabase
+          .from('sub_categories')
+          .select('id')
+          .eq('category_id', categoryId)
+          .eq('slug', formData.subcategory)
+          .single()
+
+        if (subCategoryData) {
+          subCategoryId = subCategoryData.id
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching category/subcategory:', error)
+  }
+
+  if (!categoryId) {
+    alert('Erreur: Catégorie introuvable')
+    return
+  }
+
+  // Préparer les données du post
+  const postData: any = {
+    user_id: user.id,
+    category_id: categoryId,
+    sub_category_id: subCategoryId,
+    title: formData.title.trim(),
+    description: formData.description.trim(),
+    price: formData.price ? parseFloat(formData.price) : null,
+    location: formData.location || null,
+    images: formData.images.length > 0 ? formData.images : null,
+    is_urgent: formData.urgent || false,
+    status: status,
+    payment_type: formData.exchange_type || null,
+    media_type: formData.option || null,
+    needed_date: formData.deadline || null,
+    number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null
+  }
+
+  // Nettoyer les valeurs null/undefined
+  Object.keys(postData).forEach(key => {
+    if (postData[key] === undefined || postData[key] === '') {
+      delete postData[key]
+    }
+  })
+
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .insert(postData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error publishing post:', error)
+      throw error
+    }
+
+    if (data) {
+      alert(status === 'draft' ? 'Brouillon enregistré avec succès !' : 'Annonce publiée avec succès !')
+      navigate(`/post/${data.id}`)
+    }
+  } catch (error: any) {
+    console.error('Error publishing post:', error)
+    alert(`Erreur lors de la publication: ${error.message || 'Erreur inconnue'}`)
+  }
+}
+

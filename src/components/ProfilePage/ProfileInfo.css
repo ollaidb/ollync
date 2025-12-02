@@ -1,0 +1,91 @@
+.profile-info-container {
+  text-align: left;
+}
+
+.profile-info-section {
+  margin-bottom: 24px;
+}
+
+.profile-bio-text {
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.profile-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.profile-info-item svg {
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+
+.profile-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.profile-info-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.profile-info-header svg {
+  color: #6366F1;
+}
+
+.profile-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-skill-tag {
+  padding: 6px 12px;
+  border-radius: 16px;
+  background-color: #EEF2FF;
+  color: #6366F1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profile-languages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-language-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.profile-language-item:last-child {
+  border-bottom: none;
+}
+
+.language-name {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.language-level {
+  font-size: 13px;
+  color: #6B7280;
+}
+

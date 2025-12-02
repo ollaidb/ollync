@@ -1,0 +1,41 @@
+.step3-platform {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.step-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 24px 0;
+}
+
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.platform-card {
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #E5E7EB;
+  background-color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.platform-card:hover {
+  border-color: #6366F1;
+  background-color: #F9FAFB;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.platform-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+

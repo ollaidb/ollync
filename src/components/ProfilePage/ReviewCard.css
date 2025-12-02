@@ -1,0 +1,81 @@
+.review-card-container {
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s;
+}
+
+.review-card-container:hover {
+  border-color: #D1D5DB;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.review-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.review-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.review-author-info {
+  flex: 1;
+}
+
+.review-author-name {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+  font-size: 15px;
+}
+
+.review-date {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin: 0 0 4px 0;
+}
+
+.review-mission-type {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0;
+  font-style: italic;
+}
+
+.review-rating {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.review-rating svg {
+  color: #D1D5DB;
+}
+
+.review-rating svg.filled {
+  color: #F59E0B;
+  fill: #F59E0B;
+}
+
+.review-comment {
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 14px;
+}
+

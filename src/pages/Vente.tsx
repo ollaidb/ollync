@@ -61,13 +61,12 @@ const Vente = () => {
       .eq('slug', 'vente')
       .single()
 
-    if (!category || !(category as any).id) {
+    if (!category) {
       setLoading(false)
       return
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const categoryId = (category as any).id
+    const categoryId = (category as { id: string }).id
 
     let subCategoryId: string | undefined
 
@@ -79,10 +78,8 @@ const Vente = () => {
         .eq('category_id', categoryId)
         .single()
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (subCategory && (subCategory as any).id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        subCategoryId = (subCategory as any).id
+      if (subCategory) {
+        subCategoryId = (subCategory as { id: string }).id
       }
     }
 
