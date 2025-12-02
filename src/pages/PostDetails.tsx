@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share2, MessageCircle, MapPin, Calendar, Users, Edit, Trash2, Archive, Check, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, Share2, MessageCircle, MapPin, Check, X, ArrowLeft, Navigation } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import HeaderSimple from '../components/HeaderSimple'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { formatRelativeDate } from '../utils/profileHelpers'
 import './PostDetails.css'
 
 interface Post {
@@ -15,6 +15,9 @@ interface Post {
   description: string
   price?: number | null
   location?: string | null
+  location_lat?: number | null
+  location_lng?: number | null
+  location_address?: string | null
   images?: string[] | null
   likes_count: number
   comments_count: number
@@ -22,6 +25,7 @@ interface Post {
   needed_date?: string | null
   number_of_people?: number | null
   delivery_available: boolean
+  is_urgent?: boolean
   status: string
   user_id: string
   user?: {
@@ -62,7 +66,6 @@ const PostDetails = () => {
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
@@ -371,13 +374,28 @@ const PostDetails = () => {
     }
   }
 
-  const handleRespond = () => {
+  const handleMessage = () => {
     if (!user) {
       navigate('/auth/login')
       return
     }
-    // Créer une conversation et rediriger vers les messages
     navigate(`/messages/new?post=${id}`)
+  }
+
+  const handleApply = () => {
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+    // Action principale pour candidater/répondre
+    navigate(`/messages/new?post=${id}`)
+  }
+
+  const handleOpenNavigation = () => {
+    if (post?.location_lat && post?.location_lng) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${post.location_lat},${post.location_lng}`
+      window.open(url, '_blank')
+    }
   }
 
   const handleDelete = async () => {
@@ -393,26 +411,6 @@ const PostDetails = () => {
     }
   }
 
-  const handleEdit = () => {
-    navigate(`/publier-annonce?edit=${id}`)
-  }
-
-  const handleArchive = async () => {
-    if (!id || !user || post?.user_id !== user.id) return
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('posts') as any)
-        .update({ status: 'archived' })
-        .eq('id', id)
-
-      if (error) throw error
-      navigate('/home')
-    } catch (error) {
-      console.error('Error archiving post:', error)
-      alert('Erreur lors de l\'archivage')
-    }
-  }
 
   const handleAcceptApplication = async (applicationId: string) => {
     try {
@@ -497,17 +495,11 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
-  const hasMultipleImages = images.length > 1
 
   if (loading) {
     return (
       <div className="app">
         <div className="post-details-page">
-          <div className="post-details-header-fixed">
-            <div className="post-details-header-content">
-              <h1 className="post-details-title">Détails</h1>
-            </div>
-          </div>
           <div className="post-details-scrollable">
             <div className="loading-container">
               <p>Chargement...</p>
@@ -523,11 +515,6 @@ const PostDetails = () => {
     return (
       <div className="app">
         <div className="post-details-page">
-          <div className="post-details-header-fixed">
-            <div className="post-details-header-content">
-              <h1 className="post-details-title">Détails</h1>
-            </div>
-          </div>
           <div className="post-details-scrollable">
             <div className="empty-state">
               <p>Annonce introuvable</p>
@@ -539,132 +526,119 @@ const PostDetails = () => {
     )
   }
 
+  const mainImage = images.length > 0 ? images[0] : null
+  const hasAddress = post.location_address || (post.location_lat && post.location_lng)
+
   return (
     <div className="app">
       <div className="post-details-page">
-        {/* Header fixe */}
-        <div className="post-details-header-fixed">
-          <div className="post-details-header-content">
-            <h1 className="post-details-title">Détails de l'annonce</h1>
+        {/* Image principale en arrière-plan avec boutons flottants */}
+        {mainImage ? (
+          <div className="post-hero-image">
+            <img src={mainImage} alt={post.title} />
+            {/* Boutons flottants */}
+            <div className="post-hero-overlay">
+              {/* Bouton retour en haut à gauche */}
+              <button className="post-hero-btn post-hero-btn-back" onClick={() => navigate(-1)}>
+                <ArrowLeft size={24} />
+              </button>
+              {/* Boutons partage en haut à droite */}
+              <div className="post-hero-btn-group">
+                <button className="post-hero-btn" onClick={handleShare}>
+                  <Share2 size={20} />
+                </button>
+                <button className="post-hero-btn" onClick={handleLike}>
+                  <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+              {/* Badge URGENT en bas à gauche */}
+              {post.is_urgent && (
+                <div className="post-urgent-badge">URGENT</div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Barre de navigation fixe si pas d'image */
+          <div className="post-nav-bar">
+            <button className="post-nav-btn" onClick={() => navigate(-1)}>
+              <ArrowLeft size={24} />
+            </button>
+            <div className="post-nav-btn-group">
+              <button className="post-nav-btn" onClick={handleShare}>
+                <Share2 size={20} />
+              </button>
+              <button className="post-nav-btn" onClick={handleLike}>
+                <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
+              </button>
+            </div>
+            {post.is_urgent && (
+              <div className="post-urgent-badge-inline">URGENT</div>
+            )}
+          </div>
+        )}
 
         {/* Zone scrollable */}
         <div className="post-details-scrollable">
-          <div className="post-details">
-          {/* Carrousel d'images */}
-          {images.length > 0 && (
-            <div className="post-images">
-              <div className="image-container">
-                <img src={images[currentImageIndex]} alt={post.title} />
-                {hasMultipleImages && (
-                  <>
-                    <button
-                      className="image-nav prev"
-                      onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                    >
-                      <ChevronLeft size={24} />
-                    </button>
-                    <button
-                      className="image-nav next"
-                      onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                    >
-                      <ChevronRight size={24} />
-                    </button>
-                    <div className="image-indicators">
-                      {images.map((_, index) => (
-                        <button
-                          key={index}
-                          className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
-                          onClick={() => setCurrentImageIndex(index)}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="post-content">
-            <div className="post-header">
-              <h1 className="post-title">{post.title}</h1>
-              {post.price && (
-                <div className="post-price">{post.price} €</div>
-              )}
+          <div className="post-details-content">
+            {/* Titre avec bouton cœur */}
+            <div className="post-title-section">
+              <h1 className="post-title-main">{post.title}</h1>
+              <button
+                className={`post-like-btn ${liked ? 'active' : ''}`}
+                onClick={handleLike}
+              >
+                <Heart size={24} fill={liked ? 'currentColor' : 'none'} />
+              </button>
             </div>
 
-            <div className="post-info">
-              {post.category && (
-                <span className="post-category">{post.category.name}</span>
-              )}
-              {post.sub_category && (
-                <span className="post-subcategory">{post.sub_category.name}</span>
-              )}
+            {/* Prix en grand */}
+            {post.price && (
+              <div className="post-price-main">{post.price} €</div>
+            )}
+
+            {/* Informations secondaires */}
+            <div className="post-meta-info">
               {post.location && (
-                <span className="post-location">
+                <span className="post-meta-item">
                   <MapPin size={16} /> {post.location}
                 </span>
               )}
-              {post.needed_date && (
-                <span className="post-date">
-                  <Calendar size={16} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-                </span>
-              )}
-              {post.number_of_people && (
-                <span className="post-people">
-                  <Users size={16} /> {post.number_of_people} personne{post.number_of_people > 1 ? 's' : ''}
-                </span>
-              )}
+              <span className="post-meta-item">
+                {formatRelativeDate(post.created_at)}
+              </span>
             </div>
 
-            <div className="post-description">
-              <h3>Description</h3>
-              <p>{post.description}</p>
-            </div>
-
-            {post.delivery_available && (
-              <div className="post-badge">Livraison possible</div>
+            {/* Carte d'information avec adresse et GPS */}
+            {hasAddress && (
+              <div className="post-address-card">
+                <div className="post-address-content">
+                  {post.location_address && (
+                    <div className="post-address-text">
+                      <MapPin size={18} />
+                      <span>{post.location_address}</span>
+                    </div>
+                  )}
+                  {post.location_lat && post.location_lng && (
+                    <div className="post-address-coords">
+                      {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
+                    </div>
+                  )}
+                </div>
+                {post.location_lat && post.location_lng && (
+                  <button className="post-address-nav-btn" onClick={handleOpenNavigation}>
+                    <Navigation size={20} />
+                  </button>
+                )}
+              </div>
             )}
 
-            <div className="post-actions">
-              <button
-                className={`action-btn like ${liked ? 'active' : ''}`}
-                onClick={handleLike}
-              >
-                <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
-                <span>{post.likes_count}</span>
-              </button>
-              <button className="action-btn" onClick={handleShare}>
-                <Share2 size={20} />
-                Partager
-              </button>
-              <button className="action-btn" onClick={handleRespond}>
-                <MessageCircle size={20} />
-                Répondre
-              </button>
-              {isOwner && (
-                <>
-                  <button className="action-btn" onClick={handleEdit}>
-                    <Edit size={20} />
-                    Éditer
-                  </button>
-                  <button className="action-btn" onClick={handleArchive}>
-                    <Archive size={20} />
-                    Archiver
-                  </button>
-                  <button
-                    className="action-btn danger"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 size={20} />
-                    Supprimer
-                  </button>
-                </>
-              )}
+            {/* Description */}
+            <div className="post-description-section">
+              <h3 className="post-description-title">Description</h3>
+              <p className="post-description-text">{post.description}</p>
             </div>
 
-            {/* Section candidatures pour les matchs */}
+            {/* Section candidatures pour les matchs (propriétaire uniquement) */}
             {isOwner && applications.length > 0 && (
               <div className="applications-section">
                 <h3>Candidatures ({applications.length})</h3>
@@ -744,6 +718,18 @@ const PostDetails = () => {
           </div>
         </div>
 
+        {/* Barre d'action fixe en bas */}
+        <div className="post-action-bar">
+          <button className="post-action-btn post-action-btn-message" onClick={handleMessage}>
+            <MessageCircle size={20} />
+            Message
+          </button>
+          <button className="post-action-btn post-action-btn-primary" onClick={handleApply}>
+            Candidater
+          </button>
+        </div>
+
+        {/* Modal de confirmation de suppression */}
         {showDeleteConfirm && (
           <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -760,7 +746,6 @@ const PostDetails = () => {
             </div>
           </div>
         )}
-        </div>
       </div>
       <Footer />
     </div>
