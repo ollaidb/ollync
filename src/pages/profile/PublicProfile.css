@@ -9,37 +9,6 @@
   width: 100%;
 }
 
-.profile-header-bar {
-  background-color: #FFFFFF;
-  padding: 16px 20px;
-  border-bottom: 1px solid #F3F4F6;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.profile-edit-button-header {
-  padding: 10px 16px;
-  border-radius: 8px;
-  background-color: #6366F1;
-  border: none;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.profile-edit-button-header:hover {
-  background-color: #4F46E5;
-}
 
 .public-profile-content-wrapper {
   flex: 1;
@@ -223,59 +192,88 @@
   color: #666;
 }
 
-.profile-action-buttons {
+.profile-follow-section {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
-.profile-action-button {
+.profile-follow-button {
   flex: 1;
-  min-width: 100px;
-  padding: 10px 16px;
+  padding: 10px 20px;
   border-radius: 8px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #6366F1;
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #6366F1;
+  color: white;
+}
+
+.profile-follow-button:hover {
+  background: #4F46E5;
+  border-color: #4F46E5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.profile-follow-button.following {
+  background: #E5E7EB;
+  color: #374151;
+  border-color: #D1D5DB;
+}
+
+.profile-follow-button.following:hover {
+  background: #D1D5DB;
+  border-color: #9CA3AF;
+  transform: none;
+  box-shadow: none;
+}
+
+.profile-action-icons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-action-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #E5E7EB;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   background: white;
   color: #374151;
+  flex-shrink: 0;
 }
 
-.profile-action-button:hover {
+.profile-action-icon:hover {
   background: #F9FAFB;
   border-color: #D1D5DB;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.profile-action-button.contact-button {
+.profile-action-icon.contact-button {
   background: #6366F1;
   color: white;
   border-color: #6366F1;
 }
 
-.profile-action-button.contact-button:hover {
+.profile-action-icon.contact-button:hover {
   background: #4F46E5;
   border-color: #4F46E5;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
-.profile-action-button.favorite-button.active {
-  background: #FEE2E2;
-  color: #DC2626;
-  border-color: #FECACA;
-}
-
-.profile-action-button.favorite-button.active:hover {
-  background: #FECACA;
-  border-color: #FCA5A5;
-}
-
-.profile-action-button.share-button {
+.profile-action-icon.share-button {
   background: white;
   color: #374151;
 }
@@ -339,6 +337,74 @@
 .profile-service-tag {
   background: #EEF2FF;
   color: #6366F1;
+}
+
+.profile-social-links-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.profile-social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #F3F4F6;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid #E5E7EB;
+}
+
+.social-link:hover {
+  background: #E5E7EB;
+  border-color: #D1D5DB;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.social-link svg {
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.social-link:hover svg {
+  color: #374151;
+}
+
+.edit-profile-button-bottom {
+  width: 100%;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  background: #6366F1;
+  color: white;
+}
+
+.edit-profile-button-bottom:hover {
+  background: #4F46E5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
 }
 
 .public-profile-tabs {

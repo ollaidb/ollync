@@ -3,14 +3,14 @@ import './ProfileStats.css'
 interface ProfileStatsProps {
   postsCount?: number
   followersCount?: number
-  followingCount?: number
+  matchCount?: number
   averageRating?: number
 }
 
 export const ProfileStats = ({ 
   postsCount = 0, 
   followersCount = 0, 
-  followingCount = 0,
+  matchCount = 0,
   averageRating
 }: ProfileStatsProps) => {
   return (
@@ -24,8 +24,8 @@ export const ProfileStats = ({
         <span className="stat-label">Abonnés</span>
       </div>
       <div className="profile-stat">
-        <span className="stat-value">{followingCount}</span>
-        <span className="stat-label">Abonnements</span>
+        <span className="stat-value">{matchCount}</span>
+        <span className="stat-label">Match</span>
       </div>
       {averageRating !== undefined && averageRating > 0 && (
         <div className="profile-stat">

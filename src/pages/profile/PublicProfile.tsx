@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Edit, MessageCircle, Heart, Share2, MapPin, CheckCircle2 } from 'lucide-react'
+import { Edit, MessageCircle, Share2, MapPin, CheckCircle2, Instagram, Linkedin, Globe, Twitter, Facebook } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PostCard from '../../components/PostCard'
@@ -27,6 +27,14 @@ interface ProfileData {
   services?: string[]
   languages?: Array<{ name: string; level: string }>
   badges?: string[]
+  social_links?: {
+    instagram?: string
+    tiktok?: string
+    linkedin?: string
+    twitter?: string
+    facebook?: string
+    website?: string
+  } | null
 }
 
 interface Post {
@@ -68,7 +76,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const { user } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
-  const [followingCount, setFollowingCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'annonces' | 'match' | 'avis'>('annonces')
   const [posts, setPosts] = useState<Post[]>([])
@@ -128,7 +135,17 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         console.error('Error fetching profile:', error)
       }
     } else if (data) {
-      setProfile(data)
+      // S'assurer que social_links est correctement parsé depuis JSONB
+      const profileData = data as ProfileData
+      // Si social_links est une string, le parser en JSON
+      if (profileData.social_links && typeof profileData.social_links === 'string') {
+        try {
+          profileData.social_links = JSON.parse(profileData.social_links)
+        } catch (e) {
+          profileData.social_links = null
+        }
+      }
+      setProfile(profileData)
     }
     setLoading(false)
   }, [profileId, user])
@@ -146,18 +163,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
   }, [profileId])
 
-  const fetchFollowingCount = useCallback(async () => {
-    if (!profileId) return
-
-    const { count } = await supabase
-      .from('follows')
-      .select('id', { count: 'exact', head: true })
-      .eq('follower_id', profileId)
-
-    if (count !== null) {
-      setFollowingCount(count)
-    }
-  }, [profileId])
 
   const checkFollowing = useCallback(async () => {
     if (!user || !profileId || isOwnProfile) return
@@ -338,12 +343,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     if (profileId) {
       fetchProfile()
       fetchFollowersCount()
-      fetchFollowingCount()
       if (!isOwnProfile && user) {
         checkFollowing()
       }
     }
-  }, [profileId, user, isOwnProfile, fetchProfile, fetchFollowersCount, fetchFollowingCount, checkFollowing])
+  }, [profileId, user, isOwnProfile, fetchProfile, fetchFollowersCount, checkFollowing])
 
   useEffect(() => {
     if (profileId && activeTab === 'annonces') {
@@ -378,20 +382,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   return (
     <div className="public-profile-page">
-      {/* Header avec bouton modifier - seulement pour le propre profil */}
-      {isOwnProfile && (
-        <div className="profile-header-bar">
-          <div style={{ flex: 1 }} />
-          <button
-            className="profile-edit-button-header"
-            onClick={handleEditProfile}
-          >
-            <Edit size={18} />
-            <span>Modifier le profil</span>
-          </button>
-        </div>
-      )}
-
       <div className="public-profile-content-wrapper">
         {/* Profil Header */}
         <div className="public-profile-header">
@@ -426,30 +416,33 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             </div>
           </div>
 
-          {/* Boutons d'action */}
+          {/* Bouton Suivre et actions */}
           {!isOwnProfile && user && (
-            <div className="profile-action-buttons">
+            <div className="profile-follow-section">
               <button
-                className="profile-action-button contact-button"
-                onClick={handleContact}
-              >
-                <MessageCircle size={18} />
-                <span>Contacter</span>
-              </button>
-              <button
-                className={`profile-action-button favorite-button ${isFavorite ? 'active' : ''}`}
+                className={`profile-follow-button ${isFavorite ? 'following' : ''}`}
                 onClick={handleToggleFavorite}
               >
-                <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
-                <span>{isFavorite ? 'Favoris' : 'Ajouter'}</span>
+                {isFavorite ? 'Suivi' : 'Suivre'}
               </button>
-              <button
-                className="profile-action-button share-button"
-                onClick={handleShare}
-              >
-                <Share2 size={18} />
-                <span>Partager</span>
-              </button>
+              <div className="profile-action-icons">
+                <button
+                  className="profile-action-icon contact-button"
+                  onClick={handleContact}
+                  aria-label="Contacter"
+                  title="Contacter"
+                >
+                  <MessageCircle size={18} />
+                </button>
+                <button
+                  className="profile-action-icon share-button"
+                  onClick={handleShare}
+                  aria-label="Partager"
+                  title="Partager"
+                >
+                  <Share2 size={18} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -457,7 +450,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           <ProfileStats
             postsCount={posts.length}
             followersCount={followersCount}
-            followingCount={followingCount}
+            matchCount={matchPosts.length}
             averageRating={averageRating}
           />
 
@@ -507,6 +500,99 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             skills={[]}
             languages={profile.languages}
           />
+
+          {/* Liens sociaux */}
+          {profile.social_links && (
+            (profile.social_links.instagram || 
+             profile.social_links.tiktok || 
+             profile.social_links.linkedin || 
+             profile.social_links.twitter || 
+             profile.social_links.facebook || 
+             profile.social_links.website) && (
+              <div className="profile-social-links-section">
+                <h3 className="profile-section-title">Réseaux sociaux</h3>
+                <div className="profile-social-links">
+                  {profile.social_links.instagram && (
+                    <a
+                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Instagram size={20} />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {profile.social_links.tiktok && (
+                    <a
+                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Globe size={20} />
+                      <span>TikTok</span>
+                    </a>
+                  )}
+                  {profile.social_links.linkedin && (
+                    <a
+                      href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : `https://linkedin.com/in/${profile.social_links.linkedin.replace('@', '').replace('linkedin.com/in/', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Linkedin size={20} />
+                      <span>LinkedIn</span>
+                    </a>
+                  )}
+                  {profile.social_links.twitter && (
+                    <a
+                      href={profile.social_links.twitter.startsWith('http') ? profile.social_links.twitter : `https://twitter.com/${profile.social_links.twitter.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Twitter size={20} />
+                      <span>Twitter</span>
+                    </a>
+                  )}
+                  {profile.social_links.facebook && (
+                    <a
+                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Facebook size={20} />
+                      <span>Facebook</span>
+                    </a>
+                  )}
+                  {profile.social_links.website && (
+                    <a
+                      href={profile.social_links.website.startsWith('http') ? profile.social_links.website : `https://${profile.social_links.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                    >
+                      <Globe size={20} />
+                      <span>Site web</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Bouton Modifier le profil - seulement pour le propre profil */}
+          {isOwnProfile && (
+            <button
+              className="edit-profile-button-bottom"
+              onClick={handleEditProfile}
+            >
+              <Edit size={18} />
+              <span>Modifier le profil</span>
+            </button>
+          )}
         </div>
 
         <ProfileTabs
