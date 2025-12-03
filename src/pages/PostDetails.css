@@ -1,4 +1,7 @@
-/* Page PostDetails - Structure principale */
+/* ============================================
+   STRUCTURE DE BASE – Page Détail d'Annonce
+   ============================================ */
+
 .post-details-page {
   min-height: 100vh;
   background-color: #FFFFFF;
@@ -7,15 +10,19 @@
   position: relative;
 }
 
-/* Header fixe */
+/* ============================================
+   A. HEADER
+   ============================================ */
+
 .post-details-header-fixed {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #FFFFFF;
-  border-bottom: none;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .post-details-header-content {
@@ -41,7 +48,7 @@
 }
 
 .post-header-action-btn {
-  background: #f5f5f5;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -56,30 +63,103 @@
 }
 
 .post-header-action-btn:hover {
-  background: #e0e0e0;
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
 }
 
 .post-header-action-btn:active {
-  background: #d0d0d0;
+  background: rgba(0, 0, 0, 0.15);
+  transform: scale(0.95);
 }
 
-/* Image principale en arrière-plan */
-.post-hero-image {
+/* ============================================
+   B. GALERIE MÉDIA (Carrousel)
+   ============================================ */
+
+.post-media-gallery {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 400px;
   overflow: hidden;
   background: #f5f5f5;
   margin-top: calc(env(safe-area-inset-top, 0px) + 66px);
+  touch-action: pan-y;
 }
 
-.post-hero-image img {
+.post-media-gallery.swipe-mode {
+  height: 100vh;
+  margin-top: 0;
+}
+
+.post-media-carousel {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.post-media-item {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-media-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Badge URGENT */
+.post-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-media-indicators {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.post-media-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.post-media-indicator.active {
+  width: 24px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.post-media-counter {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+/* Badge URGENT sur la galerie */
 .post-urgent-badge {
   position: absolute;
   bottom: 16px;
@@ -109,13 +189,16 @@
   margin-left: 12px;
 }
 
-/* Zone scrollable */
+/* ============================================
+   C. INFORMATIONS PRINCIPALES
+   ============================================ */
+
 .post-details-scrollable {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 66px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -130,8 +213,7 @@
   padding: 24px 20px;
 }
 
-/* Ajustement si image hero présente */
-.post-details-page.has-hero-image .post-details-scrollable {
+.post-details-page.has-media .post-details-scrollable {
   padding-top: 0;
 }
 
@@ -155,12 +237,45 @@
   min-width: 0;
 }
 
-/* Prix en grand */
+/* Catégorie / Sous-catégorie */
+.post-category-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.post-category-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6366F1;
+  font-weight: 500;
+}
+
+.post-category-breadcrumb-separator {
+  color: #999;
+  margin: 0 4px;
+}
+
+/* Prix / Rémunération */
 .post-price-main {
   font-size: 36px;
   font-weight: 700;
   color: #ff6600;
   margin-bottom: 16px;
+}
+
+.post-price-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 /* Informations secondaires */
@@ -179,12 +294,227 @@
   gap: 6px;
 }
 
-/* Carte d'information avec adresse et GPS */
+.post-meta-item svg {
+  flex-shrink: 0;
+  color: #999;
+}
+
+/* ============================================
+   D. PROFIL DU CRÉATEUR
+   ============================================ */
+
+.author-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: #f9f9f9;
+  border-radius: 12px;
+}
+
+.author-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #333;
+}
+
+.author-card {
+  display: flex;
+  gap: 16px;
+  text-decoration: none;
+  color: inherit;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.author-card:hover {
+  transform: translateY(-2px);
+}
+
+.author-card img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.author-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.author-bio {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* ============================================
+   E. DESCRIPTION COMPLÈTE
+   ============================================ */
+
+.post-description-section {
+  margin-bottom: 32px;
+}
+
+.post-description-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.post-description-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #666;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ============================================
+   F. CHAMPS DYNAMIQUES (selon type)
+   ============================================ */
+
+.post-dynamic-fields {
+  margin-bottom: 32px;
+}
+
+.post-dynamic-fields-section {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.post-dynamic-fields-section h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 16px 0;
+}
+
+.post-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.post-field-row:last-child {
+  border-bottom: none;
+}
+
+.post-field-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.post-field-value {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  text-align: right;
+}
+
+.post-field-value.highlight {
+  color: #6366F1;
+  font-size: 16px;
+}
+
+/* Champs spécifiques */
+.post-people-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #E0E7FF;
+  border-radius: 8px;
+  color: #6366F1;
+  font-weight: 600;
+}
+
+.post-places-remaining {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #FEF3C7;
+  border-radius: 8px;
+  color: #D97706;
+  font-weight: 600;
+}
+
+.post-payment-type {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.post-payment-type.remunere {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.post-payment-type.gratuit {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.post-payment-type.echange {
+  background: #FCE7F3;
+  color: #9F1239;
+}
+
+.post-payment-type.pourcentage {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+/* Lien externe */
+.post-external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #6366F1;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+}
+
+.post-external-link:hover {
+  background: #4F46E5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================
+   G. LOCALISATION
+   ============================================ */
+
+.post-location-section {
+  margin-bottom: 32px;
+}
+
 .post-address-card {
   background: #f5f5f5;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -237,26 +567,10 @@
   transform: scale(1.05);
 }
 
-/* Description */
-.post-description-section {
-  margin-bottom: 32px;
-}
+/* ============================================
+   H. ACTIONS PRINCIPALES (Footer)
+   ============================================ */
 
-.post-description-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 12px 0;
-}
-
-.post-description-text {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #666;
-  margin: 0;
-}
-
-/* Barre d'action fixe en bas */
 .post-action-bar {
   position: fixed;
   bottom: 0;
@@ -306,7 +620,205 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-/* Sections existantes (applications, author, etc.) */
+.post-action-btn-match {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.post-action-btn-match:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.post-action-btn-buy {
+  background: #10B981;
+  color: white;
+}
+
+.post-action-btn-buy:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.post-action-btn-apply {
+  background: #F59E0B;
+  color: white;
+}
+
+.post-action-btn-apply:hover {
+  background: #D97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Actions multiples */
+.post-action-bar.multiple-actions {
+  flex-wrap: wrap;
+}
+
+.post-action-bar.multiple-actions .post-action-btn {
+  flex: 0 0 calc(50% - 6px);
+}
+
+/* ============================================
+   VARIANTS D'AFFICHAGE
+   ============================================ */
+
+/* 1. Variant SWIPE (Match) */
+.post-details-page.swipe-mode {
+  overflow: hidden;
+}
+
+.post-details-page.swipe-mode .post-media-gallery {
+  height: 100vh;
+  margin-top: 0;
+}
+
+.post-details-page.swipe-mode .post-details-header-fixed {
+  background: transparent;
+  border-bottom: none;
+}
+
+.post-details-page.swipe-mode .post-details-header-content {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+}
+
+.post-details-page.swipe-mode .post-header-action-btn {
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.post-swipe-actions {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 50;
+}
+
+.post-swipe-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.post-swipe-btn.reject {
+  background: white;
+  color: #EF4444;
+}
+
+.post-swipe-btn.reject:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.post-swipe-btn.accept {
+  background: white;
+  color: #10B981;
+}
+
+.post-swipe-btn.accept:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.post-swipe-mini-description {
+  position: fixed;
+  bottom: 120px;
+  left: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  z-index: 50;
+}
+
+.post-swipe-mini-description h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.post-swipe-mini-description p {
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.post-swipe-view-details-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #333;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 2. Variant ANNONCE CLASSIQUE */
+/* Le style classique utilise les styles par défaut définis ci-dessus */
+
+/* 3. Variant STYLE VINTED (Vente) */
+.post-details-page.vinted-mode .post-media-gallery {
+  height: 500px;
+}
+
+.post-details-page.vinted-mode .post-price-main {
+  font-size: 48px;
+  margin: 24px 0;
+}
+
+.post-details-page.vinted-mode .post-dynamic-fields-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.post-details-page.vinted-mode .post-field-row {
+  padding: 16px 0;
+}
+
+.post-details-page.vinted-mode .post-field-label {
+  font-size: 15px;
+  color: #333;
+}
+
+.post-details-page.vinted-mode .post-field-value {
+  font-size: 15px;
+  color: #111827;
+}
+
+.post-details-page.vinted-mode .post-action-btn-primary {
+  background: #10B981;
+}
+
+.post-details-page.vinted-mode .post-action-btn-primary:hover {
+  background: #059669;
+}
+
+/* ============================================
+   SECTIONS SPÉCIFIQUES
+   ============================================ */
+
+/* Candidatures */
 .applications-section {
   margin-bottom: 32px;
   padding: 24px;
@@ -416,55 +928,7 @@
   background: #da190b;
 }
 
-.author-section {
-  margin-bottom: 32px;
-  padding: 24px;
-  background: #f9f9f9;
-  border-radius: 12px;
-}
-
-.author-section h3 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: #333;
-}
-
-.author-card {
-  display: flex;
-  gap: 16px;
-  text-decoration: none;
-  color: inherit;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  transition: transform 0.2s ease;
-}
-
-.author-card:hover {
-  transform: translateY(-2px);
-}
-
-.author-card img {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.author-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.author-bio {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-}
-
+/* Autres annonces */
 .other-posts-section {
   margin-bottom: 32px;
 }
@@ -482,7 +946,10 @@
   gap: 16px;
 }
 
-/* Modal de confirmation */
+/* ============================================
+   MODAL DE CONFIRMATION
+   ============================================ */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -494,6 +961,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -502,6 +970,7 @@
   border-radius: 12px;
   max-width: 400px;
   width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-content h3 {
@@ -551,7 +1020,10 @@
   background: #da190b;
 }
 
-/* États de chargement et vides */
+/* ============================================
+   ÉTATS DE CHARGEMENT ET VIDES
+   ============================================ */
+
 .loading-container,
 .empty-state {
   display: flex;
@@ -562,7 +1034,10 @@
   color: #666;
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
 @media (max-width: 768px) {
   .post-details-header-content {
     padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
@@ -581,16 +1056,21 @@
     height: 18px;
   }
 
-  .post-hero-image {
-    height: 250px;
+  .post-media-gallery {
+    height: 300px;
     margin-top: calc(env(safe-area-inset-top, 0px) + 56px);
+  }
+
+  .post-media-gallery.swipe-mode {
+    height: 100vh;
+    margin-top: 0;
   }
 
   .post-details-scrollable {
     padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
   }
 
-  .post-details-page.has-hero-image .post-details-scrollable {
+  .post-details-page.has-media .post-details-scrollable {
     padding-top: 0;
   }
 
@@ -604,6 +1084,10 @@
 
   .post-price-main {
     font-size: 28px;
+  }
+
+  .post-details-page.vinted-mode .post-price-main {
+    font-size: 36px;
   }
 
   .post-meta-info {
@@ -658,5 +1142,34 @@
   .other-posts-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+  }
+
+  .post-swipe-actions {
+    bottom: 30px;
+    gap: 16px;
+  }
+
+  .post-swipe-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .post-swipe-mini-description {
+    bottom: 100px;
+    left: 16px;
+    right: 16px;
+    padding: 12px;
+  }
+
+  .post-swipe-mini-description h3 {
+    font-size: 18px;
+  }
+
+  .post-swipe-mini-description p {
+    font-size: 13px;
+  }
+
+  .post-action-bar.multiple-actions .post-action-btn {
+    flex: 0 0 100%;
   }
 }

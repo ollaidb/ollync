@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MessageCircle, Send, Loader, Search, Users, Archive } from 'lucide-react'
+import { MessageCircle, Loader, Search, Users, Archive } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
+import CreateGroupModal from '../components/Messages/CreateGroupModal'
+import MessageInput from '../components/Messages/MessageInput'
+import MessageBubble from '../components/Messages/MessageBubble'
 import './Messages.css'
 
 type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'archived'
@@ -31,9 +34,19 @@ interface Conversation {
 
 interface Message {
   id: string
-  content: string
+  content?: string | null
   sender_id: string
   created_at: string
+  message_type?: string
+  file_url?: string | null
+  file_name?: string | null
+  file_type?: string | null
+  location_data?: Record<string, unknown> | null
+  price_data?: Record<string, unknown> | null
+  rate_data?: Record<string, unknown> | null
+  calendar_request_data?: Record<string, unknown> | null
+  shared_post_id?: string | null
+  shared_profile_id?: string | null
   sender?: {
     username?: string | null
     full_name?: string | null
@@ -50,12 +63,9 @@ const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [message, setMessage] = useState('')
-  const [sending, setSending] = useState(false)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showCreateGroup, setShowCreateGroup] = useState(false)
 
   useEffect(() => {
@@ -207,6 +217,7 @@ const Messages = () => {
   const loadMessages = async (convId: string) => {
     if (!user) return
 
+    // Utiliser select('*') pour éviter les problèmes de colonnes manquantes
     const { data: messagesData, error } = await supabase
       .from('messages')
       .select('*')
@@ -215,13 +226,19 @@ const Messages = () => {
 
     if (error) {
       console.error('Error loading messages:', error)
+      setMessages([])
+      return
     } else if (messagesData && messagesData.length > 0) {
       const senderIds = [...new Set((messagesData as Array<{ sender_id: string }>).map((msg) => msg.sender_id).filter(Boolean))]
       
-      const { data: senders } = await supabase
+      const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url')
-        .in('id', senderIds)
+        .in('id', senderIds) : { data: [], error: null }
+
+      if (sendersError) {
+        console.error('Error loading senders:', sendersError)
+      }
 
       const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((s) => [s.id, s]))
 
@@ -288,10 +305,17 @@ const Messages = () => {
           .map((conv) => conv.post_id)
           .filter((id): id is string => id !== null && id !== undefined)
 
-        const { data: users } = await supabase
+        // Filtrer les userIds vides
+        const validUserIds = userIds.filter(id => id && id !== user.id)
+        
+        const { data: users, error: usersError } = validUserIds.length > 0 ? await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url')
-          .in('id', userIds)
+          .in('id', validUserIds) : { data: [], error: null }
+
+        if (usersError) {
+          console.error('Error loading users:', usersError)
+        }
 
         const { data: posts } = postIds.length > 0 ? await supabase
           .from('posts')
@@ -308,22 +332,33 @@ const Messages = () => {
             const otherUser = usersMap.get(otherUserId) || null
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
 
-            // Récupérer le dernier message
-            const { data: lastMsg } = await supabase
+            // Récupérer le dernier message (sans utiliser .single() pour éviter les erreurs)
+            const { data: lastMsgData, error: lastMsgError } = await supabase
               .from('messages')
               .select('content, created_at')
               .eq('conversation_id', conv.id)
               .order('created_at', { ascending: false })
               .limit(1)
-              .single()
 
-            // Compter les messages non lus
-            const { count: unreadCount } = await supabase
-              .from('messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-              .eq('sender_id', otherUserId)
-              .is('read_at', null)
+            let lastMsg = null
+            if (!lastMsgError && lastMsgData && lastMsgData.length > 0) {
+              lastMsg = lastMsgData[0]
+            }
+
+            // Compter les messages non lus (seulement si otherUserId existe)
+            let unreadCount = 0
+            if (otherUserId) {
+              const { count, error: countError } = await supabase
+                .from('messages')
+                .select('*', { count: 'exact', head: true })
+                .eq('conversation_id', conv.id)
+                .eq('sender_id', otherUserId)
+                .is('read_at', null)
+              
+              if (!countError) {
+                unreadCount = count || 0
+              }
+            }
 
             return {
               ...conv,
@@ -349,57 +384,6 @@ const Messages = () => {
     }
   }, [user, activeFilter])
 
-  const sendMessage = async () => {
-    if (!user || !message.trim() || !selectedConversation) {
-      console.log('Cannot send message:', { user: !!user, message: message.trim(), conversation: !!selectedConversation })
-      return
-    }
-
-    setSending(true)
-    try {
-      console.log('Envoi du message:', {
-        conversation_id: selectedConversation.id,
-        sender_id: user.id,
-        content: message.trim()
-      })
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('messages') as any).insert({
-        conversation_id: selectedConversation.id,
-        sender_id: user.id,
-        content: message.trim(),
-        message_type: 'text'
-      })
-      .select()
-      .single()
-
-      if (error) {
-        console.error('Error sending message:', error)
-        console.error('Error details:', JSON.stringify(error, null, 2))
-        alert(`Erreur lors de l'envoi du message: ${error.message || 'Erreur inconnue'}`)
-        setSending(false)
-        return
-      }
-
-      console.log('Message envoyé avec succès:', data)
-
-      // Mettre à jour last_message_at de la conversation (le trigger devrait le faire, mais on le fait manuellement aussi)
-      await supabase
-        .from('conversations')
-        .update({ last_message_at: new Date().toISOString() } as never)
-        .eq('id', selectedConversation.id)
-
-      setMessage('')
-      await loadMessages(selectedConversation.id)
-      await loadConversations() // Rafraîchir la liste des conversations
-    } catch (error) {
-      console.error('Error sending message:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
-      alert(`Erreur lors de l'envoi du message: ${errorMessage}`)
-    } finally {
-      setSending(false)
-    }
-  }
 
   const filteredConversations = conversations.filter((conv) => {
     // Filtre par recherche textuelle
@@ -488,48 +472,75 @@ const Messages = () => {
             <>
               <div className="messages-list">
                 {messages.map((msg) => {
-                  const isOwn = msg.sender_id === user.id
+                  const isOwn = msg.sender_id === user?.id
                   return (
-                    <div key={msg.id} className={`message ${isOwn ? 'own' : 'other'}`}>
-                      {!isOwn && msg.sender?.avatar_url && (
-                        <img src={msg.sender.avatar_url} alt={msg.sender.full_name || ''} className="message-avatar" />
-                      )}
-                      <div className="message-content">
-                        <p>{msg.content}</p>
-                        <span className="message-time">
-                          {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
+                    <MessageBubble
+                      key={msg.id}
+                      message={msg}
+                      isOwn={isOwn}
+                      onDelete={async () => {
+                        if (user && isOwn) {
+                          // Suppression soft
+                          await supabase
+                            .from('messages')
+                            .update({ is_deleted: true, deleted_for_user_id: user.id } as never)
+                            .eq('id', msg.id)
+                          loadMessages(selectedConversation?.id || conversationId || '')
+                        }
+                      }}
+                      onLike={async () => {
+                        if (user) {
+                          // Toggle like
+                          const { data: existingLike } = await supabase
+                            .from('message_likes')
+                            .select('id')
+                            .eq('message_id', msg.id)
+                            .eq('user_id', user.id)
+                            .maybeSingle()
+
+                          if (existingLike) {
+                            await supabase
+                              .from('message_likes')
+                              .delete()
+                              .eq('id', (existingLike as { id: string }).id)
+                          } else {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('message_likes') as any)
+                              .insert({ message_id: msg.id, user_id: user.id })
+                          }
+                        }
+                      }}
+                      onReport={async () => {
+                        if (user && !isOwn) {
+                          const reason = prompt('Raison du signalement:')
+                          if (reason) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('message_reports') as any)
+                              .insert({
+                                message_id: msg.id,
+                                reporter_id: user.id,
+                                reason
+                              })
+                            alert('Message signalé. Merci pour votre retour.')
+                          }
+                        }
+                      }}
+                    />
                   )
                 })}
               </div>
-              <div className="message-input">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      sendMessage()
+              {user && (selectedConversation || conversationId) && (
+                <MessageInput
+                  conversationId={selectedConversation?.id || conversationId || ''}
+                  senderId={user.id}
+                  onMessageSent={() => {
+                    if (selectedConversation || conversationId) {
+                      loadMessages(selectedConversation?.id || conversationId || '')
+                      loadConversations()
                     }
                   }}
-                  placeholder="Tapez votre message..."
-                  disabled={sending}
                 />
-                <button
-                  onClick={sendMessage}
-                  disabled={!message.trim() || sending}
-                  className="send-btn"
-                >
-                  {sending ? (
-                    <Loader className="spinner" size={20} />
-                  ) : (
-                    <Send size={20} />
-                  )}
-                </button>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -675,6 +686,13 @@ const Messages = () => {
           </div>
         )}
       </div>
+      <CreateGroupModal
+        visible={showCreateGroup}
+        onClose={() => setShowCreateGroup(false)}
+        onSuccess={() => {
+          loadConversations()
+        }}
+      />
       <Footer />
     </div>
   )

@@ -1,0 +1,726 @@
+/* ============================================
+   PAGE SWIPE - Mode découverte rapide
+   ============================================ */
+
+.swipe-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mode sombre optionnel */
+.swipe-page.dark-mode {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.swipe-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.swipe-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swipe-counter {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+/* ============================================
+   CONTAINER PRINCIPAL
+   ============================================ */
+
+.swipe-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 80px 20px 200px;
+  touch-action: pan-y;
+}
+
+/* ============================================
+   INDICATEURS DE DIRECTION
+   ============================================ */
+
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.swipe-indicator.active {
+  opacity: 1;
+}
+
+.swipe-indicator-right {
+  color: #10B981;
+  animation: pulse 0.6s ease infinite;
+}
+
+.swipe-indicator-left {
+  color: #EF4444;
+  animation: pulse 0.6s ease infinite;
+}
+
+.swipe-indicator-up {
+  color: #F59E0B;
+  animation: pulse 0.6s ease infinite;
+}
+
+.swipe-indicator-down {
+  color: #6366F1;
+  animation: pulse 0.6s ease infinite;
+}
+
+.swipe-indicator span {
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* ============================================
+   CARTE SWIPE
+   ============================================ */
+
+.swipe-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  height: 600px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+  will-change: transform;
+}
+
+.swipe-card:active {
+  cursor: grabbing;
+}
+
+.swipe-card-image {
+  width: 100%;
+  height: 60%;
+  position: relative;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.swipe-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.swipe-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  opacity: 0.5;
+}
+
+.swipe-card-urgent {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: #EF4444;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  z-index: 5;
+}
+
+.swipe-card-content {
+  padding: 24px;
+  height: 40%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.swipe-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.swipe-card-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.swipe-card-category {
+  background: #E0E7FF;
+  color: #6366F1;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.swipe-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
+.swipe-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swipe-card-meta-item svg {
+  flex-shrink: 0;
+  color: #999;
+}
+
+.swipe-card-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff6600;
+  margin-left: auto;
+}
+
+.swipe-card-description {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #666;
+  margin: 0 0 16px 0;
+  flex: 1;
+}
+
+.swipe-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swipe-tag {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.swipe-tag.urgent {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.swipe-tag.delivery {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.swipe-tag.people {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+/* ============================================
+   MINI DESCRIPTION EN BAS
+   ============================================ */
+
+.swipe-mini-description {
+  position: absolute;
+  bottom: 120px;
+  left: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 16px;
+  border-radius: 16px;
+  z-index: 50;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.swipe-mini-description h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.swipe-mini-description p {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.swipe-view-details-btn {
+  width: 100%;
+  background: white;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swipe-view-details-btn:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   BOUTONS D'ACTION
+   ============================================ */
+
+.swipe-actions {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  z-index: 100;
+  padding: 0 20px;
+}
+
+.swipe-action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: white;
+}
+
+.swipe-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.swipe-action-btn:active {
+  transform: scale(0.95);
+}
+
+.swipe-action-reject {
+  color: #EF4444;
+}
+
+.swipe-action-reject:hover {
+  background: #FEE2E2;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+.swipe-action-favorite {
+  color: #F59E0B;
+}
+
+.swipe-action-favorite:hover {
+  background: #FEF3C7;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+}
+
+.swipe-action-like {
+  color: #10B981;
+}
+
+.swipe-action-like:hover {
+  background: #D1FAE5;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.swipe-action-message {
+  color: #6366F1;
+}
+
+.swipe-action-message:hover {
+  background: #E0E7FF;
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================
+   BOUTON UNDO
+   ============================================ */
+
+.swipe-undo {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.swipe-undo-btn {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.swipe-undo-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   MODAL DÉTAILS
+   ============================================ */
+
+.swipe-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.swipe-details-content {
+  background: white;
+  border-radius: 24px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUpModal 0.3s ease;
+}
+
+@keyframes slideUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.swipe-details-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.swipe-details-close:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.swipe-details-body {
+  padding: 32px;
+}
+
+.swipe-details-body h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.swipe-details-body p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #666;
+  margin: 0 0 24px 0;
+}
+
+.swipe-btn-primary {
+  width: 100%;
+  background: #6366F1;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swipe-btn-primary:hover {
+  background: #4F46E5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================
+   ÉTATS DE CHARGEMENT ET VIDES
+   ============================================ */
+
+.swipe-loading,
+.swipe-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 40px;
+  text-align: center;
+}
+
+.swipe-loading p,
+.swipe-empty p {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .swipe-container {
+    padding: 60px 16px 180px;
+  }
+
+  .swipe-card {
+    height: 550px;
+    max-width: 100%;
+  }
+
+  .swipe-card-content {
+    padding: 20px;
+  }
+
+  .swipe-card-title {
+    font-size: 20px;
+  }
+
+  .swipe-actions {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .swipe-action-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .swipe-action-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .swipe-mini-description {
+    left: 16px;
+    right: 16px;
+    bottom: 100px;
+    padding: 14px;
+  }
+
+  .swipe-mini-description h3 {
+    font-size: 16px;
+  }
+
+  .swipe-mini-description p {
+    font-size: 12px;
+  }
+
+  .swipe-details-content {
+    max-height: 90vh;
+  }
+
+  .swipe-details-body {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .swipe-card {
+    height: 500px;
+  }
+
+  .swipe-card-image {
+    height: 55%;
+  }
+
+  .swipe-card-content {
+    height: 45%;
+    padding: 16px;
+  }
+
+  .swipe-actions {
+    gap: 8px;
+  }
+
+  .swipe-action-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ============================================
+   ANIMATIONS DE SWIPE
+   ============================================ */
+
+.swipe-card.swiping-right {
+  border: 3px solid #10B981;
+}
+
+.swipe-card.swiping-left {
+  border: 3px solid #EF4444;
+}
+
+.swipe-card.swiping-up {
+  border: 3px solid #F59E0B;
+}
+
+.swipe-card.swiping-down {
+  border: 3px solid #6366F1;
+}
+
+/* Animation de sortie */
+@keyframes swipeOutRight {
+  to {
+    transform: translateX(100vw) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeOutLeft {
+  to {
+    transform: translateX(-100vw) rotate(-30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeOutUp {
+  to {
+    transform: translateY(-100vh) rotate(-10deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeOutDown {
+  to {
+    transform: translateY(100vh) rotate(10deg);
+    opacity: 0;
+  }
+}
+

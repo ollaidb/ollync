@@ -1,0 +1,193 @@
+.message-bubble {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.message-bubble.own {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-sender-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+  padding: 0 4px;
+}
+
+.message-bubble.own .message-sender-name {
+  text-align: right;
+}
+
+.message-content {
+  background-color: #F3F4F6;
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+.message-bubble.own .message-content {
+  background-color: #6366F1;
+  color: white;
+}
+
+.message-content p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.message-bubble.own .message-content p {
+  color: white;
+}
+
+.message-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.message-video {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+}
+
+.message-caption {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.message-document,
+.message-location,
+.message-price,
+.message-rate,
+.message-calendar,
+.message-share {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+}
+
+.message-document-info,
+.message-location-info,
+.message-price-info,
+.message-rate-info,
+.message-calendar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.message-document-name,
+.message-price-amount,
+.message-rate-amount,
+.message-calendar-title {
+  font-weight: 600;
+}
+
+.message-document-type,
+.message-calendar-date {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.message-bubble.own .message-document-type,
+.message-bubble.own .message-calendar-date {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-document-download,
+.message-location-link,
+.message-share-link {
+  color: #6366F1;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.message-bubble.own .message-document-download,
+.message-bubble.own .message-location-link,
+.message-bubble.own .message-share-link {
+  color: white;
+}
+
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.message-bubble.own .message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-bubble:hover .message-actions {
+  opacity: 1;
+}
+
+.message-action-btn {
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.message-action-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble.own .message-action-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message-bubble.own .message-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+

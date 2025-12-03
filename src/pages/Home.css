@@ -41,6 +41,14 @@
   line-height: 1.2;
 }
 
+.home-header-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.home-swipe-btn,
 .home-notification-btn {
   position: relative;
   width: 44px;
@@ -54,11 +62,27 @@
   cursor: pointer;
   color: #374151;
   flex-shrink: 0;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
+.home-swipe-btn:hover,
 .home-notification-btn:hover {
   background-color: #F3F4F6;
+  transform: scale(1.05);
+}
+
+.home-swipe-btn:active,
+.home-notification-btn:active {
+  transform: scale(0.95);
+}
+
+.home-swipe-btn {
+  color: #6366F1;
+}
+
+.home-swipe-btn:hover {
+  background-color: #E0E7FF;
+  color: #4F46E5;
 }
 
 .home-notification-badge {

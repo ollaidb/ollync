@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Bell, Search, TrendingUp, Clock, Star, Loader } from 'lucide-react'
+import { Bell, Search, TrendingUp, Clock, Star, Loader, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
@@ -110,14 +110,23 @@ const Home = () => {
               <div className="home-header-branding">
                 <h1 className="home-title">Ollync</h1>
               </div>
-              <button
-                className="home-notification-btn"
-                onClick={() => navigate('/notifications')}
-                aria-label="Notifications"
-              >
-                <Bell size={20} />
-                <span className="home-notification-badge"></span>
-              </button>
+              <div className="home-header-actions">
+                <button
+                  className="home-swipe-btn"
+                  onClick={() => navigate('/swipe')}
+                  aria-label="Mode Swipe"
+                >
+                  <Sparkles size={20} />
+                </button>
+                <button
+                  className="home-notification-btn"
+                  onClick={() => navigate('/notifications')}
+                  aria-label="Notifications"
+                >
+                  <Bell size={20} />
+                  <span className="home-notification-badge"></span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -185,19 +194,28 @@ const Home = () => {
         {/* 1. TÊTE DE PAGE (Fixe) */}
         <div className="home-header-top-fixed">
           <div className="home-header-top-content">
-            <div className="home-header-branding">
-              <h1 className="home-title">Ollync</h1>
+              <div className="home-header-branding">
+                <h1 className="home-title">Ollync</h1>
+              </div>
+              <div className="home-header-actions">
+                <button
+                  className="home-swipe-btn"
+                  onClick={() => navigate('/swipe')}
+                  aria-label="Mode Swipe"
+                >
+                  <Sparkles size={20} />
+                </button>
+                <button
+                  className="home-notification-btn"
+                  onClick={() => navigate('/notifications')}
+                  aria-label="Notifications"
+                >
+                  <Bell size={20} />
+                  <span className="home-notification-badge"></span>
+                </button>
+              </div>
             </div>
-            <button
-              className="home-notification-btn"
-              onClick={() => navigate('/notifications')}
-              aria-label="Notifications"
-            >
-              <Bell size={20} />
-              <span className="home-notification-badge"></span>
-            </button>
           </div>
-        </div>
 
         {/* 2. BARRE DE RECHERCHE (Fixe) */}
         <div className="home-search-bar-fixed">

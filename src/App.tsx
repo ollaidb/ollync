@@ -14,6 +14,7 @@ import Vente from './pages/Vente'
 import Mission from './pages/Mission'
 import Autre from './pages/Autre'
 import PostDetails from './pages/PostDetails'
+import SwipePage from './pages/SwipePage'
 import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
@@ -75,6 +76,7 @@ function AppContent() {
           <Route path="/autre/:submenu/:subSubMenu" element={<Autre />} />
           <Route path="/publier-annonce" element={<Publish />} />
           <Route path="/post/:id" element={<PostDetails />} />
+          <Route path="/swipe" element={<SwipePage />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/auth/login" element={<Login />} />

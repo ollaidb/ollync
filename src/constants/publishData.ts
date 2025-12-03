@@ -36,7 +36,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'match',
     icon: Users,
     color: '#667eea',
-    description: 'Connecter les gens selon leurs besoins',
+    description: 'Rencontres utiles : créatif, social ou événementiel',
     subcategories: [
       {
         id: 'tout',
@@ -74,9 +74,9 @@ export const publicationTypes: PublicationType[] = [
         slug: 'plus-one'
       },
       {
-        id: 'evenement',
-        name: 'Événement',
-        slug: 'evenement'
+        id: 'evenements',
+        name: 'Événements',
+        slug: 'evenements'
       }
     ]
   },
@@ -86,7 +86,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'recrutement',
     icon: Briefcase,
     color: '#9c27b0',
-    description: 'Trouver des profils pour un projet',
+    description: 'Trouver des profils pour un projet ou une production',
     subcategories: [
       {
         id: 'tout',
@@ -94,19 +94,34 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'job',
-        name: 'Job',
-        slug: 'job'
+        id: 'modele',
+        name: 'Modèles',
+        slug: 'modele'
       },
       {
-        id: 'freelance',
-        name: 'Freelance',
-        slug: 'freelance'
+        id: 'figurant',
+        name: 'Figurants',
+        slug: 'figurant'
       },
       {
-        id: 'stage-alternance',
-        name: 'Stage / Alternance',
-        slug: 'stage-alternance'
+        id: 'live',
+        name: 'Live',
+        slug: 'live'
+      },
+      {
+        id: 'vlog',
+        name: 'Vlog',
+        slug: 'vlog'
+      },
+      {
+        id: 'copywriting',
+        name: 'Copywriting',
+        slug: 'copywriting'
+      },
+      {
+        id: 'montage-video',
+        name: 'Montage vidéo',
+        slug: 'montage-video'
       }
     ]
   },
@@ -116,7 +131,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'projet',
     icon: Briefcase,
     color: '#2196f3',
-    description: 'Collaborer, trouver des partenaires',
+    description: 'Trouver un associé, un collaborateur ou rejoindre un projet',
     subcategories: [
       {
         id: 'tout',
@@ -124,9 +139,9 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'associer-collaboration',
-        name: 'Associer / Collaboration',
-        slug: 'associer-collaboration'
+        id: 'association-collaboration',
+        name: 'Association / Collaboration',
+        slug: 'association-collaboration'
       }
     ]
   },
@@ -136,7 +151,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'service',
     icon: Wrench,
     color: '#4facfe',
-    description: 'Échange, aide, formations',
+    description: 'Échange de compétences, petites tâches, formations',
     subcategories: [
       {
         id: 'tout',
@@ -179,9 +194,9 @@ export const publicationTypes: PublicationType[] = [
         slug: 'echange'
       },
       {
-        id: 'vente-compte',
+        id: 'vente-comptes',
         name: 'Vente de comptes',
-        slug: 'vente-compte'
+        slug: 'vente-comptes'
       },
       {
         id: 'don',
@@ -196,7 +211,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'mission',
     icon: Target,
     color: '#43e97b',
-    description: 'Livraisons, vérifications',
+    description: 'Livraison, vérification, cuisine',
     subcategories: [
       {
         id: 'tout',
@@ -209,14 +224,14 @@ export const publicationTypes: PublicationType[] = [
         slug: 'livraison'
       },
       {
-        id: 'chauffeur',
-        name: 'Chauffeur',
-        slug: 'chauffeur'
+        id: 'verification',
+        name: 'Vérification',
+        slug: 'verification'
       },
       {
-        id: 'autre',
-        name: 'Autre',
-        slug: 'autre'
+        id: 'cuisine',
+        name: 'Cuisine',
+        slug: 'cuisine'
       }
     ]
   },
@@ -226,12 +241,17 @@ export const publicationTypes: PublicationType[] = [
     slug: 'autre',
     icon: MoreHorizontal,
     color: '#ffa726',
-    description: 'Catégories flexibles',
+    description: 'Autres services',
     subcategories: [
       {
         id: 'tout',
         name: 'Tout',
         slug: 'tout'
+      },
+      {
+        id: 'autre-service',
+        name: 'Autre service',
+        slug: 'autre-service'
       }
     ]
   }

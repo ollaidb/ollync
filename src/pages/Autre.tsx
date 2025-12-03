@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import SubMenuNavigation from '../components/SubMenuNavigation'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
-import { getDefaultSubMenus } from '../utils/defaultSubMenus'
+import CategorySubMenuHover from '../components/CategorySubMenuHover'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './CategoryPage.css'
@@ -41,8 +40,7 @@ const Autre = () => {
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const defaultSubMenus = getDefaultSubMenus('autre')
-  const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>(defaultSubMenus)
+  const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>([])
 
   useEffect(() => {
     fetchSubMenus()
@@ -144,7 +142,9 @@ const Autre = () => {
         <div className="category-header-fixed">
           <div className="category-header-content">
             <BackButton />
-            <h1 className="category-title">Autre</h1>
+            <CategorySubMenuHover category="autre" categoryPath="/autre" subMenus={subMenus}>
+              <h1 className="category-title">Autre</h1>
+            </CategorySubMenuHover>
             <div className="category-header-spacer"></div>
           </div>
         </div>
@@ -172,11 +172,6 @@ const Autre = () => {
               )}
             </div>
           </div>
-        </div>
-
-        {/* SubMenu Navigation fixe */}
-        <div className="category-submenu-fixed">
-          <SubMenuNavigation category="autre" subMenus={subMenus} />
         </div>
 
         {/* Zone scrollable */}
