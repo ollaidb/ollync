@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MessageCircle, Send, Loader, Search } from 'lucide-react'
+import { MessageCircle, Send, Loader, Search, Users, Archive } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import './Messages.css'
+
+type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'archived'
 
 interface Conversation {
   id: string
@@ -52,6 +54,9 @@ const Messages = () => {
   const [sending, setSending] = useState(false)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -67,6 +72,14 @@ const Messages = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, postId, conversationId])
+
+  // Recharger la conversation quand l'URL change
+  useEffect(() => {
+    if (user && conversationId && !selectedConversation) {
+      loadConversation(conversationId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, user])
 
   const formatTime = (dateString: string | null | undefined): string => {
     if (!dateString) return ''
@@ -212,10 +225,25 @@ const Messages = () => {
 
       const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((s) => [s.id, s]))
 
-      setMessages((messagesData as Array<{ id: string; content: string; sender_id: string; created_at: string }>).map((msg) => ({
+      const formattedMessages = (messagesData as Array<{ id: string; content: string; sender_id: string; created_at: string; read_at?: string | null }>).map((msg) => ({
         ...msg,
         sender: sendersMap.get(msg.sender_id) || null
-      })))
+      }))
+
+      setMessages(formattedMessages)
+
+      // Marquer les messages non lus comme lus
+      const unreadMessages = formattedMessages.filter(
+        (msg) => msg.sender_id !== user.id && !msg.read_at
+      )
+
+      if (unreadMessages.length > 0) {
+        const unreadIds = unreadMessages.map((msg) => msg.id)
+        await supabase
+          .from('messages')
+          .update({ read_at: new Date().toISOString() } as never)
+          .in('id', unreadIds)
+      }
     } else {
       setMessages([])
     }
@@ -226,11 +254,24 @@ const Messages = () => {
 
     setLoading(true)
     try {
-      const { data: convs, error } = await supabase
+      let query = supabase
         .from('conversations')
         .select('*')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order('last_message_at', { ascending: false })
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}`)
+
+      // Appliquer les filtres selon le type
+      if (activeFilter === 'posts') {
+        query = query.not('post_id', 'is', null)
+      } else if (activeFilter === 'groups') {
+        query = query.eq('is_group', true)
+      } else if (activeFilter === 'archived') {
+        query = query.eq('is_archived', true)
+      } else if (activeFilter === 'matches') {
+        // Les matchs sont gérés via la table matches
+        // Pour l'instant, on charge toutes les conversations et on filtre côté client
+      }
+
+      const { data: convs, error } = await query.order('last_message_at', { ascending: false })
 
       if (error) {
         console.error('Error loading conversations:', error)
@@ -306,48 +347,91 @@ const Messages = () => {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, activeFilter])
 
   const sendMessage = async () => {
-    if (!user || !message.trim() || !selectedConversation) return
+    if (!user || !message.trim() || !selectedConversation) {
+      console.log('Cannot send message:', { user: !!user, message: message.trim(), conversation: !!selectedConversation })
+      return
+    }
 
     setSending(true)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('messages') as any).insert({
+      console.log('Envoi du message:', {
         conversation_id: selectedConversation.id,
         sender_id: user.id,
         content: message.trim()
       })
 
-      if (error) throw error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('messages') as any).insert({
+        conversation_id: selectedConversation.id,
+        sender_id: user.id,
+        content: message.trim(),
+        message_type: 'text'
+      })
+      .select()
+      .single()
 
-      // Mettre à jour last_message_at de la conversation
+      if (error) {
+        console.error('Error sending message:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        alert(`Erreur lors de l'envoi du message: ${error.message || 'Erreur inconnue'}`)
+        setSending(false)
+        return
+      }
+
+      console.log('Message envoyé avec succès:', data)
+
+      // Mettre à jour last_message_at de la conversation (le trigger devrait le faire, mais on le fait manuellement aussi)
       await supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() } as never)
         .eq('id', selectedConversation.id)
 
       setMessage('')
-      loadMessages(selectedConversation.id)
-      loadConversations() // Rafraîchir la liste des conversations
+      await loadMessages(selectedConversation.id)
+      await loadConversations() // Rafraîchir la liste des conversations
     } catch (error) {
       console.error('Error sending message:', error)
-      alert('Erreur lors de l\'envoi du message')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      alert(`Erreur lors de l'envoi du message: ${errorMessage}`)
     } finally {
       setSending(false)
     }
   }
 
   const filteredConversations = conversations.filter((conv) => {
-    if (!searchQuery.trim()) return true
-    
-    const query = searchQuery.toLowerCase()
-    const name = (conv.other_user?.full_name || conv.other_user?.username || '').toLowerCase()
-    const postTitle = (conv.postTitle || '').toLowerCase()
-    const lastMessage = (conv.lastMessage?.content || '').toLowerCase()
-    
-    return name.includes(query) || postTitle.includes(query) || lastMessage.includes(query)
+    // Filtre par recherche textuelle
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const name = (conv.other_user?.full_name || conv.other_user?.username || '').toLowerCase()
+      const postTitle = (conv.postTitle || '').toLowerCase()
+      const lastMessage = (conv.lastMessage?.content || '').toLowerCase()
+      if (!name.includes(query) && !postTitle.includes(query) && !lastMessage.includes(query)) {
+        return false
+      }
+    }
+
+    // Filtre par type
+    if (activeFilter === 'all') {
+      return true
+    } else if (activeFilter === 'posts') {
+      return !!conv.post_id
+    } else if (activeFilter === 'groups') {
+      return !!(conv as { is_group?: boolean }).is_group
+    } else if (activeFilter === 'archived') {
+      return !!(conv as { is_archived?: boolean }).is_archived
+    } else if (activeFilter === 'matches') {
+      // Pour l'instant, on considère que les matchs sont des conversations sans post_id
+      // TODO: Implémenter la logique avec la table matches
+      return !conv.post_id && !(conv as { is_group?: boolean }).is_group
+    } else if (activeFilter === 'match_requests') {
+      // TODO: Implémenter la logique avec la table matches (status = 'pending')
+      return false
+    }
+
+    return true
   })
 
   if (!user) {
@@ -462,7 +546,15 @@ const Messages = () => {
         <div className="messages-header-title-row">
           <BackButton />
           <h1 className="messages-title">Messages</h1>
-          <div className="messages-header-spacer"></div>
+          <div className="messages-header-actions">
+            <button
+              className="messages-create-group-btn"
+              onClick={() => setShowCreateGroup(true)}
+              title="Créer un groupe"
+            >
+              <Users size={20} />
+            </button>
+          </div>
         </div>
         
         {/* Search Bar */}
@@ -475,6 +567,48 @@ const Messages = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="messages-search-input"
           />
+        </div>
+
+        {/* Filtres rapides */}
+        <div className="messages-filters">
+          <button
+            className={`messages-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('all')}
+          >
+            Tous
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'posts' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('posts')}
+          >
+            Annonces
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'matches' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('matches')}
+          >
+            Matchs
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'match_requests' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('match_requests')}
+          >
+            Demandes
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'groups' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('groups')}
+          >
+            <Users size={16} />
+            Groupes
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'archived' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('archived')}
+          >
+            <Archive size={16} />
+            Archivés
+          </button>
         </div>
       </div>
 

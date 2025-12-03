@@ -275,13 +275,72 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     navigate('/profile/edit')
   }
 
-  const handleContact = () => {
+  const handleContact = async () => {
     if (!user) {
       navigate('/auth/login')
       return
     }
-    if (!profileId) return
-    navigate(`/messages/new?user=${profileId}`)
+    if (!profileId || profileId === user.id) {
+      alert('Vous ne pouvez pas vous envoyer un message à vous-même')
+      return
+    }
+
+    try {
+      console.log('Création de conversation entre:', user.id, 'et', profileId)
+      
+      // Vérifier si une conversation existe déjà
+      const { data: existingConv, error: checkError } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${profileId}),and(user1_id.eq.${profileId},user2_id.eq.${user.id})`)
+        .maybeSingle()
+
+      if (checkError) {
+        console.error('Error checking existing conversation:', checkError)
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const existingConvId = (existingConv as any)?.id
+      if (existingConvId) {
+        // Conversation existe déjà, rediriger vers celle-ci
+        console.log('Conversation existante trouvée:', existingConvId)
+        navigate(`/messages/${existingConvId}`)
+        return
+      }
+
+      // Créer une nouvelle conversation
+      console.log('Création d\'une nouvelle conversation...')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newConv, error: insertError } = await (supabase.from('conversations') as any)
+        .insert({
+          user1_id: user.id,
+          user2_id: profileId,
+          is_group: false
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Error creating conversation:', insertError)
+        console.error('Error details:', JSON.stringify(insertError, null, 2))
+        alert(`Erreur lors de la création de la conversation: ${insertError.message || 'Erreur inconnue'}`)
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convId = (newConv as any)?.id
+      if (convId) {
+        console.log('Conversation créée avec succès:', convId)
+        navigate(`/messages/${convId}`)
+      } else {
+        console.error('Aucune conversation retournée après création')
+        alert('Erreur: La conversation n\'a pas pu être créée')
+      }
+    } catch (error) {
+      console.error('Error in handleContact:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      alert(`Erreur lors de l'ouverture de la conversation: ${errorMessage}`)
+    }
   }
 
   const handleToggleFavorite = async () => {

@@ -41,6 +41,29 @@
   flex-shrink: 0;
 }
 
+.messages-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.messages-create-group-btn {
+  background: none;
+  border: none;
+  color: #6366F1;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.messages-create-group-btn:hover {
+  background-color: #F3F4F6;
+}
+
 /* Wrapper pour le titre et le bouton retour */
 .messages-header-title-row {
   display: flex;
@@ -93,12 +116,60 @@
   color: #9CA3AF;
 }
 
+/* Filtres rapides */
+.messages-filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.messages-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.messages-filter-btn {
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.messages-filter-btn:hover {
+  background-color: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.messages-filter-btn.active {
+  background-color: #6366F1;
+  border-color: #6366F1;
+  color: #FFFFFF;
+}
+
+.messages-filter-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Content */
 .messages-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   padding-left: 20px;
   padding-right: 20px;
