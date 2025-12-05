@@ -251,7 +251,7 @@ const Home = () => {
           <div className="home-posts-section">
             <h2 className="home-section-title">annonce recente</h2>
             <div className="home-posts-grid">
-              {recentPosts.slice(0, 2).map((post) => (
+              {recentPosts.map((post) => (
                 <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
                   {post.images && post.images.length > 0 ? (
                     <img src={post.images[0]} alt={post.title} />
@@ -270,7 +270,7 @@ const Home = () => {
             <div className="home-posts-section">
               <h2 className="home-section-title">urgent</h2>
               <div className="home-posts-grid">
-                {urgentPosts.slice(0, 2).map((post) => (
+                {urgentPosts.map((post) => (
                   <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
                     {post.images && post.images.length > 0 ? (
                       <img src={post.images[0]} alt={post.title} />

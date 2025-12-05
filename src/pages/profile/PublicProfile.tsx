@@ -1,16 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Edit, MessageCircle, Share2, MapPin, CheckCircle2, Instagram, Linkedin, Globe, Twitter, Facebook } from 'lucide-react'
+import { ArrowLeft, Share2, MapPin, Plus, Instagram, Facebook, Star } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PostCard from '../../components/PostCard'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
-import { ProfileAvatar } from '../../components/ProfilePage/ProfileAvatar'
-import { ProfileStats } from '../../components/ProfilePage/ProfileStats'
-import { ProfileInfo } from '../../components/ProfilePage/ProfileInfo'
-import { ProfileTabs } from '../../components/ProfilePage/ProfileTabs'
-import { EmptyState } from '../../components/ProfilePage/EmptyState'
-import { ReviewCard } from '../../components/ProfilePage/ReviewCard'
 import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import './PublicProfile.css'
 
@@ -266,83 +259,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setReviewsLoading(false)
   }, [profileId])
 
-  const handleLike = (postId: string) => {
-    console.log('Like post:', postId)
-    // La logique de like est gérée par PostCard
-  }
-
-  const handleEditProfile = () => {
-    navigate('/profile/edit')
-  }
-
-  const handleContact = async () => {
-    if (!user) {
-      navigate('/auth/login')
-      return
-    }
-    if (!profileId || profileId === user.id) {
-      alert('Vous ne pouvez pas vous envoyer un message à vous-même')
-      return
-    }
-
-    try {
-      console.log('Création de conversation entre:', user.id, 'et', profileId)
-      
-      // Vérifier si une conversation existe déjà
-      const { data: existingConv, error: checkError } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${profileId}),and(user1_id.eq.${profileId},user2_id.eq.${user.id})`)
-        .maybeSingle()
-
-      if (checkError) {
-        console.error('Error checking existing conversation:', checkError)
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const existingConvId = (existingConv as any)?.id
-      if (existingConvId) {
-        // Conversation existe déjà, rediriger vers celle-ci
-        console.log('Conversation existante trouvée:', existingConvId)
-        navigate(`/messages/${existingConvId}`)
-        return
-      }
-
-      // Créer une nouvelle conversation
-      console.log('Création d\'une nouvelle conversation...')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newConv, error: insertError } = await (supabase.from('conversations') as any)
-        .insert({
-          user1_id: user.id,
-          user2_id: profileId,
-          is_group: false
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error('Error creating conversation:', insertError)
-        console.error('Error details:', JSON.stringify(insertError, null, 2))
-        alert(`Erreur lors de la création de la conversation: ${insertError.message || 'Erreur inconnue'}`)
-        return
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const convId = (newConv as any)?.id
-      if (convId) {
-        console.log('Conversation créée avec succès:', convId)
-        navigate(`/messages/${convId}`)
-      } else {
-        console.error('Aucune conversation retournée après création')
-        alert('Erreur: La conversation n\'a pas pu être créée')
-      }
-    } catch (error) {
-      console.error('Error in handleContact:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
-      alert(`Erreur lors de l'ouverture de la conversation: ${errorMessage}`)
-    }
-  }
-
   const handleToggleFavorite = async () => {
     if (!user || !profileId || isOwnProfile) return
 
@@ -435,299 +351,285 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
-  const averageRating = reviews.length > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : 0
+
+  // Centres d'intérêt (combinaison de skills et services)
+  const interests = [
+    ...(profile.skills || []),
+    ...(profile.services || [])
+  ]
 
   return (
     <div className="public-profile-page">
-      <div className="public-profile-content-wrapper">
-        {/* Profil Header */}
-        <div className="public-profile-header">
-          {/* Photo de profil avec badge de vérification */}
-          <div className="profile-header-top">
-            <div className="profile-avatar-section">
-              <ProfileAvatar
-                avatar={profile.avatar_url}
-                fullName={profile.full_name}
-                username={profile.username}
-                onPress={() => setShowPhotoModal(true)}
-              />
-              {profile.badges && profile.badges.includes('verified') && (
-                <div className="verified-badge">
-                  <CheckCircle2 size={20} />
-                </div>
-              )}
+      {/* 1. HEADER - Retour */}
+      <div className="profile-page-header">
+        <button 
+          className="profile-back-button"
+          onClick={() => navigate(-1)}
+          aria-label="Retour"
+        >
+          <ArrowLeft size={24} />
+        </button>
+      </div>
+
+      {/* 2. BLOC D'IDENTITÉ (fond bleu) */}
+      <div className="profile-identity-block">
+        {/* Icône partage sur le bloc */}
+        <button 
+          className="profile-share-button-on-block"
+          onClick={handleShare}
+          aria-label="Partager"
+        >
+          <Share2 size={24} />
+        </button>
+        {/* Photo de profil */}
+        <div 
+          className="profile-avatar-large"
+          onClick={() => setShowPhotoModal(true)}
+        >
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt={displayName} />
+          ) : (
+            <div className="profile-avatar-placeholder">
+              {(displayName[0] || 'U').toUpperCase()}
             </div>
-
-            {/* Nom / Pseudo et Localisation */}
-            <div className="profile-header-info">
-              <h1 className="profile-name">{displayName}</h1>
-              {profile.username && (
-                <p className="profile-username">@{profile.username}</p>
-              )}
-              {profile.location && (
-                <div className="profile-location-header">
-                  <MapPin size={16} />
-                  <span>{profile.location}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bouton Suivre et actions */}
-          {!isOwnProfile && user && (
-            <div className="profile-follow-section">
-              <button
-                className={`profile-follow-button ${isFavorite ? 'following' : ''}`}
-                onClick={handleToggleFavorite}
-              >
-                {isFavorite ? 'Suivi' : 'Suivre'}
-              </button>
-              <div className="profile-action-icons">
-                <button
-                  className="profile-action-icon contact-button"
-                  onClick={handleContact}
-                  aria-label="Contacter"
-                  title="Contacter"
-                >
-                  <MessageCircle size={18} />
-                </button>
-                <button
-                  className="profile-action-icon share-button"
-                  onClick={handleShare}
-                  aria-label="Partager"
-                  title="Partager"
-                >
-                  <Share2 size={18} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Stats */}
-          <ProfileStats
-            postsCount={posts.length}
-            followersCount={followersCount}
-            matchCount={matchPosts.length}
-            averageRating={averageRating}
-          />
-
-          {/* Bio courte */}
-          {profile.bio && (
-            <div className="profile-bio-section">
-              <p className="profile-bio-text">{profile.bio}</p>
-            </div>
-          )}
-
-          {/* Compétences / Services */}
-          {(profile.skills && profile.skills.length > 0) || (profile.services && profile.services.length > 0) ? (
-            <div className="profile-skills-services-section">
-              {profile.skills && profile.skills.length > 0 && (
-                <div className="profile-skills-group">
-                  <h3 className="profile-section-title">Compétences</h3>
-                  <div className="profile-skills-tags">
-                    {profile.skills.map((skill, index) => (
-                      <span key={index} className="profile-skill-tag">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {profile.services && profile.services.length > 0 && (
-                <div className="profile-services-group">
-                  <h3 className="profile-section-title">Services</h3>
-                  <div className="profile-services-tags">
-                    {profile.services.map((service, index) => (
-                      <span key={index} className="profile-service-tag">
-                        {service}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {/* Informations supplémentaires (disponibilité, langues) */}
-          <ProfileInfo
-            bio={null}
-            location={null}
-            locationVisible={false}
-            availability={profile.availability}
-            skills={[]}
-            languages={profile.languages}
-          />
-
-          {/* Liens sociaux */}
-          {profile.social_links && (
-            (profile.social_links.instagram || 
-             profile.social_links.tiktok || 
-             profile.social_links.linkedin || 
-             profile.social_links.twitter || 
-             profile.social_links.facebook || 
-             profile.social_links.website) && (
-              <div className="profile-social-links-section">
-                <h3 className="profile-section-title">Réseaux sociaux</h3>
-                <div className="profile-social-links">
-                  {profile.social_links.instagram && (
-                    <a
-                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Instagram size={20} />
-                      <span>Instagram</span>
-                    </a>
-                  )}
-                  {profile.social_links.tiktok && (
-                    <a
-                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Globe size={20} />
-                      <span>TikTok</span>
-                    </a>
-                  )}
-                  {profile.social_links.linkedin && (
-                    <a
-                      href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : `https://linkedin.com/in/${profile.social_links.linkedin.replace('@', '').replace('linkedin.com/in/', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Linkedin size={20} />
-                      <span>LinkedIn</span>
-                    </a>
-                  )}
-                  {profile.social_links.twitter && (
-                    <a
-                      href={profile.social_links.twitter.startsWith('http') ? profile.social_links.twitter : `https://twitter.com/${profile.social_links.twitter.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Twitter size={20} />
-                      <span>Twitter</span>
-                    </a>
-                  )}
-                  {profile.social_links.facebook && (
-                    <a
-                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Facebook size={20} />
-                      <span>Facebook</span>
-                    </a>
-                  )}
-                  {profile.social_links.website && (
-                    <a
-                      href={profile.social_links.website.startsWith('http') ? profile.social_links.website : `https://${profile.social_links.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-link"
-                    >
-                      <Globe size={20} />
-                      <span>Site web</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            )
-          )}
-
-          {/* Bouton Modifier le profil - seulement pour le propre profil */}
-          {isOwnProfile && (
-            <button
-              className="edit-profile-button-bottom"
-              onClick={handleEditProfile}
-            >
-              <Edit size={18} />
-              <span>Modifier le profil</span>
-            </button>
           )}
         </div>
 
-        <ProfileTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          postsCount={posts.length}
-          matchCount={matchPosts.length}
-          reviewsCount={reviews.length}
-        />
-
-        {/* Tab Content */}
-        <div className="profile-tab-content">
-          {/* Onglet Annonces */}
-          {activeTab === 'annonces' && (
-            <div>
-              {postsLoading ? (
-                <div className="loading-state">Chargement...</div>
-              ) : posts.length === 0 ? (
-                <EmptyState
-                  title="Aucune annonce"
-                  message="Vous n'avez pas encore publié d'annonce"
-                  icon="package"
-                />
-              ) : (
-                <div className="posts-list">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
-                  ))}
-                </div>
-              )}
+        {/* Informations utilisateur */}
+        <div className="profile-user-info">
+          <h1 className="profile-full-name">{profile.full_name || 'nom de lutisateur'}</h1>
+          {profile.username && (
+            <p className="profile-username-text">{profile.username}</p>
+          )}
+          {profile.location && (
+            <div className="profile-location-text">
+              <MapPin size={16} />
+              <span>{profile.location}</span>
             </div>
           )}
+        </div>
 
-          {/* Onglet Match */}
-          {activeTab === 'match' && (
-            <div>
-              {postsLoading ? (
-                <div className="loading-state">Chargement...</div>
-              ) : matchPosts.length === 0 ? (
-                <EmptyState
-                  title="Aucun match"
-                  message="Aucune annonce Match pour le moment"
-                  icon="users"
-                />
-              ) : (
-                <div className="posts-list">
-                  {matchPosts.map((post) => (
-                    <PostCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+        {/* Bouton Suivre */}
+        {!isOwnProfile && user && (
+          <button
+            className={`profile-follow-btn ${isFavorite ? 'following' : ''}`}
+            onClick={handleToggleFavorite}
+          >
+            <Plus size={18} />
+            <span>{isFavorite ? 'Abonné(e)' : 'Suivre'}</span>
+          </button>
+        )}
 
-          {/* Onglet Avis */}
-          {activeTab === 'avis' && (
-            <div>
-              {reviewsLoading ? (
-                <div className="loading-state">Chargement...</div>
-              ) : reviews.length === 0 ? (
-                <EmptyState
-                  title="Aucun avis"
-                  message="Aucun avis pour le moment"
-                  icon="star"
-                />
-              ) : (
-                <div className="reviews-list">
-                  {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+        {/* Statistiques */}
+        <div className="profile-stats-cards">
+          <div className="profile-stat-card">
+            <div className="stat-number">{posts.length}</div>
+            <div className="stat-label-text">annonce</div>
+          </div>
+          <div className="profile-stat-card">
+            <div className="stat-number">{followersCount}</div>
+            <div className="stat-label-text">abonne</div>
+          </div>
         </div>
       </div>
+
+      {/* 3. BLOC BIO (fond bleu) */}
+      {profile.bio && (
+        <div className="profile-bio-block">
+          <div className="bio-label">bio</div>
+          <p className="bio-text">{profile.bio}</p>
+        </div>
+      )}
+
+      {/* 4. CENTRES D'INTÉRÊT (scroll horizontal) */}
+      {interests.length > 0 && (
+        <div className="profile-interests-section">
+          <h3 className="interests-title">centre dinteret</h3>
+          <div className="interests-scroll">
+            {interests.map((interest, index) => (
+              <div 
+                key={index} 
+                className={`interest-bubble ${index === 0 ? 'active' : ''}`}
+              >
+                {interest}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. LIENS SOCIAUX (bloc bleu arrondi) */}
+      {profile.social_links && (
+        (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.facebook) && (
+          <div className="profile-social-block">
+            {profile.social_links.instagram && (
+              <a
+                href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-link"
+              >
+                <Instagram size={24} />
+              </a>
+            )}
+            {profile.social_links.tiktok && (
+              <a
+                href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-link"
+              >
+                <div className="tiktok-icon">TT</div>
+              </a>
+            )}
+            {profile.social_links.facebook && (
+              <a
+                href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-icon-link"
+              >
+                <Facebook size={24} />
+              </a>
+            )}
+          </div>
+        )
+      )}
+
+      {/* 6. MENU SECONDAIRE : Annonce / Match / Avis */}
+      <div className="profile-secondary-menu">
+        <button
+          className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
+          onClick={() => setActiveTab('annonces')}
+        >
+          annonce
+        </button>
+        <button
+          className={`profile-menu-btn ${activeTab === 'match' ? 'active' : ''}`}
+          onClick={() => setActiveTab('match')}
+        >
+          match
+        </button>
+        <button
+          className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
+          onClick={() => setActiveTab('avis')}
+        >
+          avis
+        </button>
+      </div>
+
+      {/* 7. BLOC CONTENU (scrollable) */}
+      <div className="profile-content-scrollable">
+        {/* Mode Annonce - Grille 2 colonnes */}
+        {activeTab === 'annonces' && (
+          <div className="profile-content-annonces">
+            {postsLoading ? (
+              <div className="loading-state">Chargement...</div>
+            ) : posts.length === 0 ? (
+              <div className="empty-state">Aucune annonce</div>
+            ) : (
+              <div className="posts-grid-2cols">
+                {posts.map((post) => (
+                  <div 
+                    key={post.id} 
+                    className="post-grid-item"
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  >
+                    {post.images && post.images.length > 0 ? (
+                      <img src={post.images[0]} alt={post.title} />
+                    ) : (
+                      <div className="post-placeholder">
+                        <span>{post.title}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode Match - Liste verticale */}
+        {activeTab === 'match' && (
+          <div className="profile-content-match">
+            {postsLoading ? (
+              <div className="loading-state">Chargement...</div>
+            ) : matchPosts.length === 0 ? (
+              <div className="empty-state">Aucun match</div>
+            ) : (
+              <div className="match-list">
+                {matchPosts.map((post) => (
+                  <div 
+                    key={post.id} 
+                    className="match-item"
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  >
+                    {post.user?.avatar_url ? (
+                      <img src={post.user.avatar_url} alt={post.user.username || ''} className="match-avatar" />
+                    ) : (
+                      <div className="match-avatar-placeholder">
+                        {(post.user?.username?.[0] || 'U').toUpperCase()}
+                      </div>
+                    )}
+                    <div className="match-info">
+                      <div className="match-name">{post.user?.full_name || post.user?.username || 'Utilisateur'}</div>
+                      <div className="match-type">{post.category?.name || 'Match'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mode Avis - Liste des avis */}
+        {activeTab === 'avis' && (
+          <div className="profile-content-avis">
+            {reviewsLoading ? (
+              <div className="loading-state">Chargement...</div>
+            ) : reviews.length === 0 ? (
+              <div className="empty-state">Aucun avis</div>
+            ) : (
+              <div className="reviews-list">
+                {reviews.map((review) => (
+                  <div key={review.id} className="review-item">
+                    <div className="review-header-item">
+                      {review.reviewer_avatar ? (
+                        <img src={review.reviewer_avatar} alt={review.reviewer_name || ''} className="review-avatar-img" />
+                      ) : (
+                        <div className="review-avatar-placeholder">
+                          {(review.reviewer_name?.[0] || 'U').toUpperCase()}
+                        </div>
+                      )}
+                      <div className="review-author-info">
+                        <div className="review-author-name">{review.reviewer_name || 'Anonyme'}</div>
+                        <div className="review-rating-stars">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star 
+                              key={star} 
+                              size={16} 
+                              className={star <= review.rating ? 'filled' : ''}
+                              fill={star <= review.rating ? '#ffc107' : 'none'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="review-date-text">
+                        {new Date(review.created_at).toLocaleDateString('fr-FR')}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="review-comment-text">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 8. FOOTER - Navigation globale (déjà géré par le composant Footer) */}
 
       <PhotoModal
         visible={showPhotoModal}
