@@ -33,8 +33,7 @@ const Footer = () => {
             onClick={() => navigate(item.path)}
             aria-label={item.label}
           >
-            <Icon size={22} />
-            <span className="footer-label">{item.label}</span>
+            <Icon size={24} strokeWidth={1.5} />
           </button>
         )
       })}

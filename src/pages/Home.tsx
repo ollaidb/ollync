@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Bell, Search, TrendingUp, Clock, Star, Loader, Sparkles } from 'lucide-react'
+import { Bell, Search, Loader, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Footer from '../components/Footer'
-import PostCard from '../components/PostCard'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import './Home.css'
@@ -39,7 +38,6 @@ const Home = () => {
   // Sections d'annonces
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [urgentPosts, setUrgentPosts] = useState<Post[]>([])
-  const [recommendedPosts, setRecommendedPosts] = useState<Post[]>([])
 
   const fetchPosts = async (_query: unknown, limit = 10) => {
     return await fetchPostsWithRelations({
@@ -79,19 +77,12 @@ const Home = () => {
     setUrgentPosts(urgent)
   }
 
-  const fetchRecommendedPosts = async () => {
-    const posts = await fetchPosts({}, 5)
-    setRecommendedPosts(posts)
-  }
-
-
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true)
       await Promise.all([
         fetchRecentPosts(),
-        fetchUrgentPosts(),
-        fetchRecommendedPosts()
+        fetchUrgentPosts()
       ])
       setLoading(false)
     }
@@ -104,75 +95,49 @@ const Home = () => {
     return (
       <div className="app">
         <div className="home-page">
-          {/* 1. TÊTE DE PAGE (Fixe) */}
-          <div className="home-header-top-fixed">
-            <div className="home-header-top-content">
-              <div className="home-header-branding">
-                <h1 className="home-title">Ollync</h1>
-              </div>
-              <div className="home-header-actions">
-                <button
-                  className="home-swipe-btn"
-                  onClick={() => navigate('/swipe')}
-                  aria-label="Mode Swipe"
-                >
-                  <Sparkles size={20} />
-                </button>
-                <button
-                  className="home-notification-btn"
-                  onClick={() => navigate('/notifications')}
-                  aria-label="Notifications"
-                >
-                  <Bell size={20} />
-                  <span className="home-notification-badge"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. BARRE DE RECHERCHE (Fixe) */}
-          <div className="home-search-bar-fixed">
-            <div className="home-search-bar-content">
-              <div 
-                className="home-search-bar"
-                onClick={() => navigate('/search')}
+          {/* HEADER FIXE - 3 Sections */}
+          <div className="home-header-section-1">
+            <h1 className="home-app-name">ollyc</h1>
+            <div className="home-header-actions">
+              <button
+                className="home-swipe-btn"
+                onClick={() => navigate('/swipe')}
+                aria-label="Mode Swipe"
               >
-                <Search size={20} />
-                <span className="home-search-placeholder">Rechercher une annonce...</span>
-              </div>
+                <Sparkles size={20} />
+              </button>
+              <button
+                className="home-notification-btn"
+                onClick={() => navigate('/notifications')}
+                aria-label="Notifications"
+              >
+                <Bell size={20} />
+                <span className="home-notification-badge"></span>
+              </button>
             </div>
           </div>
 
-          {/* 3. MENU CATÉGORIES (Fixe) */}
-          <div className="home-menu-fixed">
-            <div className="home-menu-content">
-              <div className="home-categories-scroll">
-                {publicationTypes.map((category) => {
-                  const Icon = category.icon
-                  return (
-                    <button
-                      key={category.id}
-                      className="home-category-card"
-                      onClick={() => navigate(`/${category.slug}`)}
-                    >
-                      <Icon size={24} />
-                      <span className="home-category-name">{category.name}</span>
-                    </button>
-                  )
-                })}
-              </div>
+          <div className="home-header-section-2">
+            <div 
+              className="home-search-bar"
+              onClick={() => navigate('/search')}
+            >
+              <span className="home-search-placeholder">Rechercher une annonce...</span>
+              <Search size={20} />
             </div>
           </div>
 
-          {/* 4. HERO BANNIÈRE (Fixe) */}
-          <div className="home-hero-fixed">
-            <div className="home-hero-content">
-              <div className="home-welcome-banner">
-                <div className="home-welcome-content">
-                  <h3 className="home-welcome-title">Bienvenue sur Ollync ! 👋</h3>
-                  <p className="home-welcome-subtitle">Découvrez des opportunités uniques et connectez-vous avec votre communauté.</p>
+          <div className="home-header-section-3">
+            <div className="home-categories-scroll">
+              {publicationTypes.map((category) => (
+                <div
+                  key={category.id}
+                  className="home-category-block"
+                  onClick={() => navigate(`/${category.slug}`)}
+                >
+                  <span className="home-category-name">{category.name}</span>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -191,121 +156,101 @@ const Home = () => {
   return (
     <div className="app">
       <div className="home-page">
-        {/* 1. TÊTE DE PAGE (Fixe) */}
-        <div className="home-header-top-fixed">
-          <div className="home-header-top-content">
-              <div className="home-header-branding">
-                <h1 className="home-title">Ollync</h1>
-              </div>
-              <div className="home-header-actions">
-                <button
-                  className="home-swipe-btn"
-                  onClick={() => navigate('/swipe')}
-                  aria-label="Mode Swipe"
-                >
-                  <Sparkles size={20} />
-                </button>
-                <button
-                  className="home-notification-btn"
-                  onClick={() => navigate('/notifications')}
-                  aria-label="Notifications"
-                >
-                  <Bell size={20} />
-                  <span className="home-notification-badge"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-        {/* 2. BARRE DE RECHERCHE (Fixe) */}
-        <div className="home-search-bar-fixed">
-          <div className="home-search-bar-content">
-            <div 
-              className="home-search-bar"
-              onClick={() => navigate('/search')}
+        {/* HEADER FIXE - 3 Sections */}
+        {/* Section 1: Nom app + Icônes swipe et notification */}
+        <div className="home-header-section-1">
+          <h1 className="home-app-name">ollyc</h1>
+          <div className="home-header-actions">
+            <button
+              className="home-swipe-btn"
+              onClick={() => navigate('/swipe')}
+              aria-label="Mode Swipe"
             >
-              <Search size={20} />
-              <span className="home-search-placeholder">Rechercher une annonce...</span>
-            </div>
+              <Sparkles size={20} />
+            </button>
+            <button
+              className="home-notification-btn"
+              onClick={() => navigate('/notifications')}
+              aria-label="Notifications"
+            >
+              <Bell size={20} />
+              <span className="home-notification-badge"></span>
+            </button>
           </div>
         </div>
 
-          {/* 3. MENU CATÉGORIES (Fixe) */}
-          <div className="home-menu-fixed">
-            <div className="home-menu-content">
-              <div className="home-categories-scroll">
-                {publicationTypes.map((category) => {
-                  const Icon = category.icon
-                  return (
-                    <button
-                      key={category.id}
-                      className="home-category-card"
-                      onClick={() => navigate(`/${category.slug}`)}
-                    >
-                      <Icon size={24} />
-                      <span className="home-category-name">{category.name}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+        {/* Section 2: Barre de recherche */}
+        <div className="home-header-section-2">
+          <div 
+            className="home-search-bar"
+            onClick={() => navigate('/search')}
+          >
+            <span className="home-search-placeholder">Rechercher une annonce...</span>
+            <Search size={20} />
           </div>
+        </div>
 
-          {/* 4. HERO BANNIÈRE (Fixe) */}
-          <div className="home-hero-fixed">
-            <div className="home-hero-content">
-              <div className="home-welcome-banner">
-                <div className="home-welcome-content">
-                  <h3 className="home-welcome-title">Bienvenue sur Ollync ! 👋</h3>
-                  <p className="home-welcome-subtitle">Découvrez des opportunités uniques et connectez-vous avec votre communauté.</p>
-                </div>
+        {/* Section 3: Catégories scrollables */}
+        <div className="home-header-section-3">
+          <div className="home-categories-scroll">
+            {publicationTypes.map((category) => (
+              <div
+                key={category.id}
+                className="home-category-block"
+                onClick={() => navigate(`/${category.slug}`)}
+              >
+                <span className="home-category-name">{category.name}</span>
               </div>
-            </div>
+            ))}
           </div>
+        </div>
 
-        {/* ZONE SCROLLABLE */}
+        {/* CONTENU SCROLLABLE */}
         <div className="home-scrollable">
+          {/* Section Hero */}
+          <div className="home-hero-section">
+            <div className="home-hero-block">
+              <span className="home-hero-text">hero</span>
+            </div>
+          </div>
+
+          {/* Section Annonces récentes */}
+          <div className="home-posts-section">
+            <h2 className="home-section-title">annonce recente</h2>
+            <div className="home-posts-grid">
+              {recentPosts.slice(0, 2).map((post) => (
+                <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
+                  {post.images && post.images.length > 0 ? (
+                    <img src={post.images[0]} alt={post.title} />
+                  ) : (
+                    <div className="home-post-block-placeholder">
+                      <span>{post.title}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Section Annonces urgentes */}
           {urgentPosts.length > 0 && (
             <div className="home-posts-section">
-              <div className="home-section-header">
-                <TrendingUp size={20} color="#EF4444" />
-                <h2 className="home-section-title">Annonces urgentes</h2>
-              </div>
-              <div className="home-posts-list">
-                {urgentPosts.slice(0, 5).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="list" />
+              <h2 className="home-section-title">urgent</h2>
+              <div className="home-posts-grid">
+                {urgentPosts.slice(0, 2).map((post) => (
+                  <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
+                    {post.images && post.images.length > 0 ? (
+                      <img src={post.images[0]} alt={post.title} />
+                    ) : (
+                      <div className="home-post-block-placeholder">
+                        <span>{post.title}</span>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Section Récemment publiées */}
-          <div className="home-posts-section">
-            <div className="home-section-header">
-              <Clock size={20} color="#6366F1" />
-              <h2 className="home-section-title">Récemment publiées</h2>
-            </div>
-            <div className="home-posts-list">
-              {recentPosts.slice(0, 5).map((post) => (
-                <PostCard key={post.id} post={post} viewMode="list" />
-              ))}
-            </div>
-          </div>
-
-          {/* Section Recommandées pour vous */}
-          <div className="home-posts-section">
-            <div className="home-section-header">
-              <Star size={20} color="#F59E0B" />
-              <h2 className="home-section-title">Recommandées pour vous</h2>
-            </div>
-            <div className="home-posts-list">
-              {recommendedPosts.slice(0, 5).map((post) => (
-                <PostCard key={post.id} post={post} viewMode="list" />
-              ))}
-            </div>
-          </div>
         </div>
       </div>
       <Footer />

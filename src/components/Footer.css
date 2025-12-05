@@ -6,11 +6,13 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background-color: #FFFFFF;
-  border-top: 1px solid #F3F4F6;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  height: 88px;
+  background-color: #374151;
+  border-top: none;
+  border-radius: 20px 20px 0 0;
+  padding-top: 12px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  height: auto;
+  min-height: 70px;
   z-index: 1000;
   box-sizing: border-box;
 }
@@ -20,22 +22,22 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 12px;
+  padding: 12px;
   background: none;
   border: none;
   cursor: pointer;
-  color: #9CA3AF;
-  transition: color 0.2s ease;
-  min-width: 60px;
+  color: #FFFFFF;
+  transition: all 0.2s ease;
+  min-width: 50px;
 }
 
 .footer-item:hover {
-  color: #6366F1;
+  color: #d1d5db;
+  transform: translateY(-2px);
 }
 
 .footer-item.active {
-  color: #6366F1;
+  color: #FFFFFF;
 }
 
 .footer-label {
