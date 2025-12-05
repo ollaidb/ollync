@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Bell, Search, Loader, Sparkles } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Footer from '../components/Footer'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
@@ -33,7 +33,9 @@ interface Post {
 
 const Home = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
+  const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
   
   // Sections d'annonces
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
@@ -95,49 +97,66 @@ const Home = () => {
     return (
       <div className="app">
         <div className="home-page">
-          {/* HEADER FIXE - 3 Sections */}
-          <div className="home-header-section-1">
-            <h1 className="home-app-name">ollyc</h1>
-            <div className="home-header-actions">
-              <button
-                className="home-swipe-btn"
-                onClick={() => navigate('/swipe')}
-                aria-label="Mode Swipe"
+          {/* BLOC BLEU CLAIR FIXE - Header, Recherche, Catégories */}
+          <div className="home-header-blue-block">
+            {/* Section 1: Logo + Icônes swipe et notification */}
+            <div className="home-header-top">
+              <h1 
+                className="home-app-name"
+                onClick={() => navigate('/home')}
               >
-                <Sparkles size={20} />
-              </button>
-              <button
-                className="home-notification-btn"
-                onClick={() => navigate('/notifications')}
-                aria-label="Notifications"
-              >
-                <Bell size={20} />
-                <span className="home-notification-badge"></span>
-              </button>
-            </div>
-          </div>
-
-          <div className="home-header-section-2">
-            <div 
-              className="home-search-bar"
-              onClick={() => navigate('/search')}
-            >
-              <span className="home-search-placeholder">Rechercher une annonce...</span>
-              <Search size={20} />
-            </div>
-          </div>
-
-          <div className="home-header-section-3">
-            <div className="home-categories-scroll">
-              {publicationTypes.map((category) => (
-                <div
-                  key={category.id}
-                  className="home-category-block"
-                  onClick={() => navigate(`/${category.slug}`)}
+                ollync
+              </h1>
+              <div className="home-header-actions">
+                <button
+                  className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setSwipeModeActive(!swipeModeActive)
+                    navigate('/swipe')
+                  }}
+                  aria-label="Mode Swipe"
                 >
-                  <span className="home-category-name">{category.name}</span>
-                </div>
-              ))}
+                  <Sparkles size={20} />
+                </button>
+                <button
+                  className="home-notification-btn"
+                  onClick={() => navigate('/notifications')}
+                  aria-label="Notifications"
+                >
+                  <Bell size={20} />
+                  <span className="home-notification-badge"></span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Barre de recherche */}
+            <div className="home-search-container">
+              <div 
+                className="home-search-bar"
+                onClick={() => navigate('/search')}
+              >
+                <span className="home-search-placeholder">Rechercher une annonce...</span>
+                <Search size={20} />
+              </div>
+            </div>
+
+            {/* Section 3: Catégories scrollables - Premier niveau */}
+            <div className="home-categories-scroll">
+              {publicationTypes.map((category) => {
+                const Icon = category.icon
+                return (
+                  <div
+                    key={category.id}
+                    className="home-category-card"
+                    onClick={() => navigate(`/${category.slug}`)}
+                  >
+                    <div className="home-category-icon">
+                      <Icon size={24} />
+                    </div>
+                    <span className="home-category-name">{category.name}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
@@ -156,52 +175,66 @@ const Home = () => {
   return (
     <div className="app">
       <div className="home-page">
-        {/* HEADER FIXE - 3 Sections */}
-        {/* Section 1: Nom app + Icônes swipe et notification */}
-        <div className="home-header-section-1">
-          <h1 className="home-app-name">ollyc</h1>
-          <div className="home-header-actions">
-            <button
-              className="home-swipe-btn"
-              onClick={() => navigate('/swipe')}
-              aria-label="Mode Swipe"
+        {/* BLOC BLEU CLAIR FIXE - Header, Recherche, Catégories */}
+        <div className="home-header-blue-block">
+          {/* Section 1: Logo + Icônes swipe et notification */}
+          <div className="home-header-top">
+            <h1 
+              className="home-app-name"
+              onClick={() => navigate('/home')}
             >
-              <Sparkles size={20} />
-            </button>
-            <button
-              className="home-notification-btn"
-              onClick={() => navigate('/notifications')}
-              aria-label="Notifications"
-            >
-              <Bell size={20} />
-              <span className="home-notification-badge"></span>
-            </button>
-          </div>
-        </div>
-
-        {/* Section 2: Barre de recherche */}
-        <div className="home-header-section-2">
-          <div 
-            className="home-search-bar"
-            onClick={() => navigate('/search')}
-          >
-            <span className="home-search-placeholder">Rechercher une annonce...</span>
-            <Search size={20} />
-          </div>
-        </div>
-
-        {/* Section 3: Catégories scrollables */}
-        <div className="home-header-section-3">
-          <div className="home-categories-scroll">
-            {publicationTypes.map((category) => (
-              <div
-                key={category.id}
-                className="home-category-block"
-                onClick={() => navigate(`/${category.slug}`)}
+              ollync
+            </h1>
+            <div className="home-header-actions">
+              <button
+                className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
+                onClick={() => {
+                  setSwipeModeActive(!swipeModeActive)
+                  navigate('/swipe')
+                }}
+                aria-label="Mode Swipe"
               >
-                <span className="home-category-name">{category.name}</span>
-              </div>
-            ))}
+                <Sparkles size={20} />
+              </button>
+              <button
+                className="home-notification-btn"
+                onClick={() => navigate('/notifications')}
+                aria-label="Notifications"
+              >
+                <Bell size={20} />
+                <span className="home-notification-badge"></span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 2: Barre de recherche */}
+          <div className="home-search-container">
+            <div 
+              className="home-search-bar"
+              onClick={() => navigate('/search')}
+            >
+              <span className="home-search-placeholder">Rechercher une annonce...</span>
+              <Search size={20} />
+            </div>
+          </div>
+
+          {/* Section 3: Catégories scrollables - Premier niveau */}
+          <div className="home-categories-scroll">
+            {publicationTypes.map((category) => {
+              const Icon = category.icon
+              return (
+                <div
+                  key={category.id}
+                  className="home-category-card"
+                  onClick={() => navigate(`/${category.slug}`)}
+                >
+                  <div className="home-category-icon">
+                    <Icon size={24} />
+                  </div>
+                  <span className="home-category-name">{category.name}</span>
+                </div>
+              )
+            })}
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-/* Page d'accueil - Nouveau design */
+/* Page d'accueil - Nouveau design avec bloc bleu clair */
 .home-page {
   min-height: 100vh;
   background-color: #FFFFFF;
@@ -9,38 +9,50 @@
 }
 
 /* ============================================
-   HEADER FIXE - 3 SECTIONS
+   BLOC BLEU CLAIR FIXE - Header, Recherche, Catégories
    ============================================ */
 
-/* Section 1: Nom app + Icônes swipe et notification */
-.home-header-section-1 {
+.home-header-blue-block {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 12px;
+  left: 16px;
+  right: 16px;
   z-index: 100;
-  background-color: #FFFFFF;
+  background-color: #e0f2fe;
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 12px;
+  padding-bottom: 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Section 1: Logo + Icônes swipe et notification */
+.home-header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 12px;
 }
 
 .home-app-name {
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 700;
   color: #111827;
   margin: 0;
   line-height: 1.2;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.home-app-name:hover {
+  opacity: 0.7;
 }
 
 .home-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -62,7 +74,24 @@
 
 .home-swipe-btn:hover,
 .home-notification-btn:hover {
-  background-color: #f5f5f5;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Effet glow pour l'icône swipe active */
+.home-swipe-btn.active {
+  color: #fbbf24;
+  background-color: rgba(251, 191, 36, 0.2);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+  }
 }
 
 .home-notification-badge {
@@ -72,26 +101,19 @@
   width: 8px;
   height: 8px;
   border-radius: 4px;
-  background-color: #fbbf24;
+  background-color: #ef4444;
 }
 
 /* Section 2: Barre de recherche */
-.home-header-section-2 {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 64px);
-  left: 0;
-  right: 0;
-  z-index: 99;
-  background-color: #FFFFFF;
-  padding: 12px 20px;
-  border-bottom: 1px solid #f0f0f0;
+.home-search-container {
+  margin-bottom: 12px;
 }
 
 .home-search-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #e0f2fe;
+  background-color: #bae6fd;
   border: 1px solid #111827;
   border-radius: 12px;
   padding: 12px 16px;
@@ -101,7 +123,7 @@
 }
 
 .home-search-bar:hover {
-  background-color: #bae6fd;
+  background-color: #93c5fd;
 }
 
 .home-search-placeholder {
@@ -115,18 +137,7 @@
   flex-shrink: 0;
 }
 
-/* Section 3: Catégories scrollables */
-.home-header-section-3 {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 124px);
-  left: 0;
-  right: 0;
-  z-index: 98;
-  background-color: #FFFFFF;
-  padding: 12px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
+/* Section 3: Catégories scrollables - Premier niveau */
 .home-categories-scroll {
   display: flex;
   gap: 12px;
@@ -134,36 +145,58 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  margin-top: 0;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  width: calc(100% + 40px);
 }
 
 .home-categories-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.home-category-block {
-  min-width: 120px;
-  height: 60px;
-  background-color: #3b82f6;
-  border-radius: 12px;
+.home-category-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  min-width: 80px;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  gap: 8px;
 }
 
-.home-category-block:hover {
-  background-color: #2563eb;
+.home-category-card:hover {
   transform: translateY(-2px);
 }
 
-.home-category-name {
-  font-size: 14px;
-  font-weight: 600;
+.home-category-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+.home-category-card:hover .home-category-icon {
+  background-color: #2563eb;
+  transform: scale(1.05);
+}
+
+.home-category-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
   text-align: center;
-  padding: 0 12px;
+  line-height: 1.2;
 }
 
 /* ============================================
@@ -174,12 +207,13 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 260px);
   padding-left: 20px;
   padding-right: 20px;
   padding-bottom: 20px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: #FFFFFF;
 }
 
 .home-scrollable::-webkit-scrollbar {
@@ -194,7 +228,7 @@
 .home-hero-block {
   width: 100%;
   height: 200px;
-  background-color: #3b82f6;
+  background-color: #1e40af;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -205,6 +239,7 @@
   font-size: 24px;
   font-weight: 700;
   color: #FFFFFF;
+  text-transform: lowercase;
 }
 
 /* Sections d'annonces */
@@ -287,29 +322,23 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .home-header-section-1 {
+  .home-header-blue-block {
+    top: 8px;
+    left: 12px;
+    right: 12px;
     padding-left: 16px;
     padding-right: 16px;
     padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-    padding-bottom: 8px;
+    padding-bottom: 12px;
+    border-radius: 16px;
   }
 
   .home-app-name {
     font-size: 20px;
   }
 
-  .home-header-section-2 {
-    top: calc(env(safe-area-inset-top, 0px) + 56px);
-    padding: 8px 16px;
-  }
-
-  .home-header-section-3 {
-    top: calc(env(safe-area-inset-top, 0px) + 112px);
-    padding: 8px 16px;
-  }
-
   .home-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 180px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 240px);
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -318,13 +347,13 @@
     height: 150px;
   }
 
-  .home-category-block {
-    min-width: 100px;
-    height: 50px;
+  .home-category-icon {
+    width: 48px;
+    height: 48px;
   }
 
   .home-category-name {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .home-posts-grid {

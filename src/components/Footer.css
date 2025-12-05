@@ -6,7 +6,7 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background-color: #374151;
+  background-color: #3b82f6;
   border-top: none;
   border-radius: 20px 20px 0 0;
   padding-top: 12px;
@@ -32,12 +32,35 @@
 }
 
 .footer-item:hover {
-  color: #d1d5db;
+  color: #e0e7ff;
   transform: translateY(-2px);
 }
 
 .footer-item.active {
   color: #FFFFFF;
+}
+
+/* Icône centrale plus grande avec fond noir */
+.footer-center {
+  position: relative;
+}
+
+.footer-center-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.footer-center:hover .footer-center-icon-wrapper {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .footer-label {

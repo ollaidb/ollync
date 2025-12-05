@@ -23,17 +23,24 @@ const Footer = () => {
 
   return (
     <footer className="footer">
-      {navItems.map((item) => {
+      {navItems.map((item, index) => {
         const Icon = item.icon
         const active = isActive(item.path)
+        const isCenter = index === 2 // L'icône PlusCircle est au centre
         return (
           <button
             key={item.path}
-            className={`footer-item ${active ? 'active' : ''}`}
+            className={`footer-item ${active ? 'active' : ''} ${isCenter ? 'footer-center' : ''}`}
             onClick={() => navigate(item.path)}
             aria-label={item.label}
           >
-            <Icon size={24} strokeWidth={1.5} />
+            {isCenter ? (
+              <div className="footer-center-icon-wrapper">
+                <Icon size={28} strokeWidth={2} />
+              </div>
+            ) : (
+              <Icon size={24} strokeWidth={1.5} />
+            )}
           </button>
         )
       })}
