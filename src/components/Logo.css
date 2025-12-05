@@ -1,0 +1,11 @@
+.ollync-logo {
+  display: block;
+  width: auto;
+  height: auto;
+}
+
+/* Assure que le logo est bien visible et responsive */
+.ollync-logo svg {
+  display: block;
+}
+

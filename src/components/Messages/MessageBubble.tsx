@@ -1,6 +1,5 @@
-import { Image, Video, File, MapPin, DollarSign, Calendar, Share2, Heart, Trash2, Flag, MoreVertical } from 'lucide-react'
+import { File, MapPin, DollarSign, Calendar, Share2, Heart, Trash2, Flag, MoreVertical } from 'lucide-react'
 import { useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import './MessageBubble.css'
 

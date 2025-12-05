@@ -1,5 +1,4 @@
 import { PublicationType } from '../../constants/publishData'
-import { useExamplePosts } from '../../hooks/useExamplePosts'
 import './Step2Subcategory.css'
 
 interface Step2SubcategoryProps {

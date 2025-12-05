@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { publicationTypes } from '../constants/publishData'
 
 interface ExamplePost {
   id: string
@@ -41,7 +40,7 @@ export const useExamplePosts = (
         let query = supabase
           .from('posts')
           .select('id, title, description, images')
-          .eq('category_id', categoryData.id)
+          .eq('category_id', (categoryData as any).id)
           .eq('status', 'active')
           .limit(3)
           .order('created_at', { ascending: false })
@@ -51,12 +50,12 @@ export const useExamplePosts = (
           const { data: subcategoryData } = await supabase
             .from('sub_categories')
             .select('id')
-            .eq('category_id', categoryData.id)
+            .eq('category_id', (categoryData as any).id)
             .eq('slug', subcategorySlug)
             .single()
 
           if (subcategoryData) {
-            query = query.eq('sub_category_id', subcategoryData.id)
+            query = query.eq('sub_category_id', (subcategoryData as any).id)
           }
         }
 

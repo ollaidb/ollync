@@ -10,9 +10,9 @@ interface PublishActionsProps {
 }
 
 export const PublishActions = ({ 
-  selectedCategory, 
+  selectedCategory: _selectedCategory, 
   onSaveDraft, 
-  onPreview, 
+  onPreview: _onPreview, 
   onPublish 
 }: PublishActionsProps) => {
   return (

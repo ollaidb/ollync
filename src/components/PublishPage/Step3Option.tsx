@@ -13,8 +13,8 @@ export const Step3Option = ({
   selectedSubcategory, 
   selectedCategory,
   onSelectOption,
-  examplePosts,
-  loadingPosts 
+  examplePosts: _examplePosts,
+  loadingPosts: _loadingPosts 
 }: Step3OptionProps) => {
   if (!selectedSubcategory || !selectedCategory) return null
 

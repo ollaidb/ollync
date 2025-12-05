@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, ChevronRight } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, ChevronRight, LucideIcon } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
+import Logo from './Logo'
 import './Header.css'
 
 interface MenuCategory {
   id: string
-  icon: React.ComponentType<{ size?: number }>
+  icon: LucideIcon
   label: string
   path: string
   subMenus: Array<{ name: string; slug: string }>
@@ -106,7 +107,7 @@ const Header = () => {
           className="header-logo-btn"
           onClick={() => navigate('/')}
         >
-          <h1 className="header-logo">Ollync</h1>
+          <Logo className="header-logo" width={100} height={50} />
         </button>
         <button
           className="notification-btn"

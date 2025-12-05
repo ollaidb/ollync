@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Upload, Camera, Mail, Phone, MapPin, FileText, Instagram, Linkedin, Globe, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Save, X, Camera, Mail, Phone, MapPin, FileText, Instagram, Linkedin, Globe, CheckCircle2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'

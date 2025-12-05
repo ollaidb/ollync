@@ -10,7 +10,7 @@ interface PublishHeaderProps {
   selectedCategory?: PublicationType | null
 }
 
-export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory }: PublishHeaderProps) => {
+export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _selectedCategory }: PublishHeaderProps) => {
   const navigate = useNavigate()
   const totalSteps = 5
   const progress = step > 0 ? ((step + 1) / totalSteps) * 100 : 0

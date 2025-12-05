@@ -232,8 +232,10 @@ export interface Database {
           id: string
           user1_id: string
           user2_id: string
-          post_id: string | null
+          post1_id: string | null
+          post2_id: string | null
           status: string
+          matched_at: string | null
           created_at: string
           updated_at: string
         }
@@ -241,8 +243,10 @@ export interface Database {
           id?: string
           user1_id: string
           user2_id: string
-          post_id?: string | null
+          post1_id?: string | null
+          post2_id?: string | null
           status?: string
+          matched_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -250,10 +254,75 @@ export interface Database {
           id?: string
           user1_id?: string
           user2_id?: string
-          post_id?: string | null
+          post1_id?: string | null
+          post2_id?: string | null
           status?: string
+          matched_at?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      interests: {
+        Row: {
+          id: string
+          user_id: string
+          post_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          post_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          post_id?: string
+          created_at?: string
+        }
+      }
+      ignored_posts: {
+        Row: {
+          id: string
+          user_id: string
+          post_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          post_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          post_id?: string
+          created_at?: string
+        }
+      }
+      conversation_participants: {
+        Row: {
+          id: string
+          conversation_id: string
+          user_id: string
+          is_active: boolean
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          user_id: string
+          is_active?: boolean
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          user_id?: string
+          is_active?: boolean
+          joined_at?: string
         }
       }
     }

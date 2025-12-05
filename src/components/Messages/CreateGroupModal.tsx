@@ -137,8 +137,7 @@ const CreateGroupModal = ({ visible, onClose, onSuccess }: CreateGroupModalProps
 
       // Ajouter le créateur comme participant
       if (conversation) {
-        await supabase
-          .from('conversation_participants')
+        await (supabase.from('conversation_participants') as any)
           .insert({
             conversation_id: conversation.id,
             user_id: user.id,

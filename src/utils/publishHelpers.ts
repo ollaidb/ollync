@@ -29,7 +29,7 @@ interface FormData {
 }
 
 export const getMyLocation = async (
-  formData: FormData,
+  _formData: FormData,
   setFormData: (updates: Partial<FormData>) => void
 ) => {
   if (!navigator.geolocation) {
@@ -43,7 +43,7 @@ export const getMyLocation = async (
       
       try {
         // Optionnel: utiliser une API de géocodage inverse pour obtenir l'adresse
-        const response = await fetch(
+        await fetch(
           `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`
         )
         
@@ -121,19 +121,18 @@ export const handlePublish = async (
       .single()
 
     if (categoryData) {
-      categoryId = categoryData.id
+      categoryId = (categoryData as any).id
 
       // Récupérer la sous-catégorie si elle existe
       if (formData.subcategory && formData.subcategory !== 'tout') {
-        const { data: subCategoryData } = await supabase
-          .from('sub_categories')
+        const { data: subCategoryData } = await (supabase.from('sub_categories') as any)
           .select('id')
           .eq('category_id', categoryId)
           .eq('slug', formData.subcategory)
           .single()
 
         if (subCategoryData) {
-          subCategoryId = subCategoryData.id
+          subCategoryId = (subCategoryData as any).id
         }
       }
     }
@@ -185,7 +184,7 @@ export const handlePublish = async (
 
     if (data) {
       alert(status === 'draft' ? 'Brouillon enregistré avec succès !' : 'Annonce publiée avec succès !')
-      navigate(`/post/${data.id}`)
+      navigate(`/post/${(data as any).id}`)
     }
   } catch (error: any) {
     console.error('Error publishing post:', error)
