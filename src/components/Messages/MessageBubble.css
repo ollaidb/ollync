@@ -27,7 +27,7 @@
 .message-sender-name {
   font-size: 12px;
   font-weight: 500;
-  color: #6B7280;
+  color: var(--muted-foreground);
   padding: 0 4px;
 }
 
@@ -36,7 +36,7 @@
 }
 
 .message-content {
-  background-color: #F3F4F6;
+  background-color: var(--muted);
   border-radius: 12px;
   padding: 12px 16px;
   max-width: 70%;
@@ -44,8 +44,8 @@
 }
 
 .message-bubble.own .message-content {
-  background-color: #6366F1;
-  color: white;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .message-content p {
@@ -55,7 +55,7 @@
 }
 
 .message-bubble.own .message-content p {
-  color: white;
+  color: var(--primary-foreground);
 }
 
 .message-media {
@@ -115,18 +115,19 @@
 .message-document-type,
 .message-calendar-date {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .message-bubble.own .message-document-type,
 .message-bubble.own .message-calendar-date {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--primary-foreground);
+  opacity: 0.8;
 }
 
 .message-document-download,
 .message-location-link,
 .message-share-link {
-  color: #6366F1;
+  color: var(--primary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -135,7 +136,7 @@
 .message-bubble.own .message-document-download,
 .message-bubble.own .message-location-link,
 .message-bubble.own .message-share-link {
-  color: white;
+  color: var(--primary-foreground);
 }
 
 .message-footer {
@@ -148,11 +149,12 @@
 
 .message-time {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .message-bubble.own .message-time {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--primary-foreground);
+  opacity: 0.7;
 }
 
 .message-actions {
@@ -169,7 +171,7 @@
 .message-action-btn {
   background: none;
   border: none;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -180,14 +182,15 @@
 }
 
 .message-action-btn:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--muted);
 }
 
 .message-bubble.own .message-action-btn {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--primary-foreground);
+  opacity: 0.7;
 }
 
 .message-bubble.own .message-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--muted);
 }
 

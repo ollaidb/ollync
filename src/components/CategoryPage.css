@@ -1,0 +1,459 @@
+/* Page Category - Nouveau design avec header bleu clair */
+
+.category-page-new {
+  min-height: 100vh;
+  background-color: var(--background);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 1. Header & Recherche - Fond bleu clair */
+.category-header-new {
+  background: var(--accent);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.category-search-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-search-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--background);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.category-search-icon {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.category-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--foreground);
+  outline: none;
+  padding: 0;
+}
+
+.category-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.category-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-sparkle-icon {
+  color: var(--accent-foreground);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.category-sparkle-icon:hover {
+  transform: scale(1.1);
+}
+
+/* 2. Titre de la catégorie */
+.category-title-section {
+  padding: 16px 20px 12px 20px;
+  background: var(--accent);
+}
+
+.category-title-new {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* 3. Filtres de sous-catégories (scroll horizontal) */
+.category-filters-section {
+  background: var(--accent);
+  padding: 12px 0 16px 0;
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 80px);
+  z-index: 20;
+  /* Permettre aux menus de dépasser */
+  overflow: visible;
+}
+
+.category-filters-scroll {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px;
+  overflow-x: auto;
+  overflow-y: visible !important; /* Forcer visible pour que les menus puissent s'afficher */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 1000; /* Assurer que la zone de scroll est au-dessus du contenu */
+}
+
+.category-filters-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.category-filter-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 1000; /* Assurer que le wrapper et ses menus sont au premier plan */
+}
+
+.category-filter-button {
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: none;
+  background-color: var(--background);
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.category-filter-button:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.category-filter-button.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-md);
+}
+
+.category-filter-button.active .category-filter-chevron {
+  color: var(--primary-foreground);
+}
+
+.category-filter-button.has-dropdown {
+  padding-right: 12px;
+}
+
+@media (max-width: 768px) {
+  .category-filter-button {
+    padding: 6px 12px;
+    font-size: 13px;
+    gap: 4px;
+  }
+  
+  .category-filter-button.has-dropdown {
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-filter-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .category-filter-button.has-dropdown {
+    padding-right: 8px;
+  }
+}
+
+.category-filter-chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.category-filter-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Menu déroulant pour les sous-sous-catégories (N3) - Colonne verticale à gauche */
+.category-dropdown-menu {
+  /* Position sera définie dynamiquement via inline style (position: fixed) */
+  min-width: 200px;
+  max-width: 250px;
+  background-color: var(--accent);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* Ombre plus forte pour être visible */
+  z-index: 99999 !important; /* Très haut z-index pour être au premier plan */
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px;
+  animation: dropdownFadeIn 0.2s ease;
+  /* S'assurer que le menu est visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  /* Forcer l'affichage */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.category-dropdown-item-wrapper {
+  position: relative;
+  z-index: 10001; /* Encore plus haut pour le wrapper N4 */
+}
+
+.category-dropdown-item {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.category-dropdown-item:hover {
+  background-color: var(--muted);
+  opacity: 0.7;
+}
+
+.category-dropdown-item.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.category-dropdown-item.has-nested {
+  padding-right: 12px;
+}
+
+.category-dropdown-chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+/* Pour N3 avec N4, le chevron droit ne doit pas tourner */
+.category-dropdown-chevron.open {
+  /* Pas de rotation pour le chevron droit */
+}
+
+/* Menu déroulant imbriqué (N4) - Colonne verticale à droite */
+.category-nested-dropdown-menu {
+  /* Position sera définie dynamiquement via inline style (position: fixed) */
+  min-width: 180px;
+  max-width: 220px;
+  background-color: var(--accent);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* Ombre plus forte pour être visible */
+  z-index: 100000 !important; /* Le plus haut pour être au-dessus de N3 */
+  display: flex !important;
+  flex-direction: column;
+  gap: 4px;
+  animation: dropdownFadeIn 0.2s ease;
+  /* S'assurer que le menu est visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  /* Forcer l'affichage */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Ajustement pour éviter que le menu imbriqué sorte de l'écran */
+.category-dropdown-item-wrapper {
+  position: relative;
+  z-index: 10001; /* Encore plus haut pour le wrapper N4 */
+}
+
+/* Sur mobile, ajuster la position du menu N4 si nécessaire */
+@media (max-width: 768px) {
+  .category-dropdown-menu {
+    min-width: 160px;
+    max-width: 200px;
+    padding: 6px;
+    font-size: 13px;
+  }
+  
+  .category-dropdown-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .category-nested-dropdown-menu {
+    min-width: 150px;
+    max-width: 180px;
+    padding: 6px;
+    font-size: 13px;
+  }
+  
+  .category-nested-dropdown-item {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+  
+  /* Si l'écran est trop petit, ajuster encore plus */
+  @media (max-width: 480px) {
+    .category-dropdown-menu {
+      min-width: 140px;
+      max-width: 180px;
+      padding: 6px;
+    }
+    
+    .category-nested-dropdown-menu {
+      min-width: 130px;
+      max-width: 160px;
+      padding: 6px;
+      /* Sur très petit écran, le menu N4 peut être empilé verticalement */
+      right: calc(100% + 4px);
+    }
+  }
+}
+
+.category-nested-dropdown-item {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.category-nested-dropdown-item:hover {
+  background-color: var(--muted);
+  opacity: 0.7;
+}
+
+.category-nested-dropdown-item.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.category-filter-chevron {
+  color: var(--muted-foreground);
+}
+
+/* 4. Liste des annonces (Grille 2 colonnes) */
+.category-content-section {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 1; /* En arrière-plan pour que les menus soient visibles */
+}
+
+.category-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.category-loading,
+.category-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted-foreground);
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .category-header-new {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-bottom: 12px;
+  }
+
+  .category-search-box {
+    padding: 10px 14px;
+  }
+
+  .category-search-input {
+    font-size: 15px;
+  }
+
+  .category-title-section {
+    padding: 12px 16px 10px 16px;
+  }
+
+  .category-title-new {
+    font-size: 22px;
+  }
+
+  .category-filters-section {
+    top: calc(env(safe-area-inset-top, 0px) + 68px);
+    padding: 10px 0 12px 0;
+  }
+
+  .category-filters-scroll {
+    padding: 0 16px;
+  }
+
+  .category-filter-button {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .category-content-section {
+    padding: 16px;
+  }
+
+  .category-posts-grid {
+    gap: 10px;
+  }
+}
+
+/* Ajustement pour les écrans très petits */
+@media (max-width: 375px) {
+  .category-posts-grid {
+    gap: 8px;
+  }
+}
+

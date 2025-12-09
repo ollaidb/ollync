@@ -1,7 +1,7 @@
 /* Page d'accueil - Nouveau design avec bloc bleu clair */
 .home-page {
   min-height: 100vh;
-  background-color: #FFFFFF;
+  background-color: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -18,13 +18,13 @@
   left: 16px;
   right: 16px;
   z-index: 100;
-  background-color: #e0f2fe;
+  background-color: var(--card);
   padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
   padding-left: 20px;
   padding-right: 20px;
   padding-bottom: 16px;
   border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
@@ -39,7 +39,7 @@
 .home-app-name {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   line-height: 1.2;
   cursor: pointer;
@@ -68,13 +68,13 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #111827;
+  color: var(--foreground);
   transition: all 0.2s ease;
 }
 
 .home-swipe-btn:hover,
 .home-notification-btn:hover {
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--muted);
 }
 
 /* Effet glow pour l'icône swipe active */
@@ -101,7 +101,7 @@
   width: 8px;
   height: 8px;
   border-radius: 4px;
-  background-color: #ef4444;
+  background-color: var(--destructive);
 }
 
 /* Section 2: Barre de recherche */
@@ -113,8 +113,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #bae6fd;
-  border: 1px solid #111827;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 16px;
   cursor: pointer;
@@ -123,17 +123,17 @@
 }
 
 .home-search-bar:hover {
-  background-color: #93c5fd;
+  background-color: var(--accent);
 }
 
 .home-search-placeholder {
   flex: 1;
   font-size: 16px;
-  color: #111827;
+  color: var(--foreground);
 }
 
 .home-search-bar svg {
-  color: #111827;
+  color: var(--foreground);
   flex-shrink: 0;
 }
 
@@ -178,23 +178,23 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: #3b82f6;
+  background-color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
+  color: var(--primary-foreground);
   transition: all 0.2s ease;
 }
 
 .home-category-card:hover .home-category-icon {
-  background-color: #2563eb;
+  background-color: var(--accent);
   transform: scale(1.05);
 }
 
 .home-category-name {
   font-size: 12px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
   text-align: center;
   line-height: 1.2;
 }
@@ -213,7 +213,7 @@
   padding-bottom: 20px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: #FFFFFF;
+  background-color: var(--background);
 }
 
 @media (max-width: 768px) {
@@ -243,7 +243,7 @@
 .home-hero-block {
   width: 100%;
   height: 120px;
-  background-color: #1e40af;
+  background-color: var(--primary);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -253,7 +253,7 @@
 .home-hero-text {
   font-size: 24px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--primary-foreground);
   text-transform: lowercase;
 }
 
@@ -265,7 +265,7 @@
 .home-section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
   margin: 0 0 16px 0;
   text-transform: lowercase;
 }
@@ -289,7 +289,7 @@
   min-width: 66.67%;
   flex-shrink: 0;
   aspect-ratio: 4 / 5;
-  background-color: #3b82f6;
+  background-color: var(--primary);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -312,8 +312,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #3b82f6;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   font-size: 14px;
   font-weight: 600;
   text-align: center;
@@ -328,12 +328,12 @@
   justify-content: center;
   min-height: 400px;
   gap: 16px;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 .spinner-large {
   animation: spin 1s linear infinite;
-  color: #667eea;
+  color: var(--primary);
 }
 
 @keyframes spin {

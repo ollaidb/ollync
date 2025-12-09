@@ -1,6 +1,6 @@
 .messages-page-container {
   min-height: 100vh;
-  background-color: #FFFFFF;
+  background-color: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -13,7 +13,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #FFFFFF;
+  background-color: var(--background);
   border-bottom: none;
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
   padding-left: 20px;
@@ -31,7 +31,7 @@
 .messages-title {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   flex: 1;
 }
@@ -50,7 +50,7 @@
 .messages-create-group-btn {
   background: none;
   border: none;
-  color: #6366F1;
+  color: var(--primary);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -61,7 +61,7 @@
 }
 
 .messages-create-group-btn:hover {
-  background-color: #F3F4F6;
+  background-color: var(--muted);
 }
 
 /* Wrapper pour le titre et le bouton retour */
@@ -75,7 +75,7 @@
 .messages-back-button {
   background: none;
   border: none;
-  color: #6366F1;
+  color: var(--primary);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -92,14 +92,14 @@
 .messages-search-bar {
   display: flex;
   align-items: center;
-  background-color: #F9FAFB;
+  background-color: var(--input);
   border-radius: 12px;
   padding: 12px 16px;
   gap: 12px;
 }
 
 .messages-search-bar svg {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
@@ -108,12 +108,12 @@
   border: none;
   background: transparent;
   font-size: 16px;
-  color: #111827;
+  color: var(--foreground);
   outline: none;
 }
 
 .messages-search-input::placeholder {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 /* Filtres rapides */
@@ -132,13 +132,13 @@
 }
 
 .messages-filter-btn {
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background-color: var(--input);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #6B7280;
+  color: var(--muted-foreground);
   cursor: pointer;
   white-space: nowrap;
   display: flex;
@@ -149,14 +149,14 @@
 }
 
 .messages-filter-btn:hover {
-  background-color: #F3F4F6;
-  border-color: #D1D5DB;
+  background-color: var(--muted);
+  border-color: var(--border);
 }
 
 .messages-filter-btn.active {
-  background-color: #6366F1;
-  border-color: #6366F1;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .messages-filter-btn svg {
@@ -198,15 +198,15 @@
   display: flex;
   align-items: center;
   padding: 16px 20px;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #F3F4F6;
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background-color 0.2s;
   gap: 16px;
 }
 
 .conversation-item:hover {
-  background-color: #F9FAFB;
+  background-color: var(--card);
 }
 
 .conversation-item:last-child {
@@ -223,7 +223,7 @@
   height: 56px;
   border-radius: 28px;
   object-fit: cover;
-  background-color: #F3F4F6;
+  background-color: var(--muted);
 }
 
 .conversation-unread-badge {
@@ -233,14 +233,14 @@
   width: 20px;
   height: 20px;
   border-radius: 10px;
-  background-color: #6366F1;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #FFFFFF;
+  border: 2px solid var(--background);
 }
 
 .conversation-info {
@@ -258,7 +258,7 @@
 .conversation-name {
   font-size: 16px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -267,14 +267,14 @@
 
 .conversation-time {
   font-size: 13px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   flex-shrink: 0;
   margin-left: 8px;
 }
 
 .conversation-post-title {
   font-size: 13px;
-  color: #6366F1;
+  color: var(--primary);
   margin: 0 0 4px 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -283,7 +283,7 @@
 
 .conversation-preview {
   font-size: 14px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -291,7 +291,7 @@
 }
 
 .conversation-preview.unread {
-  color: #374151;
+  color: var(--foreground);
   font-weight: 600;
 }
 
@@ -330,15 +330,15 @@
 }
 
 .message-content {
-  background: #F3F4F6;
+  background: var(--muted);
   padding: 12px 16px;
   border-radius: 12px;
   position: relative;
 }
 
 .message.own .message-content {
-  background: #6366F1;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .message-content p {
@@ -349,13 +349,14 @@
 
 .message-time {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   margin-top: 4px;
   display: block;
 }
 
 .message.own .message-time {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--primary-foreground);
+  opacity: 0.7;
 }
 
 /* Message Input */
@@ -363,29 +364,29 @@
   display: flex;
   gap: 12px;
   padding: 16px;
-  border-top: 1px solid #E5E7EB;
-  background: white;
+  border-top: 1px solid var(--border);
+  background: var(--background);
 }
 
 .message-input input {
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 24px;
   font-size: 14px;
   outline: none;
 }
 
 .message-input input:focus {
-  border-color: #6366F1;
+  border-color: var(--primary);
 }
 
 .send-btn {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #6366F1;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   cursor: pointer;
   display: flex;
@@ -396,7 +397,7 @@
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #4F46E5;
+  background: var(--accent);
 }
 
 .send-btn:disabled {
@@ -416,7 +417,7 @@
 
 .spinner-large {
   animation: spin 1s linear infinite;
-  color: #6366F1;
+  color: var(--primary);
   margin-bottom: 20px;
 }
 
@@ -435,7 +436,7 @@
 
 .loading-container p {
   font-size: 16px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .empty-state {
@@ -448,26 +449,26 @@
 }
 
 .empty-state svg {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   margin-bottom: 20px;
 }
 
 .empty-state h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   margin: 0 0 20px 0;
 }
 
 .btn-primary {
-  background-color: #6366F1;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   padding: 12px 24px;
   border-radius: 8px;
   border: none;
@@ -478,7 +479,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #4F46E5;
+  background-color: var(--accent);
 }
 
 /* Responsive */

@@ -1,9 +1,9 @@
 .post-card {
   display: block;
-  background: white;
+  background: var(--card);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   text-decoration: none;
   color: inherit;
@@ -17,7 +17,7 @@
 
 .post-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .post-card-list {
@@ -36,7 +36,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: #f5f5f5;
+  background: var(--muted);
   pointer-events: none;
 }
 
@@ -60,8 +60,8 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #4facfe;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
@@ -88,7 +88,7 @@
 .post-card-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--card-foreground);
   margin: 0;
   line-height: 1.4;
   flex: 1;
@@ -97,13 +97,13 @@
 .post-card-price {
   font-size: 20px;
   font-weight: 700;
-  color: #ff6600;
+  color: var(--accent);
   white-space: nowrap;
 }
 
 .post-card-description {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-foreground);
   line-height: 1.5;
   margin: 0;
   display: -webkit-box;
@@ -118,7 +118,7 @@
   flex-wrap: wrap;
   gap: 12px;
   font-size: 12px;
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .post-card-location,
@@ -135,7 +135,7 @@
   gap: 16px;
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border);
   position: relative;
   z-index: 50;
   pointer-events: auto;
@@ -147,7 +147,7 @@
   gap: 6px;
   background: transparent;
   border: none;
-  color: #666;
+  color: var(--muted-foreground);
   cursor: pointer;
   font-size: 14px;
   padding: 4px 8px;
@@ -165,19 +165,19 @@
 }
 
 .post-card-action:hover {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .post-card-action.liked {
-  color: #ff4444;
+  color: var(--destructive);
 }
 
 .post-card-comments {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #666;
+  color: var(--muted-foreground);
   font-size: 14px;
 }
 

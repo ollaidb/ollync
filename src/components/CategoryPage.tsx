@@ -1,0 +1,570 @@
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
+import { supabase } from '../lib/supabaseClient'
+import PostCard from './PostCard'
+import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
+import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { 
+  getSubSubCategories, 
+  hasSubSubCategories,
+  getSubSubSubCategories,
+  hasSubSubSubCategories,
+  subSubCategoriesMap,
+  type SubSubCategory
+} from '../utils/subSubCategories'
+import './CategoryPage.css'
+
+interface Post {
+  id: string
+  title: string
+  description: string
+  price?: number | null
+  location?: string | null
+  images?: string[] | null
+  likes_count: number
+  comments_count: number
+  created_at: string
+  needed_date?: string | null
+  number_of_people?: number | null
+  delivery_available: boolean
+  user?: {
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
+  category?: {
+    name: string
+    slug: string
+  } | null
+}
+
+interface CategoryPageProps {
+  categorySlug: string
+  categoryName: string
+}
+
+const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
+  const { submenu, subSubMenu, subSubSubMenu } = useParams<{ 
+    submenu?: string
+    subSubMenu?: string
+    subSubSubMenu?: string
+  }>()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [posts, setPosts] = useState<Post[]>([])
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>([])
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [openNestedDropdown, setOpenNestedDropdown] = useState<string | null>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const [nestedDropdownPosition, setNestedDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const nestedDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    fetchSubMenus()
+    fetchPosts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submenu, subSubMenu, subSubSubMenu, categorySlug])
+
+  // Fermer les dropdowns si on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      
+      // Vérifier si le clic est en dehors du menu N3
+      if (openDropdown) {
+        const dropdownElement = dropdownRefs.current[openDropdown]
+        const menuElement = document.querySelector('.category-dropdown-menu')
+        if (dropdownElement && !dropdownElement.contains(target) && 
+            menuElement && !menuElement.contains(target)) {
+          setOpenDropdown(null)
+          setOpenNestedDropdown(null)
+          setDropdownPosition(null)
+          setNestedDropdownPosition(null)
+        }
+      }
+      
+      // Vérifier si le clic est en dehors du menu N4
+      if (openNestedDropdown) {
+        const nestedElement = nestedDropdownRefs.current[openNestedDropdown]
+        const nestedMenuElement = document.querySelector('.category-nested-dropdown-menu')
+        if (nestedElement && !nestedElement.contains(target) && 
+            nestedMenuElement && !nestedMenuElement.contains(target)) {
+          setOpenNestedDropdown(null)
+          setNestedDropdownPosition(null)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openDropdown, openNestedDropdown])
+
+  const fetchSubMenus = async () => {
+    const subMenusData = await fetchSubMenusForCategory(categorySlug)
+    console.log(`[CategoryPage] Sous-catégories chargées pour ${categorySlug}:`, subMenusData)
+    // Ajouter "Tout" en premier
+    const allSubMenus = [{ name: 'Tout', slug: 'tout' }, ...subMenusData]
+    setSubMenus(allSubMenus)
+    console.log(`[CategoryPage] Sous-menus finaux:`, allSubMenus)
+  }
+
+  const fetchPosts = async () => {
+    setLoading(true)
+    
+    const { data: category } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('slug', categorySlug)
+      .single()
+
+    if (!category || !(category as any).id) {
+      setLoading(false)
+      return
+    }
+
+    const categoryId = (category as any).id
+    let subCategoryId: string | undefined
+
+    // Si "Tout" est sélectionné ou aucun sous-menu, on ne filtre pas par sous-catégorie
+    if (submenu && submenu !== 'tout') {
+      const { data: subCategory } = await supabase
+        .from('sub_categories')
+        .select('id')
+        .eq('slug', submenu)
+        .eq('category_id', categoryId)
+        .single()
+
+      if (subCategory && (subCategory as any).id) {
+        subCategoryId = (subCategory as any).id
+      }
+    }
+
+    let posts = await fetchPostsWithRelations({
+      categoryId,
+      subCategoryId,
+      status: 'active',
+      limit: 50,
+      orderBy: 'created_at',
+      orderDirection: 'desc'
+    })
+
+    // Filtrer par sous-sous-menu (N3) si présent
+    if (subSubMenu) {
+      posts = posts.filter((post) => {
+        const titleMatch = post.title?.toLowerCase().includes(subSubMenu.toLowerCase())
+        const descMatch = post.description?.toLowerCase().includes(subSubMenu.toLowerCase())
+        return titleMatch || descMatch
+      })
+    }
+
+    // Filtrer par sous-sous-sous-menu (N4) si présent
+    if (subSubSubMenu) {
+      posts = posts.filter((post) => {
+        const titleMatch = post.title?.toLowerCase().includes(subSubSubMenu.toLowerCase())
+        const descMatch = post.description?.toLowerCase().includes(subSubSubMenu.toLowerCase())
+        return titleMatch || descMatch
+      })
+    }
+
+    setPosts(posts)
+    setFilteredPosts(posts)
+    setLoading(false)
+  }
+
+  // Filtrer les posts en fonction de la recherche
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredPosts(posts)
+      return
+    }
+
+    const query = searchQuery.toLowerCase()
+    const filtered = posts.filter((post) => {
+      return (
+        post.title?.toLowerCase().includes(query) ||
+        post.description?.toLowerCase().includes(query) ||
+        post.location?.toLowerCase().includes(query)
+      )
+    })
+    setFilteredPosts(filtered)
+  }, [searchQuery, posts])
+
+  const handleSubCategoryClick = (subMenuSlug: string) => {
+    if (subMenuSlug === 'tout') {
+      navigate(`/${categorySlug}`)
+      setOpenDropdown(null)
+      setOpenNestedDropdown(null)
+    } else {
+      // Si cette sous-catégorie a des sous-sous-catégories (N3), ouvrir le menu N3 sans naviguer
+      if (hasSubSubCategories(categorySlug, subMenuSlug)) {
+        // Ouvrir le menu N3 mais ne pas naviguer encore
+        setOpenDropdown(subMenuSlug)
+        setOpenNestedDropdown(null) // Fermer N4 si ouvert
+        // Ne pas naviguer, juste ouvrir le menu pour que l'utilisateur choisisse N3
+      } else {
+        // Sinon, filtrer directement et naviguer
+        navigate(`/${categorySlug}/${subMenuSlug}`)
+        setOpenDropdown(null)
+        setOpenNestedDropdown(null)
+      }
+    }
+  }
+
+  const handleSubSubCategoryClick = (subSubSlug: string, subSubCategory: SubSubCategory) => {
+    if (submenu) {
+      // Si cette sous-sous-catégorie (N3) a un niveau 4, ouvrir la colonne N4 à droite sans naviguer
+      if (hasSubSubSubCategories(categorySlug, submenu, subSubSlug)) {
+        // Ouvrir le menu N4 mais ne pas naviguer encore
+        setOpenNestedDropdown(subSubSlug)
+        // Ne pas naviguer, juste ouvrir le menu N4 pour que l'utilisateur choisisse N4
+      } else {
+        // Sinon, filtrer directement et naviguer
+        navigate(`/${categorySlug}/${submenu}/${subSubSlug}`)
+        setOpenNestedDropdown(null)
+        // On peut garder le menu N3 ouvert pour montrer la sélection
+      }
+    }
+  }
+
+  const handleSubSubSubCategoryClick = (subSubSubSlug: string) => {
+    if (submenu && subSubMenu) {
+      // Naviguer vers le niveau 4 et fermer les menus
+      navigate(`/${categorySlug}/${submenu}/${subSubMenu}/${subSubSubSlug}`)
+      // Garder les menus ouverts pour montrer la sélection, mais on peut les fermer si nécessaire
+      // setOpenDropdown(null)
+      // setOpenNestedDropdown(null)
+    }
+  }
+
+  const toggleNestedDropdown = (subSubSlug: string) => {
+    if (openNestedDropdown === subSubSlug) {
+      setOpenNestedDropdown(null)
+    } else {
+      setOpenNestedDropdown(subSubSlug)
+    }
+  }
+
+  const toggleDropdown = (subMenuSlug: string) => {
+    if (openDropdown === subMenuSlug) {
+      setOpenDropdown(null)
+    } else {
+      setOpenDropdown(subMenuSlug)
+    }
+  }
+
+  // Ouvrir automatiquement les menus si nécessaire
+  useEffect(() => {
+    if (submenu && submenu !== 'tout' && hasSubSubCategories(categorySlug, submenu)) {
+      // Ouvrir la colonne N3 si une sous-catégorie N2 est sélectionnée
+      setOpenDropdown(submenu)
+      
+      // Si une sous-sous-catégorie N3 est sélectionnée et a un niveau 4, ouvrir la colonne N4
+      if (subSubMenu && hasSubSubSubCategories(categorySlug, submenu, subSubMenu)) {
+        setOpenNestedDropdown(subSubMenu)
+      } else {
+        setOpenNestedDropdown(null)
+      }
+    } else {
+      setOpenDropdown(null)
+      setOpenNestedDropdown(null)
+    }
+  }, [submenu, subSubMenu, categorySlug])
+
+  const currentSubMenu = submenu || ''
+  const isAllSelected = !submenu || submenu === 'tout'
+
+  return (
+    <div className="category-page-new">
+      {/* 1. Header & Recherche */}
+      <div className="category-header-new">
+        <div className="category-search-container">
+          <div className="category-search-box">
+            <Search size={20} className="category-search-icon" />
+            <input
+              type="text"
+              placeholder="Search…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="category-search-input"
+            />
+          </div>
+          <div className="category-header-actions">
+            <Sparkles size={24} className="category-sparkle-icon" />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Titre de la catégorie */}
+      <div className="category-title-section">
+        <h1 className="category-title-new">{categoryName}</h1>
+      </div>
+
+      {/* 3. Filtres de sous-catégories (scroll horizontal) */}
+      <div className="category-filters-section">
+        <div className="category-filters-scroll">
+          {subMenus.length === 0 && !loading && (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+              Aucune sous-catégorie disponible
+            </div>
+          )}
+          {subMenus.map((subMenu) => {
+            const isActive = isAllSelected 
+              ? subMenu.slug === 'tout'
+              : currentSubMenu === subMenu.slug
+            const hasSubSub = hasSubSubCategories(categorySlug, subMenu.slug)
+            const isDropdownOpen = openDropdown === subMenu.slug
+            const subSubCategories = getSubSubCategories(categorySlug, subMenu.slug)
+            
+            // Log pour déboguer
+            if (isDropdownOpen) {
+              console.log(`[CategoryPage] Menu ouvert pour ${subMenu.slug}:`, {
+                hasSubSub,
+                subSubCategoriesCount: subSubCategories.length,
+                subSubCategories
+              })
+            }
+
+            return (
+              <div
+                key={subMenu.slug}
+                className="category-filter-wrapper"
+                ref={(el) => {
+                  if (el) dropdownRefs.current[subMenu.slug] = el
+                }}
+              >
+                <button
+                  className={`category-filter-button ${isActive ? 'active' : ''} ${hasSubSub ? 'has-dropdown' : ''}`}
+                  onClick={() => {
+                    console.log(`[CategoryPage] Clic sur N2: ${subMenu.name}, hasSubSub: ${hasSubSub}, isDropdownOpen: ${isDropdownOpen}`)
+                    if (hasSubSub) {
+                      // Si le bouton a des enfants N3, ouvrir/fermer le menu
+                      if (isDropdownOpen && openDropdown === subMenu.slug) {
+                        // Si le menu est déjà ouvert, le fermer
+                        console.log(`[CategoryPage] Fermeture du menu N3 pour ${subMenu.slug}`)
+                        setOpenDropdown(null)
+                        setOpenNestedDropdown(null)
+                        setDropdownPosition(null)
+                      } else {
+                        // Sinon, ouvrir le menu N3 (sans naviguer encore)
+                        console.log(`[CategoryPage] Ouverture du menu N3 pour ${subMenu.slug}, sous-catégories:`, subSubCategories)
+                        // Calculer la position du menu
+                        const buttonElement = dropdownRefs.current[subMenu.slug]?.querySelector('button')
+                        if (buttonElement) {
+                          const rect = buttonElement.getBoundingClientRect()
+                          const menuWidth = 200 // Largeur approximative du menu
+                          const windowWidth = window.innerWidth
+                          let left = rect.left
+                          
+                          // Sur mobile, s'assurer que le menu ne sorte pas de l'écran
+                          if (windowWidth < 768) {
+                            // Centrer ou aligner à droite si nécessaire
+                            if (left + menuWidth > windowWidth - 20) {
+                              left = windowWidth - menuWidth - 20
+                            }
+                            // S'assurer qu'il ne sorte pas à gauche
+                            if (left < 20) {
+                              left = 20
+                            }
+                          }
+                          
+                          setDropdownPosition({
+                            top: rect.bottom + 8,
+                            left: left
+                          })
+                        }
+                        setOpenDropdown(subMenu.slug)
+                        setOpenNestedDropdown(null) // Fermer N4 si ouvert
+                        setNestedDropdownPosition(null)
+                        // Ne pas naviguer, juste ouvrir le menu pour que l'utilisateur choisisse N3
+                      }
+                    } else {
+                      // Sinon, filtrer directement et naviguer
+                      handleSubCategoryClick(subMenu.slug)
+                    }
+                  }}
+                >
+                  {subMenu.name}
+                  {hasSubSub && (
+                    <ChevronDown 
+                      size={16} 
+                      className={`category-filter-chevron ${isDropdownOpen ? 'open' : ''}`}
+                    />
+                  )}
+                </button>
+
+                {/* Menu déroulant pour les sous-sous-catégories (N3) */}
+                {(() => {
+                  const shouldShow = isDropdownOpen && hasSubSub && subSubCategories.length > 0
+                  console.log(`[CategoryPage] Menu N3 pour ${subMenu.slug} (${subMenu.name}):`, {
+                    categorySlug,
+                    subMenuSlug: subMenu.slug,
+                    isDropdownOpen,
+                    hasSubSub,
+                    subSubCategoriesLength: subSubCategories.length,
+                    subSubCategories,
+                    shouldShow,
+                    dropdownPosition,
+                    'subSubCategoriesMap[categorySlug]': subSubCategoriesMap[categorySlug],
+                    'subSubCategoriesMap[categorySlug]?.[subMenu.slug]': subSubCategoriesMap[categorySlug]?.[subMenu.slug]
+                  })
+                  return shouldShow
+                })() && (
+                  <div 
+                    className="category-dropdown-menu"
+                    style={dropdownPosition ? {
+                      position: 'fixed',
+                      top: `${dropdownPosition.top}px`,
+                      left: `${dropdownPosition.left}px`
+                    } : undefined}
+                  >
+                    {subSubCategories.map((subSub) => {
+                      const isSubSubActive = subSubMenu === subSub.slug
+                      const hasNested = hasSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
+                      const isNestedOpen = openNestedDropdown === subSub.slug
+                      const nestedCategories = getSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
+                      
+                      return (
+                        <div
+                          key={subSub.id}
+                          className="category-dropdown-item-wrapper"
+                          ref={(el) => {
+                            if (el && hasNested) nestedDropdownRefs.current[subSub.slug] = el
+                          }}
+                        >
+                          <button
+                            className={`category-dropdown-item ${isSubSubActive ? 'active' : ''} ${hasNested ? 'has-nested' : ''}`}
+                            onClick={() => {
+                              console.log(`[CategoryPage] Clic sur N3: ${subSub.name}, hasNested: ${hasNested}, isNestedOpen: ${isNestedOpen}`)
+                              if (hasNested) {
+                                // Si l'élément N3 a des enfants N4, ouvrir/fermer la colonne N4
+                                if (isNestedOpen && openNestedDropdown === subSub.slug) {
+                                  // Si le menu N4 est déjà ouvert, le fermer
+                                  console.log(`[CategoryPage] Fermeture du menu N4 pour ${subSub.slug}`)
+                                  setOpenNestedDropdown(null)
+                                  setNestedDropdownPosition(null)
+                                  setNestedDropdownPosition(null)
+                                } else {
+                                  // Sinon, ouvrir le menu N4 (sans naviguer encore)
+                                  console.log(`[CategoryPage] Ouverture du menu N4 pour ${subSub.slug}, catégories N4:`, nestedCategories)
+                                  // Calculer la position du menu N4
+                                  const itemElement = nestedDropdownRefs.current[subSub.slug]?.querySelector('button')
+                                  if (itemElement && dropdownPosition) {
+                                    const rect = itemElement.getBoundingClientRect()
+                                    const nestedMenuWidth = 180 // Largeur approximative du menu N4
+                                    const windowWidth = window.innerWidth
+                                    let left = rect.right + 4
+                                    
+                                    // Sur mobile, ajuster la position pour éviter de sortir de l'écran
+                                    if (windowWidth < 768) {
+                                      // Si le menu N4 sort à droite, l'afficher à gauche du menu N3
+                                      if (left + nestedMenuWidth > windowWidth - 20) {
+                                        // Afficher à gauche du menu N3
+                                        left = dropdownPosition.left - nestedMenuWidth - 4
+                                        // Si ça sort à gauche aussi, l'empiler en dessous
+                                        if (left < 20) {
+                                          left = dropdownPosition.left
+                                          // Positionner en dessous du menu N3
+                                          const nestedTop = rect.bottom + 4
+                                          setNestedDropdownPosition({
+                                            top: nestedTop,
+                                            left: left
+                                          })
+                                          setOpenNestedDropdown(subSub.slug)
+                                          return
+                                        }
+                                      }
+                                      // S'assurer qu'il ne sorte pas à gauche
+                                      if (left < 20) {
+                                        left = 20
+                                      }
+                                    }
+                                    
+                                    setNestedDropdownPosition({
+                                      top: rect.top,
+                                      left: left
+                                    })
+                                  }
+                                  setOpenNestedDropdown(subSub.slug)
+                                  // Ne pas naviguer, juste ouvrir le menu pour que l'utilisateur choisisse N4
+                                }
+                              } else {
+                                // Sinon, filtrer directement et naviguer
+                                handleSubSubCategoryClick(subSub.slug, subSub)
+                              }
+                            }}
+                          >
+                            {subSub.name}
+                            {hasNested && (
+                              <ChevronRight 
+                                size={14} 
+                                className={`category-dropdown-chevron ${isNestedOpen ? 'open' : ''}`}
+                              />
+                            )}
+                          </button>
+                          
+                          {/* Menu déroulant imbriqué pour les sous-sous-sous-catégories (N4) */}
+                          {isNestedOpen && hasNested && nestedCategories.length > 0 && (
+                            <div 
+                              className="category-nested-dropdown-menu"
+                              style={nestedDropdownPosition ? {
+                                position: 'fixed',
+                                top: `${nestedDropdownPosition.top}px`,
+                                left: `${nestedDropdownPosition.left}px`
+                              } : undefined}
+                            >
+                              {nestedCategories.map((subSubSub) => {
+                                const isSubSubSubActive = subSubSubMenu === subSubSub.slug
+                                return (
+                                  <button
+                                    key={subSubSub.id}
+                                    className={`category-nested-dropdown-item ${isSubSubSubActive ? 'active' : ''}`}
+                                    onClick={() => handleSubSubSubCategoryClick(subSubSub.slug)}
+                                  >
+                                    {subSubSub.name}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 4. Liste des annonces (Grille 2 colonnes) */}
+      <div className="category-content-section">
+        {loading ? (
+          <div className="category-loading">
+            <p>Chargement...</p>
+          </div>
+        ) : filteredPosts.length === 0 ? (
+          <div className="category-empty">
+            <p>{searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucune annonce disponible'}</p>
+          </div>
+        ) : (
+          <div className="category-posts-grid">
+            {filteredPosts.map((post) => (
+              <PostCard key={post.id} post={post} viewMode="grid" />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default CategoryPage
+

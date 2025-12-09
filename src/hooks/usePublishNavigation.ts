@@ -21,18 +21,34 @@ export const usePublishNavigation = (
     
     if (step === 1) {
       setStep(0)
-      setFormData({ category: null, subcategory: null, option: null, platform: null })
+      setFormData({ 
+        category: null, 
+        subcategory: null, 
+        subSubCategory: null,
+        subSubSubCategory: null,
+        option: null, 
+        platform: null 
+      })
     } else if (step === 2) {
       setStep(1)
-      setFormData({ subcategory: null, option: null, platform: null })
+      setFormData({ 
+        subcategory: null,
+        subSubCategory: null,
+        subSubSubCategory: null,
+        option: null, 
+        platform: null 
+      })
     } else if (step === 2.5) {
       setStep(2)
-      setFormData({ platform: null })
+      setFormData({ 
+        subSubSubCategory: null,
+        platform: null 
+      })
     } else if (step === 3) {
-      if (formData.option) {
+      if (formData.subSubCategory || formData.option) {
         const selectedCategory = publicationTypes.find(c => c.id === formData.category)
         const selectedSubcategory = selectedCategory?.subcategories.find(s => s.id === formData.subcategory)
-        const selectedOption = selectedSubcategory?.options?.find(o => o.id === formData.option)
+        const selectedOption = selectedSubcategory?.options?.find(o => o.id === formData.subSubCategory || o.id === formData.option)
         
         if (selectedOption?.platforms && selectedOption.platforms.length > 0) {
           setStep(2.5)
@@ -51,7 +67,8 @@ export const usePublishNavigation = (
   const getBreadcrumb = useCallback((
     selectedCategory?: PublicationType | null,
     selectedSubcategory?: Subcategory | null,
-    selectedOption?: Option | null
+    selectedOption?: Option | null,
+    selectedPlatform?: { id: string; name: string } | null
   ) => {
     const parts: string[] = []
     
@@ -63,6 +80,9 @@ export const usePublishNavigation = (
     }
     if (selectedOption) {
       parts.push(selectedOption.name)
+    }
+    if (selectedPlatform) {
+      parts.push(selectedPlatform.name)
     }
     
     return parts.join(' > ')

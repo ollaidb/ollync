@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, ChevronRight, LucideIcon } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, MessageCircle, ChevronRight, LucideIcon } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'
@@ -26,10 +26,10 @@ const Header = () => {
       subMenus: []
     },
     { 
-      id: 'recrutement', 
+      id: 'role', 
       icon: Briefcase, 
-      label: 'Recrutement', 
-      path: '/recrutement',
+      label: 'Rôle', 
+      path: '/role',
       subMenus: []
     },
     { 
@@ -66,6 +66,13 @@ const Header = () => {
       label: 'Autre', 
       path: '/autre',
       subMenus: []
+    },
+    { 
+      id: 'communication', 
+      icon: MessageCircle, 
+      label: 'Communication', 
+      path: '/communication',
+      subMenus: []
     }
   ])
 
@@ -74,12 +81,13 @@ const Header = () => {
     const loadSubMenus = async () => {
       const categoriesConfig = [
         { id: 'match', icon: Users, label: 'Match', path: '/match' },
-        { id: 'recrutement', icon: Briefcase, label: 'Recrutement', path: '/recrutement' },
+        { id: 'role', icon: Briefcase, label: 'Rôle', path: '/role' },
         { id: 'projet', icon: Briefcase, label: 'Projet', path: '/projet' },
         { id: 'service', icon: Wrench, label: 'Service', path: '/service' },
         { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' },
         { id: 'mission', icon: Target, label: 'Mission', path: '/mission' },
-        { id: 'autre', icon: MoreHorizontal, label: 'Autre', path: '/autre' }
+        { id: 'autre', icon: MoreHorizontal, label: 'Autre', path: '/autre' },
+        { id: 'communication', icon: MessageCircle, label: 'Communication', path: '/communication' }
       ]
 
       const updatedCategories = await Promise.all(

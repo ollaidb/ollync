@@ -4,7 +4,7 @@
 
 .swipe-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--background);
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top, 0px);
@@ -25,8 +25,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e5e5;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 
 .swipe-header-search,
@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111827;
+  color: var(--foreground);
   transition: opacity 0.2s;
 }
 
@@ -57,14 +57,14 @@
 .swipe-header-category-name {
   font-size: 16px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
   line-height: 1.2;
 }
 
 .swipe-header-subcategory-name {
   font-size: 12px;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--muted-foreground);
   line-height: 1.2;
   margin-top: 2px;
 }
@@ -87,14 +87,14 @@
 
 .swipe-title-section {
   padding: 16px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e5e5;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 
 .swipe-post-title {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   line-height: 1.3;
 }
@@ -106,7 +106,7 @@
 .swipe-image-section {
   position: relative;
   width: 100%;
-  background: #ffffff;
+  background: var(--background);
   margin-bottom: 1px;
 }
 
@@ -115,7 +115,7 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 .swipe-main-image img {
@@ -128,11 +128,11 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+  background: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6366f1;
+  color: var(--primary);
 }
 
 .swipe-image-badges {
@@ -153,18 +153,18 @@
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
-  background: #3b82f6;
+  color: var(--primary-foreground);
+  background: var(--primary);
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .swipe-badge-location {
-  background: #3b82f6;
+  background: var(--primary);
 }
 
 .swipe-badge-date {
-  background: #3b82f6;
+  background: var(--primary);
 }
 
 .swipe-image-actions {
@@ -187,8 +187,8 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow-md);
+  background: var(--card);
   backdrop-filter: blur(10px);
 }
 
@@ -201,27 +201,27 @@
 }
 
 .swipe-image-reject {
-  color: #ef4444;
+  color: var(--destructive);
 }
 
 .swipe-image-reject:hover {
-  background: rgba(254, 226, 226, 0.95);
+  background: var(--muted);
 }
 
 .swipe-image-message {
-  color: #111827;
+  color: var(--foreground);
 }
 
 .swipe-image-message:hover {
-  background: rgba(243, 244, 246, 0.95);
+  background: var(--muted);
 }
 
 .swipe-image-like {
-  color: #10b981;
+  color: var(--accent);
 }
 
 .swipe-image-like:hover {
-  background: rgba(209, 250, 229, 0.95);
+  background: var(--muted);
 }
 
 /* ============================================
@@ -229,7 +229,7 @@
    ============================================ */
 
 .swipe-description-section {
-  background: #ffffff;
+  background: var(--background);
   padding: 20px;
   margin-bottom: 1px;
 }
@@ -243,14 +243,14 @@
 .swipe-description-label {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
 }
 
 .swipe-description-text {
   font-size: 15px;
   line-height: 1.6;
-  color: #374151;
+  color: var(--muted-foreground);
   margin: 0;
 }
 
@@ -259,7 +259,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border);
 }
 
 .swipe-info-item:last-child {
@@ -269,17 +269,17 @@
 .swipe-info-label {
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--muted-foreground);
 }
 
 .swipe-info-value {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
 }
 
 .urgent-badge {
-  color: #dc2626;
+  color: var(--destructive);
 }
 
 /* ============================================
@@ -287,7 +287,7 @@
    ============================================ */
 
 .swipe-user-section {
-  background: #3b82f6;
+  background: var(--primary);
   padding: 16px 20px;
   display: flex;
   align-items: center;
@@ -298,7 +298,7 @@
 }
 
 .swipe-user-section:hover {
-  background: #2563eb;
+  background: var(--accent);
 }
 
 .swipe-user-avatar {
@@ -306,7 +306,7 @@
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--background);
   flex-shrink: 0;
 }
 
@@ -322,8 +322,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #60a5fa;
-  color: #ffffff;
+  background: var(--accent);
+  color: var(--primary-foreground);
   font-size: 18px;
   font-weight: 600;
 }
@@ -331,7 +331,7 @@
 .swipe-user-name {
   font-size: 16px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--primary-foreground);
   flex: 1;
 }
 
@@ -360,23 +360,23 @@
 }
 
 .swipe-undo-btn {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card);
   backdrop-filter: blur(10px);
-  color: #333;
+  color: var(--card-foreground);
   border: none;
   padding: 10px 20px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   transition: all 0.2s ease;
 }
 
 .swipe-undo-btn:hover {
-  background: white;
+  background: var(--background);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-xl);
 }
 
 /* ============================================
@@ -390,7 +390,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--muted-foreground);
   padding: 40px;
   text-align: center;
 }
@@ -403,8 +403,8 @@
 }
 
 .swipe-btn-primary {
-  background: #3b82f6;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
@@ -415,9 +415,9 @@
 }
 
 .swipe-btn-primary:hover {
-  background: #2563eb;
+  background: var(--accent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ============================================

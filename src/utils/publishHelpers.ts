@@ -113,7 +113,7 @@ export const handlePublish = async (
   let subCategoryId: string | null = null
 
   try {
-    // Récupérer la catégorie
+    // Récupérer la catégorie (N1)
     const { data: categoryData } = await supabase
       .from('categories')
       .select('id')
@@ -123,7 +123,7 @@ export const handlePublish = async (
     if (categoryData) {
       categoryId = (categoryData as any).id
 
-      // Récupérer la sous-catégorie si elle existe
+      // Récupérer la sous-catégorie (N2) si elle existe
       if (formData.subcategory && formData.subcategory !== 'tout') {
         const { data: subCategoryData } = await (supabase.from('sub_categories') as any)
           .select('id')
@@ -139,6 +139,10 @@ export const handlePublish = async (
   } catch (error) {
     console.error('Error fetching category/subcategory:', error)
   }
+
+  // Note: Les niveaux N3 et N4 sont stockés dans media_type et option
+  // car la base de données n'a que 2 niveaux (category_id et sub_category_id)
+  // On peut stocker les slugs N3 et N4 dans des champs JSON ou texte si nécessaire
 
   if (!categoryId) {
     alert('Erreur: Catégorie introuvable')
@@ -158,10 +162,16 @@ export const handlePublish = async (
     is_urgent: formData.urgent || false,
     status: status,
     payment_type: formData.exchange_type || null,
-    media_type: formData.option || null,
+    // Stocker N3 dans media_type (ou créer un champ sub_sub_category_slug si nécessaire)
+    media_type: formData.subSubCategory || formData.option || null,
+    // Stocker N4 dans un champ optionnel (ou créer un champ sub_sub_sub_category_slug)
+    // Pour l'instant, on peut le stocker dans la description ou créer un champ JSON
     needed_date: formData.deadline || null,
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null
   }
+
+  // Si N4 existe, on peut l'ajouter dans un champ JSON ou texte
+  // Exemple: postData.metadata = { subSubSubCategory: formData.subSubSubCategory }
 
   // Nettoyer les valeurs null/undefined
   Object.keys(postData).forEach(key => {

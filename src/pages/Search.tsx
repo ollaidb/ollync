@@ -46,7 +46,7 @@ const Search = () => {
   const filters = [
     { id: 'all', label: 'Tout' },
     { id: 'match', label: 'Match' },
-    { id: 'recrutement', label: 'Recrutement' },
+    { id: 'role', label: 'Rôle' },
     { id: 'projet', label: 'Projet' },
     { id: 'service', label: 'Service' },
     { id: 'vente', label: 'Vente' },

@@ -3,9 +3,9 @@
   top: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--background);
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 /* Section 1: Logo et Notifications */
@@ -14,7 +14,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .header-logo-btn {
@@ -49,22 +49,22 @@
   height: 40px;
   border-radius: 50%;
   background: transparent;
-  color: #333;
+  color: var(--foreground);
   transition: background 0.2s ease;
   border: none;
   cursor: pointer;
 }
 
 .notification-btn:hover {
-  background: #f5f5f5;
+  background: var(--muted);
 }
 
 .notification-badge {
   position: absolute;
   top: 6px;
   right: 6px;
-  background: #ff4444;
-  color: white;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
@@ -77,21 +77,21 @@
 /* Section 2: Barre de recherche */
 .header-section-2 {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .search-bar {
   display: flex;
   align-items: center;
-  background: #f5f5f5;
+  background: var(--input);
   border-radius: 8px;
   padding: 10px 16px;
   gap: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .search-icon {
-  color: #666;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
@@ -99,13 +99,13 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #333;
+  color: var(--foreground);
   font-size: 15px;
   outline: none;
 }
 
 .search-input::placeholder {
-  color: #999;
+  color: var(--muted-foreground);
 }
 
 .camera-btn {
@@ -114,7 +114,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: #666;
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 4px;
   flex-shrink: 0;
@@ -122,13 +122,13 @@
 }
 
 .camera-btn:hover {
-  color: #ff6600;
+  color: var(--accent);
 }
 
 /* Section 3: Menu horizontal scrollable */
 .header-section-3 {
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -176,25 +176,25 @@
 }
 
 .menu-category svg {
-  color: #333;
+  color: var(--foreground);
   transition: color 0.2s ease;
 }
 
 .menu-category:hover svg {
-  color: #ff6600;
+  color: var(--accent);
 }
 
 .menu-category-label {
   font-size: 12px;
   font-weight: 500;
-  color: #333;
+  color: var(--foreground);
   text-align: center;
   white-space: nowrap;
   transition: color 0.2s ease;
 }
 
 .menu-category:hover .menu-category-label {
-  color: #ff6600;
+  color: var(--accent);
 }
 
 /* Dropdown des sous-menus */
@@ -210,14 +210,14 @@
 }
 
 .submenu-dropdown-content {
-  background: white;
+  background: var(--popover);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .submenu-dropdown-item {
@@ -232,36 +232,36 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--popover-foreground);
   transition: all 0.2s ease;
   width: 100%;
 }
 
 .submenu-dropdown-item:hover {
-  background: #f5f5f5;
-  color: #ff6600;
+  background: var(--muted);
+  color: var(--accent);
 }
 
 .submenu-dropdown-item svg {
-  color: #999;
+  color: var(--muted-foreground);
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .submenu-dropdown-item:hover svg {
-  color: #ff6600;
+  color: var(--accent);
   transform: translateX(4px);
 }
 
 .submenu-dropdown-item-all {
   margin-top: 4px;
   padding-top: 12px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
   font-weight: 600;
-  color: #ff6600;
+  color: var(--accent);
 }
 
 .submenu-dropdown-item-all:hover {
-  background: #fff5f0;
+  background: var(--muted);
 }
 
 @keyframes fadeInDown {

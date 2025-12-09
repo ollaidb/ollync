@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { publicationTypes } from '../constants/publishData'
+import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
 import { getMyLocation, handlePublish } from '../utils/publishHelpers'
@@ -16,9 +17,17 @@ import './Publish.css'
 
 export default function Publish() {
   const navigate = useNavigate()
+  
+  // Récupérer les catégories enrichies avec les niveaux 3 et 4
+  const enrichedPublicationTypes = useMemo(() => {
+    return getPublicationTypesWithSubSubCategories()
+  }, [])
+
   const [formData, setFormData] = useState({
     category: null as string | null,
     subcategory: null as string | null,
+    subSubCategory: null as string | null, // N3
+    subSubSubCategory: null as string | null, // N4
     option: null as string | null,
     platform: null as string | null,
     title: '',
@@ -48,7 +57,7 @@ export default function Publish() {
     (updates) => setFormData({ ...formData, ...updates })
   )
 
-  const selectedCategory = publicationTypes.find(
+  const selectedCategory = enrichedPublicationTypes.find(
     (c) => c.id === formData.category,
   )
 
@@ -56,17 +65,30 @@ export default function Publish() {
     (s) => s.id === formData.subcategory,
   )
 
-  const selectedOption = selectedSubcategory?.options?.find(
-    (o) => o.id === formData.option,
+  // N3 : Sous-sous-catégorie (option dans la structure actuelle)
+  const selectedSubSubCategory = selectedSubcategory?.options?.find(
+    (o) => o.id === formData.subSubCategory || o.id === formData.option,
   )
+
+  // N4 : Sous-sous-sous-catégorie (platform dans la structure actuelle)
+  const selectedSubSubSubCategory = selectedSubSubCategory?.platforms?.find(
+    (p) => p.id === formData.subSubSubCategory || p.id === formData.platform,
+  )
+
+  // Pour la compatibilité avec le code existant
+  const selectedOption = selectedSubSubCategory
 
   // Récupérer les slugs pour useExamplePosts
   const categorySlug = selectedCategory?.slug || null
   const subcategorySlug = selectedSubcategory?.slug || null
+  const subSubCategorySlug = selectedSubSubCategory?.slug || null
+  const subSubSubCategorySlug = selectedSubSubSubCategory?.id || null
 
   const { examplePosts, loadingPosts } = useExamplePosts(
     categorySlug,
-    subcategorySlug
+    subcategorySlug,
+    subSubCategorySlug,
+    subSubSubCategorySlug
   )
 
   const updateFormData = (updates: Partial<typeof formData>) => {
@@ -91,7 +113,8 @@ export default function Publish() {
           breadcrumb={getBreadcrumb(
             selectedCategory,
             selectedSubcategory,
-            selectedOption,
+            selectedSubSubCategory,
+            selectedSubSubSubCategory,
           )}
           selectedCategory={selectedCategory || undefined}
         />
@@ -112,13 +135,21 @@ export default function Publish() {
             <Step2Subcategory
               selectedCategory={selectedCategory ?? null}
               onSelectSubcategory={(subcategoryId) => {
-                updateFormData({ subcategory: subcategoryId })
+                updateFormData({ 
+                  subcategory: subcategoryId,
+                  subSubCategory: null,
+                  subSubSubCategory: null,
+                  option: null,
+                  platform: null
+                })
                 const subcategory = selectedCategory?.subcategories.find(
                   (s) => s.id === subcategoryId
                 )
+                // Si cette sous-catégorie a des options (N3), aller à l'étape 2
                 if (subcategory?.options && subcategory.options.length > 0) {
                   setStep(2)
                 } else {
+                  // Sinon, aller directement à la description
                   setStep(3)
                 }
               }}
@@ -127,15 +158,22 @@ export default function Publish() {
             />
           )}
 
-          {step === 2 && !formData.option && (
+          {step === 2 && !formData.subSubCategory && (
             <Step3Option
               selectedSubcategory={selectedSubcategory ?? null}
               selectedCategory={selectedCategory ?? null}
               onSelectOption={(opt) => {
-                updateFormData({ option: opt.id })
+                updateFormData({ 
+                  subSubCategory: opt.id,
+                  option: opt.id, // Pour compatibilité
+                  subSubSubCategory: null,
+                  platform: null
+                })
+                // Si cette option (N3) a des platforms (N4), aller à l'étape 2.5
                 if (opt.platforms && opt.platforms.length > 0) {
                   setStep(2.5)
                 } else {
+                  // Sinon, aller directement à la description
                   setStep(3)
                 }
               }}
@@ -146,9 +184,12 @@ export default function Publish() {
 
           {step === 2.5 && (
             <Step3Platform
-              selectedOption={selectedOption ?? null}
+              selectedOption={selectedSubSubCategory ?? null}
               onSelectPlatform={(platform) => {
-                updateFormData({ platform })
+                updateFormData({ 
+                  subSubSubCategory: platform,
+                  platform: platform // Pour compatibilité
+                })
                 setStep(3)
               }}
             />

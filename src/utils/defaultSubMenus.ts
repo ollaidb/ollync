@@ -5,37 +5,45 @@
 export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string }>> = {
   match: [
     { name: 'Création de contenu', slug: 'creation-contenu' },
-    { name: 'Plus One', slug: 'plus-one' },
-    { name: 'Événements', slug: 'evenements' }
+    { name: 'Plus One', slug: 'plus-one' }
   ],
-  recrutement: [
-    { name: 'Modèles', slug: 'modele' },
-    { name: 'Figurants', slug: 'figurant' },
+  role: [
+    { name: 'Figurant', slug: 'figurant' },
+    { name: 'Modèle', slug: 'modele' },
     { name: 'Live', slug: 'live' },
-    { name: 'Vlog', slug: 'vlog' },
-    { name: 'Copywriting', slug: 'copywriting' },
-    { name: 'Montage vidéo', slug: 'montage-video' }
+    { name: 'Micro trottoir', slug: 'micro-trottoir' },
+    { name: 'Montage Vidéo', slug: 'montage-video' }
   ],
-  projet: [
-    { name: 'Association / Collaboration', slug: 'association-collaboration' }
+  // Compatibilité avec l'ancien slug
+  recrutement: [
+    { name: 'Figurant', slug: 'figurant' },
+    { name: 'Modèle', slug: 'modele' },
+    { name: 'Live', slug: 'live' },
+    { name: 'Micro trottoir', slug: 'micro-trottoir' },
+    { name: 'Montage Vidéo', slug: 'montage-video' }
   ],
   service: [
-    { name: 'Échange de service', slug: 'echange-service' },
-    { name: 'Tâches', slug: 'taches' },
-    { name: 'Formation', slug: 'formation' }
+    { name: 'Prestation', slug: 'prestation' },
+    { name: 'Échange de services', slug: 'echange-de-services' }
   ],
-  vente: [
-    { name: 'Échange', slug: 'echange' },
-    { name: 'Vente de comptes', slug: 'vente-comptes' },
-    { name: 'Don', slug: 'don' }
+  projet: [
+    { name: 'Associer', slug: 'associer' },
+    { name: 'Créer une équipe', slug: 'creer-equipe' }
   ],
   mission: [
     { name: 'Livraison', slug: 'livraison' },
-    { name: 'Vérification', slug: 'verification' },
-    { name: 'Cuisine', slug: 'cuisine' }
+    { name: 'Dépôt', slug: 'depot' },
+    { name: 'Vérification', slug: 'verification' }
+  ],
+  vente: [
+    { name: 'Compte', slug: 'compte' }
+  ],
+  communication: [
+    { name: 'Langue', slug: 'langue' },
+    { name: 'Débat', slug: 'debat' }
   ],
   autre: [
-    { name: 'Autre service', slug: 'autre-service' }
+    { name: 'Assistance', slug: 'assistance' }
   ]
 }
 

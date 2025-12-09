@@ -29,7 +29,8 @@ const BackButton = ({ to, onClick, className = '' }: BackButtonProps) => {
     // Pages de catégories -> retourner vers /home
     if (path.startsWith('/match') || 
         path.startsWith('/service') || 
-        path.startsWith('/recrutement') || 
+        path.startsWith('/role') ||
+        path.startsWith('/recrutement') || // Compatibilité
         path.startsWith('/projet') || 
         path.startsWith('/vente') || 
         path.startsWith('/mission') || 

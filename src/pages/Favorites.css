@@ -1,6 +1,6 @@
 .favorites-page {
   min-height: 100vh;
-  background-color: #FFFFFF;
+  background-color: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -13,7 +13,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #FFFFFF;
+  background-color: var(--background);
   border-bottom: none;
 }
 
@@ -40,14 +40,14 @@
 .favorites-title {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   line-height: 1.2;
 }
 
 .favorites-subtitle {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--muted-foreground);
   margin: 4px 0 0 0;
 }
 
@@ -55,18 +55,18 @@
   width: 44px;
   height: 44px;
   border-radius: 22px;
-  background-color: #F9FAFB;
+  background-color: var(--input);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background-color 0.2s;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .search-button:hover {
-  background-color: #F3F4F6;
+  background-color: var(--muted);
 }
 
 /* Tabs */
@@ -80,23 +80,23 @@
   flex: 1;
   padding: 12px;
   border-radius: 12px;
-  background-color: #F9FAFB;
+  background-color: var(--input);
   border: none;
   font-size: 15px;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
 }
 
 .favorites-tab:hover {
-  background-color: #F3F4F6;
+  background-color: var(--muted);
 }
 
 .favorites-tab.active {
-  background-color: #6366F1;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 /* Content */

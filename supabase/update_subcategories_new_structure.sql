@@ -193,3 +193,5 @@ FROM categories c
 LEFT JOIN sub_categories sc ON sc.category_id = c.id
 ORDER BY c.name, sc.name;
 
+
+

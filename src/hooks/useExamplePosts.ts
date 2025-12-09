@@ -10,7 +10,9 @@ interface ExamplePost {
 
 export const useExamplePosts = (
   categorySlug: string | null,
-  subcategorySlug: string | null
+  subcategorySlug: string | null,
+  subSubCategorySlug?: string | null,
+  subSubSubCategorySlug?: string | null
 ) => {
   const [examplePosts, setExamplePosts] = useState<ExamplePost[]>([])
   const [loadingPosts, setLoadingPosts] = useState(false)
@@ -76,7 +78,7 @@ export const useExamplePosts = (
     }
 
     fetchExamplePosts()
-  }, [categorySlug, subcategorySlug])
+  }, [categorySlug, subcategorySlug, subSubCategorySlug, subSubSubCategorySlug])
 
   return { examplePosts, loadingPosts }
 }

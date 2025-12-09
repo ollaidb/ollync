@@ -13,6 +13,7 @@ import Service from './pages/Service'
 import Vente from './pages/Vente'
 import Mission from './pages/Mission'
 import Autre from './pages/Autre'
+import Communication from './pages/Communication'
 import PostDetails from './pages/PostDetails'
 import SwipePage from './pages/SwipePage'
 import Search from './pages/Search'
@@ -56,24 +57,40 @@ function AppContent() {
           <Route path="/match" element={<Match />} />
           <Route path="/match/:submenu" element={<Match />} />
           <Route path="/match/:submenu/:subSubMenu" element={<Match />} />
+          <Route path="/match/:submenu/:subSubMenu/:subSubSubMenu" element={<Match />} />
+          <Route path="/role" element={<Recrutement />} />
+          <Route path="/role/:submenu" element={<Recrutement />} />
+          <Route path="/role/:submenu/:subSubMenu" element={<Recrutement />} />
+          <Route path="/role/:submenu/:subSubMenu/:subSubSubMenu" element={<Recrutement />} />
+          {/* Routes de compatibilité pour recrutement */}
           <Route path="/recrutement" element={<Recrutement />} />
           <Route path="/recrutement/:submenu" element={<Recrutement />} />
           <Route path="/recrutement/:submenu/:subSubMenu" element={<Recrutement />} />
+          <Route path="/recrutement/:submenu/:subSubMenu/:subSubSubMenu" element={<Recrutement />} />
           <Route path="/projet" element={<Projet />} />
           <Route path="/projet/:submenu" element={<Projet />} />
           <Route path="/projet/:submenu/:subSubMenu" element={<Projet />} />
+          <Route path="/projet/:submenu/:subSubMenu/:subSubSubMenu" element={<Projet />} />
           <Route path="/service" element={<Service />} />
           <Route path="/service/:submenu" element={<Service />} />
           <Route path="/service/:submenu/:subSubMenu" element={<Service />} />
+          <Route path="/service/:submenu/:subSubMenu/:subSubSubMenu" element={<Service />} />
           <Route path="/vente" element={<Vente />} />
           <Route path="/vente/:submenu" element={<Vente />} />
           <Route path="/vente/:submenu/:subSubMenu" element={<Vente />} />
+          <Route path="/vente/:submenu/:subSubMenu/:subSubSubMenu" element={<Vente />} />
           <Route path="/mission" element={<Mission />} />
           <Route path="/mission/:submenu" element={<Mission />} />
           <Route path="/mission/:submenu/:subSubMenu" element={<Mission />} />
+          <Route path="/mission/:submenu/:subSubMenu/:subSubSubMenu" element={<Mission />} />
           <Route path="/autre" element={<Autre />} />
           <Route path="/autre/:submenu" element={<Autre />} />
           <Route path="/autre/:submenu/:subSubMenu" element={<Autre />} />
+          <Route path="/autre/:submenu/:subSubMenu/:subSubSubMenu" element={<Autre />} />
+          <Route path="/communication" element={<Communication />} />
+          <Route path="/communication/:submenu" element={<Communication />} />
+          <Route path="/communication/:submenu/:subSubMenu" element={<Communication />} />
+          <Route path="/communication/:submenu/:subSubMenu/:subSubSubMenu" element={<Communication />} />
           <Route path="/publier-annonce" element={<Publish />} />
           <Route path="/post/:id" element={<PostDetails />} />
           <Route path="/swipe" element={<SwipePage />} />

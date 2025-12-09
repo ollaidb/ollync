@@ -1,8 +1,8 @@
 .message-input-container {
   position: relative;
   padding: 12px 16px;
-  background-color: #FFFFFF;
-  border-top: 1px solid #E5E7EB;
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
 }
 
 .message-options-panel {
@@ -10,7 +10,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 12px;
-  background-color: #F9FAFB;
+  background-color: var(--input);
   border-radius: 12px;
   margin-bottom: 12px;
 }
@@ -21,22 +21,22 @@
   align-items: center;
   gap: 4px;
   padding: 12px 8px;
-  background-color: white;
-  border: 1px solid #E5E7EB;
+  background-color: var(--background);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 12px;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .message-option-btn:hover {
-  background-color: #F3F4F6;
-  border-color: #6366F1;
+  background-color: var(--muted);
+  border-color: var(--primary);
 }
 
 .message-option-btn svg {
-  color: #6366F1;
+  color: var(--primary);
 }
 
 .message-option-btn span {
@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #F9FAFB;
+  background-color: var(--input);
   border-radius: 24px;
   padding: 8px 12px;
 }
@@ -56,7 +56,7 @@
 .message-options-toggle {
   background: none;
   border: none;
-  color: #6366F1;
+  color: var(--primary);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -67,7 +67,7 @@
 }
 
 .message-options-toggle:hover {
-  background-color: #E5E7EB;
+  background-color: var(--border);
 }
 
 .message-input-field {
@@ -75,13 +75,13 @@
   border: none;
   background: transparent;
   font-size: 16px;
-  color: #111827;
+  color: var(--foreground);
   outline: none;
   padding: 4px 8px;
 }
 
 .message-input-field::placeholder {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .message-input-field:disabled {
@@ -90,7 +90,7 @@
 }
 
 .message-send-btn {
-  background-color: #6366F1;
+  background-color: var(--primary);
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -98,14 +98,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--primary-foreground);
   cursor: pointer;
   transition: background-color 0.2s;
   flex-shrink: 0;
 }
 
 .message-send-btn:hover:not(:disabled) {
-  background-color: #4F46E5;
+  background-color: var(--accent);
 }
 
 .message-send-btn:disabled {

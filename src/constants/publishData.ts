@@ -1,4 +1,4 @@
-import { Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal } from 'lucide-react'
+import { Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, MessageCircle } from 'lucide-react'
 
 export interface Platform {
   id: string
@@ -81,9 +81,9 @@ export const publicationTypes: PublicationType[] = [
     ]
   },
   {
-    id: 'recrutement',
-    name: 'Recrutement',
-    slug: 'recrutement',
+    id: 'role',
+    name: 'Rôle',
+    slug: 'role',
     icon: Briefcase,
     color: '#9c27b0',
     description: 'Trouver des profils pour un projet ou une production',
@@ -94,14 +94,14 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'modele',
-        name: 'Modèles',
-        slug: 'modele'
+        id: 'figurant',
+        name: 'Figurant',
+        slug: 'figurant'
       },
       {
-        id: 'figurant',
-        name: 'Figurants',
-        slug: 'figurant'
+        id: 'modele',
+        name: 'Modèle',
+        slug: 'modele'
       },
       {
         id: 'live',
@@ -109,18 +109,13 @@ export const publicationTypes: PublicationType[] = [
         slug: 'live'
       },
       {
-        id: 'vlog',
-        name: 'Vlog',
-        slug: 'vlog'
-      },
-      {
-        id: 'copywriting',
-        name: 'Copywriting',
-        slug: 'copywriting'
+        id: 'micro-trottoir',
+        name: 'Micro trottoir',
+        slug: 'micro-trottoir'
       },
       {
         id: 'montage-video',
-        name: 'Montage vidéo',
+        name: 'Montage Vidéo',
         slug: 'montage-video'
       }
     ]
@@ -139,9 +134,14 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'association-collaboration',
-        name: 'Association / Collaboration',
-        slug: 'association-collaboration'
+        id: 'associer',
+        name: 'Associer',
+        slug: 'associer'
+      },
+      {
+        id: 'creer-equipe',
+        name: 'Créer une équipe',
+        slug: 'creer-equipe'
       }
     ]
   },
@@ -159,19 +159,14 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'echange-service',
-        name: 'Échange de service',
-        slug: 'echange-service'
+        id: 'prestation',
+        name: 'Prestation',
+        slug: 'prestation'
       },
       {
-        id: 'taches',
-        name: 'Tâches',
-        slug: 'taches'
-      },
-      {
-        id: 'formation',
-        name: 'Formation',
-        slug: 'formation'
+        id: 'echange-de-services',
+        name: 'Échange de services',
+        slug: 'echange-de-services'
       }
     ]
   },
@@ -189,19 +184,9 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'echange',
-        name: 'Échange',
-        slug: 'echange'
-      },
-      {
-        id: 'vente-comptes',
-        name: 'Vente de comptes',
-        slug: 'vente-comptes'
-      },
-      {
-        id: 'don',
-        name: 'Don',
-        slug: 'don'
+        id: 'compte',
+        name: 'Compte',
+        slug: 'compte'
       }
     ]
   },
@@ -224,14 +209,39 @@ export const publicationTypes: PublicationType[] = [
         slug: 'livraison'
       },
       {
+        id: 'depot',
+        name: 'Dépôt',
+        slug: 'depot'
+      },
+      {
         id: 'verification',
         name: 'Vérification',
         slug: 'verification'
+      }
+    ]
+  },
+  {
+    id: 'communication',
+    name: 'Communication',
+    slug: 'communication',
+    icon: MessageCircle,
+    color: '#00bcd4',
+    description: 'Services de communication',
+    subcategories: [
+      {
+        id: 'tout',
+        name: 'Tout',
+        slug: 'tout'
       },
       {
-        id: 'cuisine',
-        name: 'Cuisine',
-        slug: 'cuisine'
+        id: 'langue',
+        name: 'Langue',
+        slug: 'langue'
+      },
+      {
+        id: 'debat',
+        name: 'Débat',
+        slug: 'debat'
       }
     ]
   },
@@ -249,9 +259,9 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'autre-service',
-        name: 'Autre service',
-        slug: 'autre-service'
+        id: 'assistance',
+        name: 'Assistance',
+        slug: 'assistance'
       }
     ]
   }

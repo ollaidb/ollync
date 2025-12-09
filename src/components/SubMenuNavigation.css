@@ -1,6 +1,6 @@
 .submenu-navigation {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
   padding: 12px 0;
 }
 
@@ -20,9 +20,9 @@
 .submenu-item {
   padding: 8px 16px;
   border-radius: 20px;
-  background: #f5f5f5;
+  background: var(--muted);
   border: none;
-  color: #666;
+  color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -31,13 +31,13 @@
 }
 
 .submenu-item:hover {
-  background: #e0e0e0;
-  color: #333;
+  background: var(--border);
+  color: var(--foreground);
 }
 
 .submenu-item.active {
-  background: #667eea;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 @media (max-width: 768px) {
