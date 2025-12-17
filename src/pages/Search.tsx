@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -43,16 +43,33 @@ const Search = () => {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
 
-  const filters = [
-    { id: 'all', label: 'Tout' },
-    { id: 'match', label: 'Match' },
-    { id: 'role', label: 'Rôle' },
-    { id: 'projet', label: 'Projet' },
-    { id: 'service', label: 'Service' },
-    { id: 'vente', label: 'Vente' },
-    { id: 'mission', label: 'Mission' },
-    { id: 'autre', label: 'Autre' }
+  // Ordre des nouvelles catégories
+  const categoryOrder = [
+    'creation-contenu',
+    'casting-role',
+    'montage',
+    'projets-equipe',
+    'services',
+    'vente'
   ]
+
+  // Générer les filtres dynamiquement depuis les catégories
+  const filters = useMemo(() => {
+    return [
+      { id: 'all', label: 'Tout' },
+      ...categories
+        .filter(cat => categoryOrder.includes(cat.slug))
+        .sort((a, b) => {
+          const indexA = categoryOrder.indexOf(a.slug)
+          const indexB = categoryOrder.indexOf(b.slug)
+          return indexA - indexB
+        })
+        .map(cat => ({
+          id: cat.slug,
+          label: cat.name
+        }))
+    ]
+  }, [categories])
 
   useEffect(() => {
     fetchCategories()

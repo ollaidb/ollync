@@ -110,6 +110,41 @@ const Messages = () => {
     }
   }
 
+  // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
+  const findOrCreateConversation = async (otherUserId: string, postId?: string | null) => {
+    if (!user) return null
+
+    // Chercher une conversation existante entre ces deux utilisateurs (pas un groupe)
+    const { data: existingConvs } = await supabase
+      .from('conversations')
+      .select('*')
+      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+
+    // Filtrer pour exclure les groupes
+    const existingConv = existingConvs?.find(conv => 
+      !(conv as { is_group?: boolean }).is_group
+    )
+
+    if (existingConv && (existingConv as { id: string }).id) {
+      return existingConv
+    }
+
+    // Créer une nouvelle conversation si elle n'existe pas
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: newConv, error } = await (supabase.from('conversations') as any).insert({
+      user1_id: user.id,
+      user2_id: otherUserId,
+      post_id: postId || null
+    }).select().single()
+
+    if (error) {
+      console.error('Error creating conversation:', error)
+      return null
+    }
+
+    return newConv
+  }
+
   const handlePostMessage = async (postIdParam: string) => {
     if (!user) return
 
@@ -129,28 +164,13 @@ const Messages = () => {
 
       const otherUserId = (postData as { user_id: string }).user_id
 
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId},post_id.eq.${postIdParam}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id},post_id.eq.${postIdParam})`)
-        .maybeSingle()
+      // Utiliser la fonction utilitaire pour trouver ou créer une conversation unique
+      const conversation = await findOrCreateConversation(otherUserId, postIdParam)
 
-      if (existingConv && (existingConv as { id: string }).id) {
-        navigate(`/messages/${(existingConv as { id: string }).id}`)
-        return
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newConv, error } = await (supabase.from('conversations') as any).insert({
-        user1_id: user.id,
-        user2_id: otherUserId,
-        post_id: postIdParam
-      }).select().single()
-
-      if (error) throw error
-
-      if (newConv) {
-        navigate(`/messages/${newConv.id}`)
+      if (conversation && (conversation as { id: string }).id) {
+        navigate(`/messages/${(conversation as { id: string }).id}`)
+      } else {
+        alert('Erreur lors de la création de la conversation')
       }
     } catch (error) {
       console.error('Error creating conversation:', error)
@@ -327,7 +347,7 @@ const Messages = () => {
 
         // Pour chaque conversation, récupérer le dernier message et compter les non-lus
         const convsWithData = await Promise.all(
-          (convs as Array<{ id: string; user1_id: string; user2_id: string; post_id?: string | null; last_message_at?: string | null }>).map(async (conv) => {
+          (convs as Array<{ id: string; user1_id: string; user2_id: string; post_id?: string | null; last_message_at?: string | null; is_group?: boolean }>).map(async (conv) => {
             const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
             const otherUser = usersMap.get(otherUserId) || null
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
@@ -373,7 +393,56 @@ const Messages = () => {
           })
         )
 
-        setConversations(convsWithData)
+        // Dédupliquer les conversations individuelles : ne garder qu'une seule conversation par paire d'utilisateurs
+        // (garder la plus récente basée sur last_message_at)
+        const userPairToConv = new Map<string, Conversation>()
+        const finalConversations: Conversation[] = []
+        
+        for (const conv of convsWithData) {
+          const isGroup = (conv as { is_group?: boolean }).is_group
+          
+          // Pour les groupes, on garde toutes les conversations directement
+          if (isGroup) {
+            finalConversations.push(conv)
+            continue
+          }
+
+          // Pour les conversations individuelles, créer une clé unique basée sur les deux utilisateurs
+          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
+          if (!otherUserId) continue // Ignorer si pas d'autre utilisateur
+          
+          const conversationKey = [user.id, otherUserId].sort().join('_')
+
+          const existing = userPairToConv.get(conversationKey)
+          
+          if (!existing) {
+            // Première conversation avec cet utilisateur
+            userPairToConv.set(conversationKey, conv)
+          } else {
+            // Comparer les dates pour garder la plus récente
+            const existingDate = existing.last_message_at || existing.lastMessage?.created_at || ''
+            const currentDate = conv.last_message_at || conv.lastMessage?.created_at || ''
+            
+            if (currentDate && (!existingDate || new Date(currentDate) > new Date(existingDate))) {
+              userPairToConv.set(conversationKey, conv)
+            }
+          }
+        }
+
+        // Ajouter les conversations individuelles dédupliquées
+        finalConversations.push(...Array.from(userPairToConv.values()))
+        
+        // Trier par date de dernier message (plus récent en premier)
+        finalConversations.sort((a, b) => {
+          const dateA = a.last_message_at || a.lastMessage?.created_at || ''
+          const dateB = b.last_message_at || b.lastMessage?.created_at || ''
+          if (!dateA && !dateB) return 0
+          if (!dateA) return 1
+          if (!dateB) return -1
+          return new Date(dateB).getTime() - new Date(dateA).getTime()
+        })
+
+        setConversations(finalConversations)
       } else {
         setConversations([])
       }
