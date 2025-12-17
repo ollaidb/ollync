@@ -7,7 +7,8 @@ interface FormData {
   platform: string | null
   title: string
   description: string
-  shortDescription: string
+  shortDescription?: string
+  socialNetwork?: string | null
   price: string
   location: string
   location_city: string
@@ -150,22 +151,28 @@ export const handlePublish = async (
   }
 
   // Préparer les données du post
+  const descriptionValue = formData.description.trim()
   const postData: any = {
     user_id: user.id,
     category_id: categoryId,
     sub_category_id: subCategoryId,
     title: formData.title.trim(),
-    description: formData.description.trim(),
+    description: descriptionValue,
+    // Si la base de données a aussi une colonne content, utiliser la même valeur
+    content: descriptionValue,
     price: formData.price ? parseFloat(formData.price) : null,
     location: formData.location || null,
     images: formData.images.length > 0 ? formData.images : null,
     is_urgent: formData.urgent || false,
     status: status,
     payment_type: formData.exchange_type || null,
-    // Stocker N3 dans media_type (ou créer un champ sub_sub_category_slug si nécessaire)
-    media_type: formData.subSubCategory || formData.option || null,
-    // Stocker N4 dans un champ optionnel (ou créer un champ sub_sub_sub_category_slug)
-    // Pour l'instant, on peut le stocker dans la description ou créer un champ JSON
+    // Stocker le réseau social dans media_type si disponible, sinon utiliser N3/N4
+    // Priorité : socialNetwork > subSubCategory/option
+    // Ne pas inclure si toutes les valeurs sont vides/null
+    media_type: (formData.socialNetwork && formData.socialNetwork.trim()) 
+      || (formData.subSubCategory && formData.subSubCategory.trim()) 
+      || (formData.option && formData.option.trim()) 
+      || null,
     needed_date: formData.deadline || null,
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null
   }

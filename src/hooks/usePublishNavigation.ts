@@ -58,7 +58,7 @@ export const usePublishNavigation = (
       } else {
         setStep(2)
       }
-      setFormData({ title: '', description: '', shortDescription: '' })
+      setFormData({ title: '', description: '', socialNetwork: null })
     } else if (step === 4) {
       setStep(3)
     }

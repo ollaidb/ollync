@@ -31,7 +31,7 @@ export default function Publish() {
     platform: null as string | null,
     title: '',
     description: '',
-    shortDescription: '',
+    socialNetwork: null as string | null,
     price: '',
     location: '',
     location_city: '',
@@ -196,6 +196,8 @@ export default function Publish() {
               formData={formData}
               onUpdateFormData={updateFormData}
               onContinue={() => setStep(4)}
+              selectedCategory={selectedCategory}
+              selectedSubcategory={selectedSubcategory}
             />
           )}
 

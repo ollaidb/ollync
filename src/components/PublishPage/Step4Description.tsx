@@ -3,9 +3,13 @@ import './Step4Description.css'
 interface FormData {
   title: string
   description: string
-  shortDescription: string
+  shortDescription?: string
+  socialNetwork?: string
   price: string
   exchange_type: string
+  category?: string | null
+  subcategory?: string | null
+  subSubCategory?: string | null
   [key: string]: any
 }
 
@@ -13,10 +17,60 @@ interface Step4DescriptionProps {
   formData: FormData
   onUpdateFormData: (updates: Partial<FormData>) => void
   onContinue: () => void
+  selectedCategory?: { slug: string } | null
+  selectedSubcategory?: { slug: string } | null
 }
 
-export const Step4Description = ({ formData, onUpdateFormData, onContinue }: Step4DescriptionProps) => {
+// Liste des réseaux sociaux disponibles
+const SOCIAL_NETWORKS = [
+  { id: 'tiktok', name: 'TikTok' },
+  { id: 'instagram', name: 'Instagram' },
+  { id: 'youtube', name: 'YouTube' },
+  { id: 'facebook', name: 'Facebook' },
+  { id: 'snapchat', name: 'Snapchat' },
+  { id: 'twitter', name: 'Twitter' },
+  { id: 'pinterest', name: 'Pinterest' },
+  { id: 'twitch', name: 'Twitch' },
+  { id: 'linkedin', name: 'LinkedIn' },
+  { id: 'whatsapp', name: 'WhatsApp' },
+  { id: 'discord', name: 'Discord' },
+  { id: 'reddit', name: 'Reddit' },
+  { id: 'autre', name: 'Autre' }
+]
+
+// Fonction pour déterminer si le champ "Réseau social" doit être affiché
+const shouldShowSocialNetwork = (
+  categorySlug: string | null | undefined,
+  subcategorySlug: string | null | undefined
+): boolean => {
+  if (!categorySlug || !subcategorySlug) return false
+
+  // Catégories où le réseau social est pertinent
+  const relevantCategories: Record<string, string[]> = {
+    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
+    'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
+    'montage': ['montage', 'live'],
+    'services': ['coaching-contenu', 'strategie-editoriale', 'aide-live-moderation'],
+    'vente': ['comptes', 'pack-compte-contenu']
+  }
+
+  const relevantSubcategories = relevantCategories[categorySlug]
+  return relevantSubcategories ? relevantSubcategories.includes(subcategorySlug) : false
+}
+
+export const Step4Description = ({ 
+  formData, 
+  onUpdateFormData, 
+  onContinue,
+  selectedCategory,
+  selectedSubcategory
+}: Step4DescriptionProps) => {
   const canContinue = formData.title.trim().length > 0 && formData.description.trim().length > 0
+  
+  const showSocialNetwork = shouldShowSocialNetwork(
+    selectedCategory?.slug,
+    selectedSubcategory?.slug
+  )
 
   return (
     <div className="step4-description">
@@ -34,18 +88,7 @@ export const Step4Description = ({ formData, onUpdateFormData, onContinue }: Ste
       </div>
 
       <div className="form-group">
-        <label className="form-label">Description courte</label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Une description courte (optionnel)"
-          value={formData.shortDescription}
-          onChange={(e) => onUpdateFormData({ shortDescription: e.target.value })}
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Description complète *</label>
+        <label className="form-label">Description *</label>
         <textarea
           className="form-textarea"
           placeholder="Décrivez en détail votre annonce..."
@@ -54,6 +97,24 @@ export const Step4Description = ({ formData, onUpdateFormData, onContinue }: Ste
           rows={6}
         />
       </div>
+
+      {showSocialNetwork && (
+        <div className="form-group">
+          <label className="form-label">Réseau social concerné</label>
+          <select
+            className="form-select"
+            value={formData.socialNetwork || ''}
+            onChange={(e) => onUpdateFormData({ socialNetwork: e.target.value })}
+          >
+            <option value="">Sélectionner un réseau social...</option>
+            {SOCIAL_NETWORKS.map((network) => (
+              <option key={network.id} value={network.id}>
+                {network.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="form-group">
         <label className="form-label">Prix (€)</label>
