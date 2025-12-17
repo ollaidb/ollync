@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, MessageCircle, ChevronRight, LucideIcon } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, Video, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'
@@ -19,31 +19,38 @@ const Header = () => {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([
     { 
-      id: 'match', 
+      id: 'creation-contenu', 
+      icon: Camera, 
+      label: 'Création de contenu', 
+      path: '/creation-contenu',
+      subMenus: []
+    },
+    { 
+      id: 'casting-role', 
       icon: Users, 
-      label: 'Match', 
-      path: '/match',
+      label: 'Casting', 
+      path: '/casting-role',
       subMenus: []
     },
     { 
-      id: 'role', 
-      icon: Briefcase, 
-      label: 'Rôle', 
-      path: '/role',
+      id: 'montage', 
+      icon: Scissors, 
+      label: 'Emploi', 
+      path: '/montage',
       subMenus: []
     },
     { 
-      id: 'projet', 
+      id: 'projets-equipe', 
       icon: Briefcase, 
       label: 'Projet', 
-      path: '/projet',
+      path: '/projets-equipe',
       subMenus: []
     },
     { 
-      id: 'service', 
+      id: 'services', 
       icon: Wrench, 
-      label: 'Service', 
-      path: '/service',
+      label: 'Services', 
+      path: '/services',
       subMenus: []
     },
     { 
@@ -52,27 +59,6 @@ const Header = () => {
       label: 'Vente', 
       path: '/vente',
       subMenus: []
-    },
-    { 
-      id: 'mission', 
-      icon: Target, 
-      label: 'Mission', 
-      path: '/mission',
-      subMenus: []
-    },
-    { 
-      id: 'autre', 
-      icon: MoreHorizontal, 
-      label: 'Autre', 
-      path: '/autre',
-      subMenus: []
-    },
-    { 
-      id: 'communication', 
-      icon: MessageCircle, 
-      label: 'Communication', 
-      path: '/communication',
-      subMenus: []
     }
   ])
 
@@ -80,14 +66,12 @@ const Header = () => {
   useEffect(() => {
     const loadSubMenus = async () => {
       const categoriesConfig = [
-        { id: 'match', icon: Users, label: 'Match', path: '/match' },
-        { id: 'role', icon: Briefcase, label: 'Rôle', path: '/role' },
-        { id: 'projet', icon: Briefcase, label: 'Projet', path: '/projet' },
-        { id: 'service', icon: Wrench, label: 'Service', path: '/service' },
-        { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' },
-        { id: 'mission', icon: Target, label: 'Mission', path: '/mission' },
-        { id: 'autre', icon: MoreHorizontal, label: 'Autre', path: '/autre' },
-        { id: 'communication', icon: MessageCircle, label: 'Communication', path: '/communication' }
+        { id: 'creation-contenu', icon: Camera, label: 'Création de contenu', path: '/creation-contenu' },
+        { id: 'casting-role', icon: Users, label: 'Casting', path: '/casting-role' },
+        { id: 'montage', icon: Scissors, label: 'Emploi', path: '/montage' },
+        { id: 'projets-equipe', icon: Briefcase, label: 'Projet', path: '/projets-equipe' },
+        { id: 'services', icon: Wrench, label: 'Services', path: '/services' },
+        { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' }
       ]
 
       const updatedCategories = await Promise.all(

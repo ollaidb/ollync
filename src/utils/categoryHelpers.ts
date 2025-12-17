@@ -1,9 +1,4 @@
-import { supabase } from '../lib/supabaseClient'
 import { getDefaultSubMenus } from './defaultSubMenus'
-
-interface Category {
-  id: string
-}
 
 export const fetchSubMenusForCategory = async (categorySlug: string): Promise<Array<{ name: string; slug: string }>> => {
   const defaultSubMenus = getDefaultSubMenus(categorySlug)

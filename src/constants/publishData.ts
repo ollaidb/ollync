@@ -1,4 +1,4 @@
-import { Users, Briefcase, Wrench, ShoppingBag, Target, MoreHorizontal, MessageCircle } from 'lucide-react'
+import { Camera, Scissors, Users, Briefcase, Wrench, ShoppingBag } from 'lucide-react'
 
 export interface Platform {
   id: string
@@ -29,14 +29,15 @@ export interface PublicationType {
   subcategories: Subcategory[]
 }
 
+// Ordre des catégories : Création de contenu, Casting, Emploi, Projet, Services, Vente
 export const publicationTypes: PublicationType[] = [
   {
-    id: 'match',
-    name: 'Match',
-    slug: 'match',
-    icon: Users,
+    id: 'creation-contenu',
+    name: 'Création de contenu',
+    slug: 'creation-contenu',
+    icon: Camera,
     color: '#667eea',
-    description: 'Rencontres utiles : créatif, social ou événementiel',
+    description: 'Créer du contenu : photos, vidéos, vlogs, sketchs, trends, événements',
     subcategories: [
       {
         id: 'tout',
@@ -44,34 +45,29 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'creation-contenu',
-        name: 'Création de contenu',
-        slug: 'creation-contenu',
-        options: [
-          {
-            id: 'photo',
-            name: 'Photo',
-            platforms: [
-              { id: 'instagram', name: 'Instagram' },
-              { id: 'tiktok', name: 'TikTok' },
-              { id: 'linkedin', name: 'LinkedIn' }
-            ]
-          },
-          {
-            id: 'video',
-            name: 'Vidéo',
-            platforms: [
-              { id: 'instagram', name: 'Instagram' },
-              { id: 'tiktok', name: 'TikTok' },
-              { id: 'youtube', name: 'YouTube' }
-            ]
-          }
-        ]
+        id: 'photo',
+        name: 'Photo',
+        slug: 'photo'
       },
       {
-        id: 'plus-one',
-        name: 'Plus One',
-        slug: 'plus-one'
+        id: 'video',
+        name: 'Vidéo',
+        slug: 'video'
+      },
+      {
+        id: 'vlog',
+        name: 'Vlog',
+        slug: 'vlog'
+      },
+      {
+        id: 'sketchs',
+        name: 'Sketchs',
+        slug: 'sketchs'
+      },
+      {
+        id: 'trends',
+        name: 'Trends',
+        slug: 'trends'
       },
       {
         id: 'evenements',
@@ -81,11 +77,11 @@ export const publicationTypes: PublicationType[] = [
     ]
   },
   {
-    id: 'role',
-    name: 'Rôle',
-    slug: 'role',
-    icon: Briefcase,
-    color: '#9c27b0',
+    id: 'casting-role',
+    name: 'Casting',
+    slug: 'casting-role',
+    icon: Users,
+    color: '#2196f3',
     description: 'Trouver des profils pour un projet ou une production',
     subcategories: [
       {
@@ -99,33 +95,73 @@ export const publicationTypes: PublicationType[] = [
         slug: 'figurant'
       },
       {
-        id: 'modele',
-        name: 'Modèle',
-        slug: 'modele'
+        id: 'modele-photo',
+        name: 'Modèle photo',
+        slug: 'modele-photo'
       },
       {
-        id: 'live',
-        name: 'Live',
-        slug: 'live'
+        id: 'modele-video',
+        name: 'Modèle vidéo',
+        slug: 'modele-video'
       },
       {
-        id: 'micro-trottoir',
-        name: 'Micro trottoir',
-        slug: 'micro-trottoir'
+        id: 'voix-off',
+        name: 'Voix off',
+        slug: 'voix-off'
       },
       {
-        id: 'montage-video',
-        name: 'Montage Vidéo',
-        slug: 'montage-video'
+        id: 'invite-podcast',
+        name: 'Invité podcast',
+        slug: 'invite-podcast'
+      },
+      {
+        id: 'invite-micro-trottoir',
+        name: 'Invité micro-trottoir',
+        slug: 'invite-micro-trottoir'
       }
     ]
   },
   {
-    id: 'projet',
+    id: 'montage',
+    name: 'Emploi',
+    slug: 'montage',
+    icon: Scissors,
+    color: '#9c27b0',
+    description: 'Emploi : montage, micro-trottoir, live, écriture de contenu',
+    subcategories: [
+      {
+        id: 'tout',
+        name: 'Tout',
+        slug: 'tout'
+      },
+      {
+        id: 'montage',
+        name: 'Montage',
+        slug: 'montage'
+      },
+      {
+        id: 'micro-trottoir',
+        name: 'micro-trottoir',
+        slug: 'micro-trottoir'
+      },
+      {
+        id: 'live',
+        name: 'live',
+        slug: 'live'
+      },
+      {
+        id: 'ecriture-contenu',
+        name: 'Écriture de contenu',
+        slug: 'ecriture-contenu'
+      }
+    ]
+  },
+  {
+    id: 'projets-equipe',
     name: 'Projet',
-    slug: 'projet',
+    slug: 'projets-equipe',
     icon: Briefcase,
-    color: '#2196f3',
+    color: '#4facfe',
     description: 'Trouver un associé, un collaborateur ou rejoindre un projet',
     subcategories: [
       {
@@ -134,24 +170,44 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'associer',
-        name: 'Associer',
-        slug: 'associer'
+        id: 'recherche-equipe',
+        name: 'Recherche équipe',
+        slug: 'recherche-equipe'
       },
       {
-        id: 'creer-equipe',
-        name: 'Créer une équipe',
-        slug: 'creer-equipe'
+        id: 'projet-media',
+        name: 'media',
+        slug: 'projet-media'
+      },
+      {
+        id: 'projet-youtube',
+        name: 'YouTube',
+        slug: 'projet-youtube'
+      },
+      {
+        id: 'projet-podcast',
+        name: 'Podcast',
+        slug: 'projet-podcast'
+      },
+      {
+        id: 'projet-documentaire',
+        name: 'documentaire',
+        slug: 'projet-documentaire'
+      },
+      {
+        id: 'autre',
+        name: 'autre',
+        slug: 'autre'
       }
     ]
   },
   {
-    id: 'service',
-    name: 'Service',
-    slug: 'service',
+    id: 'services',
+    name: 'Services',
+    slug: 'services',
     icon: Wrench,
-    color: '#4facfe',
-    description: 'Échange de compétences, petites tâches, formations',
+    color: '#43e97b',
+    description: 'Services pour créateurs : coaching, stratégie, organisation, setup',
     subcategories: [
       {
         id: 'tout',
@@ -159,14 +215,29 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'prestation',
-        name: 'Prestation',
-        slug: 'prestation'
+        id: 'coaching-contenu',
+        name: 'Coaching contenu',
+        slug: 'coaching-contenu'
       },
       {
-        id: 'echange-de-services',
-        name: 'Échange de services',
-        slug: 'echange-de-services'
+        id: 'strategie-editoriale',
+        name: 'Stratégie éditoriale',
+        slug: 'strategie-editoriale'
+      },
+      {
+        id: 'organisation',
+        name: 'Organisation',
+        slug: 'organisation'
+      },
+      {
+        id: 'setup-materiel',
+        name: 'Setup matériel',
+        slug: 'setup-materiel'
+      },
+      {
+        id: 'aide-live-moderation',
+        name: 'Aide Live / Modération',
+        slug: 'aide-live-moderation'
       }
     ]
   },
@@ -176,7 +247,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'vente',
     icon: ShoppingBag,
     color: '#f093fb',
-    description: 'Achat, échange ou don',
+    description: 'Vente de comptes, noms d\'utilisateur, concepts et packs pour créateurs',
     subcategories: [
       {
         id: 'tout',
@@ -184,84 +255,24 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'compte',
-        name: 'Compte',
-        slug: 'compte'
-      }
-    ]
-  },
-  {
-    id: 'mission',
-    name: 'Mission',
-    slug: 'mission',
-    icon: Target,
-    color: '#43e97b',
-    description: 'Livraison, vérification, cuisine',
-    subcategories: [
-      {
-        id: 'tout',
-        name: 'Tout',
-        slug: 'tout'
+        id: 'comptes',
+        name: 'Comptes',
+        slug: 'comptes'
       },
       {
-        id: 'livraison',
-        name: 'Livraison',
-        slug: 'livraison'
+        id: 'noms-utilisateur',
+        name: 'Noms d\'utilisateur',
+        slug: 'noms-utilisateur'
       },
       {
-        id: 'depot',
-        name: 'Dépôt',
-        slug: 'depot'
+        id: 'concepts-niches',
+        name: 'Concepts / Niches',
+        slug: 'concepts-niches'
       },
       {
-        id: 'verification',
-        name: 'Vérification',
-        slug: 'verification'
-      }
-    ]
-  },
-  {
-    id: 'communication',
-    name: 'Communication',
-    slug: 'communication',
-    icon: MessageCircle,
-    color: '#00bcd4',
-    description: 'Services de communication',
-    subcategories: [
-      {
-        id: 'tout',
-        name: 'Tout',
-        slug: 'tout'
-      },
-      {
-        id: 'langue',
-        name: 'Langue',
-        slug: 'langue'
-      },
-      {
-        id: 'debat',
-        name: 'Débat',
-        slug: 'debat'
-      }
-    ]
-  },
-  {
-    id: 'autre',
-    name: 'Autre',
-    slug: 'autre',
-    icon: MoreHorizontal,
-    color: '#ffa726',
-    description: 'Autres services',
-    subcategories: [
-      {
-        id: 'tout',
-        name: 'Tout',
-        slug: 'tout'
-      },
-      {
-        id: 'assistance',
-        name: 'Assistance',
-        slug: 'assistance'
+        id: 'pack-compte-contenu',
+        name: 'Pack compte + contenu',
+        slug: 'pack-compte-contenu'
       }
     ]
   }

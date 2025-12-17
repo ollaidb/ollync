@@ -183,13 +183,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       orderDirection: 'desc'
     })
 
-    // Filtrer les posts qui ne sont pas de type "match"
-    const nonMatchPosts = fetchedPosts.filter(post => {
+    // Filtrer les posts qui ne sont pas de type "creation-contenu"
+    const nonCreationContenuPosts = fetchedPosts.filter(post => {
       const categorySlug = post.category?.slug
-      return categorySlug !== 'match'
+      return categorySlug !== 'creation-contenu'
     })
 
-    setPosts(nonMatchPosts)
+    setPosts(nonCreationContenuPosts)
     setPostsLoading(false)
   }, [profileId])
 
@@ -205,13 +205,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       orderDirection: 'desc'
     })
 
-    // Filtrer uniquement les posts de type "match"
-    const matchPostsOnly = fetchedPosts.filter(post => {
+    // Filtrer uniquement les posts de type "creation-contenu"
+    const creationContenuPostsOnly = fetchedPosts.filter(post => {
       const categorySlug = post.category?.slug
-      return categorySlug === 'match'
+      return categorySlug === 'creation-contenu'
     })
 
-    setMatchPosts(matchPostsOnly)
+    setMatchPosts(creationContenuPostsOnly)
     setPostsLoading(false)
   }, [profileId])
 

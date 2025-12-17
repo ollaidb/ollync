@@ -1,49 +1,50 @@
 // Sous-menus par défaut pour chaque catégorie
 // Utilisés quand la base de données n'est pas accessible
-// Doit correspondre à la structure définie dans Menu.tsx
+// Structure mise à jour pour le repositionnement 100% créateurs de contenu
 
 export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string }>> = {
-  match: [
-    { name: 'Création de contenu', slug: 'creation-contenu' },
-    { name: 'Plus One', slug: 'plus-one' }
+  'creation-contenu': [
+    { name: 'Photo', slug: 'photo' },
+    { name: 'Vidéo', slug: 'video' },
+    { name: 'Vlog', slug: 'vlog' },
+    { name: 'Sketchs', slug: 'sketchs' },
+    { name: 'Trends', slug: 'trends' },
+    { name: 'Événements', slug: 'evenements' }
   ],
-  role: [
+  montage: [
+    { name: 'Montage', slug: 'montage' },
+    { name: 'micro-trottoir', slug: 'micro-trottoir' },
+    { name: 'live', slug: 'live' },
+    { name: 'Écriture de contenu', slug: 'ecriture-contenu' }
+  ],
+  'casting-role': [
     { name: 'Figurant', slug: 'figurant' },
-    { name: 'Modèle', slug: 'modele' },
-    { name: 'Live', slug: 'live' },
-    { name: 'Micro trottoir', slug: 'micro-trottoir' },
-    { name: 'Montage Vidéo', slug: 'montage-video' }
+    { name: 'Modèle photo', slug: 'modele-photo' },
+    { name: 'Modèle vidéo', slug: 'modele-video' },
+    { name: 'Voix off', slug: 'voix-off' },
+    { name: 'Invité podcast', slug: 'invite-podcast' },
+    { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' }
   ],
-  // Compatibilité avec l'ancien slug
-  recrutement: [
-    { name: 'Figurant', slug: 'figurant' },
-    { name: 'Modèle', slug: 'modele' },
-    { name: 'Live', slug: 'live' },
-    { name: 'Micro trottoir', slug: 'micro-trottoir' },
-    { name: 'Montage Vidéo', slug: 'montage-video' }
+  'projets-equipe': [
+    { name: 'Recherche équipe', slug: 'recherche-equipe' },
+    { name: 'media', slug: 'projet-media' },
+    { name: 'YouTube', slug: 'projet-youtube' },
+    { name: 'Podcast', slug: 'projet-podcast' },
+    { name: 'documentaire', slug: 'projet-documentaire' },
+    { name: 'autre', slug: 'autre' }
   ],
-  service: [
-    { name: 'Prestation', slug: 'prestation' },
-    { name: 'Échange de services', slug: 'echange-de-services' }
-  ],
-  projet: [
-    { name: 'Associer', slug: 'associer' },
-    { name: 'Créer une équipe', slug: 'creer-equipe' }
-  ],
-  mission: [
-    { name: 'Livraison', slug: 'livraison' },
-    { name: 'Dépôt', slug: 'depot' },
-    { name: 'Vérification', slug: 'verification' }
+  services: [
+    { name: 'Coaching contenu', slug: 'coaching-contenu' },
+    { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
+    { name: 'Organisation', slug: 'organisation' },
+    { name: 'Setup matériel', slug: 'setup-materiel' },
+    { name: 'Aide Live / Modération', slug: 'aide-live-moderation' }
   ],
   vente: [
-    { name: 'Compte', slug: 'compte' }
-  ],
-  communication: [
-    { name: 'Langue', slug: 'langue' },
-    { name: 'Débat', slug: 'debat' }
-  ],
-  autre: [
-    { name: 'Assistance', slug: 'assistance' }
+    { name: 'Comptes', slug: 'comptes' },
+    { name: "Noms d'utilisateur", slug: 'noms-utilisateur' },
+    { name: 'Concepts / Niches', slug: 'concepts-niches' },
+    { name: 'Pack compte + contenu', slug: 'pack-compte-contenu' }
   ]
 }
 

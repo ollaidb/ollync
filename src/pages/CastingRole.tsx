@@ -1,13 +1,14 @@
 import Footer from '../components/Footer'
 import CategoryPage from '../components/CategoryPage'
 
-const Service = () => {
+const CastingRole = () => {
   return (
     <div className="app">
-      <CategoryPage categorySlug="services" categoryName="Services" />
+      <CategoryPage categorySlug="casting-role" categoryName="Casting" />
       <Footer />
     </div>
   )
 }
 
-export default Service
+export default CastingRole
+

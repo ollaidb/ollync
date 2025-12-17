@@ -1,13 +1,14 @@
 import Footer from '../components/Footer'
 import CategoryPage from '../components/CategoryPage'
 
-const Service = () => {
+const ProjetsEquipe = () => {
   return (
     <div className="app">
-      <CategoryPage categorySlug="services" categoryName="Services" />
+      <CategoryPage categorySlug="projets-equipe" categoryName="Projet" />
       <Footer />
     </div>
   )
 }
 
-export default Service
+export default ProjetsEquipe
+

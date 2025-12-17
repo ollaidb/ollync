@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
@@ -10,8 +10,7 @@ import {
   hasSubSubCategories,
   getSubSubSubCategories,
   hasSubSubSubCategories,
-  subSubCategoriesMap,
-  type SubSubCategory
+  subSubCategoriesMap
 } from '../utils/subSubCategories'
 import './CategoryPage.css'
 
@@ -51,7 +50,6 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     subSubSubMenu?: string
   }>()
   const navigate = useNavigate()
-  const location = useLocation()
   const [posts, setPosts] = useState<Post[]>([])
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -217,7 +215,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     }
   }
 
-  const handleSubSubCategoryClick = (subSubSlug: string, subSubCategory: SubSubCategory) => {
+  const handleSubSubCategoryClick = (subSubSlug: string) => {
     if (submenu) {
       // Si cette sous-sous-catégorie (N3) a un niveau 4, ouvrir la colonne N4 à droite sans naviguer
       if (hasSubSubSubCategories(categorySlug, submenu, subSubSlug)) {
@@ -243,21 +241,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     }
   }
 
-  const toggleNestedDropdown = (subSubSlug: string) => {
-    if (openNestedDropdown === subSubSlug) {
-      setOpenNestedDropdown(null)
-    } else {
-      setOpenNestedDropdown(subSubSlug)
-    }
-  }
-
-  const toggleDropdown = (subMenuSlug: string) => {
-    if (openDropdown === subMenuSlug) {
-      setOpenDropdown(null)
-    } else {
-      setOpenDropdown(subMenuSlug)
-    }
-  }
+  // Fonctions toggle supprimées car non utilisées - la logique est directement dans les onClick
 
   // Ouvrir automatiquement les menus si nécessaire
   useEffect(() => {
@@ -322,12 +306,18 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             const isDropdownOpen = openDropdown === subMenu.slug
             const subSubCategories = getSubSubCategories(categorySlug, subMenu.slug)
             
-            // Log pour déboguer
-            if (isDropdownOpen) {
-              console.log(`[CategoryPage] Menu ouvert pour ${subMenu.slug}:`, {
+            // Log pour déboguer - toujours afficher pour diagnostiquer
+            if (subMenu.slug !== 'tout') {
+              console.log(`[CategoryPage] Rendu bouton ${subMenu.slug} (${subMenu.name}):`, {
+                categorySlug,
+                subMenuSlug: subMenu.slug,
                 hasSubSub,
                 subSubCategoriesCount: subSubCategories.length,
-                subSubCategories
+                subSubCategories,
+                isDropdownOpen,
+                'subSubCategoriesMap[categorySlug]': subSubCategoriesMap[categorySlug],
+                'subSubCategoriesMap[categorySlug]?.[subMenu.slug]': subSubCategoriesMap[categorySlug]?.[subMenu.slug],
+                'getSubSubCategories result': getSubSubCategories(categorySlug, subMenu.slug)
               })
             }
 
@@ -354,7 +344,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                       } else {
                         // Sinon, ouvrir le menu N3 (sans naviguer encore)
                         console.log(`[CategoryPage] Ouverture du menu N3 pour ${subMenu.slug}, sous-catégories:`, subSubCategories)
-                        // Calculer la position du menu
+                        // Calculer la position du menu de manière synchrone
                         const buttonElement = dropdownRefs.current[subMenu.slug]?.querySelector('button')
                         if (buttonElement) {
                           const rect = buttonElement.getBoundingClientRect()
@@ -377,6 +367,13 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                           setDropdownPosition({
                             top: rect.bottom + 8,
                             left: left
+                          })
+                        } else {
+                          // Si le bouton n'est pas trouvé, utiliser une position par défaut
+                          console.warn(`[CategoryPage] Bouton non trouvé pour ${subMenu.slug}, utilisation position par défaut`)
+                          setDropdownPosition({
+                            top: 200,
+                            left: 20
                           })
                         }
                         setOpenDropdown(subMenu.slug)
@@ -402,18 +399,16 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 {/* Menu déroulant pour les sous-sous-catégories (N3) */}
                 {(() => {
                   const shouldShow = isDropdownOpen && hasSubSub && subSubCategories.length > 0
-                  console.log(`[CategoryPage] Menu N3 pour ${subMenu.slug} (${subMenu.name}):`, {
-                    categorySlug,
-                    subMenuSlug: subMenu.slug,
-                    isDropdownOpen,
-                    hasSubSub,
-                    subSubCategoriesLength: subSubCategories.length,
-                    subSubCategories,
-                    shouldShow,
-                    dropdownPosition,
-                    'subSubCategoriesMap[categorySlug]': subSubCategoriesMap[categorySlug],
-                    'subSubCategoriesMap[categorySlug]?.[subMenu.slug]': subSubCategoriesMap[categorySlug]?.[subMenu.slug]
-                  })
+                  if (isDropdownOpen) {
+                    console.log(`[CategoryPage] Affichage menu N3 pour ${subMenu.slug}:`, {
+                      isDropdownOpen,
+                      hasSubSub,
+                      subSubCategoriesLength: subSubCategories.length,
+                      subSubCategories,
+                      shouldShow,
+                      dropdownPosition
+                    })
+                  }
                   return shouldShow
                 })() && (
                   <div 
@@ -422,7 +417,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                       position: 'fixed',
                       top: `${dropdownPosition.top}px`,
                       left: `${dropdownPosition.left}px`
-                    } : undefined}
+                    } : {}}
                   >
                     {subSubCategories.map((subSub) => {
                       const isSubSubActive = subSubMenu === subSub.slug
@@ -496,7 +491,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                                 }
                               } else {
                                 // Sinon, filtrer directement et naviguer
-                                handleSubSubCategoryClick(subSub.slug, subSub)
+                                handleSubSubCategoryClick(subSub.slug)
                               }
                             }}
                           >
@@ -517,7 +512,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                                 position: 'fixed',
                                 top: `${nestedDropdownPosition.top}px`,
                                 left: `${nestedDropdownPosition.left}px`
-                              } : undefined}
+                              } : {}}
                             >
                               {nestedCategories.map((subSubSub) => {
                                 const isSubSubSubActive = subSubSubMenu === subSubSub.slug

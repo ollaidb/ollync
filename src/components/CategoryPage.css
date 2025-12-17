@@ -193,7 +193,10 @@
 
 /* Menu déroulant pour les sous-sous-catégories (N3) - Colonne verticale à gauche */
 .category-dropdown-menu {
-  /* Position sera définie dynamiquement via inline style (position: fixed) */
+  /* Position par défaut (sera surchargée par inline style si dropdownPosition est défini) */
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
   min-width: 200px;
   max-width: 250px;
   background-color: var(--accent);
@@ -276,7 +279,10 @@
 
 /* Menu déroulant imbriqué (N4) - Colonne verticale à droite */
 .category-nested-dropdown-menu {
-  /* Position sera définie dynamiquement via inline style (position: fixed) */
+  /* Position par défaut (sera surchargée par inline style si nestedDropdownPosition est défini) */
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 0;
   min-width: 180px;
   max-width: 220px;
   background-color: var(--accent);

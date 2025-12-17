@@ -17,6 +17,57 @@ export interface SubSubSubCategory {
 // Mapping des sous-sous-catégories par catégorie et sous-catégorie
 // Structure: categorySlug -> subCategorySlug -> SubSubCategory[]
 export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]>> = {
+  'creation-contenu': {
+    'photo': [],
+    'video': [],
+    'vlog': [],
+    'sketchs': [],
+    'trends': [],
+    'evenements': []
+  },
+  'casting-role': {
+    'figurant': [],
+    'modele-photo': [],
+    'modele-video': [],
+    'voix-off': [],
+    'invite-podcast': [],
+    'invite-micro-trottoir': []
+  },
+  'montage': {
+    'montage': [],
+    'micro-trottoir': [],
+    'live': [],
+    'ecriture-contenu': []
+  },
+  'projets-equipe': {
+    'recherche-equipe': [],
+    'projet-media': [],
+    'projet-youtube': [],
+    'projet-podcast': [],
+    'projet-documentaire': [],
+    'autre': []
+  },
+  'services': {
+    'coaching-contenu': [],
+    'strategie-editoriale': [],
+    'organisation': [],
+    'setup-materiel': [],
+    'aide-live-moderation': []
+  },
+  'vente': {
+    'comptes': [
+      { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
+      { id: 'instagram', name: 'Instagram', slug: 'instagram' },
+      { id: 'twitter', name: 'Twitter', slug: 'twitter' },
+      { id: 'pinterest', name: 'Pinterest', slug: 'pinterest' },
+      { id: 'facebook', name: 'Facebook', slug: 'facebook' },
+      { id: 'youtube', name: 'YouTube', slug: 'youtube' }
+    ],
+    'noms-utilisateur': [],
+    'concepts-niches': [],
+    'pack-compte-contenu': []
+  },
+  // Compatibilité avec les anciens slugs (à supprimer progressivement)
   match: {
     'creation-contenu': [
       { 
@@ -34,21 +85,6 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
           { id: 'skits', name: 'Skits', slug: 'skits' }
         ]
       }
-    ],
-    'plus-one': [
-      { id: 'cinema', name: 'Cinéma', slug: 'cinema' },
-      { id: 'resto', name: 'Resto', slug: 'resto' },
-      { 
-        id: 'evenement', 
-        name: 'Événement', 
-        slug: 'evenement',
-        subSubSubCategories: [
-          { id: 'mariage', name: 'Mariage', slug: 'mariage' },
-          { id: 'concert', name: 'Concert', slug: 'concert' }
-        ]
-      },
-      { id: 'boite-de-nuit', name: 'Boîte de nuit', slug: 'boite-de-nuit' },
-      { id: 'voyage', name: 'Voyage', slug: 'voyage' }
     ]
   },
   role: {
@@ -81,87 +117,8 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
       { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
       { id: 'instagram', name: 'Instagram', slug: 'instagram' },
       { id: 'facebook', name: 'Facebook', slug: 'facebook' }
-    ],
-    'micro-trottoir': []
-  },
-  // Compatibilité avec l'ancien slug
-  recrutement: {
-    'figurant': [
-      { 
-        id: 'video', 
-        name: 'Vidéo', 
-        slug: 'video',
-        subSubSubCategories: [
-          { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-          { id: 'youtube', name: 'YouTube', slug: 'youtube' },
-          { id: 'documentaire', name: 'Documentaire', slug: 'documentaire' },
-          { id: 'sondage', name: 'Sondage', slug: 'sondage' }
-        ]
-      }
-    ],
-    'modele': [
-      { id: 'photo', name: 'Photo', slug: 'photo' },
-      { 
-        id: 'video', 
-        name: 'Vidéo', 
-        slug: 'video',
-        subSubSubCategories: [
-          { id: 'pub', name: 'Pub', slug: 'pub' },
-          { id: 'clip', name: 'Clip', slug: 'clip' }
-        ]
-      }
-    ],
-    'live': [
-      { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-      { id: 'instagram', name: 'Instagram', slug: 'instagram' },
-      { id: 'facebook', name: 'Facebook', slug: 'facebook' }
-    ],
-    'micro-trottoir': [],
-    'montage-video': [
-      { id: 'long-format', name: 'Long format', slug: 'long-format' },
-      { id: 'court-format', name: 'Court format', slug: 'court-format' }
-    ]
-  },
-  service: {
-    'prestation': [],
-    'echange-de-services': []
-  },
-  projet: {
-    'associer': [],
-    'creer-equipe': []
-  },
-  mission: {
-    'livraison': [
-      { id: 'colis', name: 'Colis', slug: 'colis' },
-      { id: 'nourriture', name: 'Nourriture', slug: 'nourriture' }
-    ],
-    'depot': [
-      { id: 'colis', name: 'Colis', slug: 'colis' }
-    ],
-    'verification': []
-  },
-  vente: {
-    'compte': [
-      { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-      { id: 'instagram', name: 'Instagram', slug: 'instagram' },
-      { id: 'twitter', name: 'Twitter', slug: 'twitter' },
-      { id: 'pinterest', name: 'Pinterest', slug: 'pinterest' },
-      { id: 'facebook', name: 'Facebook', slug: 'facebook' }
-    ]
-  },
-  autre: {
-    'assistance': [
-      { id: 'impot', name: 'Impôt', slug: 'impot' },
-      { id: 'devoir', name: 'Devoir', slug: 'devoir' },
-      { id: 'demenagement', name: 'Déménagement', slug: 'demenagement' }
     ]
   }
-}
-
-// Mapping pour Communication (si c'est une catégorie séparée)
-export const communicationSubSubCategories: Record<string, SubSubCategory[]> = {
-  'langue': [],
-  'debat': []
 }
 
 /**
@@ -171,15 +128,26 @@ export function getSubSubCategories(
   categorySlug: string,
   subCategorySlug: string
 ): SubSubCategory[] {
-  // Gérer le cas spécial de Communication
-  if (categorySlug === 'communication') {
-    return communicationSubSubCategories[subCategorySlug] || []
-  }
-  
-  // Essayer d'abord avec le slug fourni, puis avec 'recrutement' pour compatibilité
+  // Essayer d'abord avec le slug fourni
   let result = subSubCategoriesMap[categorySlug]?.[subCategorySlug] || []
-  if (result.length === 0 && categorySlug === 'recrutement') {
-    result = subSubCategoriesMap['role']?.[subCategorySlug] || []
+  
+  // Compatibilité avec les anciens slugs
+  if (result.length === 0) {
+    if (categorySlug === 'recrutement' || categorySlug === 'role') {
+      result = subSubCategoriesMap['casting-role']?.[subCategorySlug] || []
+      if (result.length === 0) {
+        result = subSubCategoriesMap['role']?.[subCategorySlug] || []
+      }
+    } else if (categorySlug === 'match') {
+      result = subSubCategoriesMap['creation-contenu']?.[subCategorySlug] || []
+      if (result.length === 0) {
+        result = subSubCategoriesMap['match']?.[subCategorySlug] || []
+      }
+    } else if (categorySlug === 'projet') {
+      result = subSubCategoriesMap['projets-equipe']?.[subCategorySlug] || []
+    } else if (categorySlug === 'service') {
+      result = subSubCategoriesMap['services']?.[subCategorySlug] || []
+    }
   }
   
   return result

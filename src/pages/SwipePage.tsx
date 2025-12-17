@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Heart, X, Star, ChevronDown, MapPin, Clock, Tag, MessageCircle, Search, Bell } from 'lucide-react'
+import { Heart, X, Tag, MessageCircle, Search, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -185,43 +185,7 @@ const SwipePage = () => {
     }, SWIPE_DELAY)
   }
 
-  const handleSwipeUp = async () => {
-    if (!currentPost || !user) {
-      navigate('/auth/login')
-      return
-    }
-
-    try {
-      // Ajouter aux favoris
-      const { error } = await (supabase.from('favorites') as any)
-        .insert({
-          user_id: user.id,
-          post_id: currentPost.id
-        })
-        .select()
-        .single()
-
-      if (error && error.code !== '23505') {
-        console.error('Error adding favorite:', error)
-      }
-
-      setLastSwipeAction('up')
-      setLastSwipedPost(currentPost)
-      setUndoAvailable(true)
-      setTimeout(() => setUndoAvailable(false), 3000)
-
-      // Délai avant de passer au post suivant
-      setTimeout(() => {
-        nextPost()
-      }, SWIPE_DELAY)
-    } catch (error) {
-      console.error('Error in handleSwipeUp:', error)
-      // En cas d'erreur, passer quand même au suivant après le délai
-      setTimeout(() => {
-        nextPost()
-      }, SWIPE_DELAY)
-    }
-  }
+  // handleSwipeUp supprimé car non utilisé
 
   const nextPost = () => {
     if (currentIndex < posts.length - 1) {

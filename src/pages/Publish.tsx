@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { publicationTypes } from '../constants/publishData'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
@@ -75,13 +74,10 @@ export default function Publish() {
     (p) => p.id === formData.subSubSubCategory || p.id === formData.platform,
   )
 
-  // Pour la compatibilité avec le code existant
-  const selectedOption = selectedSubSubCategory
-
   // Récupérer les slugs pour useExamplePosts
   const categorySlug = selectedCategory?.slug || null
   const subcategorySlug = selectedSubcategory?.slug || null
-  const subSubCategorySlug = selectedSubSubCategory?.slug || null
+  const subSubCategorySlug = selectedSubSubCategory?.id || null
   const subSubSubCategorySlug = selectedSubSubSubCategory?.id || null
 
   const { examplePosts, loadingPosts } = useExamplePosts(
