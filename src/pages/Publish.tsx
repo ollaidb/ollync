@@ -31,7 +31,7 @@ export default function Publish() {
     platform: null as string | null,
     title: '',
     description: '',
-    socialNetwork: null as string | null,
+    socialNetwork: undefined as string | undefined,
     price: '',
     location: '',
     location_city: '',

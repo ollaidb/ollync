@@ -8,7 +8,7 @@ interface FormData {
   title: string
   description: string
   shortDescription?: string
-  socialNetwork?: string | null
+  socialNetwork?: string
   price: string
   location: string
   location_city: string

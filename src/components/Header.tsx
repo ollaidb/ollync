@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, Video, LucideIcon, ChevronRight } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'

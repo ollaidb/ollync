@@ -147,8 +147,22 @@ const Profile = () => {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    navigate('/home')
+    try {
+      await signOut()
+      // Rediriger vers la page d'accueil après déconnexion réussie
+      navigate('/home')
+      // Recharger la page pour s'assurer que tous les états sont réinitialisés
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // Même en cas d'erreur, rediriger et recharger
+      navigate('/home')
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+    }
   }
 
   const renderContent = () => {
