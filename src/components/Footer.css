@@ -1,14 +1,16 @@
 .footer {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background-color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-top: none;
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px;
   padding-top: 12px;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
   height: auto;
@@ -26,18 +28,18 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--primary-foreground);
+  color: var(--foreground);
   transition: all 0.2s ease;
   min-width: 50px;
 }
 
 .footer-item:hover {
-  color: var(--muted-foreground);
+  color: var(--accent);
   transform: translateY(-2px);
 }
 
 .footer-item.active {
-  color: var(--primary-foreground);
+  color: var(--primary);
 }
 
 /* Icône centrale plus grande avec fond noir */
