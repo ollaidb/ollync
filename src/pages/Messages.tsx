@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MessageCircle, Loader, Search, Users, Archive } from 'lucide-react'
+import { MailOpen, MessageCircle, Loader, Search, Users, Archive } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -490,23 +490,28 @@ const Messages = () => {
   if (!user) {
     return (
       <div className="messages-page-container">
-        <div className="messages-header">
-          <BackButton />
-          <h1 className="messages-title">Messages</h1>
-          <div className="messages-header-spacer"></div>
+        <div className="messages-header-not-connected">
+          <h1 className="messages-title-centered">Messages</h1>
         </div>
-        <div className="messages-content">
-          <div className="empty-state">
-            <MessageCircle size={48} />
-            <h2>Vous n'êtes pas connecté</h2>
-            <p>Connectez-vous pour accéder à vos messages</p>
+        <div className="messages-content-not-connected">
+          <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
+          <h2 className="messages-not-connected-title">Vous n'êtes pas connecté</h2>
+          <p className="messages-not-connected-text">Connectez-vous pour accéder à vos messages</p>
+          <button 
+            className="messages-not-connected-button" 
+            onClick={() => navigate('/auth/register')}
+          >
+            S'inscrire
+          </button>
+          <p className="messages-not-connected-login-link">
+            Déjà un compte ?{' '}
             <button 
-              className="btn-primary" 
+              className="messages-not-connected-link" 
               onClick={() => navigate('/auth/login')}
             >
               Se connecter
             </button>
-          </div>
+          </p>
         </div>
         <Footer />
       </div>

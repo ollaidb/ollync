@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import HeaderMinimal from '../components/HeaderMinimal'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
@@ -161,23 +160,30 @@ const Notifications = () => {
 
   if (!user) {
     return (
-      <div className="app">
-        <HeaderMinimal />
-        <main className="main-content without-header">
-          <div className="notifications-page">
-            <div className="empty-state">
-              <Bell size={64} />
-              <h2>Vous n'êtes pas connecté</h2>
-              <p>Connectez-vous pour voir vos notifications</p>
-              <button 
-                className="btn-primary" 
-                onClick={() => navigate('/auth/login')}
-              >
-                Se connecter
-              </button>
-            </div>
-          </div>
-        </main>
+      <div className="notifications-page-container">
+        <div className="notifications-header-not-connected">
+          <h1 className="notifications-title-centered">Notifications</h1>
+        </div>
+        <div className="notifications-content-not-connected">
+          <Bell className="notifications-not-connected-icon" strokeWidth={1.5} />
+          <h2 className="notifications-not-connected-title">Vous n'êtes pas connecté</h2>
+          <p className="notifications-not-connected-text">Connectez-vous pour accéder à vos notifications</p>
+          <button 
+            className="notifications-not-connected-button" 
+            onClick={() => navigate('/auth/register')}
+          >
+            S'inscrire
+          </button>
+          <p className="notifications-not-connected-login-link">
+            Déjà un compte ?{' '}
+            <button 
+              className="notifications-not-connected-link" 
+              onClick={() => navigate('/auth/login')}
+            >
+              Se connecter
+            </button>
+          </p>
+        </div>
         <Footer />
       </div>
     )

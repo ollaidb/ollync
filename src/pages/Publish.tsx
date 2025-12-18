@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
 import { getMyLocation, handlePublish } from '../utils/publishHelpers'
+import { useAuth } from '../hooks/useSupabase'
+import Footer from '../components/Footer'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
@@ -16,6 +19,7 @@ import './Publish.css'
 
 export default function Publish() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   
   // Récupérer les catégories enrichies avec les niveaux 3 et 4
   const enrichedPublicationTypes = useMemo(() => {
@@ -97,6 +101,37 @@ export default function Publish() {
 
   const handlePublishPost = (status: 'draft' | 'active') => {
     handlePublish(formData, navigate, status)
+  }
+
+  if (!user) {
+    return (
+      <div className="publish-page-container">
+        <div className="publish-header-not-connected">
+          <h1 className="publish-title-centered">Publier</h1>
+        </div>
+        <div className="publish-content-not-connected">
+          <PlusCircle className="publish-not-connected-icon" strokeWidth={1.5} />
+          <h2 className="publish-not-connected-title">Vous n'êtes pas connecté</h2>
+          <p className="publish-not-connected-text">Connectez-vous pour publier une annonce</p>
+          <button 
+            className="publish-not-connected-button" 
+            onClick={() => navigate('/auth/register')}
+          >
+            S'inscrire
+          </button>
+          <p className="publish-not-connected-login-link">
+            Déjà un compte ?{' '}
+            <button 
+              className="publish-not-connected-link" 
+              onClick={() => navigate('/auth/login')}
+            >
+              Se connecter
+            </button>
+          </p>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (

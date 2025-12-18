@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
+import Footer from '../components/Footer'
 import { mapPosts } from '../utils/postMapper'
 import './Favorites.css'
 
@@ -294,29 +295,31 @@ const Favorites = () => {
 
   if (!user) {
     return (
-      <div className="favorites-page">
-        <div className="favorites-header-container">
-          <div className="favorites-header">
-            <BackButton />
-            <h1 className="favorites-title">Favoris</h1>
-            <div className="favorites-header-spacer"></div>
-          </div>
+      <div className="favorites-page-container">
+        <div className="favorites-header-not-connected">
+          <h1 className="favorites-title-centered">Favoris</h1>
         </div>
-        <div className="favorites-content">
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <Heart size={48} />
-            </div>
-            <h2>Vous n'êtes pas connecté</h2>
-            <p>Connectez-vous pour voir vos favoris</p>
+        <div className="favorites-content-not-connected">
+          <Heart className="favorites-not-connected-icon" strokeWidth={1.5} />
+          <h2 className="favorites-not-connected-title">Vous n'êtes pas connecté</h2>
+          <p className="favorites-not-connected-text">Connectez-vous pour accéder à vos favoris</p>
+          <button 
+            className="favorites-not-connected-button" 
+            onClick={() => navigate('/auth/register')}
+          >
+            S'inscrire
+          </button>
+          <p className="favorites-not-connected-login-link">
+            Déjà un compte ?{' '}
             <button 
-              className="btn-primary" 
+              className="favorites-not-connected-link" 
               onClick={() => navigate('/auth/login')}
             >
               Se connecter
             </button>
-          </div>
+          </p>
         </div>
+        <Footer />
       </div>
     )
   }
