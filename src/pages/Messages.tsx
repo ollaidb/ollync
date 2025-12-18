@@ -264,6 +264,7 @@ const Messages = () => {
       const convData = conv as { id: string; user1_id: string; user2_id: string; post_id?: string | null }
       const otherUserId = convData.user1_id === user.id ? convData.user2_id : convData.user1_id
 
+      // Récupérer les informations de l'utilisateur
       const { data: otherUser } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url')
@@ -286,7 +287,9 @@ const Messages = () => {
 
       setSelectedConversation({
         ...convData,
-        other_user: otherUser || null,
+        other_user: otherUser ? {
+          ...(otherUser as { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null })
+        } : null,
         postTitle
       } as Conversation)
 
@@ -1037,7 +1040,7 @@ const Messages = () => {
                   </div>
 
                   <div className="conversation-info">
-                    <div className="conversation-header">
+                    <div className="conversation-item-header">
                       <h3 className="conversation-name">
                         {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
                       </h3>
@@ -1129,7 +1132,7 @@ const Messages = () => {
                   </div>
 
                   <div className="conversation-info">
-                    <div className="conversation-header">
+                    <div className="conversation-item-header">
                       <h3 className="conversation-name">
                         {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
                       </h3>
@@ -1185,7 +1188,7 @@ const Messages = () => {
                 </div>
 
                 <div className="conversation-info">
-                  <div className="conversation-header">
+                  <div className="conversation-item-header">
                     <h3 className="conversation-name">
                       {conv.other_user?.full_name || conv.other_user?.username || 'Utilisateur'}
                     </h3>

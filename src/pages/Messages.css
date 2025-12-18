@@ -196,8 +196,8 @@
   display: none !important;
 }
 
-/* Header de conversation */
-.conversation-header {
+/* Header de conversation - uniquement dans la page de conversation */
+.conversation-page .conversation-header {
   position: fixed;
   top: 0;
   left: 0;
@@ -245,6 +245,14 @@
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
+  text-align: center;
+}
+
+.conversation-header-status {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin: 2px 0 0 0;
   text-align: center;
 }
 
@@ -409,7 +417,7 @@
   min-width: 0;
 }
 
-.conversation-header {
+.conversation-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -876,7 +884,7 @@
     padding: 12px;
   }
 
-  .conversation-header {
+  .conversation-page .conversation-header {
     padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
     padding-bottom: 12px;
     padding-left: 16px;
