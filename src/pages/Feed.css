@@ -7,6 +7,21 @@
   position: relative;
 }
 
+/* Dégradé en haut pour masquer les annonces sous le header */
+.feed-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to bottom, var(--background) 0%, var(--background) 30%, rgba(255, 255, 255, 0.98) 50%, rgba(255, 255, 255, 0.85) 70%, rgba(255, 255, 255, 0.7) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+  z-index: 99;
+}
+
 /* Dégradé en bas pour masquer les annonces sous le footer */
 .feed-page::after {
   content: '';

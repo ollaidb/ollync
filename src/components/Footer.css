@@ -74,8 +74,12 @@
 
 @media (max-width: 768px) {
   .footer {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
     padding: 6px 0;
     height: 80px;
+    border-radius: 20px;
   }
 
   .footer-item {
