@@ -34,22 +34,10 @@ interface Conversation {
   unread?: number
   is_group?: boolean
   has_messages?: boolean
-}
-
-interface Match {
-  id: string
-  user1_id: string
-  user2_id: string
-  status: string
-  created_at: string
-  updated_at?: string | null
-  other_user?: {
-    id: string
-    username?: string | null
-    full_name?: string | null
-    avatar_url?: string | null
-  } | null
-  has_conversation?: boolean
+  is_archived?: boolean
+  archived_at?: string | null
+  deleted_at?: string | null
+  type?: string | null
 }
 
 interface MatchRequest {
@@ -80,6 +68,7 @@ interface Message {
   content?: string | null
   sender_id: string
   created_at: string
+  read_at?: string | null
   message_type?: string
   file_url?: string | null
   file_name?: string | null
@@ -90,6 +79,8 @@ interface Message {
   calendar_request_data?: Record<string, unknown> | null
   shared_post_id?: string | null
   shared_profile_id?: string | null
+  is_deleted?: boolean | null
+  deleted_for_user_id?: string | null
   sender?: {
     username?: string | null
     full_name?: string | null
@@ -104,7 +95,6 @@ const Messages = () => {
   const postId = searchParams.get('post')
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [matches, setMatches] = useState<Match[]>([])
   const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
   const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
   const [loading, setLoading] = useState(true)
@@ -160,57 +150,64 @@ const Messages = () => {
   const findOrCreateConversation = async (otherUserId: string, postId?: string | null) => {
     if (!user) return null
 
-    // Chercher une conversation existante entre ces deux utilisateurs (pas un groupe)
-    const { data: existingConvs } = await supabase
-      .from('conversations')
-      .select('*')
-      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+    try {
+      // Chercher une conversation existante entre ces deux utilisateurs (pas un groupe, pas supprimée)
+      const { data: existingConvs, error: searchError } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+        .is('deleted_at', null) // Exclure les conversations supprimées
 
-    // Filtrer pour exclure les groupes
-    const existingConv = existingConvs?.find(conv => 
-      !(conv as { is_group?: boolean }).is_group
-    )
+      if (searchError) {
+        console.error('Error searching for conversation:', searchError)
+      }
 
-    if (existingConv && (existingConv as { id: string }).id) {
-      return existingConv
-    }
+      // Filtrer pour exclure les groupes et les conversations supprimées
+      const existingConv = existingConvs?.find(conv => {
+        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
+        return !convData.is_group && !convData.deleted_at
+      })
 
-    // Créer une nouvelle conversation si elle n'existe pas
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: newConv, error } = await (supabase.from('conversations') as any).insert({
-      user1_id: user.id,
-      user2_id: otherUserId,
-      post_id: postId || null
-    }).select().single()
+      if (existingConv && (existingConv as { id: string }).id) {
+        return existingConv
+      }
 
-    if (error) {
-      console.error('Error creating conversation:', error)
+      // Créer une nouvelle conversation si elle n'existe pas
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newConv, error: insertError } = await (supabase.from('conversations') as any).insert({
+        user1_id: user.id,
+        user2_id: otherUserId,
+        post_id: postId || null,
+        type: 'direct',
+        is_group: false
+      }).select().single()
+
+      if (insertError) {
+        console.error('Error creating conversation:', insertError)
+        // Si l'erreur est due à une contrainte unique, essayer de récupérer la conversation existante
+        if (insertError.code === '23505') {
+          // Réessayer de trouver la conversation
+          const { data: retryConvs } = await supabase
+            .from('conversations')
+            .select('*')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+            .is('deleted_at', null)
+            .limit(1)
+          
+          if (retryConvs && retryConvs.length > 0) {
+            return retryConvs[0]
+          }
+        }
+        return null
+      }
+
+      return newConv
+    } catch (error) {
+      console.error('Error in findOrCreateConversation:', error)
       return null
     }
-
-    return newConv
   }
 
-  // Créer une conversation à partir d'un match
-  const createConversationFromMatch = async (match: Match) => {
-    if (!user) return
-
-    const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id
-    
-    // Vérifier qu'un match accepté existe
-    if (match.status !== 'accepted') {
-      alert('Ce match n\'est pas encore accepté')
-      return
-    }
-
-    // Créer ou trouver la conversation
-    const conversation = await findOrCreateConversation(otherUserId)
-    
-    if (conversation && (conversation as { id: string }).id) {
-      navigate(`/messages/${(conversation as { id: string }).id}`)
-      loadConversations()
-    }
-  }
 
   const handlePostMessage = async (postIdParam: string) => {
     if (!user) return
@@ -316,7 +313,22 @@ const Messages = () => {
       setMessages([])
       return
     } else if (messagesData && messagesData.length > 0) {
-      const senderIds = [...new Set((messagesData as Array<{ sender_id: string }>).map((msg) => msg.sender_id).filter(Boolean))]
+      // Filtrer les messages supprimés côté client (soft delete)
+      // Un message est visible si :
+      // - is_deleted est null/false OU
+      // - deleted_for_user_id n'est pas égal à l'utilisateur actuel
+      const visibleMessages = (messagesData as Array<Message & { 
+        is_deleted?: boolean | null
+        deleted_for_user_id?: string | null
+      }>).filter((msg) => {
+        // Si le message est marqué comme supprimé pour cet utilisateur, l'exclure
+        if (msg.is_deleted === true && msg.deleted_for_user_id === user.id) {
+          return false
+        }
+        return true
+      })
+
+      const senderIds = [...new Set(visibleMessages.map((msg) => msg.sender_id).filter(Boolean))]
       
       const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
         .from('profiles')
@@ -329,7 +341,7 @@ const Messages = () => {
 
       const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((s) => [s.id, s]))
 
-      const formattedMessages = (messagesData as Array<{ id: string; content: string; sender_id: string; created_at: string; read_at?: string | null }>).map((msg) => ({
+      const formattedMessages: Message[] = visibleMessages.map((msg) => ({
         ...msg,
         sender: sendersMap.get(msg.sender_id) || null
       }))
@@ -470,117 +482,42 @@ const Messages = () => {
     }
   }, [user])
 
-  // Charger les matches depuis la table matches (pour l'onglet Match)
-  const loadMatches = useCallback(async () => {
-    if (!user) return []
-
-    try {
-      // Charger tous les matches où l'utilisateur est impliqué
-      const { data: matchesData, error } = await supabase
-        .from('matches')
-        .select('*')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading matches:', error)
-        return []
-      }
-
-      if (!matchesData || matchesData.length === 0) {
-        return []
-      }
-
-      // Récupérer les IDs des autres utilisateurs
-      const otherUserIds = matchesData.map((match: { user1_id: string; user2_id: string }) => 
-        match.user1_id === user.id ? match.user2_id : match.user1_id
-      ).filter(Boolean)
-
-      // Charger les profils des autres utilisateurs
-      const { data: users } = otherUserIds.length > 0 ? await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .in('id', otherUserIds) : { data: [] }
-
-      const usersMap = new Map((users || []).map((u: { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) => [u.id, u]))
-
-      // Pour chaque match, vérifier s'il existe une conversation avec des messages
-      const matchesWithData = await Promise.all(
-        matchesData.map(async (match: { id: string; user1_id: string; user2_id: string; status: string; created_at: string }) => {
-          const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id
-          const otherUser = usersMap.get(otherUserId) || null
-
-          // Vérifier s'il existe une conversation entre ces deux utilisateurs
-          const { data: existingConv } = await supabase
-            .from('conversations')
-            .select('id')
-            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-            .eq('is_group', false)
-            .limit(1)
-            .maybeSingle()
-
-          // Si une conversation existe, vérifier si elle a des messages
-          let hasConversation = false
-          if (existingConv && (existingConv as { id: string }).id) {
-            const { count } = await supabase
-              .from('messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', (existingConv as { id: string }).id)
-            
-            hasConversation = (count || 0) > 0
-          }
-
-          return {
-            id: match.id,
-            user1_id: match.user1_id,
-            user2_id: match.user2_id,
-            status: match.status,
-            created_at: match.created_at,
-            other_user: otherUser,
-            has_conversation: hasConversation
-          }
-        })
-      )
-
-      return matchesWithData
-    } catch (error) {
-      console.error('Error loading matches:', error)
-      return []
-    }
-  }, [user])
-
   const loadConversations = useCallback(async () => {
     if (!user) return
 
     setLoading(true)
     try {
-      // Charger les matches et match_requests en parallèle
-      const [matchesData, requestsData] = await Promise.all([
-        loadMatches(),
-        loadMatchRequests()
-      ])
-      setMatches(matchesData)
+      // Charger les match_requests
+      const requestsData = await loadMatchRequests()
       setMatchRequests(requestsData)
 
-      // Pour l'onglet "Tout" : uniquement les conversations avec au moins un message
+      // Pour l'onglet "Tout" : toutes les conversations (même sans messages)
+      // Exclure uniquement les conversations supprimées (soft delete)
       let query = supabase
         .from('conversations')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}`)
+        .is('deleted_at', null) // Exclure les conversations supprimées
 
       // Appliquer les filtres selon le type
       if (activeFilter === 'posts') {
-        query = query.not('post_id', 'is', null)
+        query = query.not('post_id', 'is', null).or('is_archived.is.null,is_archived.eq.false')
       } else if (activeFilter === 'groups') {
-        query = query.eq('is_group', true)
+        query = query.eq('is_group', true).or('is_archived.is.null,is_archived.eq.false')
       } else if (activeFilter === 'archived') {
         query = query.eq('is_archived', true)
       } else if (activeFilter === 'all') {
-        // Pour "Tout", on ne charge que les conversations qui ont des messages
-        // On va filtrer après avoir vérifié la présence de messages
+        // Pour "Tout", afficher toutes les conversations (même sans messages)
+        // Exclure uniquement les archivées et supprimées
+        // Si is_archived est NULL, considérer comme non archivé
+        query = query.or('is_archived.is.null,is_archived.eq.false')
       }
 
-      const { data: convs, error } = await query.order('last_message_at', { ascending: false })
+      // Trier par last_message_at si disponible, sinon par created_at
+      // Utiliser nulls last pour mettre les conversations sans messages en fin de liste
+      const { data: convs, error } = await query
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error loading conversations:', error)
@@ -625,6 +562,7 @@ const Messages = () => {
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
 
             // Vérifier si la conversation a des messages
+            // Note: On garde cette information mais on n'exclut plus les conversations sans messages
             const { count: messageCount } = await supabase
               .from('messages')
               .select('*', { count: 'exact', head: true })
@@ -713,11 +651,19 @@ const Messages = () => {
         // Ajouter les conversations individuelles dédupliquées
         finalConversations.push(...Array.from(userPairToConv.values()))
         
-        // Pour l'onglet "Tout", filtrer uniquement les conversations avec des messages
-        let filteredConvs = finalConversations
-        if (activeFilter === 'all') {
-          filteredConvs = finalConversations.filter(conv => conv.has_messages === true)
-        }
+        // Afficher toutes les conversations (sauf celles archivées ou supprimées)
+        // Les conversations doivent être affichées jusqu'à ce que l'utilisateur décide de les archiver ou supprimer
+        const filteredConvs = finalConversations.filter(conv => {
+          // Exclure les conversations archivées (sauf si on est dans l'onglet "Archivés")
+          if (activeFilter !== 'archived' && (conv as { is_archived?: boolean }).is_archived) {
+            return false
+          }
+          // Pour l'onglet "Archivés", n'afficher que les conversations archivées
+          if (activeFilter === 'archived' && !(conv as { is_archived?: boolean }).is_archived) {
+            return false
+          }
+          return true
+        })
         
         // Trier par date de dernier message (plus récent en premier)
         filteredConvs.sort((a, b) => {
@@ -738,7 +684,7 @@ const Messages = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, activeFilter, loadMatches, loadMatchRequests])
+  }, [user, activeFilter, loadMatchRequests])
 
 
   // Filtrer les match_requests selon l'onglet actif
@@ -751,10 +697,13 @@ const Messages = () => {
   })
 
   // Filtrer les matches selon l'onglet actif
-  const filteredMatches = matches.filter((match) => {
+  // L'onglet "Match" affiche toutes les match_requests acceptées
+  // Les conversations créées à partir de ces matches apparaîtront aussi dans "Tout" si elles ont des messages
+  const filteredMatches = matchRequests.filter((request) => {
     if (activeFilter === 'matches') {
-      // Match : matches avec status='accepted' sans conversation avec messages
-      return match.status === 'accepted' && !match.has_conversation
+      // Match : afficher toutes les match_requests avec status='accepted'
+      // Même si une conversation existe, le match reste visible dans "Match"
+      return request.status === 'accepted'
     }
     return false
   })
@@ -1116,27 +1065,65 @@ const Messages = () => {
             </div>
           )
         ) : activeFilter === 'matches' ? (
-          // Afficher les matches pour l'onglet "Match"
+          // Afficher les match_requests acceptées pour l'onglet "Match"
           filteredMatches.length === 0 ? (
             <EmptyState type="matches" />
           ) : (
             <div className="conversations-list">
-              {filteredMatches.map((match) => (
+              {filteredMatches.map((request) => (
                 <div
-                  key={match.id}
+                  key={request.id}
                   className="conversation-item"
-                  onClick={() => {
-                    // Pour les matches acceptés, créer une conversation si elle n'existe pas
-                    createConversationFromMatch(match)
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    
+                    // Pour les match_requests acceptées, créer ou ouvrir la conversation
+                    if (!user) return
+                    
+                    try {
+                      const otherUserId = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
+                      
+                      // Si une conversation existe déjà, l'ouvrir
+                      if (request.conversation_id) {
+                        navigate(`/messages/${request.conversation_id}`)
+                        return
+                      }
+                      
+                      // Sinon, créer ou trouver une conversation existante
+                      const conversation = await findOrCreateConversation(otherUserId, request.related_post_id || undefined)
+                      
+                      if (conversation && (conversation as { id: string }).id) {
+                        // Mettre à jour la match_request avec l'ID de conversation
+                        await supabase
+                          .from('match_requests')
+                          .update({ conversation_id: (conversation as { id: string }).id } as never)
+                          .eq('id', request.id)
+                        
+                        // Recharger les données
+                        await loadMatchRequests().then((requests) => {
+                          setMatchRequests(requests)
+                        })
+                        loadConversations()
+                        
+                        // Naviguer vers la conversation
+                        navigate(`/messages/${(conversation as { id: string }).id}`)
+                      } else {
+                        alert('Erreur lors de la création de la conversation')
+                      }
+                    } catch (error) {
+                      console.error('Error opening conversation from match:', error)
+                      alert('Erreur lors de l\'ouverture de la conversation')
+                    }
                   }}
                 >
                   <div className="conversation-avatar-wrapper">
                     <img
-                      src={match.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.other_user?.full_name || match.other_user?.username || 'User')}`}
-                      alt={match.other_user?.full_name || match.other_user?.username || 'User'}
+                      src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
+                      alt={request.other_user?.full_name || request.other_user?.username || 'User'}
                       className="conversation-avatar"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(match.other_user?.full_name || match.other_user?.username || 'User')}`
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
                       }}
                     />
                   </div>
@@ -1144,12 +1131,17 @@ const Messages = () => {
                   <div className="conversation-info">
                     <div className="conversation-header">
                       <h3 className="conversation-name">
-                        {match.other_user?.full_name || match.other_user?.username || 'Utilisateur'}
+                        {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
                       </h3>
                       <span className="conversation-time">
-                        {formatTime(match.created_at)}
+                        {formatTime(request.accepted_at || request.created_at)}
                       </span>
                     </div>
+                    {request.related_post && (
+                      <p className="conversation-post-title">
+                        {request.related_post.title}
+                      </p>
+                    )}
                     <p className="conversation-preview">
                       Match accepté - Cliquez pour démarrer la conversation
                     </p>
@@ -1232,7 +1224,10 @@ const Messages = () => {
           currentUserId={user.id}
           onClose={() => setSelectedMatchRequest(null)}
           onUpdate={() => {
-            loadConversations()
+            loadMatchRequests().then((requests) => {
+              setMatchRequests(requests)
+              loadConversations()
+            })
             setSelectedMatchRequest(null)
           }}
           onStartConversation={(conversationId) => {
