@@ -181,6 +181,167 @@
   display: none;
 }
 
+/* Page de conversation (1-1) */
+.conversation-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Masquer le Footer sur la page de conversation */
+.conversation-page ~ footer,
+.conversation-page footer {
+  display: none !important;
+}
+
+/* Header de conversation */
+.conversation-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.conversation-back-button {
+  background: none;
+  border: none;
+  color: var(--foreground);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.conversation-back-button:hover {
+  opacity: 0.7;
+}
+
+.conversation-header-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.conversation-header-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+  text-align: center;
+}
+
+.conversation-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* Container des messages */
+.conversation-messages-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  min-height: 0;
+  position: relative;
+}
+
+.conversation-messages-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  min-height: 0;
+  width: 100%;
+}
+
+.conversation-messages-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.conversation-messages-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation-messages-list::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 2px;
+}
+
+.conversation-messages-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Séparateur de date */
+.conversation-date-separator {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 16px 0;
+  padding: 8px 0;
+  position: relative;
+}
+
+.conversation-date-separator::before,
+.conversation-date-separator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background-color: var(--border);
+}
+
+.conversation-date-separator::before {
+  left: 0;
+}
+
+.conversation-date-separator::after {
+  right: 0;
+}
+
+/* Container de l'input */
+.conversation-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding-left: 20px;
+  padding-right: 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .conversation-view {
   display: flex;
   flex-direction: column;
@@ -293,6 +454,37 @@
 .conversation-preview.unread {
   color: var(--foreground);
   font-weight: 600;
+}
+
+.conversation-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.conversation-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.conversation-badge.sent {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.conversation-badge.received {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.conversation-status-text {
+  font-size: 12px;
+  color: var(--muted-foreground);
 }
 
 /* Messages List */
@@ -682,5 +874,41 @@
 
   .message-input {
     padding: 12px;
+  }
+
+  .conversation-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-bottom: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .conversation-header-name {
+    font-size: 16px;
+  }
+
+  .conversation-messages-container {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  }
+
+  .conversation-messages-list {
+    padding: 12px 8px;
+    gap: 4px;
+  }
+
+  .conversation-input-container {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 8px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .message-bubble-content {
+    max-width: 75%;
+  }
+
+  .message-bubble-wrapper {
+    padding: 0 8px;
   }
 }

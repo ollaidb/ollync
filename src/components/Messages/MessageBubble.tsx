@@ -1,6 +1,4 @@
-import { File, MapPin, DollarSign, Calendar, Share2, Heart, Trash2, Flag, MoreVertical } from 'lucide-react'
-import { useState } from 'react'
-import { useAuth } from '../../hooks/useSupabase'
+import { File, MapPin, DollarSign, Calendar, Share2 } from 'lucide-react'
 import './MessageBubble.css'
 
 interface MessageBubbleProps {
@@ -26,14 +24,13 @@ interface MessageBubbleProps {
     } | null
   }
   isOwn: boolean
+  showAvatar?: boolean
   onDelete?: () => void
   onLike?: () => void
   onReport?: () => void
 }
 
-const MessageBubble = ({ message, isOwn, onDelete, onLike, onReport }: MessageBubbleProps) => {
-  const { user } = useAuth()
-  const [showMenu, setShowMenu] = useState(false)
+const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProps) => {
 
   const renderMessageContent = () => {
     switch (message.message_type) {
@@ -162,49 +159,21 @@ const MessageBubble = ({ message, isOwn, onDelete, onLike, onReport }: MessageBu
   }
 
   return (
-    <div className={`message-bubble ${isOwn ? 'own' : 'other'}`}>
-      {!isOwn && message.sender?.avatar_url && (
-        <img src={message.sender.avatar_url} alt={message.sender.full_name || ''} className="message-avatar" />
+    <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
+      {!isOwn && showAvatar && message.sender?.avatar_url && (
+        <img 
+          src={message.sender.avatar_url} 
+          alt={message.sender.full_name || message.sender.username || ''} 
+          className="message-avatar" 
+        />
       )}
-      <div className="message-content-wrapper">
-        {!isOwn && message.sender && (
-          <div className="message-sender-name">
-            {message.sender.full_name || message.sender.username || 'Utilisateur'}
-          </div>
-        )}
-        <div className="message-content">
+      {!isOwn && !showAvatar && <div className="message-avatar-spacer"></div>}
+      <div className="message-bubble-content">
+        <div className={`message-bubble ${isOwn ? 'own' : 'other'}`}>
           {renderMessageContent()}
-          <div className="message-footer">
-            <span className="message-time">
-              {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            {user && (
-              <div className="message-actions">
-                {onLike && (
-                  <button className="message-action-btn" onClick={onLike} title="Liker">
-                    <Heart size={16} />
-                  </button>
-                )}
-                {isOwn && onDelete && (
-                  <button className="message-action-btn" onClick={onDelete} title="Supprimer">
-                    <Trash2 size={16} />
-                  </button>
-                )}
-                {!isOwn && onReport && (
-                  <button className="message-action-btn" onClick={onReport} title="Signaler">
-                    <Flag size={16} />
-                  </button>
-                )}
-                <button
-                  className="message-action-btn"
-                  onClick={() => setShowMenu(!showMenu)}
-                  title="Plus d'options"
-                >
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            )}
-          </div>
+          <span className="message-time">
+            {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
       </div>
     </div>

@@ -72,13 +72,21 @@ const SwipePage = () => {
       })
 
       if (!user) {
+        // Si l'utilisateur n'est pas connecté, afficher tous les posts (sauf ceux qui sont désactivés)
         setPosts(fetchedPosts as Post[])
         setLoading(false)
         return
       }
 
-      // Récupérer les posts déjà swipés (interests et ignored)
-      const [interestsResult, ignoredResult] = await Promise.all([
+      // Si l'utilisateur est connecté, filtrer ses propres annonces
+      // Les annonces de l'utilisateur seront affichées dans son profil, pas dans Swipe
+
+      // Récupérer les posts déjà swipés (match_requests, interests et ignored)
+      // On récupère toutes les demandes envoyées (peu importe le statut) pour ne pas les re-afficher
+      const [matchRequestsResult, interestsResult, ignoredResult] = await Promise.all([
+        (supabase.from('match_requests') as any)
+          .select('related_post_id')
+          .eq('from_user_id', user.id), // Toutes les demandes envoyées par l'utilisateur
         (supabase.from('interests') as any)
           .select('post_id')
           .eq('user_id', user.id),
@@ -87,7 +95,9 @@ const SwipePage = () => {
           .eq('user_id', user.id)
       ])
 
+      // Créer un Set avec tous les IDs de posts déjà swipés
       const swipedPostIds = new Set([
+        ...(matchRequestsResult.data?.map((mr: any) => mr.related_post_id).filter(Boolean) || []),
         ...(interestsResult.data?.map((i: any) => i.post_id) || []),
         ...(ignoredResult.data?.map((i: any) => i.post_id) || [])
       ])
@@ -114,21 +124,83 @@ const SwipePage = () => {
       return
     }
 
+    // Ne pas créer de demande si l'utilisateur swipe sur sa propre annonce
+    if (currentPost.user_id === user.id) {
+      return // Ne rien faire, l'annonce ne devrait pas apparaître de toute façon
+    }
+
     try {
-      // Ajouter aux interests
-      const { error: interestError } = await (supabase.from('interests') as any)
+      // Vérifier si une demande existe déjà pour cette annonce
+      const { data: existingRequest, error: checkError } = await (supabase.from('match_requests') as any)
+        .select('id, status')
+        .eq('from_user_id', user.id)
+        .eq('related_post_id', currentPost.id)
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing match request:', checkError)
+      }
+
+      // Si une demande existe déjà (même si elle a été acceptée ou refusée), ne pas en créer une nouvelle
+      if (existingRequest) {
+        // Afficher un message informatif selon le statut
+        if (existingRequest.status === 'pending') {
+          alert('Vous avez déjà envoyé une demande pour cette annonce. Elle est en attente de réponse.')
+        } else if (existingRequest.status === 'accepted') {
+          alert('Vous avez déjà une demande acceptée pour cette annonce. Vous pouvez démarrer une conversation depuis l\'onglet Match.')
+        } else if (existingRequest.status === 'declined') {
+          alert('Votre demande pour cette annonce a été refusée.')
+        } else if (existingRequest.status === 'cancelled') {
+          alert('Vous avez annulé votre demande pour cette annonce.')
+        }
+        
+        // Passer au post suivant sans créer de nouvelle demande
+        setLastSwipeAction('right')
+        setLastSwipedPost(currentPost)
+        setTimeout(() => {
+          nextPost()
+        }, SWIPE_DELAY)
+        return
+      }
+
+      // Créer une demande de match (match_request)
+      const { error: matchRequestError } = await (supabase.from('match_requests') as any)
         .insert({
-          user_id: user.id,
-          post_id: currentPost.id
+          from_user_id: user.id,
+          to_user_id: currentPost.user_id,
+          related_post_id: currentPost.id,
+          status: 'pending'
         })
         .select()
         .single()
 
-      if (interestError && interestError.code !== '23505') {
-        console.error('Error adding interest:', interestError)
+      if (matchRequestError) {
+        // Si la demande existe déjà (code 23505 = unique constraint violation)
+        if (matchRequestError.code === '23505') {
+          alert('Vous avez déjà envoyé une demande pour cette annonce. Vous ne pouvez pas envoyer plusieurs demandes pour la même annonce.')
+          // Passer au post suivant sans créer de nouvelle demande
+          setLastSwipeAction('right')
+          setLastSwipedPost(currentPost)
+          setTimeout(() => {
+            nextPost()
+          }, SWIPE_DELAY)
+          return
+        }
+        console.error('Error creating match request:', matchRequestError)
+        // Essayer quand même d'ajouter aux interests pour compatibilité
+        await (supabase.from('interests') as any)
+          .insert({
+            user_id: user.id,
+            post_id: currentPost.id
+          })
+          .select()
+          .single()
+          .catch(() => {
+            // Ignorer l'erreur si l'interest existe déjà
+          })
       }
 
-      // Ajouter aussi un like (pour compatibilité)
+      // Ajouter aussi un like (pour compatibilité avec le système existant)
       await (supabase.from('likes') as any)
         .insert({
           user_id: user.id,
@@ -136,6 +208,9 @@ const SwipePage = () => {
         })
         .select()
         .single()
+        .catch(() => {
+          // Ignorer l'erreur si le like existe déjà
+        })
 
       setLastSwipeAction('right')
       setLastSwipedPost(currentPost)
@@ -209,10 +284,18 @@ const SwipePage = () => {
     try {
       if (lastSwipeAction === 'right') {
         await Promise.all([
+          // Supprimer la demande de match (si elle existe et est encore en pending)
+          (supabase.from('match_requests') as any)
+            .delete()
+            .eq('from_user_id', user.id)
+            .eq('related_post_id', lastSwipedPost.id)
+            .eq('status', 'pending'),
+          // Supprimer l'interest (pour compatibilité)
           (supabase.from('interests') as any)
             .delete()
             .eq('user_id', user.id)
             .eq('post_id', lastSwipedPost.id),
+          // Supprimer le like
           (supabase.from('likes') as any)
             .delete()
             .eq('user_id', user.id)

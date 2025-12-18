@@ -5,6 +5,13 @@
   border-top: 1px solid var(--border);
 }
 
+/* Dans le contexte de conversation-page, l'input est déjà dans conversation-input-container */
+.conversation-input-container .message-input-container {
+  border-top: none;
+  padding: 0;
+  background-color: transparent;
+}
+
 .message-options-panel {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

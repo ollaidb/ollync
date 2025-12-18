@@ -252,7 +252,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Tapez votre message..."
+          placeholder="Message..."
           disabled={disabled || sending}
           className="message-input-field"
         />

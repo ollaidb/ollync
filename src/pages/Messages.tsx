@@ -9,6 +9,7 @@ import CreateGroupModal from '../components/Messages/CreateGroupModal'
 import MessageInput from '../components/Messages/MessageInput'
 import MessageBubble from '../components/Messages/MessageBubble'
 import { EmptyState } from '../components/EmptyState'
+import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
 import './Messages.css'
 
 type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'archived'
@@ -31,6 +32,47 @@ interface Conversation {
   } | null
   postTitle?: string | null
   unread?: number
+  is_group?: boolean
+  has_messages?: boolean
+}
+
+interface Match {
+  id: string
+  user1_id: string
+  user2_id: string
+  status: string
+  created_at: string
+  updated_at?: string | null
+  other_user?: {
+    id: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
+  has_conversation?: boolean
+}
+
+interface MatchRequest {
+  id: string
+  from_user_id: string
+  to_user_id: string
+  related_post_id?: string | null
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled'
+  created_at: string
+  updated_at?: string | null
+  accepted_at?: string | null
+  conversation_id?: string | null
+  other_user?: {
+    id: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
+  related_post?: {
+    id: string
+    title: string
+  } | null
+  request_type?: 'sent' | 'received' // 'sent' si from_user_id = current_user, 'received' si to_user_id = current_user
 }
 
 interface Message {
@@ -62,6 +104,9 @@ const Messages = () => {
   const postId = searchParams.get('post')
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
+  const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
@@ -144,6 +189,27 @@ const Messages = () => {
     }
 
     return newConv
+  }
+
+  // Créer une conversation à partir d'un match
+  const createConversationFromMatch = async (match: Match) => {
+    if (!user) return
+
+    const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id
+    
+    // Vérifier qu'un match accepté existe
+    if (match.status !== 'accepted') {
+      alert('Ce match n\'est pas encore accepté')
+      return
+    }
+
+    // Créer ou trouver la conversation
+    const conversation = await findOrCreateConversation(otherUserId)
+    
+    if (conversation && (conversation as { id: string }).id) {
+      navigate(`/messages/${(conversation as { id: string }).id}`)
+      loadConversations()
+    }
   }
 
   const handlePostMessage = async (postIdParam: string) => {
@@ -287,11 +353,216 @@ const Messages = () => {
     }
   }
 
+  // Charger les match_requests (demandes envoyées et reçues)
+  const loadMatchRequests = useCallback(async () => {
+    if (!user) return []
+
+    try {
+      // Charger toutes les demandes où l'utilisateur est impliqué (envoyées ou reçues)
+      const { data: requestsData, error } = await supabase
+        .from('match_requests')
+        .select('*')
+        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .in('status', ['pending', 'accepted'])
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading match requests:', error)
+        return []
+      }
+
+      if (!requestsData || requestsData.length === 0) {
+        return []
+      }
+
+      // Récupérer les IDs des autres utilisateurs et des posts
+      const otherUserIds: string[] = []
+      const postIds: string[] = []
+
+      requestsData.forEach((req: { from_user_id: string; to_user_id: string; related_post_id?: string | null }) => {
+        if (req.from_user_id === user.id) {
+          otherUserIds.push(req.to_user_id)
+        } else {
+          otherUserIds.push(req.from_user_id)
+        }
+        if (req.related_post_id) {
+          postIds.push(req.related_post_id)
+        }
+      })
+
+      // Charger les profils des autres utilisateurs
+      const { data: users } = otherUserIds.length > 0 ? await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', [...new Set(otherUserIds)]) : { data: [] }
+
+      // Charger les posts liés
+      const { data: posts } = postIds.length > 0 ? await supabase
+        .from('posts')
+        .select('id, title')
+        .in('id', [...new Set(postIds)]) : { data: [] }
+
+      const usersMap = new Map((users || []).map((u: { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) => [u.id, u]))
+      const postsMap = new Map((posts || []).map((p: { id: string; title: string }) => [p.id, p]))
+
+      // Formater les demandes avec les informations complémentaires
+      const requestsWithData = requestsData.map((req: { 
+        id: string
+        from_user_id: string
+        to_user_id: string
+        related_post_id?: string | null
+        status: string
+        created_at: string
+        updated_at?: string | null
+        accepted_at?: string | null
+        conversation_id?: string | null
+      }) => {
+        const otherUserId = req.from_user_id === user.id ? req.to_user_id : req.from_user_id
+        const otherUser = usersMap.get(otherUserId) || null
+        const relatedPost = req.related_post_id ? postsMap.get(req.related_post_id) || null : null
+        const requestType: 'sent' | 'received' = req.from_user_id === user.id ? 'sent' : 'received'
+
+        return {
+          id: req.id,
+          from_user_id: req.from_user_id,
+          to_user_id: req.to_user_id,
+          related_post_id: req.related_post_id,
+          status: req.status as 'pending' | 'accepted' | 'declined' | 'cancelled',
+          created_at: req.created_at,
+          updated_at: req.updated_at,
+          accepted_at: req.accepted_at,
+          conversation_id: req.conversation_id,
+          other_user: otherUser,
+          related_post: relatedPost,
+          request_type: requestType
+        }
+      })
+
+      // Dédupliquer : ne garder qu'une seule demande par annonce
+      // Si plusieurs demandes existent pour la même annonce, garder la plus récente
+      const uniqueRequests = new Map<string, MatchRequest>()
+      
+      requestsWithData.forEach((request) => {
+        // Clé unique : annonce + utilisateur (pour les demandes envoyées) ou annonce + destinataire (pour les demandes reçues)
+        const key = request.related_post_id 
+          ? `${request.related_post_id}_${request.from_user_id === user.id ? request.to_user_id : request.from_user_id}`
+          : `${request.from_user_id}_${request.to_user_id}`
+        
+        const existing = uniqueRequests.get(key)
+        
+        if (!existing) {
+          uniqueRequests.set(key, request)
+        } else {
+          // Si une demande existe déjà pour cette annonce, garder la plus récente
+          const existingDate = new Date(existing.created_at).getTime()
+          const currentDate = new Date(request.created_at).getTime()
+          
+          if (currentDate > existingDate) {
+            uniqueRequests.set(key, request)
+          }
+        }
+      })
+
+      return Array.from(uniqueRequests.values())
+    } catch (error) {
+      console.error('Error loading match requests:', error)
+      return []
+    }
+  }, [user])
+
+  // Charger les matches depuis la table matches (pour l'onglet Match)
+  const loadMatches = useCallback(async () => {
+    if (!user) return []
+
+    try {
+      // Charger tous les matches où l'utilisateur est impliqué
+      const { data: matchesData, error } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading matches:', error)
+        return []
+      }
+
+      if (!matchesData || matchesData.length === 0) {
+        return []
+      }
+
+      // Récupérer les IDs des autres utilisateurs
+      const otherUserIds = matchesData.map((match: { user1_id: string; user2_id: string }) => 
+        match.user1_id === user.id ? match.user2_id : match.user1_id
+      ).filter(Boolean)
+
+      // Charger les profils des autres utilisateurs
+      const { data: users } = otherUserIds.length > 0 ? await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', otherUserIds) : { data: [] }
+
+      const usersMap = new Map((users || []).map((u: { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) => [u.id, u]))
+
+      // Pour chaque match, vérifier s'il existe une conversation avec des messages
+      const matchesWithData = await Promise.all(
+        matchesData.map(async (match: { id: string; user1_id: string; user2_id: string; status: string; created_at: string }) => {
+          const otherUserId = match.user1_id === user.id ? match.user2_id : match.user1_id
+          const otherUser = usersMap.get(otherUserId) || null
+
+          // Vérifier s'il existe une conversation entre ces deux utilisateurs
+          const { data: existingConv } = await supabase
+            .from('conversations')
+            .select('id')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+            .eq('is_group', false)
+            .limit(1)
+            .maybeSingle()
+
+          // Si une conversation existe, vérifier si elle a des messages
+          let hasConversation = false
+          if (existingConv && (existingConv as { id: string }).id) {
+            const { count } = await supabase
+              .from('messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('conversation_id', (existingConv as { id: string }).id)
+            
+            hasConversation = (count || 0) > 0
+          }
+
+          return {
+            id: match.id,
+            user1_id: match.user1_id,
+            user2_id: match.user2_id,
+            status: match.status,
+            created_at: match.created_at,
+            other_user: otherUser,
+            has_conversation: hasConversation
+          }
+        })
+      )
+
+      return matchesWithData
+    } catch (error) {
+      console.error('Error loading matches:', error)
+      return []
+    }
+  }, [user])
+
   const loadConversations = useCallback(async () => {
     if (!user) return
 
     setLoading(true)
     try {
+      // Charger les matches et match_requests en parallèle
+      const [matchesData, requestsData] = await Promise.all([
+        loadMatches(),
+        loadMatchRequests()
+      ])
+      setMatches(matchesData)
+      setMatchRequests(requestsData)
+
+      // Pour l'onglet "Tout" : uniquement les conversations avec au moins un message
       let query = supabase
         .from('conversations')
         .select('*')
@@ -304,9 +575,9 @@ const Messages = () => {
         query = query.eq('is_group', true)
       } else if (activeFilter === 'archived') {
         query = query.eq('is_archived', true)
-      } else if (activeFilter === 'matches') {
-        // Les matchs sont gérés via la table matches
-        // Pour l'instant, on charge toutes les conversations et on filtre côté client
+      } else if (activeFilter === 'all') {
+        // Pour "Tout", on ne charge que les conversations qui ont des messages
+        // On va filtrer après avoir vérifié la présence de messages
       }
 
       const { data: convs, error } = await query.order('last_message_at', { ascending: false })
@@ -353,6 +624,14 @@ const Messages = () => {
             const otherUser = usersMap.get(otherUserId) || null
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
 
+            // Vérifier si la conversation a des messages
+            const { count: messageCount } = await supabase
+              .from('messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('conversation_id', conv.id)
+
+            const hasMessages = (messageCount || 0) > 0
+
             // Récupérer le dernier message (sans utiliser .single() pour éviter les erreurs)
             const { data: lastMsgData, error: lastMsgError } = await supabase
               .from('messages')
@@ -368,7 +647,7 @@ const Messages = () => {
 
             // Compter les messages non lus (seulement si otherUserId existe)
             let unreadCount = 0
-            if (otherUserId) {
+            if (otherUserId && hasMessages) {
               const { count, error: countError } = await supabase
                 .from('messages')
                 .select('*', { count: 'exact', head: true })
@@ -389,7 +668,8 @@ const Messages = () => {
                 content: (lastMsg as { content: string }).content,
                 created_at: (lastMsg as { created_at: string }).created_at
               } : null,
-              unread: unreadCount || 0
+              unread: unreadCount || 0,
+              has_messages: hasMessages
             }
           })
         )
@@ -433,8 +713,14 @@ const Messages = () => {
         // Ajouter les conversations individuelles dédupliquées
         finalConversations.push(...Array.from(userPairToConv.values()))
         
+        // Pour l'onglet "Tout", filtrer uniquement les conversations avec des messages
+        let filteredConvs = finalConversations
+        if (activeFilter === 'all') {
+          filteredConvs = finalConversations.filter(conv => conv.has_messages === true)
+        }
+        
         // Trier par date de dernier message (plus récent en premier)
-        finalConversations.sort((a, b) => {
+        filteredConvs.sort((a, b) => {
           const dateA = a.last_message_at || a.lastMessage?.created_at || ''
           const dateB = b.last_message_at || b.lastMessage?.created_at || ''
           if (!dateA && !dateB) return 0
@@ -443,7 +729,7 @@ const Messages = () => {
           return new Date(dateB).getTime() - new Date(dateA).getTime()
         })
 
-        setConversations(finalConversations)
+        setConversations(filteredConvs)
       } else {
         setConversations([])
       }
@@ -452,8 +738,26 @@ const Messages = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, activeFilter])
+  }, [user, activeFilter, loadMatches, loadMatchRequests])
 
+
+  // Filtrer les match_requests selon l'onglet actif
+  const filteredMatchRequests = matchRequests.filter((request) => {
+    if (activeFilter === 'match_requests') {
+      // Demandes : uniquement les demandes en attente (pending)
+      return request.status === 'pending'
+    }
+    return false
+  })
+
+  // Filtrer les matches selon l'onglet actif
+  const filteredMatches = matches.filter((match) => {
+    if (activeFilter === 'matches') {
+      // Match : matches avec status='accepted' sans conversation avec messages
+      return match.status === 'accepted' && !match.has_conversation
+    }
+    return false
+  })
 
   const filteredConversations = conversations.filter((conv) => {
     // Filtre par recherche textuelle
@@ -469,6 +773,7 @@ const Messages = () => {
 
     // Filtre par type
     if (activeFilter === 'all') {
+      // "Tout" : uniquement les conversations avec des messages (déjà filtré dans loadConversations)
       return true
     } else if (activeFilter === 'posts') {
       return !!conv.post_id
@@ -476,12 +781,8 @@ const Messages = () => {
       return !!(conv as { is_group?: boolean }).is_group
     } else if (activeFilter === 'archived') {
       return !!(conv as { is_archived?: boolean }).is_archived
-    } else if (activeFilter === 'matches') {
-      // Pour l'instant, on considère que les matchs sont des conversations sans post_id
-      // TODO: Implémenter la logique avec la table matches
-      return !conv.post_id && !(conv as { is_group?: boolean }).is_group
-    } else if (activeFilter === 'match_requests') {
-      // TODO: Implémenter la logique avec la table matches (status = 'pending')
+    } else if (activeFilter === 'matches' || activeFilter === 'match_requests') {
+      // Les matches sont gérés séparément via filteredMatches
       return false
     }
 
@@ -519,107 +820,172 @@ const Messages = () => {
     )
   }
 
+  // Fonction pour formater la date pour les séparateurs
+  const formatDateSeparator = (dateString: string): string => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Réinitialiser les heures pour comparer uniquement les dates
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      return 'Aujourd\'hui'
+    } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+      return 'Hier'
+    } else {
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    }
+  }
+
+  // Fonction pour grouper les messages par date
+  const groupMessagesByDate = (messagesList: Message[]) => {
+    const grouped: Array<{ date: string; messages: Message[] }> = []
+    let currentDate = ''
+    let currentGroup: Message[] = []
+
+    messagesList.forEach((msg) => {
+      const msgDate = new Date(msg.created_at).toDateString()
+      if (msgDate !== currentDate) {
+        if (currentGroup.length > 0) {
+          grouped.push({ date: currentDate, messages: currentGroup })
+        }
+        currentDate = msgDate
+        currentGroup = [msg]
+      } else {
+        currentGroup.push(msg)
+      }
+    })
+
+    if (currentGroup.length > 0) {
+      grouped.push({ date: currentDate, messages: currentGroup })
+    }
+
+    return grouped
+  }
+
   // Si une conversation est sélectionnée, afficher la vue de conversation
   if (selectedConversation || conversationId) {
+    const otherUserName = selectedConversation?.other_user?.full_name || selectedConversation?.other_user?.username || 'Utilisateur'
+    const otherUserUsername = selectedConversation?.other_user?.username
+    const displayName = otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')
+    const groupedMessages = groupMessagesByDate(messages)
+
     return (
-      <div className="messages-page-container">
-        <div className="messages-header">
+      <div className="messages-page-container conversation-page">
+        <div className="conversation-header">
           <button 
-            className="messages-back-button"
+            className="conversation-back-button"
             onClick={() => {
               setSelectedConversation(null)
               navigate('/messages')
             }}
+            aria-label="Retour"
           >
-            ← Retour
+            ←
           </button>
-          <h1 className="messages-title">
-            {selectedConversation?.other_user?.full_name || selectedConversation?.other_user?.username || 'Messages'}
-          </h1>
+          <div className="conversation-header-center">
+            <h1 className="conversation-header-name">{displayName}</h1>
+          </div>
+          <div className="conversation-header-spacer"></div>
         </div>
-        <div className="messages-content conversation-view">
+        <div className="conversation-messages-container">
           {loading ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
               <p>Chargement...</p>
             </div>
           ) : (
-            <>
-              <div className="messages-list">
-                {messages.map((msg) => {
-                  const isOwn = msg.sender_id === user?.id
-                  return (
-                    <MessageBubble
-                      key={msg.id}
-                      message={msg}
-                      isOwn={isOwn}
-                      onDelete={async () => {
-                        if (user && isOwn) {
-                          // Suppression soft
-                          await supabase
-                            .from('messages')
-                            .update({ is_deleted: true, deleted_for_user_id: user.id } as never)
-                            .eq('id', msg.id)
-                          loadMessages(selectedConversation?.id || conversationId || '')
-                        }
-                      }}
-                      onLike={async () => {
-                        if (user) {
-                          // Toggle like
-                          const { data: existingLike } = await supabase
-                            .from('message_likes')
-                            .select('id')
-                            .eq('message_id', msg.id)
-                            .eq('user_id', user.id)
-                            .maybeSingle()
-
-                          if (existingLike) {
+            <div className="conversation-messages-list">
+              {groupedMessages.map((group, groupIndex) => (
+                <div key={groupIndex} className="conversation-messages-group">
+                  <div className="conversation-date-separator">
+                    {formatDateSeparator(group.messages[0].created_at)}
+                  </div>
+                  {group.messages.map((msg, msgIndex) => {
+                    const isOwn = msg.sender_id === user?.id
+                    const prevMsg = msgIndex > 0 ? group.messages[msgIndex - 1] : null
+                    const showAvatar = !isOwn && (!prevMsg || prevMsg.sender_id !== msg.sender_id || 
+                      new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000) // 5 minutes
+                    
+                    return (
+                      <MessageBubble
+                        key={msg.id}
+                        message={msg}
+                        isOwn={isOwn}
+                        showAvatar={showAvatar}
+                        onDelete={async () => {
+                          if (user && isOwn) {
+                            // Suppression soft
                             await supabase
+                              .from('messages')
+                              .update({ is_deleted: true, deleted_for_user_id: user.id } as never)
+                              .eq('id', msg.id)
+                            loadMessages(selectedConversation?.id || conversationId || '')
+                          }
+                        }}
+                        onLike={async () => {
+                          if (user) {
+                            // Toggle like
+                            const { data: existingLike } = await supabase
                               .from('message_likes')
-                              .delete()
-                              .eq('id', (existingLike as { id: string }).id)
-                          } else {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (supabase.from('message_likes') as any)
-                              .insert({ message_id: msg.id, user_id: user.id })
+                              .select('id')
+                              .eq('message_id', msg.id)
+                              .eq('user_id', user.id)
+                              .maybeSingle()
+
+                            if (existingLike) {
+                              await supabase
+                                .from('message_likes')
+                                .delete()
+                                .eq('id', (existingLike as { id: string }).id)
+                            } else {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              await (supabase.from('message_likes') as any)
+                                .insert({ message_id: msg.id, user_id: user.id })
+                            }
                           }
-                        }
-                      }}
-                      onReport={async () => {
-                        if (user && !isOwn) {
-                          const reason = prompt('Raison du signalement:')
-                          if (reason) {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (supabase.from('message_reports') as any)
-                              .insert({
-                                message_id: msg.id,
-                                reporter_id: user.id,
-                                reason
-                              })
-                            alert('Message signalé. Merci pour votre retour.')
+                        }}
+                        onReport={async () => {
+                          if (user && !isOwn) {
+                            const reason = prompt('Raison du signalement:')
+                            if (reason) {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              await (supabase.from('message_reports') as any)
+                                .insert({
+                                  message_id: msg.id,
+                                  reporter_id: user.id,
+                                  reason
+                                })
+                              alert('Message signalé. Merci pour votre retour.')
+                            }
                           }
-                        }
-                      }}
-                    />
-                  )
-                })}
-              </div>
-              {user && (selectedConversation || conversationId) && (
-                <MessageInput
-                  conversationId={selectedConversation?.id || conversationId || ''}
-                  senderId={user.id}
-                  onMessageSent={() => {
-                    if (selectedConversation || conversationId) {
-                      loadMessages(selectedConversation?.id || conversationId || '')
-                      loadConversations()
-                    }
-                  }}
-                />
-              )}
-            </>
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-        <Footer />
+        {user && (selectedConversation || conversationId) && (
+          <div className="conversation-input-container">
+            <MessageInput
+              conversationId={selectedConversation?.id || conversationId || ''}
+              senderId={user.id}
+              onMessageSent={() => {
+                if (selectedConversation || conversationId) {
+                  loadMessages(selectedConversation?.id || conversationId || '')
+                  loadConversations()
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -698,13 +1064,105 @@ const Messages = () => {
             <Loader className="spinner-large" size={48} />
             <p>Chargement...</p>
           </div>
+        ) : activeFilter === 'match_requests' ? (
+          // Afficher les match_requests pour l'onglet "Demandes"
+          filteredMatchRequests.length === 0 ? (
+            <EmptyState type="requests" />
+          ) : (
+            <div className="conversations-list">
+              {filteredMatchRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="conversation-item"
+                  onClick={() => setSelectedMatchRequest(request)}
+                >
+                  <div className="conversation-avatar-wrapper">
+                    <img
+                      src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
+                      alt={request.other_user?.full_name || request.other_user?.username || 'User'}
+                      className="conversation-avatar"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
+                      }}
+                    />
+                  </div>
+
+                  <div className="conversation-info">
+                    <div className="conversation-header">
+                      <h3 className="conversation-name">
+                        {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+                      </h3>
+                      <span className="conversation-time">
+                        {formatTime(request.created_at)}
+                      </span>
+                    </div>
+                    {request.related_post && (
+                      <p className="conversation-post-title">
+                        {request.related_post.title}
+                      </p>
+                    )}
+                    <div className="conversation-footer">
+                      <span className={`conversation-badge ${request.request_type === 'sent' ? 'sent' : 'received'}`}>
+                        {request.request_type === 'sent' ? 'Envoyée' : 'Reçue'}
+                      </span>
+                      <span className="conversation-status-text">
+                        {request.status === 'pending' && 'En attente'}
+                        {request.status === 'accepted' && 'Acceptée'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : activeFilter === 'matches' ? (
+          // Afficher les matches pour l'onglet "Match"
+          filteredMatches.length === 0 ? (
+            <EmptyState type="matches" />
+          ) : (
+            <div className="conversations-list">
+              {filteredMatches.map((match) => (
+                <div
+                  key={match.id}
+                  className="conversation-item"
+                  onClick={() => {
+                    // Pour les matches acceptés, créer une conversation si elle n'existe pas
+                    createConversationFromMatch(match)
+                  }}
+                >
+                  <div className="conversation-avatar-wrapper">
+                    <img
+                      src={match.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.other_user?.full_name || match.other_user?.username || 'User')}`}
+                      alt={match.other_user?.full_name || match.other_user?.username || 'User'}
+                      className="conversation-avatar"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(match.other_user?.full_name || match.other_user?.username || 'User')}`
+                      }}
+                    />
+                  </div>
+
+                  <div className="conversation-info">
+                    <div className="conversation-header">
+                      <h3 className="conversation-name">
+                        {match.other_user?.full_name || match.other_user?.username || 'Utilisateur'}
+                      </h3>
+                      <span className="conversation-time">
+                        {formatTime(match.created_at)}
+                      </span>
+                    </div>
+                    <p className="conversation-preview">
+                      Match accepté - Cliquez pour démarrer la conversation
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredConversations.length === 0 ? (
           <EmptyState 
             type={
               searchQuery ? 'category' : 
               activeFilter === 'archived' ? 'archived' :
-              activeFilter === 'match_requests' ? 'requests' :
-              activeFilter === 'matches' ? 'matches' :
               'messages'
             }
             customTitle={searchQuery ? 'Aucun résultat' : undefined}
@@ -768,6 +1226,21 @@ const Messages = () => {
           loadConversations()
         }}
       />
+      {selectedMatchRequest && user && (
+        <MatchRequestDetail
+          request={selectedMatchRequest}
+          currentUserId={user.id}
+          onClose={() => setSelectedMatchRequest(null)}
+          onUpdate={() => {
+            loadConversations()
+            setSelectedMatchRequest(null)
+          }}
+          onStartConversation={(conversationId) => {
+            navigate(`/messages/${conversationId}`)
+            setSelectedMatchRequest(null)
+          }}
+        />
+      )}
       <Footer />
     </div>
   )
