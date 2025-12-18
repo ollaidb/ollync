@@ -3,6 +3,7 @@ import { Bell, Search, Loader, Sparkles } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
+import PostCard from '../components/PostCard'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import './Home.css'
@@ -255,15 +256,7 @@ const Home = () => {
             <h2 className="home-section-title">annonce recente</h2>
             <div className="home-posts-grid">
               {recentPosts.map((post) => (
-                <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
-                  {post.images && post.images.length > 0 ? (
-                    <img src={post.images[0]} alt={post.title} />
-                  ) : (
-                    <div className="home-post-block-placeholder">
-                      <span>{post.title}</span>
-                    </div>
-                  )}
-                </div>
+                <PostCard key={post.id} post={post} viewMode="grid" />
               ))}
             </div>
           </div>
@@ -274,15 +267,7 @@ const Home = () => {
               <h2 className="home-section-title">urgent</h2>
               <div className="home-posts-grid">
                 {urgentPosts.map((post) => (
-                  <div key={post.id} className="home-post-block" onClick={() => navigate(`/post/${post.id}`)}>
-                    {post.images && post.images.length > 0 ? (
-                      <img src={post.images[0]} alt={post.title} />
-                    ) : (
-                      <div className="home-post-block-placeholder">
-                        <span>{post.title}</span>
-                      </div>
-                    )}
-                  </div>
+                  <PostCard key={post.id} post={post} viewMode="grid" />
                 ))}
               </div>
             </div>

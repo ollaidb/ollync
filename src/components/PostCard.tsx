@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, MapPin, Calendar, Users } from 'lucide-react'
+import { Heart, MessageCircle, Share2, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -18,6 +18,7 @@ interface PostCardProps {
     needed_date?: string | null
     number_of_people?: number | null
     delivery_available: boolean
+    is_urgent?: boolean
     user?: {
       username?: string | null
       full_name?: string | null
@@ -232,11 +233,33 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
   if (viewMode === 'list') {
     return (
       <div className="post-card post-card-list" onClick={handleCardClick}>
-        {mainImage && (
-          <div className="post-card-image">
+        <div className="post-card-image">
+          {mainImage ? (
             <img src={mainImage} alt={post.title} />
-          </div>
-        )}
+          ) : (
+            <div className="post-card-image-placeholder">
+              <ImageOff size={32} />
+            </div>
+          )}
+          <button
+            type="button"
+            className={`post-card-like-btn ${liked ? 'liked' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleLike(e)
+            }}
+            disabled={checkingLike}
+            aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
+          >
+            <Heart size={24} fill={liked ? 'currentColor' : 'none'} />
+          </button>
+          {post.category && (
+            <div className="post-card-category-badge">{post.category.name}</div>
+          )}
+          {post.is_urgent && (
+            <div className="post-card-urgent-badge">URGENT</div>
+          )}
+        </div>
         <div className="post-card-content">
           <div className="post-card-header">
             <h3 className="post-card-title">{post.title}</h3>
@@ -252,28 +275,6 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
               </span>
             )}
             <span className="post-card-date">{formatDate(post.created_at)}</span>
-          </div>
-          <div className="post-card-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className={`post-card-action ${liked ? 'liked' : ''}`}
-              onClick={handleLike}
-              disabled={checkingLike}
-            >
-              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-              <span>{likesCount}</span>
-            </button>
-            <button
-              type="button"
-              className="post-card-action"
-              onClick={handleShare}
-            >
-              <Share2 size={18} />
-            </button>
-            <span className="post-card-comments">
-              <MessageCircle size={18} />
-              {post.comments_count}
-            </span>
           </div>
         </div>
       </div>
@@ -293,14 +294,36 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
         }
       }}
     >
-      {mainImage && (
-        <div className="post-card-image">
+      <div className="post-card-image">
+        {mainImage ? (
           <img src={mainImage} alt={post.title} />
-          {post.delivery_available && (
-            <span className="post-card-badge">Livraison possible</span>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="post-card-image-placeholder">
+            <ImageOff size={40} />
+          </div>
+        )}
+        <button
+          type="button"
+          className={`post-card-like-btn ${liked ? 'liked' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleLike(e)
+          }}
+          disabled={checkingLike}
+          aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
+        >
+          <Heart size={28} fill={liked ? 'currentColor' : 'none'} />
+        </button>
+        {post.category && (
+          <div className="post-card-category-badge">{post.category.name}</div>
+        )}
+        {post.is_urgent && (
+          <div className="post-card-urgent-badge">URGENT</div>
+        )}
+        {post.delivery_available && (
+          <span className="post-card-badge">Livraison possible</span>
+        )}
+      </div>
       <div className="post-card-content">
         <h3 className="post-card-title">{post.title}</h3>
         {post.price && (
@@ -312,6 +335,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
               <MapPin size={14} /> {post.location}
             </span>
           )}
+          <span className="post-card-date">{formatDate(post.created_at)}</span>
           {post.needed_date && (
             <span className="post-card-date">
               <Calendar size={14} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
@@ -322,34 +346,6 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
               <Users size={14} /> {post.number_of_people} personne{post.number_of_people > 1 ? 's' : ''}
             </span>
           )}
-        </div>
-        <div className="post-card-actions" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            className={`post-card-action ${liked ? 'liked' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              handleLike(e)
-            }}
-            disabled={checkingLike}
-          >
-            <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
-            <span>{likesCount}</span>
-          </button>
-          <button
-            type="button"
-            className="post-card-action"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleShare(e)
-            }}
-          >
-            <Share2 size={18} />
-          </button>
-          <span className="post-card-comments">
-            <MessageCircle size={18} />
-            {post.comments_count}
-          </span>
         </div>
       </div>
     </div>

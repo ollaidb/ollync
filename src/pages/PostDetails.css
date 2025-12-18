@@ -190,6 +190,44 @@
   margin-left: 12px;
 }
 
+/* Image principale (hero) */
+.post-hero-image {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  margin-top: calc(env(safe-area-inset-top, 0px) + 66px);
+  background: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.post-hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-hero-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.post-hero-image-placeholder svg {
+  opacity: 0.5;
+}
+
+/* Ajustement du padding quand il y a une image hero */
+.post-details-page.has-hero-image .post-details-scrollable {
+  padding-top: 0;
+}
+
 /* ============================================
    C. INFORMATIONS PRINCIPALES
    ============================================ */
@@ -1055,6 +1093,11 @@
   .post-header-action-btn svg {
     width: 18px;
     height: 18px;
+  }
+
+  .post-hero-image {
+    height: 300px;
+    margin-top: calc(env(safe-area-inset-top, 0px) + 56px);
   }
 
   .post-media-gallery {

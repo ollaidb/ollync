@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share2, MessageCircle, MapPin, Check, X, Navigation } from 'lucide-react'
+import { Heart, Share2, MessageCircle, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
@@ -532,7 +532,7 @@ const PostDetails = () => {
 
   return (
     <div className="app">
-      <div className={`post-details-page ${mainImage ? 'has-hero-image' : ''}`}>
+      <div className="post-details-page has-hero-image">
         {/* Header fixe */}
         <div className="post-details-header-fixed">
           <div className="post-details-header-content">
@@ -549,16 +549,20 @@ const PostDetails = () => {
           </div>
         </div>
 
-        {/* Image principale (si disponible) */}
-        {mainImage && (
-          <div className="post-hero-image">
+        {/* Image principale (toujours affichée, avec placeholder si pas d'image) */}
+        <div className="post-hero-image">
+          {mainImage ? (
             <img src={mainImage} alt={post.title} />
-            {/* Badge URGENT en bas à gauche */}
-            {post.is_urgent && (
-              <div className="post-urgent-badge">URGENT</div>
-            )}
-          </div>
-        )}
+          ) : (
+            <div className="post-hero-image-placeholder">
+              <ImageOff size={64} />
+            </div>
+          )}
+          {/* Badge URGENT en bas à gauche */}
+          {post.is_urgent && (
+            <div className="post-urgent-badge">URGENT</div>
+          )}
+        </div>
 
         {/* Zone scrollable */}
         <div className="post-details-scrollable">
