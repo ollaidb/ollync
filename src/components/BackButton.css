@@ -4,6 +4,8 @@
   justify-content: center;
   width: 40px;
   height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -12,6 +14,8 @@
   transition: background 0.2s ease;
   flex-shrink: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .back-button:hover {
@@ -20,5 +24,11 @@
 
 .back-button:active {
   background: rgba(0, 0, 0, 0.1);
+}
+
+@media (hover: none) {
+  .back-button:hover {
+    background: transparent;
+  }
 }
 

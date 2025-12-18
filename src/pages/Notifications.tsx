@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader } from 'lucide-react'
+import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -16,6 +16,7 @@ interface Notification {
   related_id?: string | null
   read: boolean
   created_at: string
+  sender_id?: string | null
   sender?: {
     avatar_url?: string | null
   } | null
@@ -90,6 +91,8 @@ const Notifications = () => {
       case 'like':
       case 'comment':
       case 'new_post':
+      case 'post_updated':
+      case 'post_closed':
         if (notification.related_id) {
           navigate(`/post/${notification.related_id}`)
         }
@@ -102,62 +105,117 @@ const Notifications = () => {
           navigate(`/profile/${notification.related_id}`)
         }
         break
+      case 'match_request_received':
+      case 'match_request_accepted':
+      case 'match_request_declined':
+      case 'match_request_sent':
+        navigate('/messages')
+        break
+      case 'application_received':
+      case 'application_accepted':
+      case 'application_declined':
+      case 'application_sent':
+        if (notification.related_id) {
+          navigate(`/post/${notification.related_id}`)
+        }
+        break
+      case 'group_added':
+        navigate('/messages')
+        break
+      case 'welcome':
+        navigate('/')
+        break
       default:
         break
     }
   }
 
-  const markAllAsRead = async () => {
-    if (!user) return
-
-    const unreadIds = notifications
-      .filter((n) => !n.read)
-      .map((n) => n.id)
-
-    if (unreadIds.length === 0) return
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('notifications') as any)
-      .update({ read: true })
-      .in('id', unreadIds)
-
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    )
-  }
-
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'like':
-        return <Heart size={20} />
+        return <Heart size={18} />
       case 'comment':
-        return <MessageCircle size={20} />
+        return <MessageCircle size={18} />
       case 'follow':
-        return <UserPlus size={20} />
+        return <UserPlus size={18} />
       case 'message':
-        return <MessageCircle size={20} />
+        return <MessageCircle size={18} />
       case 'advertisement':
-        return <Image size={20} />
+        return <Image size={18} />
       case 'new_post':
-        return <FileText size={20} />
+        return <FileText size={18} />
+      case 'match_request_sent':
+        return <Send size={18} />
+      case 'match_request_received':
+        return <UserCheck size={18} />
+      case 'match_request_accepted':
+        return <CheckCircle size={18} />
+      case 'match_request_declined':
+        return <XCircle size={18} />
+      case 'application_sent':
+        return <Send size={18} />
+      case 'application_received':
+        return <UserCheck size={18} />
+      case 'application_accepted':
+        return <CheckCircle size={18} />
+      case 'application_declined':
+        return <XCircle size={18} />
+      case 'group_added':
+        return <UserPlus size={18} />
+      case 'post_updated':
+        return <FileText size={18} />
+      case 'post_closed':
+        return <XCircle size={18} />
+      case 'welcome':
+        return <Bell size={18} />
       default:
-        return <Bell size={20} />
+        return <Bell size={18} />
     }
   }
 
-  const formatTimeAgo = (dateString: string) => {
+  // Formater la date pour l'affichage (Aujourd'hui, Hier, ou date complète)
+  const formatDateHeader = (dateString: string): string => {
     const date = new Date(dateString)
     const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const minutes = Math.floor(diff / (1000 * 60))
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const notificationDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
-    if (minutes < 1) return "À l'instant"
-    if (minutes < 60) return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`
-    if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`
-    return `Il y a ${days} jour${days > 1 ? 's' : ''}`
+    if (notificationDate.getTime() === today.getTime()) {
+      return "Aujourd'hui"
+    } else if (notificationDate.getTime() === yesterday.getTime()) {
+      return "Hier"
+    } else {
+      // Format: "3 avril" ou "27 mars"
+      const months = [
+        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+      ]
+      return `${date.getDate()} ${months[date.getMonth()]}`
+    }
   }
+
+  // Grouper les notifications par date
+  const groupedNotifications = useMemo(() => {
+    const groups: { [key: string]: Notification[] } = {}
+    
+    notifications.forEach(notification => {
+      const dateKey = formatDateHeader(notification.created_at)
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(notification)
+    })
+
+    // Convertir en tableau et trier par date (plus récent en premier)
+    return Object.entries(groups).sort((a, b) => {
+      // Trier par date de la première notification du groupe
+      const dateA = new Date(a[1][0].created_at).getTime()
+      const dateB = new Date(b[1][0].created_at).getTime()
+      return dateB - dateA
+    })
+  }, [notifications])
 
   if (!user) {
     return (
@@ -198,17 +256,7 @@ const Notifications = () => {
           <div className="notifications-header-content">
             <BackButton />
             <h1 className="notifications-title">Notifications</h1>
-            {notifications.filter((n) => !n.read).length > 0 ? (
-              <button 
-                className="mark-all-read-btn"
-                onClick={markAllAsRead}
-                title="Tout marquer comme lu"
-              >
-                Tout marquer comme lu
-              </button>
-            ) : (
-              <div className="notifications-header-spacer"></div>
-            )}
+            <div className="notifications-header-spacer"></div>
           </div>
         </div>
 
@@ -224,32 +272,33 @@ const Notifications = () => {
             <EmptyState type="notifications" />
           ) : (
             <div className="notifications-list">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="notification-icon">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  <div className="notification-content">
-                    <div className="notification-title">{notification.title}</div>
-                    {notification.content && (
-                      <div className="notification-text">{notification.content}</div>
-                    )}
-                    <div className="notification-time">
-                      {formatTimeAgo(notification.created_at)}
+              {groupedNotifications.map(([dateHeader, dateNotifications]) => (
+                <div key={dateHeader} className="notifications-date-group">
+                  <div className="notifications-date-header">{dateHeader}</div>
+                  {dateNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="notification-icon">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="notification-content">
+                        <div className="notification-title">{notification.title}</div>
+                        {notification.content && (
+                          <div className="notification-text">{notification.content}</div>
+                        )}
+                      </div>
+                      {!notification.read && <div className="notification-dot" />}
                     </div>
-                  </div>
-                  {!notification.read && <div className="notification-dot" />}
+                  ))}
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

@@ -23,7 +23,8 @@
   right: 0;
   z-index: 100;
   background-color: #FFFFFF;
-  border-bottom: none;
+  border-bottom: 1px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .notifications-header-content {
@@ -36,6 +37,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  position: relative;
 }
 
 .notifications-header {
@@ -50,6 +52,7 @@
 .notifications-header-spacer {
   width: 40px;
   flex-shrink: 0;
+  visibility: hidden;
 }
 
 .notifications-header-actions {
@@ -81,6 +84,13 @@
   color: #111827;
   margin: 0;
   line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 120px);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .notifications-header h1 {
@@ -102,27 +112,75 @@
 .notifications-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+  padding: 0 12px;
+}
+
+/* Groupe de notifications par date */
+.notifications-date-group {
+  margin-bottom: 24px;
+}
+
+.notifications-date-group:first-child {
+  margin-top: 0;
+}
+
+.notifications-date-group:last-child {
+  margin-bottom: 0;
+}
+
+/* En-tête de date */
+.notifications-date-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding: 0 4px;
 }
 
 .notification-item {
   display: flex;
-  gap: 16px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px 16px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.15s ease;
   position: relative;
+  align-items: flex-start;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:active {
+  background: #f5f5f5;
 }
 
 .notification-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #f9f9f9;
+}
+
+@media (hover: none) {
+  .notification-item:hover {
+    background: white;
+  }
+  
+  .notification-item.unread:hover {
+    background: #f8f9ff;
+  }
 }
 
 .notification-item.unread {
+  background: #f8f9ff;
+}
+
+.notification-item.unread:hover {
   background: #f0f4ff;
 }
 
@@ -130,12 +188,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #f5f5f5;
   color: #667eea;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .notification-item.unread .notification-icon {
@@ -145,30 +204,29 @@
 .notification-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .notification-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  color: #111827;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .notification-text {
   font-size: 14px;
   color: #666;
-  line-height: 1.5;
-  margin-bottom: 8px;
+  line-height: 1.4;
+  margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.notification-time {
-  font-size: 12px;
-  color: #999;
 }
 
 .notification-dot {
@@ -178,7 +236,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ff4444;
+  background: #667eea;
+  flex-shrink: 0;
 }
 
 .empty-state {
@@ -219,13 +278,15 @@
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-  padding-left: 20px;
-  padding-right: 20px;
-  max-width: 800px;
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
   width: 100%;
   margin: 0 auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: #fafafa;
+  overscroll-behavior: contain;
 }
 
 .notifications-scrollable::-webkit-scrollbar {
@@ -346,61 +407,133 @@
   color: var(--accent);
 }
 
-/* Responsive */
+/* Responsive - Mobile First */
 @media (max-width: 768px) {
+  /* Header optimisé mobile */
   .notifications-header-content {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 12px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: 10px;
+    min-height: 44px;
   }
 
   .notifications-title {
-    font-size: 24px;
+    font-size: 22px;
+    font-weight: 700;
+    width: calc(100% - 100px);
   }
 
   .notifications-title-centered {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .notifications-header-not-connected {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: 12px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    padding-bottom: 10px;
   }
 
+  /* Zone scrollable optimisée */
   .notifications-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    padding-left: 0;
+    padding-right: 0;
   }
 
+  .notifications-list {
+    padding: 0 12px;
+  }
+
+  /* Groupes de dates */
+  .notifications-date-group {
+    margin-bottom: 20px;
+  }
+
+  .notifications-date-header {
+    font-size: 12px;
+    padding-left: 0;
+    padding-right: 0;
+    margin-bottom: 10px;
+  }
+
+  /* Items de notification optimisés mobile */
+  .notification-item {
+    padding: 12px 16px;
+    min-height: 60px;
+    gap: 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .notification-item:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Icônes adaptées mobile */
+  .notification-icon {
+    width: 36px;
+    height: 36px;
+    margin-top: 0;
+  }
+
+  .notification-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Contenu texte optimisé */
+  .notification-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .notification-text {
+    font-size: 13px;
+    line-height: 1.35;
+    margin-top: 2px;
+  }
+
+  /* Point de notification non lue */
+  .notification-dot {
+    top: 14px;
+    right: 16px;
+    width: 7px;
+    height: 7px;
+  }
+
+  /* État non connecté */
   .notifications-content-not-connected {
     padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .notifications-not-connected-icon {
-    width: 100px;
-    height: 100px;
-    margin-bottom: 16px;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
   }
 
   .notifications-not-connected-title {
     font-size: 20px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .notifications-not-connected-text {
     font-size: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    line-height: 1.5;
   }
 
   .notifications-not-connected-button {
-    padding: 10px 20px;
-    font-size: 14px;
-    max-width: 180px;
+    padding: 12px 24px;
+    font-size: 15px;
+    min-height: 44px;
+    max-width: 200px;
     margin-bottom: 16px;
   }
 
@@ -410,6 +543,65 @@
 
   .notifications-not-connected-link {
     font-size: 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Loading et empty states */
+  .loading-container {
+    padding: 40px 20px;
+  }
+
+  .empty-state {
+    padding: 50px 20px;
+  }
+}
+
+/* Très petits écrans (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  .notifications-header-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .notifications-title {
+    font-size: 20px;
+    width: calc(100% - 90px);
+  }
+
+  .notifications-date-header {
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 11px;
+  }
+
+  .notifications-list {
+    padding: 0 10px;
+  }
+
+  .notification-item {
+    padding: 11px 14px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .notification-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .notification-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .notification-title {
+    font-size: 13px;
+  }
+
+  .notification-text {
+    font-size: 12px;
   }
 }
 
