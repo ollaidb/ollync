@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, MessageCircle, Loader, Search, Users, Archive } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -8,6 +8,7 @@ import BackButton from '../components/BackButton'
 import CreateGroupModal from '../components/Messages/CreateGroupModal'
 import MessageInput from '../components/Messages/MessageInput'
 import MessageBubble from '../components/Messages/MessageBubble'
+import { EmptyState } from '../components/EmptyState'
 import './Messages.css'
 
 type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'archived'
@@ -663,12 +664,6 @@ const Messages = () => {
             Tous
           </button>
           <button
-            className={`messages-filter-btn ${activeFilter === 'posts' ? 'active' : ''}`}
-            onClick={() => setActiveFilter('posts')}
-          >
-            Annonces
-          </button>
-          <button
             className={`messages-filter-btn ${activeFilter === 'matches' ? 'active' : ''}`}
             onClick={() => setActiveFilter('matches')}
           >
@@ -704,11 +699,17 @@ const Messages = () => {
             <p>Chargement...</p>
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="empty-state">
-            <MessageCircle size={48} />
-            <h2>{searchQuery ? 'Aucun résultat' : 'Aucun message'}</h2>
-            <p>{searchQuery ? 'Aucune conversation ne correspond à votre recherche.' : 'Vous n\'avez pas encore de conversations.'}</p>
-          </div>
+          <EmptyState 
+            type={
+              searchQuery ? 'category' : 
+              activeFilter === 'archived' ? 'archived' :
+              activeFilter === 'match_requests' ? 'requests' :
+              activeFilter === 'matches' ? 'matches' :
+              'messages'
+            }
+            customTitle={searchQuery ? 'Aucun résultat' : undefined}
+            customSubtext={searchQuery ? 'Aucune conversation ne correspond à votre recherche.' : undefined}
+          />
         ) : (
           <div className="conversations-list">
             {filteredConversations.map((conv) => (

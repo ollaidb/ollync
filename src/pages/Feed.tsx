@@ -3,6 +3,7 @@ import { Grid, List, Filter, Loader } from 'lucide-react'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
+import { EmptyState } from '../components/EmptyState'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './Feed.css'
 
@@ -142,9 +143,7 @@ const Feed = () => {
               )}
 
               {posts.length === 0 && !loading && (
-                <div className="empty-state">
-                  <p>Aucune annonce disponible</p>
-                </div>
+                <EmptyState type="category" customTitle="Aucune annonce disponible" />
               )}
             </>
           )}

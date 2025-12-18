@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
+import { EmptyState } from '../components/EmptyState'
 import './Notifications.css'
 
 interface Notification {
@@ -220,10 +221,7 @@ const Notifications = () => {
               <p>Chargement...</p>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="empty-state">
-              <Bell size={48} />
-              <p>Aucune notification</p>
-            </div>
+            <EmptyState type="notifications" />
           ) : (
             <div className="notifications-list">
               {notifications.map((notification) => (

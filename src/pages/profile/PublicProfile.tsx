@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
+import { EmptyState } from '../../components/EmptyState'
 import './PublicProfile.css'
 
 interface ProfileData {
@@ -526,7 +527,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             {postsLoading ? (
               <div className="loading-state">Chargement...</div>
             ) : posts.length === 0 ? (
-              <div className="empty-state">Aucune annonce</div>
+              <EmptyState type="posts" />
             ) : (
               <div className="posts-grid-2cols">
                 {posts.map((post) => (
@@ -555,7 +556,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             {postsLoading ? (
               <div className="loading-state">Chargement...</div>
             ) : matchPosts.length === 0 ? (
-              <div className="empty-state">Aucun match</div>
+              <EmptyState type="matches" />
             ) : (
               <div className="match-list">
                 {matchPosts.map((post) => (
@@ -588,7 +589,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             {reviewsLoading ? (
               <div className="loading-state">Chargement...</div>
             ) : reviews.length === 0 ? (
-              <div className="empty-state">Aucun avis</div>
+              <EmptyState type="category" customTitle="Aucun avis" customSubtext="Les avis sur ce profil apparaîtront ici." />
             ) : (
               <div className="reviews-list">
                 {reviews.map((review) => (

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
+import { EmptyState } from './EmptyState'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { 
@@ -546,9 +547,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             <p>Chargement...</p>
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="category-empty">
-            <p>{searchQuery ? `Aucun résultat pour "${searchQuery}"` : 'Aucune annonce disponible'}</p>
-          </div>
+          <EmptyState 
+            type="category"
+            customTitle={searchQuery ? `Aucun résultat pour "${searchQuery}"` : undefined}
+          />
         ) : (
           <div className="category-posts-grid">
             {filteredPosts.map((post) => (

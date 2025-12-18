@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Loader, Search, User, WifiOff } from 'lucide-react'
+import { Heart, Loader, Search, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import Footer from '../components/Footer'
+import { EmptyState } from '../components/EmptyState'
 import { mapPosts } from '../utils/postMapper'
 import './Favorites.css'
 
@@ -409,13 +410,7 @@ const Favorites = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <div className="empty-state-icon empty-state-icon-posts">
-                      <Heart size={36} />
-                    </div>
-                    <h2>Aucune publication</h2>
-                    <p>Les publications que vous aimez apparaîtront ici</p>
-                  </div>
+                  <EmptyState type="favorites" />
                 )}
               </>
             )}
@@ -465,13 +460,7 @@ const Favorites = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="empty-state">
-                    <div className="empty-state-icon empty-state-icon-profiles">
-                      <User size={36} />
-                    </div>
-                    <h2>Aucun profil suivi</h2>
-                    <p>Les profils que vous suivez apparaîtront ici</p>
-                  </div>
+                  <EmptyState type="profiles" />
                 )}
               </>
             )}
