@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
+import { Heart, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -32,10 +32,10 @@ interface PostCardProps {
   viewMode?: 'list' | 'grid'
   isLiked?: boolean
   onLike?: () => void
-  onShare?: () => void
+  // onShare?: () => void
 }
 
-const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }: PostCardProps) => {
+const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCardProps) => {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(isLiked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
@@ -173,34 +173,34 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, onShare }:
     }
   }
 
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: post.title,
-          text: post.description,
-          url: `${window.location.origin}/post/${post.id}`
-        })
-      } catch (error) {
-        // L'utilisateur a peut-être annulé, ce n'est pas une erreur
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error)
-        }
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)
-        alert('Lien copié dans le presse-papier')
-      } catch (error) {
-        console.error('Error copying to clipboard:', error)
-        alert('Impossible de copier le lien')
-      }
-    }
-    onShare?.()
-  }
+  // const handleShare = async (e: React.MouseEvent) => {
+  //   e.preventDefault()
+  //   e.stopPropagation()
+  //   
+  //   if (navigator.share) {
+  //     try {
+  //       await navigator.share({
+  //         title: post.title,
+  //         text: post.description,
+  //         url: `${window.location.origin}/post/${post.id}`
+  //       })
+  //     } catch (error) {
+  //       // L'utilisateur a peut-être annulé, ce n'est pas une erreur
+  //       if ((error as Error).name !== 'AbortError') {
+  //         console.error('Error sharing:', error)
+  //       }
+  //     }
+  //   } else {
+  //     try {
+  //       await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)
+  //       alert('Lien copié dans le presse-papier')
+  //     } catch (error) {
+  //       console.error('Error copying to clipboard:', error)
+  //       alert('Impossible de copier le lien')
+  //     }
+  //   }
+  //   onShare?.()
+  // }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
