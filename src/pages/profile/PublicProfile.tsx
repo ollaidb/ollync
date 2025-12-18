@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Share2, MapPin, Plus, Instagram, Facebook, Star } from 'lucide-react'
+import { Share2, MapPin, Plus, Instagram, Facebook, Star } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import BackButton from '../../components/BackButton'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import { EmptyState } from '../../components/EmptyState'
@@ -363,13 +364,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     <div className="public-profile-page">
       {/* 1. HEADER - Retour */}
       <div className="profile-page-header">
-        <button 
-          className="profile-back-button"
-          onClick={() => navigate(-1)}
-          aria-label="Retour"
-        >
-          <ArrowLeft size={24} />
-        </button>
+        <BackButton className="profile-back-button" />
       </div>
 
       {/* 2. BLOC D'IDENTITÉ (fond bleu) */}

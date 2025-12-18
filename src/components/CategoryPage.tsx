@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
+import BackButton from './BackButton'
 import { EmptyState } from './EmptyState'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -270,6 +271,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       {/* 1. Header & Recherche */}
       <div className="category-header-new">
         <div className="category-search-container">
+          <BackButton className="category-back-button" />
           <div className="category-search-box">
             <Search size={20} className="category-search-icon" />
             <input

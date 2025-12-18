@@ -390,14 +390,16 @@ const Profile = () => {
   return (
     <div className="app">
       <div className="profile-page">
-        {/* Header fixe */}
-        <div className="profile-header-fixed">
-          <div className="profile-header-content">
-            <BackButton />
-            <h1 className="profile-title">Mon compte</h1>
-            <div className="profile-header-spacer"></div>
+        {/* Header fixe - Ne pas afficher pour les profils publics (ils ont leur propre header) */}
+        {!isPublicProfile && (
+          <div className="profile-header-fixed">
+            <div className="profile-header-content">
+              <BackButton />
+              <h1 className="profile-title">Mon compte</h1>
+              <div className="profile-header-spacer"></div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Zone scrollable */}
         <div className="profile-scrollable">

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
+import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
+import BackButton from '../components/BackButton'
 import './Search.css'
 
 interface Post {
@@ -238,12 +239,7 @@ const Search = () => {
       {/* Header */}
       <div className="search-header">
         <div className="search-header-content">
-          <button
-            className="search-back-button"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft size={24} />
-          </button>
+          <BackButton className="search-back-button" />
 
           <div className="search-input-wrapper">
             <SearchIcon size={20} className="search-input-icon" />

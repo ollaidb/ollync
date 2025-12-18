@@ -28,6 +28,10 @@
   gap: 12px;
 }
 
+.category-back-button {
+  flex-shrink: 0;
+}
+
 .category-search-box {
   flex: 1;
   position: relative;

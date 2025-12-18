@@ -829,16 +829,13 @@ const Messages = () => {
     return (
       <div className="messages-page-container conversation-page">
         <div className="conversation-header">
-          <button 
+          <BackButton 
             className="conversation-back-button"
             onClick={() => {
               setSelectedConversation(null)
               navigate('/messages')
             }}
-            aria-label="Retour"
-          >
-            ←
-          </button>
+          />
           <div className="conversation-header-center">
             <h1 className="conversation-header-name">{displayName}</h1>
           </div>

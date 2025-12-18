@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Bell, Search, Loader, Sparkles } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Footer from '../components/Footer'
+import BackButton from '../components/BackButton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import './Home.css'
@@ -101,6 +102,7 @@ const Home = () => {
           <div className="home-header-blue-block">
             {/* Section 1: Logo + Icônes swipe et notification */}
             <div className="home-header-top">
+              <BackButton hideOnHome={true} className="home-back-button" />
               <h1 
                 className="home-app-name"
                 onClick={() => navigate('/home')}
@@ -179,6 +181,7 @@ const Home = () => {
         <div className="home-header-blue-block">
           {/* Section 1: Logo + Icônes swipe et notification */}
           <div className="home-header-top">
+            <BackButton hideOnHome={true} className="home-back-button" />
             <h1 
               className="home-app-name"
               onClick={() => navigate('/home')}

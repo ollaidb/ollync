@@ -1,5 +1,4 @@
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import BackButton from './BackButton'
 import './PageHeader.css'
 
 interface PageHeaderProps {
@@ -7,13 +6,9 @@ interface PageHeaderProps {
 }
 
 const PageHeader = ({ title }: PageHeaderProps) => {
-  const navigate = useNavigate()
-
   return (
     <div className="page-header-container">
-      <button className="back-button" onClick={() => navigate(-1)}>
-        <ArrowLeft size={24} />
-      </button>
+      <BackButton className="page-header-back-button" />
       <h1 className="page-header-title">{title}</h1>
       <div className="back-button-placeholder"></div>
     </div>

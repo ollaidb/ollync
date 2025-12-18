@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, X, Tag, MessageCircle, Search, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import BackButton from '../components/BackButton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { formatRelativeDate } from '../utils/profileHelpers'
 import './SwipePage.css'
@@ -353,6 +354,7 @@ const SwipePage = () => {
     <div className="swipe-page">
       {/* Header avec recherche, catégorie et notification */}
       <div className="swipe-header">
+        <BackButton className="swipe-back-button" />
         <button 
           className="swipe-header-search"
           onClick={() => navigate('/search')}
