@@ -2,12 +2,17 @@
    PAGE PROFIL PUBLIC - Nouveau design
    ============================================ */
 
+:root {
+  --profile-header-height: 10px;
+}
+
 .public-profile-page {
   min-height: 100vh;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--profile-header-height));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 
 /* ============================================
@@ -24,7 +29,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: calc(env(safe-area-inset-top, 0px) + 4px) 20px 4px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px 3px;
   background-color: var(--background);
   border-bottom: 1px solid var(--border);
 }
@@ -93,8 +98,8 @@
 
 .profile-identity-block {
   background-color: var(--card);
-  margin: calc(env(safe-area-inset-top, 0px) + 44px) 16px 12px;
-  padding: 16px;
+  margin: 0 10px 2px;
+  padding: 10px 3px;
   border-radius: 16px;
   display: flex;
   align-items: flex-start;
@@ -258,8 +263,8 @@
 
 .profile-bio-block {
   background-color: var(--primary);
-  margin: 16px 16px 0;
-  padding: 20px;
+  margin: 12px 16px 0;
+  padding: 16px;
   border-radius: 20px;
   box-shadow: var(--shadow-md);
 }
@@ -286,8 +291,8 @@
 
 .profile-interests-section {
   background-color: var(--background);
-  padding: 20px;
-  margin-top: -1px;
+  padding: 16px;
+  margin-top: 0;
 }
 
 .interests-title {
@@ -341,11 +346,11 @@
 .profile-social-block {
   background-color: var(--primary);
   border-radius: 16px;
-  padding: 16px;
-  margin: 16px 16px 0;
+  padding: 12px;
+  margin: 12px 16px 0;
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   box-shadow: var(--shadow-md);
 }
 
@@ -394,9 +399,9 @@
 .profile-secondary-menu {
   display: flex;
   gap: 8px;
-  padding: 16px 20px;
+  padding: 12px 20px;
   background-color: var(--background);
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .profile-menu-btn {
@@ -430,7 +435,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 20px 20px;
+  padding: 0 10px 3px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
@@ -440,9 +445,17 @@
   display: none;
 }
 
+/* Mode À propos */
+.profile-content-a-propos {
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 /* Mode Annonce - Grille horizontale scrollable */
 .profile-content-annonces {
-  padding-top: 16px;
+  padding-top: 12px;
 }
 
 .profile-posts-grid {
@@ -532,7 +545,7 @@
 
 /* Mode Avis - Liste des avis */
 .profile-content-avis {
-  padding-top: 16px;
+  padding-top: 12px;
 }
 
 .reviews-list {
@@ -650,11 +663,12 @@
 /* Responsive */
 @media (max-width: 768px) {
   .public-profile-page {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3px);
   }
 
   .profile-page-header {
-    padding: calc(env(safe-area-inset-top, 0px) + 4px) 12px 4px;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px 3px;
     gap: 8px;
     border-bottom: 1px solid var(--border);
   }
@@ -677,7 +691,7 @@
   }
 
   .profile-identity-block {
-    margin: calc(env(safe-area-inset-top, 0px) + 36px) 12px 8px;
+    margin: 0 10px 2px;
     padding: 12px;
     gap: 10px;
     border-radius: 12px;
@@ -759,8 +773,8 @@
   }
 
   .profile-bio-block {
-    margin: 12px 12px 0;
-    padding: 16px;
+    margin: 8px 12px 0;
+    padding: 12px;
     border-radius: 12px;
   }
 
@@ -801,9 +815,9 @@
   }
 
   .profile-secondary-menu {
-    padding: 12px;
+    padding: 10px 12px;
     gap: 6px;
-    margin-top: 12px;
+    margin-top: 8px;
   }
 
   .profile-menu-btn {
@@ -813,7 +827,8 @@
   }
 
   .profile-content-scrollable {
-    padding: 0 12px 12px;
+    padding: 0 10px 3px;
+    margin-top: 0;
   }
 
   .profile-posts-grid {

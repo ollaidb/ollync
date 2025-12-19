@@ -73,7 +73,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'annonces' | 'avis'>('annonces')
+  const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'avis'>('a-propos')
   const [posts, setPosts] = useState<Post[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
@@ -311,6 +311,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     } else if (profileId && activeTab === 'avis') {
       fetchReviews()
     }
+    // Pour "à propos", pas besoin de fetch, les données sont déjà dans profile
   }, [profileId, activeTab, fetchPosts, fetchReviews])
 
   if (loading) {
@@ -401,8 +402,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           )}
           {profile.location && (
             <div className="profile-location-text">
-              <MapPin size={14} />
               <span>{profile.location.split(',')[0].trim()}</span>
+              <MapPin size={14} />
             </div>
           )}
         </div>
@@ -423,71 +424,14 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         </div>
       </div>
 
-      {/* 3. BLOC BIO (fond bleu) */}
-      {profile.bio && (
-        <div className="profile-bio-block">
-          <div className="bio-label">bio</div>
-          <p className="bio-text">{profile.bio}</p>
-        </div>
-      )}
-
-      {/* 4. CENTRES D'INTÉRÊT (scroll horizontal) */}
-      {interests.length > 0 && (
-        <div className="profile-interests-section">
-          <h3 className="interests-title">centre dinteret</h3>
-          <div className="interests-scroll">
-            {interests.map((interest, index) => (
-              <div 
-                key={index} 
-                className={`interest-bubble ${index === 0 ? 'active' : ''}`}
-              >
-                {interest}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 5. LIENS SOCIAUX (bloc bleu arrondi) */}
-      {profile.social_links && (
-        (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.facebook) && (
-          <div className="profile-social-block">
-            {profile.social_links.instagram && (
-              <a
-                href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-icon-link"
-              >
-                <Instagram size={24} />
-              </a>
-            )}
-            {profile.social_links.tiktok && (
-              <a
-                href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-icon-link"
-              >
-                <div className="tiktok-icon">TT</div>
-              </a>
-            )}
-            {profile.social_links.facebook && (
-              <a
-                href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-icon-link"
-              >
-                <Facebook size={24} />
-              </a>
-            )}
-          </div>
-        )
-      )}
-
-      {/* 6. MENU SECONDAIRE : Annonce / Avis */}
+      {/* 3. MENU SECONDAIRE : À propos / Annonce / Avis */}
       <div className="profile-secondary-menu">
+        <button
+          className={`profile-menu-btn ${activeTab === 'a-propos' ? 'active' : ''}`}
+          onClick={() => setActiveTab('a-propos')}
+        >
+          à propos
+        </button>
         <button
           className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
           onClick={() => setActiveTab('annonces')}
@@ -502,8 +446,76 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         </button>
       </div>
 
-      {/* 7. BLOC CONTENU (scrollable) */}
+      {/* 4. BLOC CONTENU (scrollable) */}
       <div className="profile-content-scrollable">
+        {/* Mode À propos */}
+        {activeTab === 'a-propos' && (
+          <div className="profile-content-a-propos">
+            {/* BLOC BIO */}
+            {profile.bio && (
+              <div className="profile-bio-block">
+                <div className="bio-label">bio</div>
+                <p className="bio-text">{profile.bio}</p>
+              </div>
+            )}
+
+            {/* CENTRES D'INTÉRÊT */}
+            {interests.length > 0 && (
+              <div className="profile-interests-section">
+                <h3 className="interests-title">centre dinteret</h3>
+                <div className="interests-scroll">
+                  {interests.map((interest, index) => (
+                    <div 
+                      key={index} 
+                      className={`interest-bubble ${index === 0 ? 'active' : ''}`}
+                    >
+                      {interest}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* LIENS SOCIAUX */}
+            {profile.social_links && (
+              (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.facebook) && (
+                <div className="profile-social-block">
+                  {profile.social_links.instagram && (
+                    <a
+                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-link"
+                    >
+                      <Instagram size={24} />
+                    </a>
+                  )}
+                  {profile.social_links.tiktok && (
+                    <a
+                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-link"
+                    >
+                      <div className="tiktok-icon">TT</div>
+                    </a>
+                  )}
+                  {profile.social_links.facebook && (
+                    <a
+                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-link"
+                    >
+                      <Facebook size={24} />
+                    </a>
+                  )}
+                </div>
+              )
+            )}
+          </div>
+        )}
+
         {/* Mode Annonce - Grille horizontale scrollable */}
         {activeTab === 'annonces' && (
           <div className="profile-content-annonces">
