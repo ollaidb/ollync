@@ -12,6 +12,7 @@
 
 .form-group {
   margin-bottom: 24px;
+  position: relative;
 }
 
 .form-label {
@@ -181,5 +182,32 @@
   width: 20px;
   height: 20px;
   cursor: pointer;
+}
+
+.step5-location-autocomplete {
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.step5-location-autocomplete:focus-within {
+  z-index: 10001;
+}
+
+.location-coordinates-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #F3F4F6;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.location-coordinates-info svg {
+  color: #6366F1;
+  flex-shrink: 0;
 }
 

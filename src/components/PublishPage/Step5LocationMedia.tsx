@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { MapPin, Upload, X, Loader } from 'lucide-react'
+import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { LocationAutocomplete } from '../Location/LocationAutocomplete'
 import './Step5LocationMedia.css'
 
 interface FormData {
@@ -109,27 +110,44 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     onUpdateFormData({ images: newImages })
   }
 
+  const handleLocationSelect = (location: {
+    address: string
+    lat: number
+    lng: number
+    city?: string
+  }) => {
+    onUpdateFormData({
+      location: location.city || location.address.split(',')[0].trim(),
+      location_address: location.address,
+      location_lat: location.lat,
+      location_lng: location.lng,
+      location_city: location.city || ''
+    })
+  }
+
   return (
     <div className="step5-location-media">
       <h2 className="step-title">Localisation et médias</h2>
 
       <div className="form-group">
         <label className="form-label">Lieu *</label>
-        <div className="input-with-icon">
-          <MapPin size={20} className="input-icon" />
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Ex: Paris, Lyon..."
-            value={formData.location}
-            onChange={(e) => onUpdateFormData({ location: e.target.value })}
-          />
-        </div>
+        <LocationAutocomplete
+          value={formData.location_address || formData.location || ''}
+          onChange={(value) => {
+            // Si l'utilisateur tape manuellement, on met à jour juste location
+            if (!formData.location_address || value !== formData.location_address) {
+              onUpdateFormData({ location: value })
+            }
+          }}
+          onLocationSelect={handleLocationSelect}
+          placeholder="Lieu"
+          className="step5-location-autocomplete"
+        />
         <button
           className="location-button"
           onClick={onGetMyLocation}
         >
-          Utiliser ma localisation
+          Utiliser ma localisation GPS
         </button>
       </div>
 

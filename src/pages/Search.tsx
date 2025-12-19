@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
+import { Search as SearchIcon, SlidersHorizontal, X, MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
+import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
 import './Search.css'
 
 interface Post {
@@ -41,6 +42,9 @@ const Search = () => {
   const [results, setResults] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [locationFilter, setLocationFilter] = useState('')
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [showLocationFilter, setShowLocationFilter] = useState(false)
 
   // Ordre des nouvelles catégories
   const categoryOrder = [
@@ -76,8 +80,8 @@ const Search = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        searchPosts(searchQuery)
+      if (searchQuery.trim() || locationFilter) {
+        searchPosts(searchQuery || '')
       } else {
         setResults([])
       }
@@ -85,7 +89,7 @@ const Search = () => {
 
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedFilter])
+  }, [searchQuery, selectedFilter, locationFilter, locationCoords])
 
   const fetchCategories = async () => {
     try {
@@ -104,9 +108,24 @@ const Search = () => {
     }
   }
 
+  // Fonction pour calculer la distance entre deux points (formule de Haversine)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371 // Rayon de la Terre en km
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
   const searchPosts = async (query: string) => {
-    if (!query.trim()) {
+    // Si pas de requête et pas de filtre de localisation, vider les résultats
+    if (!query.trim() && !locationCoords) {
       setResults([])
+      setLoading(false)
       return
     }
 
@@ -127,10 +146,15 @@ const Search = () => {
         .from('posts')
         .select('*')
         .eq('status', 'active')
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,location.ilike.%${query}%`)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(100) // Augmenter la limite pour le filtrage par distance
 
+      // Filtre par texte de recherche
+      if (query.trim()) {
+        postsQuery = postsQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,location.ilike.%${query}%`)
+      }
+
+      // Filtre par catégorie
       if (categoryId) {
         postsQuery = postsQuery.eq('category_id', categoryId)
       }
@@ -150,11 +174,34 @@ const Search = () => {
         return
       }
 
-      // Récupérer les IDs uniques pour les relations
+      // Filtrer par distance si un filtre de localisation est actif
+      let filteredPosts = posts
+      if (locationCoords) {
+        filteredPosts = posts.filter((post: any) => {
+          if (!post.location_lat || !post.location_lng) return false
+          
+          const distance = calculateDistance(
+            locationCoords.lat,
+            locationCoords.lng,
+            post.location_lat,
+            post.location_lng
+          )
+          
+          return distance <= 50 // 50 km de rayon
+        })
+      }
+
+      if (filteredPosts.length === 0) {
+        setResults([])
+        setLoading(false)
+        return
+      }
+
+      // Récupérer les IDs uniques pour les relations (utiliser filteredPosts)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userIds = [...new Set(posts.map((p: any) => p.user_id).filter(Boolean))]
+      const userIds = [...new Set(filteredPosts.map((p: any) => p.user_id).filter(Boolean))]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const categoryIds = [...new Set(posts.map((p: any) => p.category_id).filter(Boolean))]
+      const categoryIds = [...new Set(filteredPosts.map((p: any) => p.category_id).filter(Boolean))]
 
       // Récupérer les profils
       const profilesMap = new Map()
@@ -190,7 +237,7 @@ const Search = () => {
 
       // Combiner les données
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const postsWithRelations: Post[] = posts.map((post: any) => {
+      const postsWithRelations: Post[] = filteredPosts.map((post: any) => {
         const profile = profilesMap.get(post.user_id)
         const category = categoriesMap.get(post.category_id)
         
@@ -228,6 +275,22 @@ const Search = () => {
     }
   }
 
+  const handleLocationSelect = (location: {
+    address: string
+    lat: number
+    lng: number
+    city?: string
+  }) => {
+    setLocationFilter(location.address)
+    setLocationCoords({ lat: location.lat, lng: location.lng })
+    setShowLocationFilter(false)
+  }
+
+  const handleClearLocation = () => {
+    setLocationFilter('')
+    setLocationCoords(null)
+  }
+
   const handleLike = () => {
     // Le PostCard gère déjà les likes
   }
@@ -262,6 +325,38 @@ const Search = () => {
           <button className="search-filters-button">
             <SlidersHorizontal size={20} />
           </button>
+        </div>
+
+        {/* Filtre de localisation */}
+        <div className="search-location-filter">
+          <button
+            className={`search-location-toggle ${locationFilter ? 'active' : ''}`}
+            onClick={() => setShowLocationFilter(!showLocationFilter)}
+          >
+            <MapPin size={16} />
+            <span>{locationFilter ? locationFilter.split(',')[0] : 'Filtrer par lieu'}</span>
+            {locationFilter && (
+              <button
+                className="search-location-clear"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleClearLocation()
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </button>
+          {showLocationFilter && (
+            <div className="search-location-autocomplete-wrapper">
+              <LocationAutocomplete
+                value={locationFilter}
+                onChange={setLocationFilter}
+                onLocationSelect={handleLocationSelect}
+                placeholder="Rechercher un lieu (ex: Paris, Lyon...)"
+              />
+            </div>
+          )}
         </div>
 
         {/* Filters */}

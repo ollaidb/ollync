@@ -6,7 +6,6 @@ import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
 import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
-import Footer from '../components/Footer'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
@@ -136,7 +135,6 @@ export default function Publish() {
             </button>
           </p>
         </div>
-        <Footer />
       </div>
     )
   }

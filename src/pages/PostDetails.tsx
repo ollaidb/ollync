@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Heart, Share, MessageCircle, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { formatRelativeDate } from '../utils/profileHelpers'
+import { GoogleMapComponent } from '../components/Maps/GoogleMap'
 import './PostDetails.css'
 
 interface Post {
@@ -627,7 +627,6 @@ const PostDetails = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     )
   }
@@ -642,7 +641,6 @@ const PostDetails = () => {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     )
   }
@@ -793,29 +791,10 @@ const PostDetails = () => {
 
             {/* Informations secondaires */}
             <div className="post-meta-info">
-              <span className="post-meta-item">
+                <span className="post-meta-item">
                 {formatRelativeDate(post.created_at)}
-              </span>
+                </span>
             </div>
-
-            {/* Bouton d'action - Faire une demande */}
-            {!isOwner && (
-              <div className="post-action-buttons-section">
-                <button 
-                  className={`post-action-button post-action-button-apply ${matchRequest?.status === 'pending' ? 'post-action-button-sent' : matchRequest?.status === 'accepted' ? 'post-action-button-accepted' : ''}`}
-                  onClick={handleApply}
-                  disabled={loadingRequest || matchRequest?.status === 'accepted'}
-                >
-                  {matchRequest?.status === 'pending' ? (
-                    'Demande envoyée'
-                  ) : matchRequest?.status === 'accepted' ? (
-                    'Demande acceptée'
-                  ) : (
-                    'Faire une demande'
-                  )}
-                </button>
-              </div>
-            )}
 
             {/* Profil de l'auteur */}
             {post.user && (
@@ -851,8 +830,8 @@ const PostDetails = () => {
                   <span className="post-info-value">
                     {post.category?.name}
                     {post.sub_category && ` > ${post.sub_category.name}`}
-                  </span>
-                </div>
+              </span>
+            </div>
               )}
 
               {/* Réseau social */}
@@ -888,28 +867,43 @@ const PostDetails = () => {
               )}
 
               {/* Adresse complète */}
-              {hasAddress && (
+            {hasAddress && (
                 <div className="post-info-item">
                   <span className="post-info-label">Adresse :</span>
                   <div className="post-info-value">
-                    {post.location_address && (
-                      <div className="post-address-text">
+                  {post.location_address && (
+                    <div className="post-address-text">
                         <MapPin size={16} />
-                        <span>{post.location_address}</span>
-                      </div>
-                    )}
-                    {post.location_lat && post.location_lng && (
-                      <div className="post-address-coords">
-                        {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
-                      </div>
-                    )}
-                    {post.location_lat && post.location_lng && (
+                      <span>{post.location_address}</span>
+                    </div>
+                  )}
+                  {post.location_lat && post.location_lng && (
+                    <div className="post-address-coords">
+                      {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
+                    </div>
+                  )}
+                {post.location_lat && post.location_lng && (
                       <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
                         <Navigation size={18} />
                         Itinéraire
-                      </button>
-                    )}
+                  </button>
+                )}
                   </div>
+              </div>
+            )}
+
+              {/* Carte Google Maps */}
+              {post.location_lat && post.location_lng && (
+                <div className="post-map-section">
+                  <GoogleMapComponent
+                    lat={post.location_lat}
+                    lng={post.location_lng}
+                    address={post.location_address || post.location || undefined}
+                    height="400px"
+                    zoom={15}
+                    markerTitle={post.location_address || post.location || post.title}
+                    onMarkerClick={handleOpenNavigation}
+                  />
                 </div>
               )}
 
@@ -1005,15 +999,23 @@ const PostDetails = () => {
         </div>
 
         {/* Barre d'action fixe en bas */}
-        <div className="post-action-bar">
-          <button className="post-action-btn post-action-btn-message" onClick={handleMessage}>
-            <MessageCircle size={20} />
-            Message
-          </button>
-          <button className="post-action-btn post-action-btn-primary" onClick={handleApply}>
-            Candidater
-          </button>
-        </div>
+        {user && !isOwner && (
+          <div className="post-action-bar">
+            <button 
+              className={`post-action-btn post-action-btn-primary ${matchRequest?.status === 'pending' ? 'post-action-button-sent' : matchRequest?.status === 'accepted' ? 'post-action-button-accepted' : ''}`}
+              onClick={handleApply}
+              disabled={loadingRequest || matchRequest?.status === 'accepted'}
+            >
+              {matchRequest?.status === 'pending' ? (
+                'Demande envoyée'
+              ) : matchRequest?.status === 'accepted' ? (
+                'Demande acceptée'
+              ) : (
+                'Faire une demande'
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Modal de confirmation d'envoi de demande */}
         {showSendRequestModal && (
@@ -1091,7 +1093,6 @@ const PostDetails = () => {
           </div>
         )}
       </div>
-      <Footer />
     </div>
   )
 }

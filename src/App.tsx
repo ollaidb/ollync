@@ -86,7 +86,7 @@ function AppContent() {
           <Route path="/auth/register" element={<Register />} />
         </Routes>
       </main>
-      {!isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && <Footer />}
+      {!isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && <Footer />}
     </div>
   )
 }
