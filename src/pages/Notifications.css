@@ -28,10 +28,10 @@
 }
 
   .notifications-header-content {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
     padding-left: 20px;
     padding-right: 20px;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -92,7 +92,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -166,7 +166,7 @@
 
 /* Groupe de notifications par date */
 .notifications-date-group {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .notifications-date-group:first-child {
@@ -184,14 +184,14 @@
   color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding: 0 4px;
 }
 
 .notification-item {
   display: flex;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: white;
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
@@ -324,7 +324,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 140px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 110px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   padding-left: 0;
   padding-right: 0;

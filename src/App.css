@@ -11,24 +11,24 @@
 }
 
 .main-content.with-header {
-  padding-top: 180px;
+  padding-top: 140px;
 }
 
 .main-content.without-header {
-  padding-top: 60px;
+  padding-top: 50px;
 }
 
 .main-content.without-header.category-page {
-  padding-top: 120px;
+  padding-top: 90px;
 }
 
 @media (max-width: 768px) {
   .main-content.with-header {
-    padding-top: 170px;
+    padding-top: 130px;
   }
 
   .main-content.without-header {
-    padding-top: 60px;
+    padding-top: 50px;
   }
 }
 

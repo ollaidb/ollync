@@ -15,17 +15,17 @@
   z-index: 100;
   background-color: var(--background);
   border-bottom: none;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
 }
 
 .messages-header > *:first-child {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .messages-title {
@@ -69,7 +69,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .messages-back-button {
@@ -169,7 +169,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 160px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   padding-left: 20px;
   padding-right: 20px;

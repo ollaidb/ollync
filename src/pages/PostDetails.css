@@ -26,10 +26,10 @@
 }
 
 .post-details-header-content {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -72,6 +72,14 @@
   transform: scale(0.95);
 }
 
+.post-header-like-btn {
+  color: #ef4444 !important;
+}
+
+.post-header-like-btn svg {
+  color: #ef4444;
+}
+
 /* ============================================
    B. GALERIE MÉDIA (Carrousel)
    ============================================ */
@@ -82,7 +90,7 @@
   height: 400px;
   overflow: hidden;
   background: var(--muted);
-  margin-top: calc(env(safe-area-inset-top, 0px) + 66px);
+  margin-top: calc(env(safe-area-inset-top, 0px) + 50px);
   touch-action: pan-y;
 }
 
@@ -190,6 +198,23 @@
   margin-left: 12px;
 }
 
+/* Badge catégorie sur l'image hero */
+.post-hero-category-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* Image principale (hero) */
 .post-hero-image {
   position: relative;
@@ -236,8 +261,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 66px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -249,7 +274,7 @@
 .post-details-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 16px 20px;
 }
 
 .post-details-page.has-media .post-details-scrollable {
@@ -414,6 +439,83 @@
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* Section bouton d'action (Faire une demande) */
+.post-action-buttons-section {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 0;
+  width: 100%;
+}
+
+.post-action-buttons-section:has(> :only-child) {
+  gap: 0;
+}
+
+.post-action-button {
+  flex: 1;
+  padding: 14px 24px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.post-action-button-contact {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.post-action-button-contact:hover {
+  background: var(--border);
+  transform: translateY(-1px);
+}
+
+.post-action-button-apply {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.post-action-button-apply:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.post-action-button-apply.post-action-button-sent {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.post-action-button-apply.post-action-button-sent:hover {
+  background: var(--border);
+  transform: translateY(-1px);
+}
+
+.post-action-button-apply.post-action-button-accepted {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  cursor: default;
+}
+
+.post-action-button-apply.post-action-button-accepted:hover {
+  background: var(--primary);
+  transform: none;
+}
+
+.post-action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ============================================
@@ -1097,12 +1199,12 @@
 
   .post-hero-image {
     height: 300px;
-    margin-top: calc(env(safe-area-inset-top, 0px) + 56px);
+    margin-top: calc(env(safe-area-inset-top, 0px) + 45px);
   }
 
   .post-media-gallery {
     height: 300px;
-    margin-top: calc(env(safe-area-inset-top, 0px) + 56px);
+    margin-top: calc(env(safe-area-inset-top, 0px) + 45px);
   }
 
   .post-media-gallery.swipe-mode {
@@ -1119,7 +1221,7 @@
   }
 
   .post-details-content {
-    padding: 20px 16px;
+    padding: 12px 16px;
   }
 
   .post-title-main {
@@ -1167,6 +1269,24 @@
 
   .post-description-text {
     font-size: 15px;
+  }
+
+  .post-action-buttons-section {
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .post-action-button {
+    font-size: 13px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .post-action-button svg {
+    width: 18px;
+    height: 18px;
   }
 
   .applications-section,

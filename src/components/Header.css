@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -78,7 +78,7 @@
 
 /* Section 2: Barre de recherche */
 .header-section-2 {
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -129,7 +129,7 @@
 
 /* Section 3: Menu horizontal scrollable */
 .header-section-3 {
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   overflow-y: hidden;

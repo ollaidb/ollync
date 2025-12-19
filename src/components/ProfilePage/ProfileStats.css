@@ -1,9 +1,9 @@
 .profile-stats-container {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-bottom: 24px;
-  padding: 20px 0;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding: 12px 0;
   border-top: 1px solid #E5E7EB;
   border-bottom: 1px solid #E5E7EB;
 }

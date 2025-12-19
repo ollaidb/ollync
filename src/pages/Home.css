@@ -44,15 +44,15 @@
 
 .home-header-blue-block {
   position: fixed;
-  top: 12px;
+  top: 8px;
   left: 16px;
   right: 16px;
   z-index: 100;
   background-color: var(--card);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
   border-radius: 20px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -63,7 +63,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   gap: 12px;
 }
 
@@ -141,7 +141,7 @@
 
 /* Section 2: Barre de recherche */
 .home-search-container {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .home-search-bar {
@@ -151,7 +151,7 @@
   background-color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   cursor: pointer;
   transition: background-color 0.2s;
   gap: 12px;
@@ -242,10 +242,10 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 260px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
@@ -253,10 +253,10 @@
 
 @media (max-width: 768px) {
   .home-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 160px);
     padding-left: 16px;
     padding-right: 16px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
   }
 }
 
@@ -266,12 +266,12 @@
 
 /* Section Hero */
 .home-hero-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 768px) {
   .home-hero-section {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 }
 
@@ -294,14 +294,14 @@
 
 /* Sections d'annonces */
 .home-posts-section {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .home-section-title {
   font-size: 18px;
   font-weight: 600;
   color: var(--foreground);
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   text-transform: lowercase;
 }
 
@@ -401,13 +401,13 @@
   }
 
   .home-header-blue-block {
-    top: 8px;
+    top: 6px;
     left: 12px;
     right: 12px;
     padding-left: 16px;
     padding-right: 16px;
-    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-    padding-bottom: 10px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+    padding-bottom: 8px;
     border-radius: 16px;
   }
 
@@ -416,15 +416,15 @@
   }
 
   .home-header-top {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .home-search-container {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .home-search-bar {
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
 
   .home-search-placeholder {
@@ -446,12 +446,12 @@
   }
 
   .home-posts-section {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .home-section-title {
     font-size: 16px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .home-posts-grid {

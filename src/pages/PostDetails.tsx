@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share2, MessageCircle, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
+import { Heart, Share, MessageCircle, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
@@ -68,6 +68,13 @@ const PostDetails = () => {
   const [liked, setLiked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [matchRequest, setMatchRequest] = useState<{
+    id: string
+    status: string
+  } | null>(null)
+  const [showSendRequestModal, setShowSendRequestModal] = useState(false)
+  const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
+  const [loadingRequest, setLoadingRequest] = useState(false)
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
     title: string
@@ -106,6 +113,9 @@ const PostDetails = () => {
   useEffect(() => {
     if (post) {
       fetchRelatedPosts()
+      if (user) {
+        checkMatchRequest()
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post])
@@ -383,13 +393,113 @@ const PostDetails = () => {
     navigate(`/messages/new?post=${id}`)
   }
 
+  const checkMatchRequest = async () => {
+    if (!user || !id || !post) return
+
+    try {
+      const { data, error } = await supabase
+        .from('match_requests')
+        .select('id, status')
+        .eq('from_user_id', user.id)
+        .eq('related_post_id', id)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking match request:', error)
+        return
+      }
+
+      if (data) {
+        setMatchRequest({ id: data.id, status: data.status })
+      } else {
+        setMatchRequest(null)
+      }
+    } catch (error) {
+      console.error('Error checking match request:', error)
+    }
+  }
+
   const handleApply = () => {
     if (!user) {
       navigate('/auth/login')
       return
     }
-    // Action principale pour candidater/répondre
-    navigate(`/messages/new?post=${id}`)
+
+    // Si la demande est acceptée, ne rien faire
+    if (matchRequest && matchRequest.status === 'accepted') {
+      return
+    }
+
+    // Si une demande est déjà envoyée, afficher la modal d'annulation
+    if (matchRequest && matchRequest.status === 'pending') {
+      setShowCancelRequestModal(true)
+      return
+    }
+
+    // Sinon, afficher la modal d'envoi de demande
+    setShowSendRequestModal(true)
+  }
+
+  const handleSendRequest = async () => {
+    if (!user || !id || !post) return
+
+    setLoadingRequest(true)
+    try {
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .insert({
+          from_user_id: user.id,
+          to_user_id: post.user_id,
+          related_post_id: id,
+          status: 'pending'
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error sending match request:', error)
+        alert(`Erreur lors de l'envoi de la demande: ${error.message}`)
+        setLoadingRequest(false)
+        return
+      }
+
+      if (data) {
+        setMatchRequest({ id: data.id, status: data.status })
+        setShowSendRequestModal(false)
+      }
+    } catch (error) {
+      console.error('Error sending match request:', error)
+      alert('Erreur lors de l\'envoi de la demande')
+    } finally {
+      setLoadingRequest(false)
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    if (!matchRequest || !user) return
+
+    setLoadingRequest(true)
+    try {
+      const { error } = await supabase
+        .from('match_requests')
+        .update({ status: 'cancelled' })
+        .eq('id', matchRequest.id)
+        .eq('from_user_id', user.id)
+
+      if (error) {
+        console.error('Error cancelling match request:', error)
+        alert(`Erreur lors de l'annulation: ${error.message}`)
+        setLoadingRequest(false)
+        return
+      }
+
+      setMatchRequest(null)
+      setShowCancelRequestModal(false)
+    } catch (error) {
+      console.error('Error cancelling match request:', error)
+      alert('Erreur lors de l\'annulation de la demande')
+    } finally {
+      setLoadingRequest(false)
+    }
   }
 
   const handleOpenNavigation = () => {
@@ -540,9 +650,9 @@ const PostDetails = () => {
             <div className="post-details-header-spacer"></div>
             <div className="post-details-header-actions">
               <button className="post-header-action-btn" onClick={handleShare}>
-                <Share2 size={20} />
+                <Share size={20} />
               </button>
-              <button className="post-header-action-btn" onClick={handleLike}>
+              <button className="post-header-action-btn post-header-like-btn" onClick={handleLike}>
                 <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
               </button>
             </div>
@@ -558,6 +668,10 @@ const PostDetails = () => {
               <ImageOff size={64} />
             </div>
           )}
+          {/* Badge catégorie en haut à gauche */}
+          {post.category && (
+            <div className="post-hero-category-badge">{post.category.name}</div>
+          )}
           {/* Badge URGENT en bas à gauche */}
           {post.is_urgent && (
             <div className="post-urgent-badge">URGENT</div>
@@ -570,9 +684,6 @@ const PostDetails = () => {
             {/* Titre */}
             <div className="post-title-section">
               <h1 className="post-title-main">{post.title}</h1>
-              {post.is_urgent && !mainImage && (
-                <div className="post-urgent-badge-inline">URGENT</div>
-              )}
             </div>
 
             {/* Prix en grand */}
@@ -613,6 +724,44 @@ const PostDetails = () => {
                     <Navigation size={20} />
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Bouton d'action - Faire une demande */}
+            {!isOwner && (
+              <div className="post-action-buttons-section">
+                <button 
+                  className={`post-action-button post-action-button-apply ${matchRequest?.status === 'pending' ? 'post-action-button-sent' : matchRequest?.status === 'accepted' ? 'post-action-button-accepted' : ''}`}
+                  onClick={handleApply}
+                  disabled={loadingRequest || matchRequest?.status === 'accepted'}
+                >
+                  {matchRequest?.status === 'pending' ? (
+                    'Demande envoyée'
+                  ) : matchRequest?.status === 'accepted' ? (
+                    'Demande acceptée'
+                  ) : (
+                    'Faire une demande'
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Profil de l'auteur */}
+            {post.user && (
+              <div className="author-section">
+                <Link to={`/profile/public/${post.user.id}`} className="author-card">
+                  {post.user.avatar_url && (
+                    <img src={post.user.avatar_url} alt={post.user.full_name || ''} />
+                  )}
+                  <div>
+                    <div className="author-name">
+                      {post.user.full_name || post.user.username || 'Utilisateur'}
+                    </div>
+                    {post.user.bio && (
+                      <div className="author-bio">{post.user.bio}</div>
+                    )}
+                  </div>
+                </Link>
               </div>
             )}
 
@@ -668,26 +817,6 @@ const PostDetails = () => {
               </div>
             )}
 
-            {/* Profil de l'auteur */}
-            {post.user && (
-              <div className="author-section">
-                <h3>À propos de l'auteur</h3>
-                <Link to={`/profile/public/${post.user.id}`} className="author-card">
-                  {post.user.avatar_url && (
-                    <img src={post.user.avatar_url} alt={post.user.full_name || ''} />
-                  )}
-                  <div>
-                    <div className="author-name">
-                      {post.user.full_name || post.user.username || 'Utilisateur'}
-                    </div>
-                    {post.user.bio && (
-                      <div className="author-bio">{post.user.bio}</div>
-                    )}
-                  </div>
-                </Link>
-              </div>
-            )}
-
             {/* Autres annonces */}
             {relatedPosts.length > 0 && (
               <div className="other-posts-section">
@@ -712,6 +841,64 @@ const PostDetails = () => {
             Candidater
           </button>
         </div>
+
+        {/* Modal de confirmation d'envoi de demande */}
+        {showSendRequestModal && (
+          <div className="modal-overlay" onClick={() => setShowSendRequestModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Envoyer une demande de match ?</h3>
+              <p>
+                Vous allez envoyer une demande de match à l'auteur de cette annonce. 
+                Si votre demande est acceptée, vous pourrez commencer à échanger avec cette personne.
+              </p>
+              <div className="modal-actions">
+                <button 
+                  className="btn-cancel" 
+                  onClick={() => setShowSendRequestModal(false)}
+                  disabled={loadingRequest}
+                >
+                  Annuler
+                </button>
+                <button 
+                  className="btn-confirm" 
+                  onClick={handleSendRequest}
+                  disabled={loadingRequest}
+                >
+                  {loadingRequest ? 'Envoi...' : 'Envoyer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de confirmation d'annulation de demande */}
+        {showCancelRequestModal && (
+          <div className="modal-overlay" onClick={() => setShowCancelRequestModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Annuler cette demande ?</h3>
+              <p>
+                Vous allez annuler la demande de match que vous avez envoyée. 
+                Vous pourrez toujours renvoyer une nouvelle demande plus tard.
+              </p>
+              <div className="modal-actions">
+                <button 
+                  className="btn-cancel" 
+                  onClick={() => setShowCancelRequestModal(false)}
+                  disabled={loadingRequest}
+                >
+                  Non, garder la demande
+                </button>
+                <button 
+                  className="btn-confirm" 
+                  onClick={handleCancelRequest}
+                  disabled={loadingRequest}
+                >
+                  {loadingRequest ? 'Annulation...' : 'Oui, annuler'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de confirmation de suppression */}
         {showDeleteConfirm && (
