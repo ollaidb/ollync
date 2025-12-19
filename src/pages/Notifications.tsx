@@ -109,10 +109,21 @@ const Notifications = () => {
         }
         break
       case 'match_request_received':
+        // Les demandes reçues sont gérées dans Notifications
+        // L'utilisateur peut accepter/refuser depuis ici
+        // Pour l'instant, rediriger vers Messages où on pourra gérer la demande
+        // TODO: Ajouter un modal pour accepter/refuser directement depuis les notifications
+        navigate('/messages?filter=match_requests')
+        break
       case 'match_request_accepted':
+        // Notification quand quelqu'un a accepté notre demande
+        // Rediriger vers Messages > Matchs pour voir le match accepté
+        navigate('/messages?filter=matches')
+        break
       case 'match_request_declined':
       case 'match_request_sent':
-        navigate('/messages')
+        // Rediriger vers Messages > Demandes pour voir les demandes envoyées
+        navigate('/messages?filter=match_requests')
         break
       case 'application_received':
       case 'application_accepted':

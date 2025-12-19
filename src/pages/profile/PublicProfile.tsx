@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share2, MapPin, Plus, Instagram, Facebook, Star } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import { EmptyState } from '../../components/EmptyState'
+import PostCard from '../../components/PostCard'
 import './PublicProfile.css'
 
 interface ProfileData {
@@ -72,9 +73,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'annonces' | 'match' | 'avis'>('annonces')
+  const [activeTab, setActiveTab] = useState<'annonces' | 'avis'>('annonces')
   const [posts, setPosts] = useState<Post[]>([])
-  const [matchPosts, setMatchPosts] = useState<Post[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
@@ -195,27 +195,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setPostsLoading(false)
   }, [profileId])
 
-  const fetchMatchPosts = useCallback(async () => {
-    if (!profileId) return
-
-    setPostsLoading(true)
-    const fetchedPosts = await fetchPostsWithRelations({
-      userId: profileId,
-      status: 'active',
-      limit: 50,
-      orderBy: 'created_at',
-      orderDirection: 'desc'
-    })
-
-    // Filtrer uniquement les posts de type "creation-contenu"
-    const creationContenuPostsOnly = fetchedPosts.filter(post => {
-      const categorySlug = post.category?.slug
-      return categorySlug === 'creation-contenu'
-    })
-
-    setMatchPosts(creationContenuPostsOnly)
-    setPostsLoading(false)
-  }, [profileId])
 
   const fetchReviews = useCallback(async () => {
     if (!profileId) return
@@ -329,12 +308,10 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   useEffect(() => {
     if (profileId && activeTab === 'annonces') {
       fetchPosts()
-    } else if (profileId && activeTab === 'match') {
-      fetchMatchPosts()
     } else if (profileId && activeTab === 'avis') {
       fetchReviews()
     }
-  }, [profileId, activeTab, fetchPosts, fetchMatchPosts, fetchReviews])
+  }, [profileId, activeTab, fetchPosts, fetchReviews])
 
   if (loading) {
     return (
@@ -362,69 +339,86 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   return (
     <div className="public-profile-page">
-      {/* 1. HEADER - Retour */}
+      {/* 1. HEADER - Retour + Titre + Partager + Éditer */}
       <div className="profile-page-header">
         <BackButton className="profile-back-button" />
-      </div>
-
-      {/* 2. BLOC D'IDENTITÉ (fond bleu) */}
-      <div className="profile-identity-block">
-        {/* Icône partage sur le bloc */}
-        <button 
-          className="profile-share-button-on-block"
-          onClick={handleShare}
-          aria-label="Partager"
-        >
-          <Share2 size={24} />
-        </button>
-        {/* Photo de profil */}
-        <div 
-          className="profile-avatar-large"
-          onClick={() => setShowPhotoModal(true)}
-        >
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={displayName} />
-          ) : (
-            <div className="profile-avatar-placeholder">
-              {(displayName[0] || 'U').toUpperCase()}
-            </div>
+        <h1 className="profile-page-title">Mon compte</h1>
+        <div className="profile-header-actions">
+          <button 
+            className="profile-header-action-btn"
+            onClick={handleShare}
+            aria-label="Partager"
+          >
+            <Share size={20} />
+          </button>
+          {isOwnProfile && (
+            <button
+              className="profile-header-action-btn"
+              onClick={() => navigate('/profile/edit')}
+              aria-label="Éditer le profil"
+            >
+              <Edit size={20} />
+            </button>
           )}
         </div>
+      </div>
 
-        {/* Informations utilisateur */}
-        <div className="profile-user-info">
+      {/* 2. BLOC D'IDENTITÉ (structure compacte horizontale) */}
+      <div className="profile-identity-block">
+        {/* Section gauche : Photo + Bouton Suivre */}
+        <div className="profile-left-section">
+          <div className="profile-avatar-container">
+            <div 
+              className="profile-avatar-small"
+              onClick={() => setShowPhotoModal(true)}
+            >
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt={displayName} />
+              ) : (
+                <div className="profile-avatar-placeholder">
+                  {(displayName[0] || 'U').toUpperCase()}
+                </div>
+              )}
+            </div>
+            {/* Bouton Suivre (icône + seulement) */}
+            {!isOwnProfile && user && !isFavorite && (
+              <button
+                className="profile-follow-icon-btn"
+                onClick={handleToggleFavorite}
+                aria-label="Suivre"
+              >
+                <Plus size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Section centre : Nom et informations */}
+        <div className="profile-center-section">
           <h1 className="profile-full-name">{profile.full_name || 'nom de lutisateur'}</h1>
           {profile.username && (
             <p className="profile-username-text">{profile.username}</p>
           )}
           {profile.location && (
             <div className="profile-location-text">
-              <MapPin size={16} />
-              <span>{profile.location}</span>
+              <MapPin size={14} />
+              <span>{profile.location.split(',')[0].trim()}</span>
             </div>
           )}
         </div>
 
-        {/* Bouton Suivre */}
-        {!isOwnProfile && user && (
-          <button
-            className={`profile-follow-btn ${isFavorite ? 'following' : ''}`}
-            onClick={handleToggleFavorite}
-          >
-            <Plus size={18} />
-            <span>{isFavorite ? 'Abonné(e)' : 'Suivre'}</span>
-          </button>
-        )}
-
-        {/* Statistiques */}
-        <div className="profile-stats-cards">
-          <div className="profile-stat-card">
-            <div className="stat-number">{posts.length}</div>
-            <div className="stat-label-text">annonce</div>
-          </div>
-          <div className="profile-stat-card">
-            <div className="stat-number">{followersCount}</div>
-            <div className="stat-label-text">abonne</div>
+        {/* Section droite : Statistiques */}
+        <div className="profile-right-section">
+          <div className="profile-stats-inline">
+            <div className="profile-stat-item">
+              <div className="stat-number">{posts.length}</div>
+              <div className="stat-label-text">annonce{posts.length > 1 ? 's' : ''}</div>
+            </div>
+            <div className="profile-stat-divider"></div>
+            <div className="profile-stat-item">
+              <div className="stat-number">{followersCount}</div>
+              <div className="stat-label-text">abonné{followersCount > 1 ? 's' : ''}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -492,19 +486,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         )
       )}
 
-      {/* 6. MENU SECONDAIRE : Annonce / Match / Avis */}
+      {/* 6. MENU SECONDAIRE : Annonce / Avis */}
       <div className="profile-secondary-menu">
         <button
           className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
           onClick={() => setActiveTab('annonces')}
         >
           annonce
-        </button>
-        <button
-          className={`profile-menu-btn ${activeTab === 'match' ? 'active' : ''}`}
-          onClick={() => setActiveTab('match')}
-        >
-          match
         </button>
         <button
           className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
@@ -516,7 +504,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
       {/* 7. BLOC CONTENU (scrollable) */}
       <div className="profile-content-scrollable">
-        {/* Mode Annonce - Grille 2 colonnes */}
+        {/* Mode Annonce - Grille horizontale scrollable */}
         {activeTab === 'annonces' && (
           <div className="profile-content-annonces">
             {postsLoading ? (
@@ -524,54 +512,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             ) : posts.length === 0 ? (
               <EmptyState type="posts" />
             ) : (
-              <div className="posts-grid-2cols">
+              <div className="profile-posts-grid">
                 {posts.map((post) => (
-                  <div 
-                    key={post.id} 
-                    className="post-grid-item"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  >
-                    {post.images && post.images.length > 0 ? (
-                      <img src={post.images[0]} alt={post.title} />
-                    ) : (
-                      <div className="post-placeholder">
-                        <span>{post.title}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Mode Match - Liste verticale */}
-        {activeTab === 'match' && (
-          <div className="profile-content-match">
-            {postsLoading ? (
-              <div className="loading-state">Chargement...</div>
-            ) : matchPosts.length === 0 ? (
-              <EmptyState type="matches" />
-            ) : (
-              <div className="match-list">
-                {matchPosts.map((post) => (
-                  <div 
-                    key={post.id} 
-                    className="match-item"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  >
-                    {post.user?.avatar_url ? (
-                      <img src={post.user.avatar_url} alt={post.user.username || ''} className="match-avatar" />
-                    ) : (
-                      <div className="match-avatar-placeholder">
-                        {(post.user?.username?.[0] || 'U').toUpperCase()}
-                      </div>
-                    )}
-                    <div className="match-info">
-                      <div className="match-name">{post.user?.full_name || post.user?.username || 'Utilisateur'}</div>
-                      <div className="match-type">{post.category?.name || 'Match'}</div>
-                    </div>
-                  </div>
+                  <PostCard key={post.id} post={post} viewMode="grid" />
                 ))}
               </div>
             )}

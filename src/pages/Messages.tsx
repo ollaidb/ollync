@@ -104,6 +104,14 @@ const Messages = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [showCreateGroup, setShowCreateGroup] = useState(false)
 
+  // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
+  useEffect(() => {
+    const filterParam = searchParams.get('filter')
+    if (filterParam && ['all', 'posts', 'matches', 'match_requests', 'groups', 'archived'].includes(filterParam)) {
+      setActiveFilter(filterParam as FilterType)
+    }
+  }, [searchParams])
+
   useEffect(() => {
     if (user) {
       if (postId) {
@@ -368,16 +376,24 @@ const Messages = () => {
     }
   }
 
-  // Charger les match_requests (demandes envoyées et reçues)
+  // Charger les match_requests (demandes envoyées uniquement pour l'affichage dans Messages)
+  // 
+  // LOGIQUE DE RÉPARTITION DES MATCH_REQUESTS :
+  // - Messages > "Demandes" : Affiche uniquement les demandes ENVOYÉES (from_user_id = current_user) avec status='pending'
+  // - Messages > "Matchs" : Affiche uniquement les matchs ACCEPTÉS (status='accepted' ET from_user_id = current_user)
+  // - Notifications : Affiche les notifications pour :
+  //   * match_request_received : Quand on RECOIT une demande (to_user_id = current_user)
+  //   * match_request_accepted : Quand quelqu'un ACCEPTE notre demande (from_user_id = current_user ET status='accepted')
+  //   Les demandes reçues peuvent être acceptées/refusées depuis les Notifications
   const loadMatchRequests = useCallback(async () => {
     if (!user) return []
 
     try {
-      // Charger toutes les demandes où l'utilisateur est impliqué (envoyées ou reçues)
+      // Charger uniquement les demandes ENVOYÉES par l'utilisateur (from_user_id = current_user)
       const { data: requestsData, error } = await supabase
         .from('match_requests')
         .select('*')
-        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .eq('from_user_id', user.id) // Seulement les demandes envoyées
         .in('status', ['pending', 'accepted'])
         .order('created_at', { ascending: false })
 
@@ -691,22 +707,24 @@ const Messages = () => {
 
 
   // Filtrer les match_requests selon l'onglet actif
+  // Dans Messages, on affiche uniquement les demandes ENVOYÉES
   const filteredMatchRequests = matchRequests.filter((request) => {
     if (activeFilter === 'match_requests') {
-      // Demandes : uniquement les demandes en attente (pending)
-      return request.status === 'pending'
+      // Demandes : uniquement les demandes ENVOYÉES en attente (pending)
+      // request_type est déjà 'sent' car on charge seulement from_user_id = current_user
+      return request.status === 'pending' && request.request_type === 'sent'
     }
     return false
   })
 
   // Filtrer les matches selon l'onglet actif
-  // L'onglet "Match" affiche toutes les match_requests acceptées
+  // L'onglet "Match" affiche uniquement les matchs ACCEPTÉS (demandes qu'on a envoyées et qui ont été acceptées)
   // Les conversations créées à partir de ces matches apparaîtront aussi dans "Tout" si elles ont des messages
   const filteredMatches = matchRequests.filter((request) => {
     if (activeFilter === 'matches') {
-      // Match : afficher toutes les match_requests avec status='accepted'
-      // Même si une conversation existe, le match reste visible dans "Match"
-      return request.status === 'accepted'
+      // Match : afficher uniquement les match_requests ACCEPTÉES qu'on a envoyées
+      // (status='accepted' ET from_user_id = current_user)
+      return request.status === 'accepted' && request.request_type === 'sent'
     }
     return false
   })
