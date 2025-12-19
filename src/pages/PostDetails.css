@@ -171,7 +171,7 @@
 /* Badge URGENT sur la galerie */
 .post-urgent-badge {
   position: absolute;
-  bottom: 16px;
+  bottom: 60px;
   left: 16px;
   background: var(--destructive);
   color: var(--destructive-foreground);
@@ -182,7 +182,7 @@
   letter-spacing: 0.5px;
   text-transform: uppercase;
   box-shadow: var(--shadow-md);
-  z-index: 10;
+  z-index: 11;
 }
 
 .post-urgent-badge-inline {
@@ -211,11 +211,11 @@
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
-  z-index: 10;
+  z-index: 11;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Image principale (hero) */
+/* Image principale (hero) avec carrousel */
 .post-hero-image {
   position: relative;
   width: 100%;
@@ -226,12 +226,81 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  touch-action: pan-y;
+}
+
+.post-hero-image-carousel {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+.post-hero-image-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.post-hero-image-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .post-hero-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Compteur d'images */
+.post-hero-image-counter {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+/* Indicateurs de pagination */
+.post-hero-image-indicators {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.post-hero-image-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.post-hero-image-indicator.active {
+  width: 24px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.post-hero-image-indicator:hover {
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .post-hero-image-placeholder {
@@ -439,6 +508,74 @@
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* Section informations supplémentaires */
+.post-additional-info-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--card);
+  border-radius: 12px;
+}
+
+.post-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.post-info-item:first-child {
+  padding-top: 0;
+}
+
+.post-info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.post-info-value {
+  font-size: 16px;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.post-info-value svg {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.post-address-nav-btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.post-address-nav-btn-small:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
 }
 
 /* Section bouton d'action (Faire une demande) */
@@ -1202,6 +1339,34 @@
     margin-top: calc(env(safe-area-inset-top, 0px) + 45px);
   }
 
+  .post-hero-image-counter {
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .post-hero-image-indicators {
+    bottom: 12px;
+    gap: 5px;
+  }
+
+  .post-hero-image-indicator {
+    width: 6px;
+    height: 6px;
+  }
+
+  .post-hero-image-indicator.active {
+    width: 20px;
+  }
+
+  .post-urgent-badge {
+    bottom: 50px;
+    left: 12px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
   .post-media-gallery {
     height: 300px;
     margin-top: calc(env(safe-area-inset-top, 0px) + 45px);
@@ -1269,6 +1434,28 @@
 
   .post-description-text {
     font-size: 15px;
+  }
+
+  .post-additional-info-section {
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .post-info-item {
+    padding: 12px 0;
+  }
+
+  .post-info-label {
+    font-size: 12px;
+  }
+
+  .post-info-value {
+    font-size: 14px;
+  }
+
+  .post-address-nav-btn-small {
+    font-size: 13px;
+    padding: 6px 12px;
   }
 
   .post-action-buttons-section {

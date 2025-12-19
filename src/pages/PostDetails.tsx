@@ -29,6 +29,8 @@ interface Post {
   is_urgent?: boolean
   status: string
   user_id: string
+  payment_type?: string | null
+  media_type?: string | null
   user?: {
     id: string
     username?: string | null
@@ -75,6 +77,9 @@ const PostDetails = () => {
   const [showSendRequestModal, setShowSendRequestModal] = useState(false)
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
     title: string
@@ -119,6 +124,11 @@ const PostDetails = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post])
+
+  // Réinitialiser l'index quand les images changent
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [post?.images])
 
   const fetchPost = async () => {
     if (!id) return
@@ -640,6 +650,32 @@ const PostDetails = () => {
   const mainImage = images.length > 0 ? images[0] : null
   const hasAddress = post.location_address || (post.location_lat && post.location_lng)
 
+  // Fonctions pour le swipe des images
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe && images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    }
+    if (isRightSwipe && images.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+  }
+
   return (
     <div className="app">
       <div className="post-details-page has-hero-image">
@@ -659,10 +695,45 @@ const PostDetails = () => {
           </div>
         </div>
 
-        {/* Image principale (toujours affichée, avec placeholder si pas d'image) */}
-        <div className="post-hero-image">
-          {mainImage ? (
-            <img src={mainImage} alt={post.title} />
+        {/* Carrousel d'images avec swipe */}
+        <div 
+          className="post-hero-image"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {images.length > 0 ? (
+            <>
+              <div 
+                className="post-hero-image-carousel"
+                style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+              >
+                {images.map((image, index) => (
+                  <div key={index} className="post-hero-image-slide">
+                    <img src={image} alt={`${post.title} - Image ${index + 1}`} />
+                  </div>
+                ))}
+              </div>
+              {/* Compteur d'images */}
+              {images.length > 1 && (
+                <div className="post-hero-image-counter">
+                  {currentImageIndex + 1} / {images.length}
+                </div>
+              )}
+              {/* Indicateurs de pagination */}
+              {images.length > 1 && (
+                <div className="post-hero-image-indicators">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      className={`post-hero-image-indicator ${index === currentImageIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentImageIndex(index)}
+                      aria-label={`Aller à l'image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <div className="post-hero-image-placeholder">
               <ImageOff size={64} />
@@ -693,39 +764,10 @@ const PostDetails = () => {
 
             {/* Informations secondaires */}
             <div className="post-meta-info">
-              {post.location && (
-                <span className="post-meta-item">
-                  <MapPin size={16} /> {post.location}
-                </span>
-              )}
               <span className="post-meta-item">
                 {formatRelativeDate(post.created_at)}
               </span>
             </div>
-
-            {/* Carte d'information avec adresse et GPS */}
-            {hasAddress && (
-              <div className="post-address-card">
-                <div className="post-address-content">
-                  {post.location_address && (
-                    <div className="post-address-text">
-                      <MapPin size={18} />
-                      <span>{post.location_address}</span>
-                    </div>
-                  )}
-                  {post.location_lat && post.location_lng && (
-                    <div className="post-address-coords">
-                      {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
-                    </div>
-                  )}
-                </div>
-                {post.location_lat && post.location_lng && (
-                  <button className="post-address-nav-btn" onClick={handleOpenNavigation}>
-                    <Navigation size={20} />
-                  </button>
-                )}
-              </div>
-            )}
 
             {/* Bouton d'action - Faire une demande */}
             {!isOwner && (
@@ -769,6 +811,108 @@ const PostDetails = () => {
             <div className="post-description-section">
               <h3 className="post-description-title">Description</h3>
               <p className="post-description-text">{post.description}</p>
+            </div>
+
+            {/* Toutes les autres informations */}
+            <div className="post-additional-info-section">
+              {/* Catégorie et sous-catégorie */}
+              {(post.category || post.sub_category) && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Catégorie :</span>
+                  <span className="post-info-value">
+                    {post.category?.name}
+                    {post.sub_category && ` > ${post.sub_category.name}`}
+                  </span>
+                </div>
+              )}
+
+              {/* Réseau social */}
+              {post.media_type && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Réseau :</span>
+                  <span className="post-info-value">{post.media_type}</span>
+                </div>
+              )}
+
+              {/* Moyen de paiement */}
+              {post.payment_type && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Moyen de paiement :</span>
+                  <span className="post-info-value">
+                    {post.payment_type === 'benevole' ? 'Bénévole' : 
+                     post.payment_type === 'prix' ? 'Payant' : 
+                     post.payment_type === 'echange' ? 'Échange' : 
+                     post.payment_type === 'pourcentage' ? 'Pourcentage' : 
+                     post.payment_type}
+                  </span>
+                </div>
+              )}
+
+              {/* Localisation */}
+              {post.location && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Localisation :</span>
+                  <span className="post-info-value">
+                    <MapPin size={16} /> {post.location}
+                  </span>
+                </div>
+              )}
+
+              {/* Adresse complète */}
+              {hasAddress && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Adresse :</span>
+                  <div className="post-info-value">
+                    {post.location_address && (
+                      <div className="post-address-text">
+                        <MapPin size={16} />
+                        <span>{post.location_address}</span>
+                      </div>
+                    )}
+                    {post.location_lat && post.location_lng && (
+                      <div className="post-address-coords">
+                        {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
+                      </div>
+                    )}
+                    {post.location_lat && post.location_lng && (
+                      <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
+                        <Navigation size={18} />
+                        Itinéraire
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Date nécessaire */}
+              {post.needed_date && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Date nécessaire :</span>
+                  <span className="post-info-value">
+                    {new Date(post.needed_date).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {/* Nombre de personnes */}
+              {post.number_of_people && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Nombre de personnes :</span>
+                  <span className="post-info-value">{post.number_of_people} personne{post.number_of_people > 1 ? 's' : ''}</span>
+                </div>
+              )}
+
+              {/* Livraison disponible */}
+              {post.delivery_available && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Livraison :</span>
+                  <span className="post-info-value">Disponible</span>
+                </div>
+              )}
             </div>
 
             {/* Section candidatures pour les matchs (propriétaire uniquement) */}
