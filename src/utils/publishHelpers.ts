@@ -29,6 +29,92 @@ interface FormData {
   [key: string]: any
 }
 
+interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
+/**
+ * Valide tous les champs obligatoires pour la publication d'une annonce
+ * @param formData - Les données du formulaire
+ * @param requireSocialNetwork - Si true, le réseau social est obligatoire
+ * @returns Un objet avec isValid (boolean) et errors (string[])
+ */
+export const validatePublishForm = (
+  formData: FormData,
+  requireSocialNetwork: boolean = false
+): ValidationResult => {
+  const errors: string[] = []
+
+  // Catégorie et sous-catégorie
+  if (!formData.category) {
+    errors.push('La catégorie est obligatoire')
+  }
+  if (!formData.subcategory) {
+    errors.push('La sous-catégorie est obligatoire')
+  }
+
+  // Titre
+  if (!formData.title || formData.title.trim().length === 0) {
+    errors.push('Le titre est obligatoire')
+  }
+
+  // Description
+  if (!formData.description || formData.description.trim().length === 0) {
+    errors.push('La description est obligatoire')
+  }
+
+  // Lieu
+  if (!formData.location || formData.location.trim().length === 0) {
+    errors.push('Le lieu est obligatoire')
+  }
+
+  // Date de besoin
+  if (!formData.deadline || formData.deadline.trim().length === 0) {
+    errors.push('La date de besoin est obligatoire')
+  }
+
+  // Photo (au moins une image)
+  if (!formData.images || formData.images.length === 0) {
+    errors.push('Au moins une photo est obligatoire')
+  }
+
+  // Moyen de paiement
+  if (!formData.exchange_type || formData.exchange_type.trim().length === 0) {
+    errors.push('Le moyen de paiement est obligatoire')
+  }
+
+  // Réseau social (seulement si requis)
+  if (requireSocialNetwork && (!formData.socialNetwork || formData.socialNetwork.trim().length === 0)) {
+    errors.push('Le réseau social est obligatoire')
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
+}
+
+// Fonction pour déterminer si le champ "Réseau social" doit être affiché
+export const shouldShowSocialNetwork = (
+  categorySlug: string | null | undefined,
+  subcategorySlug: string | null | undefined
+): boolean => {
+  if (!categorySlug || !subcategorySlug) return false
+
+  // Catégories où le réseau social est pertinent
+  const relevantCategories: Record<string, string[]> = {
+    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
+    'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
+    'montage': ['montage', 'live'],
+    'services': ['coaching-contenu', 'strategie-editoriale', 'aide-live-moderation'],
+    'vente': ['comptes', 'pack-compte-contenu']
+  }
+
+  const relevantSubcategories = relevantCategories[categorySlug]
+  return relevantSubcategories ? relevantSubcategories.includes(subcategorySlug) : false
+}
+
 export const getMyLocation = async (
   _formData: FormData,
   setFormData: (updates: Partial<FormData>) => void
@@ -103,9 +189,14 @@ export const handlePublish = async (
     return
   }
 
-  // Validation
-  if (!formData.category || !formData.title || !formData.description) {
-    alert('Veuillez remplir tous les champs obligatoires')
+  // Déterminer si le réseau social est requis
+  // formData.category et formData.subcategory sont déjà des slugs
+  const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
+
+  // Validation complète des champs obligatoires
+  const validation = validatePublishForm(formData, requireSocialNetwork)
+  if (!validation.isValid) {
+    alert(validation.errors.join('\n'))
     return
   }
 

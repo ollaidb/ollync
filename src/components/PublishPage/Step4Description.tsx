@@ -1,3 +1,4 @@
+import { shouldShowSocialNetwork } from '../../utils/publishHelpers'
 import './Step4Description.css'
 
 interface FormData {
@@ -38,26 +39,6 @@ const SOCIAL_NETWORKS = [
   { id: 'autre', name: 'Autre' }
 ]
 
-// Fonction pour déterminer si le champ "Réseau social" doit être affiché
-const shouldShowSocialNetwork = (
-  categorySlug: string | null | undefined,
-  subcategorySlug: string | null | undefined
-): boolean => {
-  if (!categorySlug || !subcategorySlug) return false
-
-  // Catégories où le réseau social est pertinent
-  const relevantCategories: Record<string, string[]> = {
-    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
-    'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
-    'montage': ['montage', 'live'],
-    'services': ['coaching-contenu', 'strategie-editoriale', 'aide-live-moderation'],
-    'vente': ['comptes', 'pack-compte-contenu']
-  }
-
-  const relevantSubcategories = relevantCategories[categorySlug]
-  return relevantSubcategories ? relevantSubcategories.includes(subcategorySlug) : false
-}
-
 export const Step4Description = ({ 
   formData, 
   onUpdateFormData, 
@@ -65,12 +46,17 @@ export const Step4Description = ({
   selectedCategory,
   selectedSubcategory
 }: Step4DescriptionProps) => {
-  const canContinue = formData.title.trim().length > 0 && formData.description.trim().length > 0
-  
   const showSocialNetwork = shouldShowSocialNetwork(
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
+  
+  // Validation complète des champs obligatoires de cette étape
+  const canContinue = 
+    formData.title.trim().length > 0 && 
+    formData.description.trim().length > 0 &&
+    formData.exchange_type.trim().length > 0 &&
+    (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
 
   return (
     <div className="step4-description">
@@ -100,7 +86,7 @@ export const Step4Description = ({
 
       {showSocialNetwork && (
         <div className="form-group">
-          <label className="form-label">Réseau social concerné</label>
+          <label className="form-label">Réseau social concerné *</label>
           <select
             className="form-select"
             value={formData.socialNetwork || ''}
@@ -130,7 +116,7 @@ export const Step4Description = ({
       </div>
 
       <div className="form-group">
-        <label className="form-label">Type d'échange</label>
+        <label className="form-label">Moyen de paiement *</label>
         <select
           className="form-select"
           value={formData.exchange_type}

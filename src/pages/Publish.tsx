@@ -4,7 +4,7 @@ import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
-import { getMyLocation, handlePublish } from '../utils/publishHelpers'
+import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
@@ -90,6 +90,12 @@ export default function Publish() {
     subSubCategorySlug,
     subSubSubCategorySlug
   )
+
+  // Validation des champs obligatoires
+  const requireSocialNetwork = shouldShowSocialNetwork(categorySlug, subcategorySlug)
+  const validation = useMemo(() => {
+    return validatePublishForm(formData, requireSocialNetwork)
+  }, [formData, requireSocialNetwork])
 
   const updateFormData = (updates: Partial<typeof formData>) => {
     setFormData({ ...formData, ...updates })
@@ -253,6 +259,7 @@ export default function Publish() {
           onSaveDraft={() => handlePublishPost('draft')}
           onPreview={() => {}}
           onPublish={() => handlePublishPost('active')}
+          isValid={validation.isValid}
         />
       )}
     </div>

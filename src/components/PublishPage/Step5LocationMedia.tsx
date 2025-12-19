@@ -32,6 +32,12 @@ interface Step5LocationMediaProps {
 export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation }: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
+  
+  // Validation des champs obligatoires de cette étape
+  const isValid = 
+    formData.location.trim().length > 0 &&
+    formData.deadline.trim().length > 0 &&
+    formData.images.length > 0
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -114,7 +120,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
       <h2 className="step-title">Localisation et médias</h2>
 
       <div className="form-group">
-        <label className="form-label">Localisation</label>
+        <label className="form-label">Lieu *</label>
         <div className="input-with-icon">
           <MapPin size={20} className="input-icon" />
           <input
@@ -134,7 +140,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
       </div>
 
       <div className="form-group">
-        <label className="form-label">Images</label>
+        <label className="form-label">Photo *</label>
         <div className="images-grid">
           {formData.images.map((url, index) => (
             <div key={index} className="image-preview">
@@ -175,7 +181,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
       </div>
 
       <div className="form-group">
-        <label className="form-label">Date limite</label>
+        <label className="form-label">Date de besoin *</label>
         <input
           type="date"
           className="form-input"
