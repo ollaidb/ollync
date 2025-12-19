@@ -27,17 +27,65 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.notifications-header-content {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-bottom: 16px;
+  .notifications-header-content {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+
+/* Menu de filtres */
+.notifications-filters {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 0 20px 8px 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.notifications-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.notifications-filter-btn {
+  background-color: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  position: relative;
+  gap: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.notifications-filter-btn:hover {
+  background-color: #eeeeee;
+  border-color: #ddd;
+}
+
+.notifications-filter-btn.active {
+  background-color: #667eea;
+  border-color: #667eea;
+  color: #ffffff;
+}
+
+.notifications-filter-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .notifications-header {
@@ -276,7 +324,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 140px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   padding-left: 0;
   padding-right: 0;
@@ -410,32 +458,56 @@
 /* Responsive - Mobile First */
 @media (max-width: 768px) {
   /* Header optimisé mobile */
+  .notifications-header-fixed {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
   .notifications-header-content {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
     padding-left: 12px;
     padding-right: 12px;
-    padding-bottom: 10px;
-    min-height: 44px;
+    padding-bottom: 4px;
+    min-height: 40px;
   }
 
   .notifications-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     width: calc(100% - 100px);
   }
 
   .notifications-title-centered {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .notifications-header-not-connected {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: 10px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+    padding-bottom: 8px;
   }
 
-  /* Zone scrollable optimisée */
+  /* Menu de filtres mobile - taille augmentée */
+  .notifications-filters {
+    padding: 0 12px 6px 12px;
+    gap: 8px;
+  }
+
+  .notifications-filter-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+    gap: 5px;
+    border-radius: 18px;
+    min-height: 36px;
+  }
+
+  .notifications-filter-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Zone scrollable optimisée - distance d'une ligne double mobile (20px) après le menu */
+  /* Calcul mobile: header (~32px) + menu (~44px) + ligne double mobile (20px) = 96px */
   .notifications-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 96px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
     padding-left: 0;
     padding-right: 0;
@@ -443,27 +515,46 @@
 
   .notifications-list {
     padding: 0 12px;
+    margin-top: 0;
+    padding-top: 0;
   }
 
-  /* Groupes de dates */
+  /* Groupes de dates - réduit l'espace */
   .notifications-date-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+  }
+
+  .notifications-date-group:first-child {
+    margin-top: 0;
+    padding-top: 0;
   }
 
   .notifications-date-header {
     font-size: 12px;
     padding-left: 0;
     padding-right: 0;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    margin-top: 0;
   }
 
-  /* Items de notification optimisés mobile */
+  /* Supprimer tout espace supplémentaire avant le premier groupe */
+  .notifications-list > .notifications-date-group:first-child {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .notifications-list > .notifications-date-group:first-child > .notifications-date-header {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  /* Items de notification optimisés mobile - réduit l'espace */
   .notification-item {
-    padding: 12px 16px;
-    min-height: 60px;
+    padding: 10px 14px;
+    min-height: 56px;
     gap: 10px;
     border-radius: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.05);
   }
 
@@ -561,13 +652,50 @@
 /* Très petits écrans (iPhone SE, etc.) */
 @media (max-width: 375px) {
   .notifications-header-content {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
     padding-left: 10px;
     padding-right: 10px;
+    padding-bottom: 2px;
   }
 
   .notifications-title {
-    font-size: 20px;
+    font-size: 18px;
     width: calc(100% - 90px);
+  }
+
+  .notifications-filters {
+    padding: 0 10px 4px 10px;
+    gap: 6px;
+  }
+
+  .notifications-filter-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+    min-height: 34px;
+  }
+
+  .notifications-filter-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Zone scrollable avec ligne double sur très petits écrans */
+  .notifications-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 92px);
+  }
+
+  .notifications-date-group {
+    margin-bottom: 12px;
+  }
+
+  .notifications-date-header {
+    margin-bottom: 6px;
+  }
+
+  .notification-item {
+    padding: 8px 12px;
+    min-height: 52px;
+    margin-bottom: 4px;
   }
 
   .notifications-date-header {

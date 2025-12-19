@@ -924,5 +924,11 @@ CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
 -- ✅ Nouveaux types de notifications (match_requests, applications, groupes, etc.)
 -- ✅ Structure optimisée pour l'affichage mobile
 -- ✅ Colonnes supplémentaires (sender_id, group_key, metadata)
+--
+-- ⚠️ IMPORTANT : Pour optimiser les performances des filtres de notifications
+-- (Tout, Like, Commentaire, Match, Actualité), exécutez également le script :
+-- optimize_notifications_filters.sql
+--
+-- Voir README_NOTIFICATIONS_FILTERS.md pour plus d'informations
 -- ============================================
 

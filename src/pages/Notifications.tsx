@@ -8,6 +8,8 @@ import { useAuth } from '../hooks/useSupabase'
 import { EmptyState } from '../components/EmptyState'
 import './Notifications.css'
 
+type FilterType = 'all' | 'like' | 'comment' | 'match' | 'news'
+
 interface Notification {
   id: string
   type: string
@@ -27,6 +29,7 @@ const Notifications = () => {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
 
   useEffect(() => {
     if (!user) {
@@ -196,11 +199,35 @@ const Notifications = () => {
     }
   }
 
+  // Filtrer les notifications selon le filtre actif
+  const filteredNotifications = useMemo(() => {
+    if (activeFilter === 'all') {
+      return notifications
+    } else if (activeFilter === 'like') {
+      return notifications.filter(n => n.type === 'like')
+    } else if (activeFilter === 'comment') {
+      return notifications.filter(n => n.type === 'comment')
+    } else if (activeFilter === 'match') {
+      return notifications.filter(n => 
+        n.type === 'match_request_accepted' || 
+        n.type === 'match_request_received' ||
+        n.type === 'match_request_sent'
+      )
+    } else if (activeFilter === 'news') {
+      return notifications.filter(n => 
+        n.type === 'new_post' || 
+        n.type === 'post_updated' || 
+        n.type === 'post_closed'
+      )
+    }
+    return notifications
+  }, [notifications, activeFilter])
+
   // Grouper les notifications par date
   const groupedNotifications = useMemo(() => {
     const groups: { [key: string]: Notification[] } = {}
     
-    notifications.forEach(notification => {
+    filteredNotifications.forEach(notification => {
       const dateKey = formatDateHeader(notification.created_at)
       if (!groups[dateKey]) {
         groups[dateKey] = []
@@ -215,7 +242,7 @@ const Notifications = () => {
       const dateB = new Date(b[1][0].created_at).getTime()
       return dateB - dateA
     })
-  }, [notifications])
+  }, [filteredNotifications])
 
   if (!user) {
     return (
@@ -258,6 +285,44 @@ const Notifications = () => {
             <h1 className="notifications-title">Notifications</h1>
             <div className="notifications-header-spacer"></div>
           </div>
+          
+          {/* Menu de filtres */}
+          <div className="notifications-filters">
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('all')}
+            >
+              Tout
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'like' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('like')}
+            >
+              <Heart size={16} />
+              Like
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'comment' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('comment')}
+            >
+              <MessageCircle size={16} />
+              Commentaire
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'match' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('match')}
+            >
+              <UserCheck size={16} />
+              Match
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'news' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('news')}
+            >
+              <FileText size={16} />
+              Actualité
+            </button>
+          </div>
         </div>
 
         {/* Zone scrollable */}
@@ -268,7 +333,7 @@ const Notifications = () => {
               <Loader className="spinner-large" size={48} />
               <p>Chargement...</p>
             </div>
-          ) : notifications.length === 0 ? (
+          ) : filteredNotifications.length === 0 ? (
             <EmptyState type="notifications" />
           ) : (
             <div className="notifications-list">
