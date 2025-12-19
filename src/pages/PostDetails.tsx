@@ -407,8 +407,8 @@ const PostDetails = () => {
     if (!user || !id || !post) return
 
     try {
-      const { data, error } = await supabase
-        .from('match_requests')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
         .select('id, status')
         .eq('from_user_id', user.id)
         .eq('related_post_id', id)
@@ -485,12 +485,12 @@ const PostDetails = () => {
   }
 
   const handleCancelRequest = async () => {
-    if (!matchRequest || !user) return
+    if (!matchRequest || !user || !matchRequest.id) return
 
     setLoadingRequest(true)
     try {
-      const { error } = await supabase
-        .from('match_requests')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('match_requests') as any)
         .update({ status: 'cancelled' })
         .eq('id', matchRequest.id)
         .eq('from_user_id', user.id)
@@ -647,7 +647,6 @@ const PostDetails = () => {
     )
   }
 
-  const mainImage = images.length > 0 ? images[0] : null
   const hasAddress = post.location_address || (post.location_lat && post.location_lng)
 
   // Fonctions pour le swipe des images
@@ -755,6 +754,36 @@ const PostDetails = () => {
             {/* Titre */}
             <div className="post-title-section">
               <h1 className="post-title-main">{post.title}</h1>
+            </div>
+
+            {/* Informations sous le titre */}
+            <div className="post-title-meta">
+              {post.location && (
+                <span className="post-title-meta-item">
+                  <MapPin size={16} /> {post.location}
+                </span>
+              )}
+              {post.payment_type && (
+                <span className="post-title-meta-item">
+                  {post.payment_type === 'benevole' ? 'Bénévole' : 
+                   post.payment_type === 'prix' ? 'Payant' : 
+                   post.payment_type === 'echange' ? 'Échange' : 
+                   post.payment_type === 'pourcentage' ? 'Pourcentage' : 
+                   post.payment_type}
+                </span>
+              )}
+              <span className="post-title-meta-item">
+                Publié {formatRelativeDate(post.created_at)}
+              </span>
+              {post.needed_date && (
+                <span className="post-title-meta-item">
+                  Pour le {new Date(post.needed_date).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              )}
             </div>
 
             {/* Prix en grand */}

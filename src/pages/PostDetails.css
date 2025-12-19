@@ -370,6 +370,27 @@
   min-width: 0;
 }
 
+/* Informations sous le titre */
+.post-title-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+.post-title-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.post-title-meta-item svg {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
 /* Catégorie / Sous-catégorie */
 .post-category-breadcrumb {
   display: flex;
@@ -1391,6 +1412,21 @@
 
   .post-title-main {
     font-size: 22px;
+  }
+
+  .post-title-meta {
+    font-size: 13px;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .post-title-meta-item {
+    gap: 4px;
+  }
+
+  .post-title-meta-item svg {
+    width: 14px;
+    height: 14px;
   }
 
   .post-price-main {
