@@ -223,7 +223,6 @@
 
 .home-category-card:hover .home-category-icon {
   background-color: var(--accent);
-  transform: scale(1.05);
 }
 
 .home-category-name {

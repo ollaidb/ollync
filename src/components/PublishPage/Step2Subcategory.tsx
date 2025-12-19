@@ -1,4 +1,5 @@
 import { PublicationType } from '../../constants/publishData'
+import { ChevronRight } from 'lucide-react'
 import './Step2Subcategory.css'
 
 interface Step2SubcategoryProps {
@@ -16,6 +17,8 @@ export const Step2Subcategory = ({
 }: Step2SubcategoryProps) => {
   if (!selectedCategory) return null
 
+  const Icon = selectedCategory.icon
+
   return (
     <div className="step2-subcategory">
       <h2 className="step-title">Choisissez une sous-catégorie</h2>
@@ -27,7 +30,12 @@ export const Step2Subcategory = ({
             onClick={() => onSelectSubcategory(subcategory.id)}
             style={{ '--category-color': selectedCategory.color } as React.CSSProperties}
           >
-            <span className="subcategory-name">{subcategory.name}</span>
+            <div className="subcategory-icon-wrapper">
+              <Icon size={24} />
+            </div>
+            <div className="subcategory-content">
+              <span className="subcategory-name">{subcategory.name}</span>
+            </div>
           </button>
         ))}
       </div>

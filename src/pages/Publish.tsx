@@ -44,6 +44,7 @@ export default function Publish() {
     location_address: '',
     location_visible_to_participants_only: false,
     exchange_type: '',
+    exchange_service: '',
     urgent: false,
     images: [] as string[],
     video: null as string | null,

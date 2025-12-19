@@ -32,12 +32,6 @@ interface Step5LocationMediaProps {
 export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation }: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
-  
-  // Validation des champs obligatoires de cette étape
-  const isValid = 
-    formData.location.trim().length > 0 &&
-    formData.deadline.trim().length > 0 &&
-    formData.images.length > 0
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files

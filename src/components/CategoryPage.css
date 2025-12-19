@@ -76,9 +76,6 @@
   transition: transform 0.2s ease;
 }
 
-.category-sparkle-icon:hover {
-  transform: scale(1.1);
-}
 
 /* 2. Titre de la catégorie */
 .category-title-section {

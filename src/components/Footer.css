@@ -61,7 +61,6 @@
 }
 
 .footer-center:hover .footer-center-icon-wrapper {
-  transform: scale(1.1);
   box-shadow: var(--shadow-2xl);
 }
 

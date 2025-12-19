@@ -8,6 +8,7 @@ interface FormData {
   socialNetwork?: string
   price: string
   exchange_type: string
+  exchange_service?: string
   category?: string | null
   subcategory?: string | null
   subSubCategory?: string | null
@@ -56,6 +57,8 @@ export const Step4Description = ({
     formData.title.trim().length > 0 && 
     formData.description.trim().length > 0 &&
     formData.exchange_type.trim().length > 0 &&
+    (formData.exchange_type !== 'prix' || (formData.price && parseFloat(formData.price) > 0)) &&
+    (formData.exchange_type !== 'echange' || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
 
   return (
@@ -103,31 +106,54 @@ export const Step4Description = ({
       )}
 
       <div className="form-group">
-        <label className="form-label">Prix (€)</label>
-        <input
-          type="number"
-          className="form-input"
-          placeholder="0"
-          value={formData.price}
-          onChange={(e) => onUpdateFormData({ price: e.target.value })}
-          min="0"
-          step="0.01"
-        />
-      </div>
-
-      <div className="form-group">
         <label className="form-label">Moyen de paiement *</label>
         <select
           className="form-select"
           value={formData.exchange_type}
-          onChange={(e) => onUpdateFormData({ exchange_type: e.target.value })}
+            onChange={(e) => {
+            const newExchangeType = e.target.value
+            onUpdateFormData({ 
+              exchange_type: newExchangeType,
+              // Réinitialiser le prix si on passe à "échange"
+              price: newExchangeType === 'echange' ? '' : formData.price,
+              // Réinitialiser le service échangé si on passe à "prix"
+              exchange_service: newExchangeType === 'prix' ? '' : formData.exchange_service
+            })
+          }}
         >
           <option value="">Sélectionner...</option>
-          <option value="benevole">Bénévole</option>
           <option value="prix">Prix</option>
-          <option value="echange">Échange</option>
+          <option value="echange">Échange de service</option>
         </select>
       </div>
+
+      {formData.exchange_type === 'prix' && (
+        <div className="form-group">
+          <label className="form-label">Prix (€) *</label>
+          <input
+            type="number"
+            className="form-input"
+            placeholder="0"
+            value={formData.price}
+            onChange={(e) => onUpdateFormData({ price: e.target.value })}
+            min="0"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {formData.exchange_type === 'echange' && (
+        <div className="form-group">
+          <label className="form-label">Décrivez le service échangé *</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Ex: Je propose un échange de service de montage vidéo contre une séance photo..."
+            value={formData.exchange_service || ''}
+            onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
+            rows={4}
+          />
+        </div>
+      )}
 
       <button
         className="continue-button"

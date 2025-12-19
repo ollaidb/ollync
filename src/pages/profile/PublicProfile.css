@@ -52,7 +52,6 @@
 
 .profile-back-button:hover {
   background-color: var(--muted);
-  transform: scale(1.05);
 }
 
 .profile-page-title {
@@ -89,7 +88,6 @@
 
 .profile-header-action-btn:hover {
   background-color: var(--muted);
-  transform: scale(1.05);
 }
 
 /* ============================================
@@ -129,9 +127,6 @@
   flex-shrink: 0;
 }
 
-.profile-avatar-small:hover {
-  transform: scale(1.05);
-}
 
 .profile-avatar-small img {
   width: 100%;
@@ -172,7 +167,6 @@
 }
 
 .profile-follow-icon-btn:hover {
-  transform: scale(1.1);
   background-color: var(--accent);
 }
 
@@ -372,7 +366,6 @@
 .social-icon-link:hover {
   background-color: var(--muted);
   opacity: 0.3;
-  transform: scale(1.1);
 }
 
 .social-icon-link svg {

@@ -64,12 +64,10 @@
 
 .post-header-action-btn:hover {
   background: var(--border);
-  transform: scale(1.05);
 }
 
 .post-header-action-btn:active {
   background: var(--muted);
-  transform: scale(0.95);
 }
 
 .post-header-like-btn {
@@ -863,7 +861,6 @@
 
 .post-address-nav-btn:hover {
   background: var(--accent);
-  transform: scale(1.05);
 }
 
 /* ============================================
@@ -1018,7 +1015,6 @@
 }
 
 .post-swipe-btn.reject:hover {
-  transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
 }
 
@@ -1028,7 +1024,6 @@
 }
 
 .post-swipe-btn.accept:hover {
-  transform: scale(1.1);
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
 }
 

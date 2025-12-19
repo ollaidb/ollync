@@ -15,9 +15,6 @@
   transition: transform 0.2s;
 }
 
-.profile-avatar-container:hover .profile-avatar-image {
-  transform: scale(1.05);
-}
 
 .profile-avatar-overlay {
   position: absolute;

@@ -92,13 +92,11 @@
 }
 
 .color-option:hover {
-  transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .color-option.active {
   border-color: #333;
-  transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 

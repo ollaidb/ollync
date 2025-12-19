@@ -195,13 +195,7 @@
   backdrop-filter: blur(10px);
 }
 
-.swipe-image-action-btn:hover {
-  transform: scale(1.1);
-}
 
-.swipe-image-action-btn:active {
-  transform: scale(0.95);
-}
 
 .swipe-image-reject {
   color: var(--destructive);

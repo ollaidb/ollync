@@ -17,6 +17,7 @@ interface FormData {
   location_address: string
   location_visible_to_participants_only: boolean
   exchange_type: string
+  exchange_service?: string
   urgent: boolean
   images: string[]
   video: string | null
@@ -82,6 +83,20 @@ export const validatePublishForm = (
   // Moyen de paiement
   if (!formData.exchange_type || formData.exchange_type.trim().length === 0) {
     errors.push('Le moyen de paiement est obligatoire')
+  }
+  
+  // Si le moyen de paiement est "prix", le prix doit être rempli et supérieur à 0
+  if (formData.exchange_type === 'prix') {
+    if (!formData.price || formData.price.trim().length === 0 || parseFloat(formData.price) <= 0) {
+      errors.push('Le prix est obligatoire lorsque vous choisissez "Prix" comme moyen de paiement')
+    }
+  }
+  
+  // Si le moyen de paiement est "échange", le service échangé doit être décrit
+  if (formData.exchange_type === 'echange') {
+    if (!formData.exchange_service || formData.exchange_service.trim().length === 0) {
+      errors.push('La description du service échangé est obligatoire lorsque vous choisissez "Échange de service"')
+    }
   }
 
   // Réseau social (seulement si requis)
@@ -206,6 +221,10 @@ export const handlePublish = async (
 
   try {
     // Récupérer la catégorie (N1)
+    if (!formData.category) {
+      throw new Error('Category is required')
+    }
+    
     const { data: categoryData } = await supabase
       .from('categories')
       .select('id')
@@ -242,7 +261,13 @@ export const handlePublish = async (
   }
 
   // Préparer les données du post
-  const descriptionValue = formData.description.trim()
+  let descriptionValue = formData.description.trim()
+  
+  // Si c'est un échange de service, ajouter la description du service à la description
+  if (formData.exchange_type === 'echange' && formData.exchange_service) {
+    descriptionValue += `\n\nService échangé : ${formData.exchange_service.trim()}`
+  }
+  
   const postData: any = {
     user_id: user.id,
     category_id: categoryId,
