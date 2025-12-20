@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Settings as SettingsIcon, User, CreditCard, Palette, Bell, ChevronRight } from 'lucide-react'
+import { Settings as SettingsIcon, User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import './Settings.css'
 
@@ -12,6 +12,18 @@ const Settings = () => {
       icon: User,
       label: 'Informations personnelles',
       path: '/profile/settings/personal-info'
+    },
+    {
+      id: 'mail',
+      icon: Mail,
+      label: 'Mail',
+      path: '/profile/settings/mail'
+    },
+    {
+      id: 'online-status',
+      icon: Wifi,
+      label: 'Statut en ligne',
+      path: '/profile/settings/online-status'
     },
     {
       id: 'payment',
@@ -30,6 +42,12 @@ const Settings = () => {
       icon: Bell,
       label: 'Notifications',
       path: '/profile/settings/notifications'
+    },
+    {
+      id: 'data-management',
+      icon: Database,
+      label: 'Gestion de mes données',
+      path: '/profile/settings/data-management'
     }
   ]
 

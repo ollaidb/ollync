@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, LucideIcon } from 'lucide-react'
+import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, LucideIcon, FileEdit } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -16,6 +16,13 @@ import Appearance from './profile/Appearance'
 import Notifications from './profile/Notifications'
 import AccountSecurity from './profile/AccountSecurity'
 import Password from './profile/Password'
+import PhoneNumber from './profile/PhoneNumber'
+import TwoFactorAuth from './profile/TwoFactorAuth'
+import ConnectedDevices from './profile/ConnectedDevices'
+import Annonces from './profile/Annonces'
+import Mail from './profile/Mail'
+import OnlineStatus from './profile/OnlineStatus'
+import DataManagement from './profile/DataManagement'
 import './Profile.css'
 
 interface ProfileData {
@@ -56,6 +63,7 @@ const Profile = () => {
     if (location.pathname.startsWith('/profile/security')) return 'security'
     if (location.pathname === '/profile/help') return 'help'
     if (location.pathname === '/profile/legal') return 'legal'
+    if (location.pathname === '/profile/annonces') return 'annonces'
     return 'menu'
   }
   
@@ -188,8 +196,20 @@ const Profile = () => {
       return <Appearance />
     }
 
+    if (location.pathname === '/profile/settings/mail') {
+      return <Mail />
+    }
+
+    if (location.pathname === '/profile/settings/online-status') {
+      return <OnlineStatus />
+    }
+
     if (location.pathname === '/profile/settings/notifications') {
       return <Notifications />
+    }
+
+    if (location.pathname === '/profile/settings/data-management') {
+      return <DataManagement />
     }
 
     if (location.pathname === '/profile/security/account-security') {
@@ -198,6 +218,22 @@ const Profile = () => {
 
     if (location.pathname === '/profile/security/password') {
       return <Password />
+    }
+
+    if (location.pathname === '/profile/security/phone') {
+      return <PhoneNumber />
+    }
+
+    if (location.pathname === '/profile/security/two-factor') {
+      return <TwoFactorAuth />
+    }
+
+    if (location.pathname === '/profile/security/devices') {
+      return <ConnectedDevices />
+    }
+
+    if (location.pathname === '/profile/annonces') {
+      return <Annonces />
     }
 
     switch (currentSection) {
@@ -228,6 +264,8 @@ const Profile = () => {
         return <Help />
       case 'legal':
         return <Legal />
+      case 'annonces':
+        return <Annonces />
       default:
         return renderMenu()
     }
@@ -263,16 +301,20 @@ const Profile = () => {
     // Menu items nécessitant une connexion
     const authMenuItems: MenuItem[] = user ? [
       { 
+        id: 'annonces', 
+        icon: FileEdit, 
+        label: 'Annonces', 
+        path: '/profile/annonces',
+        onClick: () => navigate('/profile/annonces'),
+        requiresAuth: true
+      },
+      { 
         id: 'settings', 
         icon: SettingsIcon, 
         label: 'Paramètres', 
         path: '/profile/settings',
         onClick: () => navigate('/profile/settings'),
-        requiresAuth: true,
-        subItems: [
-          { label: 'Informations personnelles', path: '/profile/settings' },
-          { label: 'E-mail', path: '/profile/settings' }
-        ]
+        requiresAuth: true
       },
       { 
         id: 'security', 
@@ -395,7 +437,9 @@ const Profile = () => {
           <div className="profile-header-fixed">
             <div className="profile-header-content">
               <BackButton />
-              <h1 className="profile-title">Mon compte</h1>
+              <h1 className="profile-title">
+                {location.pathname === '/profile/annonces' ? 'Mes annonces' : 'Mon compte'}
+              </h1>
               <div className="profile-header-spacer"></div>
             </div>
           </div>

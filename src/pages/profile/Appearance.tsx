@@ -12,8 +12,23 @@ const Appearance = () => {
     return localStorage.getItem('primaryColor') || '#667eea'
   })
 
+  // Initialiser le thème au chargement
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
+    // Utiliser la classe .dark pour le mode sombre (cohérent avec index.css)
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
+
+  useEffect(() => {
+    // Utiliser la classe .dark pour le mode sombre (cohérent avec index.css)
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
     localStorage.setItem('theme', theme)
   }, [theme])
 

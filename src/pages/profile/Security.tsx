@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Shield, Lock, ChevronRight } from 'lucide-react'
+import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import './Security.css'
 
@@ -18,6 +18,24 @@ const Security = () => {
       icon: Lock,
       label: 'Mot de passe',
       path: '/profile/security/password'
+    },
+    {
+      id: 'phone',
+      icon: Phone,
+      label: 'Numéro de téléphone',
+      path: '/profile/security/phone'
+    },
+    {
+      id: 'two-factor',
+      icon: KeyRound,
+      label: 'Connexion à deux étapes',
+      path: '/profile/security/two-factor'
+    },
+    {
+      id: 'devices',
+      icon: Smartphone,
+      label: 'Appareils connectés',
+      path: '/profile/security/devices'
     }
   ]
 

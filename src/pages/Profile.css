@@ -36,8 +36,8 @@
 }
 
 .profile-title {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--foreground);
   margin: 0;
   line-height: 1.2;
@@ -418,7 +418,7 @@
   }
 
   .profile-title {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .profile-scrollable {

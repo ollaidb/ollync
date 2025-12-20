@@ -43,14 +43,21 @@ function AppContent() {
           <Route path="/profile/edit" element={<Profile />} />
           <Route path="/profile/settings" element={<Profile />} />
           <Route path="/profile/settings/personal-info" element={<Profile />} />
+          <Route path="/profile/settings/mail" element={<Profile />} />
+          <Route path="/profile/settings/online-status" element={<Profile />} />
           <Route path="/profile/settings/payment" element={<Profile />} />
           <Route path="/profile/settings/appearance" element={<Profile />} />
           <Route path="/profile/settings/notifications" element={<Profile />} />
+          <Route path="/profile/settings/data-management" element={<Profile />} />
           <Route path="/profile/security" element={<Profile />} />
           <Route path="/profile/security/account-security" element={<Profile />} />
           <Route path="/profile/security/password" element={<Profile />} />
+          <Route path="/profile/security/phone" element={<Profile />} />
+          <Route path="/profile/security/two-factor" element={<Profile />} />
+          <Route path="/profile/security/devices" element={<Profile />} />
           <Route path="/profile/help" element={<Profile />} />
           <Route path="/profile/legal" element={<Profile />} />
+          <Route path="/profile/annonces" element={<Profile />} />
           <Route path="/profile/:id" element={<Profile />} />
           {/* Nouvelles routes - Catégories principales */}
           <Route path="/creation-contenu" element={<CreationContenu />} />
