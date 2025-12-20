@@ -18,6 +18,12 @@ CREATE INDEX IF NOT EXISTS idx_interests_created_at ON interests(created_at);
 -- RLS (Row Level Security)
 ALTER TABLE interests ENABLE ROW LEVEL SECURITY;
 
+-- Supprimer les politiques existantes si elles existent
+DROP POLICY IF EXISTS "Users can view their own interests" ON interests;
+DROP POLICY IF EXISTS "Users can create their own interests" ON interests;
+DROP POLICY IF EXISTS "Users can delete their own interests" ON interests;
+DROP POLICY IF EXISTS "Post owners can view interests on their posts" ON interests;
+
 -- Politique : les utilisateurs peuvent voir leurs propres intérêts
 CREATE POLICY "Users can view their own interests"
   ON interests FOR SELECT

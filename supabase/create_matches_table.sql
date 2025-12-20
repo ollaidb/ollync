@@ -26,6 +26,11 @@ CREATE INDEX IF NOT EXISTS idx_matches_created_at ON matches(created_at);
 -- RLS (Row Level Security)
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 
+-- Supprimer les politiques existantes si elles existent
+DROP POLICY IF EXISTS "Users can view their own matches" ON matches;
+DROP POLICY IF EXISTS "Users can create matches" ON matches;
+DROP POLICY IF EXISTS "Users can update their own matches" ON matches;
+
 -- Politique : les utilisateurs peuvent voir leurs propres matches
 CREATE POLICY "Users can view their own matches"
   ON matches FOR SELECT
@@ -89,6 +94,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger pour créer automatiquement un match
+DROP TRIGGER IF EXISTS trigger_check_match ON interests;
 CREATE TRIGGER trigger_check_match
   AFTER INSERT ON interests
   FOR EACH ROW
@@ -109,6 +115,9 @@ CREATE INDEX IF NOT EXISTS idx_ignored_posts_post_id ON ignored_posts(post_id);
 
 -- RLS pour ignored_posts
 ALTER TABLE ignored_posts ENABLE ROW LEVEL SECURITY;
+
+-- Supprimer la politique existante si elle existe
+DROP POLICY IF EXISTS "Users can manage their own ignored posts" ON ignored_posts;
 
 CREATE POLICY "Users can manage their own ignored posts"
   ON ignored_posts FOR ALL
