@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, Bell, Tag } from 'lucide-react'
+import { Search, Bell, Tag, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -296,6 +296,11 @@ const SwipePage = () => {
                   className="swipe-card"
                   onClick={() => handlePostClick(post)}
                 >
+                  {/* Titre en haut */}
+                  <div className="swipe-card-title-top">
+                    <span className="swipe-card-title-text">{post.title}</span>
+                  </div>
+                  
                   <div className="swipe-card-image-wrapper">
                     {mainImage ? (
                       <img 
@@ -310,7 +315,12 @@ const SwipePage = () => {
                       </div>
                     )}
                     
-                    {/* Overlay profil */}
+                    {/* Icône like en bas à gauche */}
+                    <div className="swipe-card-like">
+                      <Heart size={16} fill="currentColor" />
+                    </div>
+                    
+                    {/* Overlay profil - en bas à droite */}
                     <div className="swipe-card-overlay">
                       <div 
                         className="swipe-card-profile"
@@ -331,10 +341,7 @@ const SwipePage = () => {
                             </div>
                           )}
                         </div>
-                        <div className="swipe-card-profile-info">
-                          <div className="swipe-card-profile-name">{displayName}</div>
-                          <div className="swipe-card-title">{post.title}</div>
-                        </div>
+                        <div className="swipe-card-profile-name">{displayName}</div>
                       </div>
                     </div>
                   </div>

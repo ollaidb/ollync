@@ -79,8 +79,8 @@
 .swipe-content {
   flex: 1;
   overflow-y: auto;
-  padding-top: 70px;
-  padding-bottom: 20px;
+  padding-top: 10px;
+  padding-bottom: 3px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -88,27 +88,76 @@
 .swipe-masonry {
   column-count: 2;
   column-gap: 12px;
-  padding: 0 12px;
+  column-fill: balance;
+  padding: 3px 12px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Carte individuelle */
 .swipe-card {
   break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
   margin-bottom: 12px;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   background: var(--card);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: inline-block;
   width: 100%;
   position: relative;
+  box-sizing: border-box;
 }
 
 .swipe-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+/* S'assurer que la carte ne se casse pas et que le titre reste visible */
+.swipe-card > * {
+  position: relative;
+}
+
+/* Titre en haut de la carte */
+.swipe-card-title-top {
+  padding: 5px 3px;
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--card-foreground);
+  line-height: 1.5;
+  min-height: calc(12px * 1.5 * 2 + 10px); /* 2 lignes de texte (12px * 1.5 * 2) + padding (5px haut + 5px bas = 10px) */
+  position: relative;
+  z-index: 1;
+  word-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+  border-bottom: none;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Pseudo-élément pour pousser le texte vers le bas (prend l'espace d'une ligne) */
+.swipe-card-title-top::before {
+  content: '';
+  height: calc(12px * 1.5); /* Hauteur d'une ligne */
+  flex-shrink: 0;
+}
+
+/* Le texte avec line-clamp */
+.swipe-card-title-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
 }
 
 /* Wrapper image */
@@ -117,6 +166,9 @@
   width: 100%;
   overflow: hidden;
   background: var(--muted);
+  min-height: 150px;
+  margin-top: 0;
+  border-radius: 8px;
 }
 
 /* Image principale - ratio naturel respecté */
@@ -125,6 +177,7 @@
   height: auto;
   display: block;
   object-fit: cover;
+  border-radius: 8px;
 }
 
 .swipe-card-image-placeholder {
@@ -135,35 +188,68 @@
   justify-content: center;
   background: var(--muted);
   color: var(--muted-foreground);
+  border-radius: 8px;
 }
 
-/* Overlay profil - en bas de l'image */
+/* Icône like en haut à droite */
+.swipe-card-like {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--destructive);
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.swipe-card-like svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Overlay profil - en bas à gauche */
 .swipe-card-overlay {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
-  padding: 12px;
-  z-index: 10;
+  bottom: 8px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
 }
 
 .swipe-card-profile {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 4px 8px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  height: 28px; /* Même hauteur que le bouton like */
 }
 
 /* Avatar rond */
 .swipe-card-avatar {
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   overflow: hidden;
   background: var(--background);
   flex-shrink: 0;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
 }
 
 .swipe-card-avatar img {
@@ -180,31 +266,15 @@
   justify-content: center;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Info profil */
-.swipe-card-profile-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.swipe-card-profile-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-  margin-bottom: 2px;
-}
-
-.swipe-card-title {
   font-size: 12px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+/* Nom utilisateur */
+.swipe-card-profile-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -346,7 +416,7 @@
   }
 
   .swipe-content {
-    padding-top: 60px;
+    padding-top: 10px;
   }
 
   .swipe-masonry {
@@ -359,7 +429,7 @@
   }
 
   .swipe-card-overlay {
-    padding: 10px;
+    padding: 0;
   }
 
   .swipe-card-avatar {
