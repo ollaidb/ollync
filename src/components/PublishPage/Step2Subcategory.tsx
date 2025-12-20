@@ -1,5 +1,4 @@
 import { PublicationType } from '../../constants/publishData'
-import { ChevronRight } from 'lucide-react'
 import './Step2Subcategory.css'
 
 interface Step2SubcategoryProps {

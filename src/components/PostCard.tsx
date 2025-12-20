@@ -10,6 +10,7 @@ interface PostCardProps {
     title: string
     description: string
     price?: number | null
+    payment_type?: string | null
     location?: string | null
     images?: string[] | null
     likes_count: number
@@ -19,7 +20,9 @@ interface PostCardProps {
     number_of_people?: number | null
     delivery_available: boolean
     is_urgent?: boolean
+    user_id?: string
     user?: {
+      id?: string
       username?: string | null
       full_name?: string | null
       avatar_url?: string | null
@@ -204,17 +207,66 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
-    if (days === 0) return "Aujourd'hui"
-    if (days === 1) return "Hier"
-    if (days < 7) return `Il y a ${days} jours`
     return date.toLocaleDateString('fr-FR')
   }
 
+  const truncateTitleToTwoSentences = (title: string): string => {
+    // Détecter les phrases (séparées par . ! ?)
+    const sentenceEndings = /([.!?]+)\s*/g
+    const sentences: string[] = []
+    let lastIndex = 0
+    let match
+
+    while ((match = sentenceEndings.exec(title)) !== null) {
+      const sentence = title.substring(lastIndex, match.index + match[1].length).trim()
+      if (sentence) {
+        sentences.push(sentence)
+      }
+      lastIndex = match.index + match[0].length
+    }
+
+    // Ajouter la dernière partie si elle existe et ne se termine pas par un signe de ponctuation
+    if (lastIndex < title.length) {
+      const remaining = title.substring(lastIndex).trim()
+      if (remaining) {
+        sentences.push(remaining)
+      }
+    }
+
+    // Si aucune phrase n'a été détectée (pas de ponctuation), retourner le titre tel quel
+    if (sentences.length === 0) {
+      return title
+    }
+
+    // Prendre les deux premières phrases
+    if (sentences.length <= 2) {
+      return sentences.join(' ')
+    }
+
+    // Retourner les deux premières phrases avec "..."
+    return sentences.slice(0, 2).join(' ') + '...'
+  }
+
   const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
+
+  const getPaymentDisplay = () => {
+    if (post.payment_type === 'prix' && post.price) {
+      return `${post.price} €`
+    }
+    if (post.payment_type === 'echange') {
+      return 'Échange'
+    }
+    if (post.payment_type === 'benevole') {
+      return 'Bénévole'
+    }
+    if (post.payment_type === 'pourcentage') {
+      return 'Pourcentage'
+    }
+    if (post.price) {
+      return `${post.price} €`
+    }
+    return null
+  }
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Ne pas naviguer si on clique sur un bouton d'action ou dans la zone d'actions
@@ -224,11 +276,22 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
         target.tagName === 'BUTTON' ||
         target.closest('.post-card-action') ||
         target.closest('svg') ||
-        target.closest('path')) {
+        target.closest('path') ||
+        target.closest('.post-card-profile')) {
       return
     }
     navigate(`/post/${post.id}`)
   }
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const userId = post.user_id || post.user?.id
+    if (userId) {
+      navigate(`/profile/public/${userId}`)
+    }
+  }
+
+  const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
 
   if (viewMode === 'list') {
     return (
@@ -251,8 +314,11 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
             disabled={checkingLike}
             aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
           >
-            <Heart size={24} fill={liked ? 'currentColor' : 'none'} />
+            <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
+          {getPaymentDisplay() && (
+            <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
+          )}
           {post.category && (
             <div className="post-card-category-badge">{post.category.name}</div>
           )}
@@ -262,19 +328,49 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
         </div>
         <div className="post-card-content">
           <div className="post-card-header">
-            <h3 className="post-card-title">{post.title}</h3>
-            {post.price && (
-              <span className="post-card-price">{post.price} €</span>
-            )}
+            <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
           </div>
           <p className="post-card-description">{post.description.substring(0, 100)}...</p>
           <div className="post-card-info">
-            {post.location && (
-              <span className="post-card-location">
-                <MapPin size={14} /> {post.location}
-              </span>
+            {(post.location || post.number_of_people || post.needed_date) && (
+              <div className="post-card-info-row">
+                {post.location && (
+                  <span className="post-card-location">
+                    <MapPin size={10} /> {post.location}
+                  </span>
+                )}
+                {post.number_of_people && (
+                  <span className="post-card-people">
+                    <Users size={10} /> {post.number_of_people}
+                  </span>
+                )}
+                {post.needed_date && (
+                  <span className="post-card-date">
+                    <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
+                  </span>
+                )}
+              </div>
             )}
-            <span className="post-card-date">{formatDate(post.created_at)}</span>
+            {post.user && (
+              <div className="post-card-profile" onClick={handleProfileClick}>
+                <div className="post-card-avatar">
+                  {post.user.avatar_url ? (
+                    <img 
+                      src={post.user.avatar_url} 
+                      alt={displayName}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
+                      }}
+                    />
+                  ) : (
+                    <div className="post-card-avatar-placeholder">
+                      {(displayName[0] || 'U').toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="post-card-profile-name">{displayName}</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -312,8 +408,11 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
           disabled={checkingLike}
           aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
         >
-          <Heart size={28} fill={liked ? 'currentColor' : 'none'} />
+          <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
         </button>
+        {getPaymentDisplay() && (
+          <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
+        )}
         {post.category && (
           <div className="post-card-category-badge">{post.category.name}</div>
         )}
@@ -325,26 +424,46 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
         )}
       </div>
       <div className="post-card-content">
-        <h3 className="post-card-title">{post.title}</h3>
-        {post.price && (
-          <div className="post-card-price">{post.price} €</div>
-        )}
+        <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
         <div className="post-card-info">
-          {post.location && (
-            <span className="post-card-location">
-              <MapPin size={14} /> {post.location}
-            </span>
+          {(post.location || post.number_of_people || post.needed_date) && (
+            <div className="post-card-info-row">
+              {post.location && (
+                <span className="post-card-location">
+                  <MapPin size={12} /> {post.location}
+                </span>
+              )}
+              {post.number_of_people && (
+                <span className="post-card-people">
+                  <Users size={12} /> {post.number_of_people}
+                </span>
+              )}
+                {post.needed_date && (
+                  <span className="post-card-date">
+                    <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
+                  </span>
+                )}
+            </div>
           )}
-          <span className="post-card-date">{formatDate(post.created_at)}</span>
-          {post.needed_date && (
-            <span className="post-card-date">
-              <Calendar size={14} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-            </span>
-          )}
-          {post.number_of_people && (
-            <span className="post-card-people">
-              <Users size={14} /> {post.number_of_people} personne{post.number_of_people > 1 ? 's' : ''}
-            </span>
+          {post.user && (
+            <div className="post-card-profile" onClick={handleProfileClick}>
+              <div className="post-card-avatar">
+                {post.user.avatar_url ? (
+                  <img 
+                    src={post.user.avatar_url} 
+                    alt={displayName}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
+                    }}
+                  />
+                ) : (
+                  <div className="post-card-avatar-placeholder">
+                    {(displayName[0] || 'U').toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="post-card-profile-name">{displayName}</div>
+            </div>
           )}
         </div>
       </div>

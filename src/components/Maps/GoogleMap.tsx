@@ -24,7 +24,8 @@ export const GoogleMapComponent = ({
   onMarkerClick
 }: GoogleMapProps) => {
   // Récupération de la clé API depuis les variables d'environnement
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const apiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY
 
   if (!apiKey || apiKey === 'YOUR_API_KEY') {
     return (

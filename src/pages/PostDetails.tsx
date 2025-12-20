@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share, MessageCircle, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
@@ -393,14 +393,6 @@ const PostDetails = () => {
         alert('Impossible de copier le lien')
       }
     }
-  }
-
-  const handleMessage = () => {
-    if (!user) {
-      navigate('/auth/login')
-      return
-    }
-    navigate(`/messages/new?post=${id}`)
   }
 
   const checkMatchRequest = async () => {

@@ -319,8 +319,8 @@
 }
 
 .home-posts-grid .post-card {
-  width: 66.67%;
-  min-width: 66.67%;
+  width: 58%;
+  min-width: 58%;
   flex-shrink: 0;
 }
 

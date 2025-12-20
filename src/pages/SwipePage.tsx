@@ -301,7 +301,7 @@ const SwipePage = () => {
                     <span className="swipe-card-title-text">{post.title}</span>
                   </div>
                   
-                  <div className="swipe-card-image-wrapper">
+                  <div className={`swipe-card-image-wrapper ${post.is_urgent ? 'swipe-card-urgent' : ''}`}>
                     {mainImage ? (
                       <img 
                         src={mainImage} 
@@ -315,7 +315,14 @@ const SwipePage = () => {
                       </div>
                     )}
                     
-                    {/* Icône like en bas à gauche */}
+                    {/* Catégorie en haut à gauche */}
+                    {post.category && (
+                      <div className="swipe-card-category">
+                        {post.category.name}
+                      </div>
+                    )}
+                    
+                    {/* Icône like en haut à droite */}
                     <div className="swipe-card-like">
                       <Heart size={16} fill="currentColor" />
                     </div>

@@ -169,6 +169,13 @@
   min-height: 150px;
   margin-top: 0;
   border-radius: 8px;
+  border: none;
+}
+
+/* Bordure rouge fine pour annonces urgentes */
+.swipe-card-image-wrapper.swipe-card-urgent {
+  border: 1px solid #ef4444;
+  box-sizing: border-box;
 }
 
 /* Image principale - ratio naturel respecté */
@@ -189,6 +196,24 @@
   background: var(--muted);
   color: var(--muted-foreground);
   border-radius: 8px;
+}
+
+/* Catégorie en haut à gauche */
+.swipe-card-category {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 7px;
+  font-weight: 600;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 2px 5px;
+  border-radius: 3px;
+  z-index: 15;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 /* Icône like en haut à droite */
