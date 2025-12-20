@@ -42,7 +42,7 @@
   color: var(--primary);
 }
 
-/* Icône centrale plus grande avec fond noir */
+/* Icône centrale plus grande avec fond violet */
 .footer-center {
   position: relative;
 }
@@ -51,11 +51,11 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: var(--foreground);
+  background-color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--background);
+  color: var(--primary-foreground);
   transition: all 0.2s ease;
   box-shadow: var(--shadow-xl);
 }
