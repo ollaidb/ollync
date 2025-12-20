@@ -334,8 +334,8 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
           <div className="post-card-info">
             {(post.location || post.number_of_people || post.needed_date) && (
               <div className="post-card-info-row">
-                {post.location && (
-                  <span className="post-card-location">
+            {post.location && (
+              <span className="post-card-location">
                     <MapPin size={10} /> {post.location}
                   </span>
                 )}
@@ -347,8 +347,8 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
                 {post.needed_date && (
                   <span className="post-card-date">
                     <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-                  </span>
-                )}
+              </span>
+            )}
               </div>
             )}
             {post.user && (
@@ -428,20 +428,20 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
         <div className="post-card-info">
           {(post.location || post.number_of_people || post.needed_date) && (
             <div className="post-card-info-row">
-              {post.location && (
-                <span className="post-card-location">
+          {post.location && (
+            <span className="post-card-location">
                   <MapPin size={12} /> {post.location}
-                </span>
-              )}
-              {post.number_of_people && (
-                <span className="post-card-people">
+            </span>
+          )}
+          {post.number_of_people && (
+            <span className="post-card-people">
                   <Users size={12} /> {post.number_of_people}
                 </span>
               )}
                 {post.needed_date && (
                   <span className="post-card-date">
                     <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-                  </span>
+            </span>
                 )}
             </div>
           )}
