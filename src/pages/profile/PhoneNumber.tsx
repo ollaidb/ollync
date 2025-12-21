@@ -39,9 +39,9 @@ const PhoneNumber = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching phone:', error)
       } else if (data) {
-        setCurrentPhone(data.phone)
-        setPhone(data.phone || '')
-        setIsVerified(data.phone_verified || false)
+        setCurrentPhone((data as any).phone)
+        setPhone((data as any).phone || '')
+        setIsVerified((data as any).phone_verified || false)
       }
     } catch (error) {
       console.error('Error in fetchPhoneStatus:', error)
@@ -74,8 +74,7 @@ const PhoneNumber = () => {
 
     try {
       // Mettre à jour le numéro dans le profil
-      const { error: updateError } = await supabase
-        .from('profiles')
+      const { error: updateError } = await (supabase.from('profiles') as any)
         .update({ 
           phone: cleanedPhone,
           phone_verified: false, // Réinitialiser la vérification si le numéro change
@@ -153,8 +152,7 @@ const PhoneNumber = () => {
         setMessage({ type: 'error', text: 'Code incorrect. Veuillez réessayer.' })
       } else {
         // Mettre à jour le statut de vérification
-        const { error: updateError } = await supabase
-          .from('profiles')
+        const { error: updateError } = await (supabase.from('profiles') as any)
           .update({ 
             phone_verified: true,
             updated_at: new Date().toISOString()

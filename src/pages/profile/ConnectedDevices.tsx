@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Smartphone, Monitor, Tablet, LogOut, AlertCircle } from 'lucide-react'
+import { Smartphone, Monitor, Tablet, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -32,32 +32,33 @@ const ConnectedDevices = () => {
 
     setLoading(true)
     try {
-      // Récupérer toutes les sessions actives
-      const { data: sessionsData, error } = await supabase.auth.getSessions()
+      // Récupérer la session actuelle
+      const { data: sessionData, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('Error fetching sessions:', error)
+        console.error('Error fetching session:', error)
         setDevices([])
-      } else {
-        // Transformer les sessions en appareils
-        const sessions = sessionsData?.sessions || []
-        const devicesList: Device[] = sessions.map((session, index) => {
-          // Récupérer le user_agent depuis les métadonnées de la session si disponible
-          const userAgent = session.user?.user_metadata?.user_agent || 
-                          navigator.userAgent || 
-                          'Appareil inconnu'
-          const deviceInfo = parseUserAgent(userAgent)
-          
-          return {
-            id: session.access_token || `device-${index}`,
-            user_agent: userAgent,
-            created_at: session.created_at,
-            last_activity: session.expires_at,
-            isCurrent: index === 0 // La première session est généralement l'appareil actuel
-          }
-        })
+      } else if (sessionData?.session) {
+        // Pour l'instant, on affiche seulement l'appareil actuel
+        // Une vraie gestion multi-appareils nécessiterait une table dédiée
+        const userAgent = navigator.userAgent || 'Appareil inconnu'
+        
+        const session = sessionData.session
+        // @ts-ignore - Les propriétés de session peuvent varier
+        const created_at = (session as any).created_at ? new Date((session as any).created_at * 1000).toISOString() : undefined
+        const last_activity = session.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined
+        
+        const devicesList: Device[] = [{
+          id: session.access_token || 'current-device',
+          user_agent: userAgent,
+          created_at,
+          last_activity,
+          isCurrent: true
+        }]
         
         setDevices(devicesList)
+      } else {
+        setDevices([])
       }
     } catch (error) {
       console.error('Error in fetchDevices:', error)

@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, Archive, Edit, MoreVertical, Calendar } from 'lucide-react'
+import { Trash2, Archive, Edit, MoreVertical, Calendar, CheckCircle, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import BackButton from '../../components/BackButton'
 import './Annonces.css'
 
 interface Post {
@@ -23,7 +22,7 @@ interface Post {
 const Annonces = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'online' | 'expired'>('online')
+  const [activeTab, setActiveTab] = useState<'online' | 'completed' | 'archived'>('online')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
@@ -77,7 +76,7 @@ const Annonces = () => {
         .from('posts')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['active', 'archived'])
+        .in('status', ['active', 'archived', 'completed'] as any)
         .order('created_at', { ascending: false })
 
       if (postsError) {
@@ -131,12 +130,14 @@ const Annonces = () => {
 
   // Filtrer les annonces selon l'onglet actif
   const filteredPosts = posts.filter(post => {
-    const expired = isPostExpired(post)
     if (activeTab === 'online') {
-      return !expired && post.status === 'active'
-    } else {
-      return expired || post.status === 'archived'
+      return post.status === 'active'
+    } else if (activeTab === 'completed') {
+      return post.status === 'completed'
+    } else if (activeTab === 'archived') {
+      return post.status === 'archived'
     }
+    return false
   })
 
   // Supprimer une annonce
@@ -145,12 +146,14 @@ const Annonces = () => {
       return
     }
 
+    if (!user?.id) return
+
     try {
       const { error } = await supabase
         .from('posts')
         .delete()
         .eq('id', postId)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
 
       if (error) {
         console.error('Error deleting post:', error)
@@ -165,14 +168,42 @@ const Annonces = () => {
     }
   }
 
+  // Marquer une annonce comme réalisée
+  const handleComplete = async (postId: string) => {
+    if (!user?.id) return
+
+    if (!window.confirm('Marquer cette annonce comme réalisée ? Elle ne sera plus visible publiquement.')) {
+      return
+    }
+
+    try {
+      const { error } = await (supabase.from('posts') as any)
+        .update({ status: 'completed' })
+        .eq('id', postId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error completing post:', error)
+        alert('Erreur lors de la validation de l\'annonce')
+      } else {
+        setPosts(posts.map(p => p.id === postId ? { ...p, status: 'completed' } : p))
+        setActionMenuOpen(null)
+      }
+    } catch (error) {
+      console.error('Error in handleComplete:', error)
+      alert('Erreur lors de la validation de l\'annonce')
+    }
+  }
+
   // Archiver une annonce
   const handleArchive = async (postId: string) => {
+    if (!user?.id) return
+
     try {
-      const { error } = await supabase
-        .from('posts')
+      const { error } = await (supabase.from('posts') as any)
         .update({ status: 'archived' })
         .eq('id', postId)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
 
       if (error) {
         console.error('Error archiving post:', error)
@@ -184,6 +215,33 @@ const Annonces = () => {
     } catch (error) {
       console.error('Error in handleArchive:', error)
       alert('Erreur lors de l\'archivage de l\'annonce')
+    }
+  }
+
+  // Remettre en ligne une annonce (depuis archivée ou réalisée)
+  const handleReactivate = async (postId: string) => {
+    if (!user?.id) return
+
+    if (!window.confirm('Remettre cette annonce en ligne ? Elle sera à nouveau visible publiquement.')) {
+      return
+    }
+
+    try {
+      const { error } = await (supabase.from('posts') as any)
+        .update({ status: 'active' })
+        .eq('id', postId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error reactivating post:', error)
+        alert('Erreur lors de la remise en ligne de l\'annonce')
+      } else {
+        setPosts(posts.map(p => p.id === postId ? { ...p, status: 'active' } : p))
+        setActionMenuOpen(null)
+      }
+    } catch (error) {
+      console.error('Error in handleReactivate:', error)
+      alert('Erreur lors de la remise en ligne de l\'annonce')
     }
   }
 
@@ -204,18 +262,29 @@ const Annonces = () => {
           En ligne
           {activeTab === 'online' && (
             <span className="annonces-tab-count">
-              {posts.filter(p => !isPostExpired(p) && p.status === 'active').length}
+              {posts.filter(p => p.status === 'active').length}
             </span>
           )}
         </button>
         <button
-          className={`annonces-tab ${activeTab === 'expired' ? 'active' : ''}`}
-          onClick={() => setActiveTab('expired')}
+          className={`annonces-tab ${activeTab === 'completed' ? 'active' : ''}`}
+          onClick={() => setActiveTab('completed')}
         >
-          Expirées
-          {activeTab === 'expired' && (
+          Réalisées
+          {activeTab === 'completed' && (
             <span className="annonces-tab-count">
-              {posts.filter(p => isPostExpired(p) || p.status === 'archived').length}
+              {posts.filter(p => p.status === 'completed').length}
+            </span>
+          )}
+        </button>
+        <button
+          className={`annonces-tab ${activeTab === 'archived' ? 'active' : ''}`}
+          onClick={() => setActiveTab('archived')}
+        >
+          Archivées
+          {activeTab === 'archived' && (
+            <span className="annonces-tab-count">
+              {posts.filter(p => p.status === 'archived').length}
             </span>
           )}
         </button>
@@ -230,7 +299,9 @@ const Annonces = () => {
             <p>
               {activeTab === 'online'
                 ? 'Aucune annonce en ligne'
-                : 'Aucune annonce expirée'}
+                : activeTab === 'completed'
+                ? 'Aucune annonce réalisée'
+                : 'Aucune annonce archivée'}
             </p>
           </div>
         ) : (
@@ -265,8 +336,10 @@ const Annonces = () => {
                     <div className="annonce-item-date">
                       <Calendar size={14} />
                       <span>
-                        {isPostExpired(post) && post.needed_date
-                          ? `Expirée le ${formatDate(post.needed_date)}`
+                        {post.status === 'completed'
+                          ? `Réalisée le ${formatDate(post.updated_at || post.created_at)}`
+                          : post.status === 'archived'
+                          ? `Archivée le ${formatDate(post.updated_at || post.created_at)}`
                           : `Publiée le ${formatDate(post.created_at)}`}
                       </span>
                     </div>
@@ -283,33 +356,73 @@ const Annonces = () => {
 
                     {actionMenuOpen === post.id && (
                       <div className="annonce-item-menu">
-                        {canEdit ? (
-                          <button
-                            className="annonce-item-menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEdit(post.id)
-                            }}
-                          >
-                            <Edit size={14} />
-                            <span>Éditer</span>
-                          </button>
-                        ) : (
-                          <div className="annonce-item-menu-item disabled">
-                            <Edit size={14} />
-                            <span>Édition disponible pendant 24h</span>
-                          </div>
+                        {post.status === 'active' && (
+                          <>
+                            {canEdit ? (
+                              <button
+                                className="annonce-item-menu-item"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEdit(post.id)
+                                }}
+                              >
+                                <Edit size={14} />
+                                <span>Éditer</span>
+                              </button>
+                            ) : (
+                              <div className="annonce-item-menu-item disabled">
+                                <Edit size={14} />
+                                <span>Édition disponible pendant 24h</span>
+                              </div>
+                            )}
+                            <button
+                              className="annonce-item-menu-item"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleComplete(post.id)
+                              }}
+                            >
+                              <CheckCircle size={14} />
+                              <span>Réaliser</span>
+                            </button>
+                            <button
+                              className="annonce-item-menu-item"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleArchive(post.id)
+                              }}
+                            >
+                              <Archive size={14} />
+                              <span>Archiver</span>
+                            </button>
+                          </>
                         )}
-                        <button
-                          className="annonce-item-menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleArchive(post.id)
-                          }}
-                        >
-                          <Archive size={14} />
-                          <span>Archiver</span>
-                        </button>
+                        {(post.status === 'completed' || post.status === 'archived') && (
+                          <>
+                            <button
+                              className="annonce-item-menu-item"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleReactivate(post.id)
+                              }}
+                            >
+                              <RotateCcw size={14} />
+                              <span>Remettre en ligne</span>
+                            </button>
+                            {post.status === 'completed' && (
+                              <button
+                                className="annonce-item-menu-item"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleArchive(post.id)
+                                }}
+                              >
+                                <Archive size={14} />
+                                <span>Archiver</span>
+                              </button>
+                            )}
+                          </>
+                        )}
                         <button
                           className="annonce-item-menu-item destructive"
                           onClick={(e) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Database, ChevronDown, ChevronUp, Shield } from 'lucide-react'
+import { ChevronDown, ChevronUp, Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -33,7 +33,7 @@ const DataManagement = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching data consent:', error)
       } else {
-        setDataConsent(data?.data_consent_enabled || false)
+        setDataConsent((data as any)?.data_consent_enabled || false)
       }
     } catch (error) {
       console.error('Error in fetchConsent:', error)
@@ -49,8 +49,7 @@ const DataManagement = () => {
     setDataConsent(newConsent)
 
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase.from('profiles') as any)
         .update({ 
           data_consent_enabled: newConsent,
           updated_at: new Date().toISOString()

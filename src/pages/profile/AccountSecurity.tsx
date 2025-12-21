@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Phone, KeyRound, Smartphone, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
+import { Lock, Phone, KeyRound, Smartphone, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -41,8 +41,12 @@ const AccountSecurity = () => {
         console.error('Error fetching profile:', profileError)
       }
 
-      // Récupérer les sessions (appareils connectés)
-      const { data: sessionsData } = await supabase.auth.getSessions()
+      // Récupérer la session actuelle (pour compter les appareils)
+      const { data: sessionData } = await supabase.auth.getSession()
+      
+      // Pour l'instant, on compte 1 appareil si une session existe
+      // Une vraie gestion multi-appareils nécessiterait une table dédiée
+      const devicesCount = sessionData?.session ? 1 : 0
       
       setSecurityStatus({
         password: {
@@ -50,11 +54,11 @@ const AccountSecurity = () => {
           lastModified: null // Supabase ne stocke pas cette info directement
         },
         phone: {
-          number: profile?.phone || null,
-          verified: profile?.phone_verified || false
+          number: (profile as any)?.phone || null,
+          verified: (profile as any)?.phone_verified || false
         },
-        twoFactor: profile?.two_factor_enabled || false,
-        devicesCount: sessionsData?.sessions?.length || 0
+        twoFactor: (profile as any)?.two_factor_enabled || false,
+        devicesCount
       })
     } catch (error) {
       console.error('Error in fetchSecurityStatus:', error)

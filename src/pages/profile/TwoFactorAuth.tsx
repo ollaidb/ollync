@@ -37,11 +37,12 @@ const TwoFactorAuth = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error)
       } else if (profile) {
-        setTwoFactorEnabled(profile.two_factor_enabled || false)
+        const profileData = profile as any
+        setTwoFactorEnabled(profileData.two_factor_enabled || false)
         setAvailableMethods({
           phone: {
-            available: !!profile.phone,
-            verified: profile.phone_verified || false
+            available: !!profileData.phone,
+            verified: profileData.phone_verified || false
           },
           email: {
             available: !!user.email,
@@ -71,8 +72,7 @@ const TwoFactorAuth = () => {
     setTwoFactorEnabled(newStatus)
 
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase.from('profiles') as any)
         .update({ 
           two_factor_enabled: newStatus,
           updated_at: new Date().toISOString()

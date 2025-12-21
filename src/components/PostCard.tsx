@@ -205,11 +205,6 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
   //   onShare?.()
   // }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR')
-  }
-
   const truncateTitleToTwoSentences = (title: string): string => {
     // Détecter les phrases (séparées par . ! ?)
     const sentenceEndings = /([.!?]+)\s*/g

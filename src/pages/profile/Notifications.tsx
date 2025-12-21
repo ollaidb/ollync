@@ -81,8 +81,8 @@ const Notifications = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching notification settings:', error)
-      } else if (data?.notification_preferences) {
-        setSettings({ ...defaultSettings, ...data.notification_preferences })
+      } else if ((data as any)?.notification_preferences) {
+        setSettings({ ...defaultSettings, ...(data as any).notification_preferences })
       }
     } catch (error) {
       console.error('Error in fetchSettings:', error)
@@ -99,8 +99,7 @@ const Notifications = () => {
     // Sauvegarder automatiquement
     if (user) {
       try {
-        await supabase
-          .from('profiles')
+        await (supabase.from('profiles') as any)
           .update({ 
             notification_preferences: newSettings,
             updated_at: new Date().toISOString()

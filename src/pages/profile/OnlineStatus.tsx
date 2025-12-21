@@ -32,7 +32,7 @@ const OnlineStatus = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching online status:', error)
       } else {
-        setIsOnline(data?.is_online || false)
+        setIsOnline((data as any)?.is_online || false)
       }
     } catch (error) {
       console.error('Error in fetchOnlineStatus:', error)
@@ -48,8 +48,7 @@ const OnlineStatus = () => {
     setIsOnline(newStatus)
 
     try {
-      const { error } = await supabase
-        .from('profiles')
+      const { error } = await (supabase.from('profiles') as any)
         .update({ 
           is_online: newStatus,
           updated_at: new Date().toISOString()

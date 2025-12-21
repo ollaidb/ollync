@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Mail as MailIcon, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -7,7 +6,6 @@ import PageHeader from '../../components/PageHeader'
 import './Mail.css'
 
 const Mail = () => {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const [currentEmail, setCurrentEmail] = useState<string>('')
   const [newEmail, setNewEmail] = useState<string>('')
