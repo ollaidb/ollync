@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Camera, Mail, Phone, MapPin, FileText, Instagram, Linkedin, Globe, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Briefcase, Edit2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -13,9 +13,6 @@ const EditPublicProfile = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [verifyingPhone, setVerifyingPhone] = useState(false)
-  const [phoneCode, setPhoneCode] = useState('')
-  const [showPhoneVerification, setShowPhoneVerification] = useState(false)
   const [profile, setProfile] = useState({
     avatar_url: '',
     username: '',
@@ -25,31 +22,22 @@ const EditPublicProfile = () => {
     bio: '',
     skills: [] as string[],
     services: [] as string[],
-    socialLinks: {
-      instagram: '',
-      tiktok: '',
-      linkedin: '',
-      twitter: '',
-      facebook: '',
-      website: ''
-    },
+    socialLinks: [] as string[],
     phone: '',
     email: '',
     phone_verified: false,
-    email_verified: false
+    email_verified: false,
+    statuses: [] as Array<{ name: string; description: string }>
   })
   const [newSkill, setNewSkill] = useState('')
   const [newService, setNewService] = useState('')
+  const [newSocialLink, setNewSocialLink] = useState('')
+  const [statusSearch, setStatusSearch] = useState('')
+  const [showStatusSuggestions, setShowStatusSuggestions] = useState(false)
+  const [selectedStatusForDescription, setSelectedStatusForDescription] = useState<string | null>(null)
+  const [statusDescription, setStatusDescription] = useState('')
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile()
-    } else {
-      setLoading(false)
-    }
-  }, [user])
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) {
       setLoading(false)
       return
@@ -73,7 +61,16 @@ const EditPublicProfile = () => {
     }
     
     const profileData = data || {}
-    const socialLinks = (profileData as { social_links?: any }).social_links || {}
+    const socialLinksObj = (profileData as { social_links?: Record<string, string> | null }).social_links || {}
+    
+    // Convertir l'objet social_links en tableau de chaînes
+    const socialLinksArray: string[] = []
+    if (socialLinksObj.instagram) socialLinksArray.push(socialLinksObj.instagram)
+    if (socialLinksObj.tiktok) socialLinksArray.push(socialLinksObj.tiktok)
+    if (socialLinksObj.linkedin) socialLinksArray.push(socialLinksObj.linkedin)
+    if (socialLinksObj.twitter) socialLinksArray.push(socialLinksObj.twitter)
+    if (socialLinksObj.facebook) socialLinksArray.push(socialLinksObj.facebook)
+    if (socialLinksObj.website) socialLinksArray.push(socialLinksObj.website)
     
     setProfile({
       avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || '',
@@ -84,22 +81,24 @@ const EditPublicProfile = () => {
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
       services: (profileData as { services?: string[] | null }).services || [],
-      socialLinks: {
-        instagram: socialLinks.instagram || '',
-        tiktok: socialLinks.tiktok || '',
-        linkedin: socialLinks.linkedin || '',
-        twitter: socialLinks.twitter || '',
-        facebook: socialLinks.facebook || '',
-        website: socialLinks.website || ''
-      },
+      socialLinks: socialLinksArray,
       phone: (profileData as { phone?: string | null }).phone || '',
       email: user.email || '',
       phone_verified: (profileData as { phone_verified?: boolean | null }).phone_verified || false,
-      email_verified: !!user.email_confirmed_at
+      email_verified: !!user.email_confirmed_at,
+      statuses: (profileData as { statuses?: Array<{ name: string; description: string }> | null }).statuses || []
     })
     
     setLoading(false)
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile()
+    } else {
+      setLoading(false)
+    }
+  }, [user, fetchProfile])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -157,78 +156,6 @@ const EditPublicProfile = () => {
     setUploadingAvatar(false)
   }
 
-  const handleSendPhoneVerification = async () => {
-    if (!profile.phone || !user) return
-
-    setVerifyingPhone(true)
-    try {
-      // Envoyer le code OTP via Supabase Auth
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: profile.phone
-      })
-
-      if (error) {
-        console.error('Error sending OTP:', error)
-        alert('Erreur lors de l\'envoi du code. Vérifiez votre numéro de téléphone.')
-      } else {
-        setShowPhoneVerification(true)
-        alert('Code de vérification envoyé par SMS')
-      }
-    } catch (error) {
-      console.error('Error sending OTP:', error)
-      alert('Erreur lors de l\'envoi du code')
-    }
-    setVerifyingPhone(false)
-  }
-
-  const handleVerifyPhoneCode = async () => {
-    if (!phoneCode || !profile.phone || !user) return
-
-    setVerifyingPhone(true)
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: profile.phone,
-        token: phoneCode,
-        type: 'sms'
-      })
-
-      if (error) {
-        console.error('Error verifying OTP:', error)
-        alert('Code incorrect. Veuillez réessayer.')
-      } else {
-        setProfile(prev => ({ ...prev, phone_verified: true }))
-        setShowPhoneVerification(false)
-        setPhoneCode('')
-        alert('Numéro de téléphone vérifié avec succès!')
-      }
-    } catch (error) {
-      console.error('Error verifying OTP:', error)
-      alert('Erreur lors de la vérification')
-    }
-    setVerifyingPhone(false)
-  }
-
-  const handleResendEmailVerification = async () => {
-    if (!user?.email) return
-
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email
-      })
-
-      if (error) {
-        console.error('Error resending email:', error)
-        alert('Erreur lors de l\'envoi de l\'email de vérification')
-      } else {
-        alert('Email de vérification envoyé! Vérifiez votre boîte de réception.')
-      }
-    } catch (error) {
-      console.error('Error resending email:', error)
-      alert('Erreur lors de l\'envoi de l\'email')
-    }
-  }
-
   const handleAddSkill = () => {
     if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
       setProfile(prev => ({
@@ -261,6 +188,142 @@ const EditPublicProfile = () => {
       ...prev,
       services: prev.services.filter(s => s !== service)
     }))
+  }
+
+  const handleAddSocialLink = () => {
+    if (newSocialLink.trim() && !profile.socialLinks.includes(newSocialLink.trim())) {
+      setProfile(prev => ({
+        ...prev,
+        socialLinks: [...prev.socialLinks, newSocialLink.trim()]
+      }))
+      setNewSocialLink('')
+    }
+  }
+
+  const handleRemoveSocialLink = (link: string) => {
+    setProfile(prev => ({
+      ...prev,
+      socialLinks: prev.socialLinks.filter(l => l !== link)
+    }))
+  }
+
+  // Liste de recommandations de statuts basée sur l'application
+  const statusRecommendations = [
+    'Créateur de contenu',
+    'Photographe',
+    'Vidéaste',
+    'Monteur vidéo',
+    'Graphiste',
+    'Influenceur',
+    'Youtuber',
+    'Podcasteur',
+    'Blogueur',
+    'Community Manager',
+    'Stratège en contenu',
+    'Réalisateur',
+    'Scénariste',
+    'Acteur',
+    'Modèle',
+    'Figurant',
+    'Voix off',
+    'Motion designer',
+    'Web designer',
+    'Développeur',
+    'Entrepreneur',
+    'Coach',
+    'Consultant',
+    'Freelance',
+    'Artiste',
+    'Musicien',
+    'DJ',
+    'Événementiel',
+    'Organisateur d\'événements',
+    'Journaliste',
+    'Rédacteur',
+    'Traducteur',
+    'Interprète',
+    'Formateur',
+    'Éducateur',
+    'Mentor'
+  ]
+
+  // Filtrer les recommandations de statuts selon la recherche
+  const filteredStatusRecommendations = statusRecommendations.filter(status =>
+    status.toLowerCase().includes(statusSearch.toLowerCase())
+  )
+
+  // Ajouter un statut
+  const handleAddStatus = (statusName: string) => {
+    const trimmedName = statusName.trim()
+    if (trimmedName && !profile.statuses.some(s => s.name === trimmedName)) {
+      setProfile(prev => ({
+        ...prev,
+        statuses: [...prev.statuses, { name: trimmedName, description: '' }]
+      }))
+      setStatusSearch('')
+      setShowStatusSuggestions(false)
+    }
+  }
+
+  // Supprimer un statut
+  const handleRemoveStatus = (statusName: string) => {
+    setProfile(prev => ({
+      ...prev,
+      statuses: prev.statuses.filter(s => s.name !== statusName)
+    }))
+  }
+
+  // Mettre à jour la description d'un statut
+  const handleUpdateStatusDescription = (statusName: string, description: string) => {
+    setProfile(prev => ({
+      ...prev,
+      statuses: prev.statuses.map(s =>
+        s.name === statusName ? { ...s, description } : s
+      )
+    }))
+  }
+
+  // Détecter le type de réseau social à partir de l'URL
+  const detectSocialType = (url: string): { type: string; icon: typeof Instagram | typeof Linkedin | typeof Globe; name: string } => {
+    const lowerUrl = url.toLowerCase().trim()
+    if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am') || (lowerUrl.startsWith('@') && !lowerUrl.includes('tiktok'))) {
+      return { type: 'instagram', icon: Instagram, name: 'Instagram' }
+    }
+    if (lowerUrl.includes('tiktok.com') || (lowerUrl.startsWith('@') && lowerUrl.includes('tiktok'))) {
+      return { type: 'tiktok', icon: Globe, name: 'TikTok' }
+    }
+    if (lowerUrl.includes('linkedin.com') || lowerUrl.includes('linked.in')) {
+      return { type: 'linkedin', icon: Linkedin, name: 'LinkedIn' }
+    }
+    if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+      return { type: 'twitter', icon: Globe, name: 'Twitter/X' }
+    }
+    if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
+      return { type: 'facebook', icon: Globe, name: 'Facebook' }
+    }
+    return { type: 'website', icon: Globe, name: 'Site web' }
+  }
+
+  // Convertir le tableau de liens sociaux en objet pour la base de données
+  const convertSocialLinksToObject = (links: string[]): Record<string, string> => {
+    const socialObj: Record<string, string> = {}
+    links.forEach(link => {
+      const detected = detectSocialType(link)
+      if (detected.type === 'instagram') {
+        socialObj.instagram = link
+      } else if (detected.type === 'tiktok') {
+        socialObj.tiktok = link
+      } else if (detected.type === 'linkedin') {
+        socialObj.linkedin = link
+      } else if (detected.type === 'twitter') {
+        socialObj.twitter = link
+      } else if (detected.type === 'facebook') {
+        socialObj.facebook = link
+      } else {
+        socialObj.website = link
+      }
+    })
+    return socialObj
   }
 
   const handleSave = async () => {
@@ -297,8 +360,9 @@ const EditPublicProfile = () => {
           avatar_url: profile.avatar_url || null,
           skills: profile.skills.length > 0 ? profile.skills : null,
           services: profile.services.length > 0 ? profile.services : null,
-          social_links: profile.socialLinks,
+          social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
+          statuses: profile.statuses.length > 0 ? profile.statuses : null,
           updated_at: new Date().toISOString()
         })
 
@@ -541,178 +605,170 @@ const EditPublicProfile = () => {
 
             {/* Liens sociaux */}
             <div className="form-group">
-              <label className="section-label">Liens sociaux / Réseaux</label>
-              <div className="social-links-grid">
-                <div className="social-link-item">
-                  <Instagram size={18} />
-                  <input
-                    type="text"
-                    placeholder="Instagram"
-                    value={profile.socialLinks.instagram}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, instagram: e.target.value }
-                    }))}
-                  />
+              <label>Réseaux sociaux</label>
+              <div className="tags-input-container">
+                <div className="tags-list">
+                  {profile.socialLinks.map((link, index) => {
+                    const detected = detectSocialType(link)
+                    const Icon = detected.icon
+                    return (
+                      <span key={index} className="tag social-tag">
+                        <Icon size={14} />
+                        <span className="tag-text">{link}</span>
+                        <button
+                          type="button"
+                          className="tag-remove"
+                          onClick={() => handleRemoveSocialLink(link)}
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    )
+                  })}
                 </div>
-                <div className="social-link-item">
-                  <Linkedin size={18} />
+                <div className="tag-input-wrapper">
                   <input
                     type="text"
-                    placeholder="LinkedIn"
-                    value={profile.socialLinks.linkedin}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, linkedin: e.target.value }
-                    }))}
+                    value={newSocialLink}
+                    onChange={(e) => setNewSocialLink(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddSocialLink()
+                      }
+                    }}
+                    placeholder="Ajouter un lien (ex: @username, https://instagram.com/...)"
                   />
-                </div>
-                <div className="social-link-item">
-                  <Globe size={18} />
-                  <input
-                    type="text"
-                    placeholder="TikTok"
-                    value={profile.socialLinks.tiktok}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, tiktok: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div className="social-link-item">
-                  <Globe size={18} />
-                  <input
-                    type="text"
-                    placeholder="Twitter/X"
-                    value={profile.socialLinks.twitter}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, twitter: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div className="social-link-item">
-                  <Globe size={18} />
-                  <input
-                    type="text"
-                    placeholder="Facebook"
-                    value={profile.socialLinks.facebook}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, facebook: e.target.value }
-                    }))}
-                  />
-                </div>
-                <div className="social-link-item">
-                  <Globe size={18} />
-                  <input
-                    type="text"
-                    placeholder="Site web"
-                    value={profile.socialLinks.website}
-                    onChange={(e) => setProfile(prev => ({
-                      ...prev,
-                      socialLinks: { ...prev.socialLinks, website: e.target.value }
-                    }))}
-                  />
+                  <button
+                    type="button"
+                    className="tag-add-button"
+                    onClick={handleAddSocialLink}
+                  >
+                    Ajouter
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Vérifications & Sécurité */}
+            {/* Statuts */}
             <div className="form-group">
-              <label className="section-label">Vérifications & Sécurité</label>
+              <label className="section-label">
+                <Briefcase size={18} />
+                Statuts professionnels
+              </label>
+              <p className="form-hint">Ajoutez vos statuts professionnels, rôles ou compétences principales (comme un CV)</p>
               
-              {/* Email */}
-              <div className="verification-item">
-                <div className="verification-header">
-                  <div className="verification-info">
-                    <Mail size={18} />
-                    <div>
-                      <div className="verification-label">Email</div>
-                      <div className="verification-value">{profile.email}</div>
-                    </div>
-                  </div>
-                  {profile.email_verified ? (
-                    <div className="verification-badge verified">
-                      <CheckCircle2 size={16} />
-                      <span>Vérifié</span>
-                    </div>
-                  ) : (
-                    <div className="verification-badge not-verified">
-                      <AlertCircle size={16} />
-                      <span>Non vérifié</span>
-                    </div>
-                  )}
-                </div>
-                {!profile.email_verified && (
-                  <button
-                    type="button"
-                    className="verification-button"
-                    onClick={handleResendEmailVerification}
-                  >
-                    Renvoyer l'email de vérification
-                  </button>
-                )}
-              </div>
-
-              {/* Téléphone */}
-              <div className="verification-item">
-                <div className="verification-header">
-                  <div className="verification-info">
-                    <Phone size={18} />
-                    <div>
-                      <div className="verification-label">Numéro de téléphone</div>
-                      <input
-                        type="tel"
-                        className="verification-input"
-                        value={profile.phone}
-                        onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="+33 6 12 34 56 78"
-                      />
-                    </div>
-                  </div>
-                  {profile.phone_verified ? (
-                    <div className="verification-badge verified">
-                      <CheckCircle2 size={16} />
-                      <span>Vérifié</span>
-                    </div>
-                  ) : (
-                    <div className="verification-badge not-verified">
-                      <AlertCircle size={16} />
-                      <span>Non vérifié</span>
-                    </div>
-                  )}
-                </div>
-                {!profile.phone_verified && profile.phone && (
-                  <div className="phone-verification-section">
-                    {!showPhoneVerification ? (
-                      <button
-                        type="button"
-                        className="verification-button"
-                        onClick={handleSendPhoneVerification}
-                        disabled={verifyingPhone}
-                      >
-                        {verifyingPhone ? 'Envoi...' : 'Envoyer le code SMS'}
-                      </button>
-                    ) : (
-                      <div className="phone-code-input">
-                        <input
-                          type="text"
-                          placeholder="Code de vérification"
-                          value={phoneCode}
-                          onChange={(e) => setPhoneCode(e.target.value)}
-                          maxLength={6}
-                        />
+              {/* Liste des statuts ajoutés */}
+              <div className="statuses-list">
+                {profile.statuses.map((status, index) => (
+                  <div key={index} className="status-item">
+                    <div className="status-header">
+                      <div className="status-name-wrapper">
+                        <Briefcase size={16} />
+                        <span className="status-name">{status.name}</span>
                         <button
                           type="button"
-                          className="verify-code-button"
-                          onClick={handleVerifyPhoneCode}
-                          disabled={verifyingPhone || !phoneCode}
+                          className="status-remove"
+                          onClick={() => handleRemoveStatus(status.name)}
                         >
-                          {verifyingPhone ? 'Vérification...' : 'Vérifier'}
+                          <X size={14} />
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        className="status-description-toggle"
+                        onClick={() => {
+                          if (selectedStatusForDescription === status.name) {
+                            setSelectedStatusForDescription(null)
+                            setStatusDescription('')
+                          } else {
+                            setSelectedStatusForDescription(status.name)
+                            setStatusDescription(status.description)
+                          }
+                        }}
+                      >
+                        <Edit2 size={14} />
+                        {status.description ? 'Modifier description' : 'Ajouter description'}
+                      </button>
+                    </div>
+                    {selectedStatusForDescription === status.name && (
+                      <div className="status-description-editor">
+                        <textarea
+                          value={statusDescription}
+                          onChange={(e) => setStatusDescription(e.target.value)}
+                          onBlur={() => {
+                            handleUpdateStatusDescription(status.name, statusDescription)
+                            setSelectedStatusForDescription(null)
+                          }}
+                          placeholder="Décrivez ce que vous faites, vos diplômes, vos prestations..."
+                          rows={3}
+                          maxLength={500}
+                        />
+                        <div className="char-count">{statusDescription.length}/500</div>
+                      </div>
                     )}
+                    {status.description && selectedStatusForDescription !== status.name && (
+                      <div className="status-description-display">
+                        <p>{status.description}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Recherche et ajout de statut */}
+              <div className="status-search-container">
+                <div className="status-search-wrapper">
+                  <Search size={18} className="status-search-icon" />
+                  <input
+                    type="text"
+                    className="status-search-input"
+                    value={statusSearch}
+                    onChange={(e) => {
+                      setStatusSearch(e.target.value)
+                      setShowStatusSuggestions(true)
+                    }}
+                    onFocus={() => setShowStatusSuggestions(true)}
+                    placeholder="Rechercher un statut (ex: Créateur de contenu, Photographe...)"
+                  />
+                </div>
+                
+                {/* Suggestions de statuts */}
+                {showStatusSuggestions && statusSearch && (
+                  <div className="status-suggestions">
+                    {filteredStatusRecommendations.length > 0 ? (
+                      filteredStatusRecommendations.map((status, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          className="status-suggestion-item"
+                          onClick={() => handleAddStatus(status)}
+                        >
+                          {status}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="status-suggestion-item no-results">
+                        Aucun résultat trouvé
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Liste complète des recommandations si pas de recherche */}
+                {showStatusSuggestions && !statusSearch && (
+                  <div className="status-suggestions">
+                    <div className="status-suggestions-header">Recommandations</div>
+                    {statusRecommendations.map((status, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className="status-suggestion-item"
+                        onClick={() => handleAddStatus(status)}
+                      >
+                        {status}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>

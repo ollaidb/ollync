@@ -455,6 +455,249 @@
   text-align: center;
 }
 
+/* Form Hint */
+.form-hint {
+  font-size: 13px;
+  color: #6B7280;
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
+/* Social Tag */
+.social-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.social-tag .tag-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Statuts */
+.statuses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.status-item {
+  padding: 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #F9FAFB;
+  transition: all 0.2s;
+}
+
+.status-item:hover {
+  border-color: #D1D5DB;
+  background: #F3F4F6;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.status-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.status-name-wrapper svg {
+  color: #6366F1;
+  flex-shrink: 0;
+}
+
+.status-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  flex: 1;
+}
+
+.status-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6B7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.status-remove:hover {
+  color: #EF4444;
+  background: #FEE2E2;
+}
+
+.status-description-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #6366F1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.status-description-toggle:hover {
+  background: #4F46E5;
+}
+
+.status-description-toggle svg {
+  flex-shrink: 0;
+}
+
+.status-description-editor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.status-description-editor textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.status-description-editor textarea:focus {
+  outline: none;
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.status-description-display {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.status-description-display p {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Recherche de statuts */
+.status-search-container {
+  position: relative;
+  margin-top: 16px;
+}
+
+.status-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.status-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #6B7280;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.status-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: white;
+}
+
+.status-search-input:focus {
+  outline: none;
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.status-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-top: 4px;
+}
+
+.status-suggestions-header {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #E5E7EB;
+  background: #F9FAFB;
+}
+
+.status-suggestion-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.status-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.status-suggestion-item:hover {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+.status-suggestion-item.no-results {
+  color: #9CA3AF;
+  cursor: default;
+  font-style: italic;
+}
+
+.status-suggestion-item.no-results:hover {
+  background: transparent;
+}
+
 @media (max-width: 768px) {
   .edit-public-profile-page {
     padding: 16px;
@@ -480,13 +723,18 @@
     grid-template-columns: 1fr;
   }
 
-  .verification-header {
+  .status-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
   }
 
-  .phone-code-input {
-    flex-direction: column;
+  .status-description-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-suggestions {
+    max-height: 250px;
   }
 }
