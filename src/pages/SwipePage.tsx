@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Bell, Tag, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -39,6 +39,12 @@ interface Post {
   } | null
 }
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 const SwipePage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -51,9 +57,61 @@ const SwipePage = () => {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(0)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const POSTS_PER_PAGE = 20
+
+  // Ordre des catégories (même que dans Search.tsx)
+  const categoryOrder = [
+    'creation-contenu',
+    'casting-role',
+    'montage',
+    'projets-equipe',
+    'services',
+    'vente'
+  ]
+
+  // Générer les filtres dynamiquement depuis les catégories
+  const filters = useMemo(() => {
+    return [
+      { id: 'all', label: 'Tout' },
+      ...categories
+        .filter(cat => categoryOrder.includes(cat.slug))
+        .sort((a, b) => {
+          const indexA = categoryOrder.indexOf(a.slug)
+          const indexB = categoryOrder.indexOf(b.slug)
+          return indexA - indexB
+        })
+        .map(cat => ({
+          id: cat.slug,
+          label: cat.name
+        }))
+    ]
+  }, [categories])
+
+  // Récupérer les catégories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('id, name, slug')
+          .order('name')
+
+        if (error) {
+          console.error('Error fetching categories:', error)
+        } else if (data) {
+          setCategories(data)
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   const fetchPosts = useCallback(async (pageNum: number) => {
     if (pageNum === 0) {
@@ -63,8 +121,20 @@ const SwipePage = () => {
     }
 
     try {
+      // Trouver la catégorie si un filtre est sélectionné
+      let activeCategoryId: string | undefined
+      if (selectedCategory !== 'all') {
+        const category = categories.find(c => c.slug === selectedCategory)
+        if (category) {
+          activeCategoryId = category.id
+        }
+      } else if (categoryId) {
+        // Si on vient d'un lien avec categoryId, l'utiliser
+        activeCategoryId = categoryId
+      }
+
       const fetchedPosts = await fetchPostsWithRelations({
-        categoryId: categoryId || undefined,
+        categoryId: activeCategoryId,
         subCategoryId: subCategoryId || undefined,
         status: 'active',
         limit: POSTS_PER_PAGE,
@@ -188,7 +258,7 @@ const SwipePage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [categoryId, subCategoryId, user])
+  }, [selectedCategory, categories, categoryId, subCategoryId, user])
 
   useEffect(() => {
     // Reset when category/subcategory changes
@@ -196,7 +266,17 @@ const SwipePage = () => {
     setPage(0)
     setHasMore(true)
     fetchPosts(0)
-  }, [categoryId, subCategoryId, fetchPosts])
+  }, [selectedCategory, categoryId, subCategoryId, fetchPosts])
+
+  // Initialiser selectedCategory depuis categoryId si présent
+  useEffect(() => {
+    if (categoryId && categories.length > 0) {
+      const category = categories.find(c => c.id === categoryId)
+      if (category) {
+        setSelectedCategory(category.slug)
+      }
+    }
+  }, [categoryId, categories])
 
   // Infinite scroll avec Intersection Observer
   useEffect(() => {
@@ -236,36 +316,34 @@ const SwipePage = () => {
   return (
     <div className="swipe-page">
       {/* Header fixe */}
-      <div className="swipe-header">
-        <BackButton className="swipe-back-button" />
-        <button 
-          className="swipe-header-search"
-          onClick={() => navigate('/search')}
-          aria-label="Rechercher"
-        >
-          <Search size={24} />
-        </button>
-        <div className="swipe-header-category">
-          <div className="swipe-header-category-name">
-            {posts[0]?.category?.name || 'Découverte'}
-          </div>
-          {posts[0]?.sub_category?.name && (
-            <div className="swipe-header-subcategory-name">
-              {posts[0].sub_category.name}
-            </div>
-          )}
+      <div className="swipe-header-fixed">
+        <div className="swipe-header-content">
+          <BackButton className="swipe-back-button" />
+          <h1 className="swipe-title">Découverte</h1>
+          <div className="swipe-header-spacer"></div>
         </div>
-        <button 
-          className="swipe-header-notification"
-          onClick={() => navigate('/notifications')}
-          aria-label="Notifications"
-        >
-          <Bell size={24} />
-        </button>
+        
+        {/* Menu de filtres */}
+        <div className="swipe-filters">
+          {filters.map((filter) => (
+            <button
+              key={filter.id}
+              className={`swipe-filter-btn ${selectedCategory === filter.id ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedCategory(filter.id)
+                setPosts([])
+                setPage(0)
+                setHasMore(true)
+              }}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Grille masonry Pinterest */}
-      <div className="swipe-content">
+      {/* Zone scrollable */}
+      <div className="swipe-scrollable">
         {loading && posts.length === 0 ? (
           <div className="swipe-loading">
             <p>Chargement des annonces...</p>
