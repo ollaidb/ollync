@@ -27,23 +27,6 @@ const Annonces = () => {
   const [loading, setLoading] = useState(true)
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
 
-  // Déterminer si une annonce est expirée
-  const isPostExpired = (post: Post): boolean => {
-    // Si needed_date existe et est passée, l'annonce est expirée
-    if (post.needed_date) {
-      const neededDate = new Date(post.needed_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return neededDate < today
-    }
-    
-    // Sinon, considérer qu'une annonce est expirée après 30 jours
-    const createdDate = new Date(post.created_at)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    return createdDate < thirtyDaysAgo
-  }
-
   // Vérifier si une annonce peut être éditée (moins de 24h après publication)
   const canEditPost = (post: Post): boolean => {
     const createdDate = new Date(post.created_at)
