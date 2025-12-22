@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit, MoreHorizontal, AlertTriangle, Flag } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -80,6 +80,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportType, setReportType] = useState<'behavior' | 'post' | null>(null)
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
+  const [reportReason, setReportReason] = useState<string>('')
 
   const profileId = userId || user?.id
 
@@ -270,6 +275,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }
 
   const handleShare = async () => {
+    setShowMenu(false)
     const profileUrl = `${window.location.origin}/profile/${profileId}`
     
     if (navigator.share) {
@@ -292,6 +298,55 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         console.error('Error copying to clipboard:', error)
         alert('Impossible de copier le lien')
       }
+    }
+  }
+
+  const handleReportClick = () => {
+    setShowMenu(false)
+    setShowReportModal(true)
+    setReportType(null)
+    setSelectedPostId(null)
+    setReportReason('')
+  }
+
+  const handleReportSubmit = async () => {
+    if (!user || !profileId || !reportType || !reportReason) {
+      alert('Veuillez remplir tous les champs')
+      return
+    }
+
+    if (reportType === 'post' && !selectedPostId) {
+      alert('Veuillez sélectionner une annonce')
+      return
+    }
+
+    try {
+      // @ts-ignore - reports table exists but not in types
+      const { error } = await supabase
+        .from('reports')
+        .insert({
+          reporter_id: user.id,
+          reported_user_id: profileId,
+          reported_post_id: reportType === 'post' ? selectedPostId : null,
+          report_type: reportType === 'post' ? 'post' : 'profile',
+          report_reason: reportReason,
+          report_category: reportType,
+          description: null
+        } as any)
+
+      if (error) {
+        console.error('Error submitting report:', error)
+        alert('Erreur lors de l\'envoi du signalement')
+      } else {
+        alert('Signalement envoyé avec succès. Merci de votre contribution.')
+        setShowReportModal(false)
+        setReportType(null)
+        setSelectedPostId(null)
+        setReportReason('')
+      }
+    } catch (error) {
+      console.error('Error in handleReportSubmit:', error)
+      alert('Erreur lors de l\'envoi du signalement')
     }
   }
 
@@ -340,19 +395,12 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   return (
     <div className="public-profile-page">
-      {/* 1. HEADER - Retour + Titre + Partager + Éditer */}
+      {/* 1. HEADER - Retour + Menu actions */}
       <div className="profile-page-header">
         <BackButton className="profile-back-button" />
-        <h1 className="profile-page-title">Mon compte</h1>
+        <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          <button 
-            className="profile-header-action-btn"
-            onClick={handleShare}
-            aria-label="Partager"
-          >
-            <Share size={20} />
-          </button>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <button
               className="profile-header-action-btn"
               onClick={() => navigate('/profile/edit')}
@@ -360,6 +408,37 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             >
               <Edit size={20} />
             </button>
+          ) : (
+            <div className="profile-menu-container">
+              <button 
+                className="profile-header-action-btn"
+                onClick={() => setShowMenu(!showMenu)}
+                aria-label="Options"
+              >
+                <MoreHorizontal size={20} />
+              </button>
+              {showMenu && (
+                <>
+                  <div className="profile-menu-overlay" onClick={() => setShowMenu(false)}></div>
+                  <div className="profile-menu-dropdown">
+                    <button
+                      className="profile-menu-item"
+                      onClick={handleShare}
+                    >
+                      <Share size={18} />
+                      <span>Partager le profil</span>
+                    </button>
+                    <button
+                      className="profile-menu-item"
+                      onClick={handleReportClick}
+                    >
+                      <Flag size={18} />
+                      <span>Signaler le profil</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -589,6 +668,200 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         username={profile.username}
         onClose={() => setShowPhotoModal(false)}
       />
+
+      {/* Modal de signalement */}
+      {showReportModal && (
+        <div className="report-modal-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="report-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="report-modal-header">
+              <h2>Signaler</h2>
+              <button 
+                className="report-modal-close"
+                onClick={() => setShowReportModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="report-modal-body">
+              {!reportType ? (
+                <>
+                  <p className="report-modal-question">Que souhaitez-vous signaler ?</p>
+                  <div className="report-options">
+                    <button
+                      className="report-option-btn"
+                      onClick={() => setReportType('behavior')}
+                    >
+                      <AlertTriangle size={20} />
+                      <span>Signaler son comportement</span>
+                    </button>
+                    <button
+                      className="report-option-btn"
+                      onClick={() => setReportType('post')}
+                    >
+                      <Flag size={20} />
+                      <span>Signaler une annonce</span>
+                    </button>
+                  </div>
+                </>
+              ) : reportType === 'behavior' ? (
+                <>
+                  <button
+                    className="report-back-btn"
+                    onClick={() => {
+                      setReportType(null)
+                      setReportReason('')
+                    }}
+                  >
+                    ← Retour
+                  </button>
+                  <p className="report-modal-question">Raison du signalement :</p>
+                  <div className="report-reasons-list">
+                    <button
+                      className={`report-reason-btn ${reportReason === 'suspect' ? 'active' : ''}`}
+                      onClick={() => setReportReason('suspect')}
+                    >
+                      Suspect
+                    </button>
+                    <button
+                      className={`report-reason-btn ${reportReason === 'fraudeur' ? 'active' : ''}`}
+                      onClick={() => setReportReason('fraudeur')}
+                    >
+                      Fraudeur
+                    </button>
+                    <button
+                      className={`report-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
+                      onClick={() => setReportReason('fondant')}
+                    >
+                      Fondant / Inapproprié
+                    </button>
+                    <button
+                      className={`report-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}
+                      onClick={() => setReportReason('sexuel')}
+                    >
+                      Contenu sexuel
+                    </button>
+                    <button
+                      className={`report-reason-btn ${reportReason === 'spam' ? 'active' : ''}`}
+                      onClick={() => setReportReason('spam')}
+                    >
+                      Spam
+                    </button>
+                    <button
+                      className={`report-reason-btn ${reportReason === 'autre' ? 'active' : ''}`}
+                      onClick={() => setReportReason('autre')}
+                    >
+                      Autre
+                    </button>
+                  </div>
+                  {reportReason && (
+                    <button
+                      className="report-submit-btn"
+                      onClick={handleReportSubmit}
+                    >
+                      Envoyer le signalement
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  {!selectedPostId ? (
+                    <>
+                      <button
+                        className="report-back-btn"
+                        onClick={() => {
+                          setReportType(null)
+                          setSelectedPostId(null)
+                        }}
+                      >
+                        ← Retour
+                      </button>
+                      <p className="report-modal-question">Quelle annonce souhaitez-vous signaler ?</p>
+                      <div className="report-posts-list">
+                        {posts.length > 0 ? (
+                          posts.map((post) => (
+                            <button
+                              key={post.id}
+                              className={`report-post-item ${selectedPostId === post.id ? 'active' : ''}`}
+                              onClick={() => setSelectedPostId(post.id)}
+                            >
+                              <div className="report-post-title">{post.title}</div>
+                              <div className="report-post-date">
+                                {new Date(post.created_at).toLocaleDateString('fr-FR')}
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="report-no-posts">Aucune annonce disponible</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="report-back-btn"
+                        onClick={() => {
+                          setSelectedPostId(null)
+                          setReportReason('')
+                        }}
+                      >
+                        ← Retour
+                      </button>
+                      <p className="report-modal-question">Raison du signalement :</p>
+                      <div className="report-reasons-list">
+                        <button
+                          className={`report-reason-btn ${reportReason === 'suspect' ? 'active' : ''}`}
+                          onClick={() => setReportReason('suspect')}
+                        >
+                          Suspect
+                        </button>
+                        <button
+                          className={`report-reason-btn ${reportReason === 'fraudeur' ? 'active' : ''}`}
+                          onClick={() => setReportReason('fraudeur')}
+                        >
+                          Fraudeur
+                        </button>
+                        <button
+                          className={`report-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
+                          onClick={() => setReportReason('fondant')}
+                        >
+                          Fondant / Inapproprié
+                        </button>
+                        <button
+                          className={`report-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}
+                          onClick={() => setReportReason('sexuel')}
+                        >
+                          Contenu sexuel
+                        </button>
+                        <button
+                          className={`report-reason-btn ${reportReason === 'spam' ? 'active' : ''}`}
+                          onClick={() => setReportReason('spam')}
+                        >
+                          Spam
+                        </button>
+                        <button
+                          className={`report-reason-btn ${reportReason === 'autre' ? 'active' : ''}`}
+                          onClick={() => setReportReason('autre')}
+                        >
+                          Autre
+                        </button>
+                      </div>
+                      {reportReason && (
+                        <button
+                          className="report-submit-btn"
+                          onClick={handleReportSubmit}
+                        >
+                          Envoyer le signalement
+                        </button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
