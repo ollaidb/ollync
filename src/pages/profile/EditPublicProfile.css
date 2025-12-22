@@ -698,6 +698,242 @@
   background: transparent;
 }
 
+/* Services */
+.services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-item {
+  padding: 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #F9FAFB;
+  transition: all 0.2s;
+}
+
+.service-item:hover {
+  border-color: #D1D5DB;
+  background: #F3F4F6;
+}
+
+.service-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.service-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.service-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.service-description {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.service-payment-info {
+  margin-top: 4px;
+}
+
+.service-payment-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #E0E7FF;
+  color: #4338CA;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.service-payment-type svg {
+  flex-shrink: 0;
+}
+
+.service-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-edit-button,
+.service-remove-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6B7280;
+  transition: all 0.2s;
+}
+
+.service-edit-button:hover {
+  background: #EEF2FF;
+  border-color: #6366F1;
+  color: #6366F1;
+}
+
+.service-remove-button:hover {
+  background: #FEE2E2;
+  border-color: #EF4444;
+  color: #EF4444;
+}
+
+.service-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #F3F4F6;
+  border: 2px dashed #D1D5DB;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.service-add-button:hover {
+  background: #E5E7EB;
+  border-color: #9CA3AF;
+  color: #111827;
+}
+
+.service-add-button svg {
+  flex-shrink: 0;
+}
+
+/* Modal Service */
+.service-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.service-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.service-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.service-modal-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.service-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #F3F4F6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #6B7280;
+  transition: all 0.2s;
+}
+
+.service-modal-close:hover {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+.service-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.service-modal-body .form-group {
+  margin: 0;
+}
+
+.service-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.service-modal-cancel,
+.service-modal-save {
+  flex: 1;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.service-modal-cancel {
+  background: #F3F4F6;
+  color: #374151;
+  border: none;
+}
+
+.service-modal-cancel:hover {
+  background: #E5E7EB;
+}
+
+.service-modal-save {
+  background: #6366F1;
+  color: white;
+  border: none;
+}
+
+.service-modal-save:hover {
+  background: #4F46E5;
+}
+
 @media (max-width: 768px) {
   .edit-public-profile-page {
     padding: 16px;
@@ -736,5 +972,33 @@
 
   .status-suggestions {
     max-height: 250px;
+  }
+
+  .service-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .service-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .service-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .service-modal-content {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
+  }
+
+  .service-modal-header,
+  .service-modal-body,
+  .service-modal-footer {
+    padding: 16px;
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Briefcase, Edit2 } from 'lucide-react'
+import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Briefcase, Edit2, Plus, DollarSign, RefreshCw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -21,7 +21,12 @@ const EditPublicProfile = () => {
     distance: '',
     bio: '',
     skills: [] as string[],
-    services: [] as string[],
+    services: [] as Array<{
+      name: string
+      description: string
+      payment_type: 'price' | 'exchange'
+      value: string
+    }>,
     socialLinks: [] as string[],
     phone: '',
     email: '',
@@ -30,8 +35,15 @@ const EditPublicProfile = () => {
     statuses: [] as Array<{ name: string; description: string }>
   })
   const [newSkill, setNewSkill] = useState('')
-  const [newService, setNewService] = useState('')
   const [newSocialLink, setNewSocialLink] = useState('')
+  const [showServiceModal, setShowServiceModal] = useState(false)
+  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null)
+  const [serviceForm, setServiceForm] = useState({
+    name: '',
+    description: '',
+    payment_type: 'price' as 'price' | 'exchange',
+    value: ''
+  })
   const [statusSearch, setStatusSearch] = useState('')
   const [showStatusSuggestions, setShowStatusSuggestions] = useState(false)
   const [selectedStatusForDescription, setSelectedStatusForDescription] = useState<string | null>(null)
@@ -80,7 +92,20 @@ const EditPublicProfile = () => {
       distance: (profileData as { distance?: string | null }).distance || '',
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
-      services: (profileData as { services?: string[] | null }).services || [],
+      services: (() => {
+        const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }> | string[] | null }).services
+        if (!servicesData) return []
+        // Si les services sont encore des strings (ancien format), les convertir
+        if (Array.isArray(servicesData) && servicesData.length > 0 && typeof servicesData[0] === 'string') {
+          return (servicesData as string[]).map(name => ({
+            name,
+            description: '',
+            payment_type: 'price' as const,
+            value: ''
+          }))
+        }
+        return servicesData as Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>
+      })(),
       socialLinks: socialLinksArray,
       phone: (profileData as { phone?: string | null }).phone || '',
       email: user.email || '',
@@ -96,8 +121,8 @@ const EditPublicProfile = () => {
     if (user) {
       fetchProfile()
     } else {
-      setLoading(false)
-    }
+    setLoading(false)
+  }
   }, [user, fetchProfile])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,21 +198,91 @@ const EditPublicProfile = () => {
     }))
   }
 
-  const handleAddService = () => {
-    if (newService.trim() && !profile.services.includes(newService.trim())) {
-      setProfile(prev => ({
-        ...prev,
-        services: [...prev.services, newService.trim()]
-      }))
-      setNewService('')
+  const handleOpenServiceModal = (index?: number) => {
+    if (index !== undefined && index !== null) {
+      // Modifier un service existant
+      setEditingServiceIndex(index)
+      setServiceForm(profile.services[index])
+      } else {
+      // Ajouter un nouveau service
+      setEditingServiceIndex(null)
+      setServiceForm({
+        name: '',
+        description: '',
+        payment_type: 'price',
+        value: ''
+      })
     }
+    setShowServiceModal(true)
   }
 
-  const handleRemoveService = (service: string) => {
-    setProfile(prev => ({
-      ...prev,
-      services: prev.services.filter(s => s !== service)
-    }))
+  const handleCloseServiceModal = () => {
+    setShowServiceModal(false)
+    setEditingServiceIndex(null)
+    setServiceForm({
+      name: '',
+      description: '',
+      payment_type: 'price',
+      value: ''
+    })
+  }
+
+  const handleSaveService = () => {
+    if (!serviceForm.name.trim()) {
+      alert('Le nom du service est obligatoire')
+      return
+    }
+
+    if (!serviceForm.payment_type) {
+      alert('Le mode de paiement est obligatoire')
+      return
+    }
+
+    if (!serviceForm.value.trim()) {
+      if (serviceForm.payment_type === 'price') {
+        alert('Le prix est obligatoire')
+      } else {
+        alert('La description de l\'échange est obligatoire')
+    }
+      return
+    }
+
+    if (editingServiceIndex !== null) {
+      // Modifier un service existant
+      setProfile(prev => ({
+        ...prev,
+        services: prev.services.map((s, i) =>
+          i === editingServiceIndex ? {
+            name: serviceForm.name.trim(),
+            description: serviceForm.description.trim(),
+            payment_type: serviceForm.payment_type,
+            value: serviceForm.value.trim()
+          } : s
+        )
+      }))
+      } else {
+      // Ajouter un nouveau service
+      setProfile(prev => ({
+        ...prev,
+        services: [...prev.services, {
+          name: serviceForm.name.trim(),
+          description: serviceForm.description.trim(),
+          payment_type: serviceForm.payment_type,
+          value: serviceForm.value.trim()
+        }]
+      }))
+    }
+
+    handleCloseServiceModal()
+  }
+
+  const handleRemoveService = (index: number) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
+      setProfile(prev => ({
+        ...prev,
+        services: prev.services.filter((_, i) => i !== index)
+      }))
+    }
   }
 
   const handleAddSocialLink = () => {
@@ -564,44 +659,156 @@ const EditPublicProfile = () => {
             {/* Services */}
             <div className="form-group">
               <label>Services</label>
-              <div className="tags-input-container">
-                <div className="tags-list">
+              <div className="services-list">
                   {profile.services.map((service, index) => (
-                    <span key={index} className="tag">
-                      {service}
+                  <div key={index} className="service-item">
+                    <div className="service-header">
+                      <div className="service-info">
+                        <h4 className="service-name">{service.name}</h4>
+                        {service.description && (
+                          <p className="service-description">{service.description}</p>
+                        )}
+                        <div className="service-payment-info">
+                          <span className="service-payment-type">
+                            {service.payment_type === 'price' ? (
+                              <>
+                                <DollarSign size={14} />
+                                Prix: {service.value}
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw size={14} />
+                                Échange: {service.value}
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="service-actions">
                       <button
                         type="button"
-                        className="tag-remove"
-                        onClick={() => handleRemoveService(service)}
+                          className="service-edit-button"
+                          onClick={() => handleOpenServiceModal(index)}
                       >
-                        <X size={14} />
+                          <Edit2 size={16} />
                       </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="tag-input-wrapper">
-                  <input
-                    type="text"
-                    value={newService}
-                    onChange={(e) => setNewService(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddService()
-                      }
-                    }}
-                    placeholder="Ajouter un service"
-                  />
                   <button
                     type="button"
-                    className="tag-add-button"
-                    onClick={handleAddService}
+                          className="service-remove-button"
+                          onClick={() => handleRemoveService(index)}
                   >
-                    Ajouter
+                          <X size={16} />
                   </button>
                 </div>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="service-add-button"
+                  onClick={() => handleOpenServiceModal()}
+                >
+                  <Plus size={18} />
+                  Ajouter un service
+                </button>
               </div>
             </div>
+
+            {/* Modal pour ajouter/modifier un service */}
+            {showServiceModal && (
+              <div className="service-modal-overlay" onClick={handleCloseServiceModal}>
+                <div className="service-modal-content" onClick={(e) => e.stopPropagation()}>
+                  <div className="service-modal-header">
+                    <h3>{editingServiceIndex !== null ? 'Modifier le service' : 'Ajouter un service'}</h3>
+                    <button
+                      type="button"
+                      className="service-modal-close"
+                      onClick={handleCloseServiceModal}
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="service-modal-body">
+            <div className="form-group">
+                      <label htmlFor="service-name">Nom du service *</label>
+                  <input
+                    type="text"
+                        id="service-name"
+                        value={serviceForm.name}
+                        onChange={(e) => setServiceForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Ex: Photographie de mariage"
+                  />
+                </div>
+                    <div className="form-group">
+                      <label htmlFor="service-description">Description courte (1 à 2 lignes maximum)</label>
+                      <textarea
+                        id="service-description"
+                        value={serviceForm.description}
+                        onChange={(e) => setServiceForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Décrivez brièvement votre service..."
+                        rows={2}
+                        maxLength={200}
+                      />
+                      <div className="char-count">{serviceForm.description.length}/200</div>
+                </div>
+                    <div className="form-group">
+                      <label htmlFor="service-payment-type">Mode de paiement *</label>
+                      <select
+                        id="service-payment-type"
+                        value={serviceForm.payment_type}
+                        onChange={(e) => setServiceForm(prev => ({ 
+                      ...prev,
+                          payment_type: e.target.value as 'price' | 'exchange',
+                          value: '' // Réinitialiser la valeur lors du changement
+                    }))}
+                      >
+                        <option value="price">Prix</option>
+                        <option value="exchange">Échange de service</option>
+                      </select>
+                </div>
+                    <div className="form-group">
+                      <label htmlFor="service-value">
+                        {serviceForm.payment_type === 'price' ? 'Prix *' : 'Valeur associée (description de l\'échange) *'}
+                      </label>
+                      {serviceForm.payment_type === 'price' ? (
+                  <input
+                    type="text"
+                          id="service-value"
+                          value={serviceForm.value}
+                          onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
+                          placeholder="Ex: 150€, Sur devis, Gratuit..."
+                        />
+                      ) : (
+                        <textarea
+                          id="service-value"
+                          value={serviceForm.value}
+                          onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
+                          placeholder="Décrivez ce que vous proposez en échange..."
+                          rows={3}
+                          maxLength={300}
+                  />
+                      )}
+                </div>
+                  </div>
+                  <div className="service-modal-footer">
+                    <button
+                      type="button"
+                      className="service-modal-cancel"
+                      onClick={handleCloseServiceModal}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      className="service-modal-save"
+                      onClick={handleSaveService}
+                    >
+                      {editingServiceIndex !== null ? 'Modifier' : 'Ajouter'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Liens sociaux */}
             <div className="form-group">
@@ -673,9 +880,9 @@ const EditPublicProfile = () => {
                         >
                           <X size={14} />
                         </button>
-                      </div>
-                      <button
-                        type="button"
+                    </div>
+                  <button
+                    type="button"
                         className="status-description-toggle"
                         onClick={() => {
                           if (selectedStatusForDescription === status.name) {
@@ -686,11 +893,11 @@ const EditPublicProfile = () => {
                             setStatusDescription(status.description)
                           }
                         }}
-                      >
+                  >
                         <Edit2 size={14} />
                         {status.description ? 'Modifier description' : 'Ajouter description'}
-                      </button>
-                    </div>
+                  </button>
+              </div>
                     {selectedStatusForDescription === status.name && (
                       <div className="status-description-editor">
                         <textarea
@@ -705,16 +912,16 @@ const EditPublicProfile = () => {
                           maxLength={500}
                         />
                         <div className="char-count">{statusDescription.length}/500</div>
-                      </div>
+                    </div>
                     )}
                     {status.description && selectedStatusForDescription !== status.name && (
                       <div className="status-description-display">
                         <p>{status.description}</p>
-                      </div>
-                    )}
                   </div>
+                    )}
+                    </div>
                 ))}
-              </div>
+                    </div>
 
               {/* Recherche et ajout de statut */}
               <div className="status-search-container">
@@ -738,14 +945,14 @@ const EditPublicProfile = () => {
                   <div className="status-suggestions">
                     {filteredStatusRecommendations.length > 0 ? (
                       filteredStatusRecommendations.map((status, index) => (
-                        <button
+                      <button
                           key={index}
-                          type="button"
+                        type="button"
                           className="status-suggestion-item"
                           onClick={() => handleAddStatus(status)}
-                        >
+                      >
                           {status}
-                        </button>
+                      </button>
                       ))
                     ) : (
                       <div className="status-suggestion-item no-results">
@@ -760,14 +967,14 @@ const EditPublicProfile = () => {
                   <div className="status-suggestions">
                     <div className="status-suggestions-header">Recommandations</div>
                     {statusRecommendations.map((status, index) => (
-                      <button
+                        <button
                         key={index}
-                        type="button"
+                          type="button"
                         className="status-suggestion-item"
                         onClick={() => handleAddStatus(status)}
-                      >
+                        >
                         {status}
-                      </button>
+                        </button>
                     ))}
                   </div>
                 )}
