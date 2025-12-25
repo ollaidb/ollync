@@ -130,6 +130,118 @@
   text-decoration: underline;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  text-align: center;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-divider span {
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+.auth-button-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: white;
+  color: #3c4043;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.auth-button-google:hover:not(:disabled) {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.auth-button-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  flex-shrink: 0;
+}
+
+.auth-method-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-method-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  width: 100%;
+}
+
+.auth-method-button:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.auth-method-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-method-icon {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.auth-back-button {
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.auth-back-button:hover:not(:disabled) {
+  color: var(--primary);
+}
+
+.auth-back-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .spinner {
   animation: spin 1s linear infinite;
 }
