@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { FileText, Shield, Lock, Scale, ShoppingBag, Cookie, ChevronRight } from 'lucide-react'
+import { Shield, Lock, Scale, ShoppingBag, Cookie, ChevronRight } from 'lucide-react'
 import BackButton from '../../components/BackButton'
 import './Legal.css'
 

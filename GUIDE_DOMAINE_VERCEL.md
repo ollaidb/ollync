@@ -140,28 +140,79 @@ Pour vérifier que tout fonctionne :
 
 ## 🆘 Dépannage
 
+### ⚠️ Problème actuel : Le DNS pointe vers une mauvaise adresse IP
+
+**Diagnostic** : Si vous obtenez une erreur `ERR_CONNECTION_REFUSED` ou que Vercel affiche "Invalid Configuration", c'est probablement parce que votre DNS pointe vers une mauvaise adresse IP.
+
+**Vérification rapide** :
+```bash
+# Vérifiez quelle IP pointe actuellement votre domaine
+dig ollync.app +short
+# ou
+nslookup ollync.app
+```
+
+**Si le résultat n'est pas `216.198.79.1`**, vous devez corriger la configuration DNS.
+
+### Solution : Corriger l'enregistrement DNS
+
+1. **Connectez-vous à votre registrar** (là où vous avez acheté ollync.app)
+
+2. **Trouvez la section DNS / Zone DNS**
+
+3. **Modifiez l'enregistrement A existant** ou créez-en un nouveau :
+   - **Trouvez** l'enregistrement A actuel qui pointe vers une autre IP (par exemple `213.186.33.5`)
+   - **Modifiez-le** pour pointer vers `216.198.79.1`
+   - OU **Supprimez** l'ancien enregistrement et **créez-en un nouveau** avec :
+     - Type: **A**
+     - Name/Host: **@** (ou laissez vide selon votre registrar)
+     - Value/Address/IP: **216.198.79.1**
+
+4. **Sauvegardez les modifications**
+
+5. **Vérifiez la propagation** :
+   ```bash
+   dig ollync.app +short
+   # Le résultat devrait être : 216.198.79.1
+   ```
+
+6. **Dans Vercel**, cliquez sur le bouton **"Refresh"** à côté de votre domaine
+
 ### Le domaine reste en "Invalid Configuration"
 
 1. **Vérifiez l'enregistrement DNS** :
    - Utilisez un outil comme [whatsmydns.net](https://www.whatsmydns.net/)
    - Recherchez le domaine `ollync.app` et vérifiez que l'enregistrement A pointe vers `216.198.79.1`
-   - Vous pouvez aussi utiliser la commande : `dig ollync.app` ou `nslookup ollync.app`
+   - Vous pouvez aussi utiliser la commande : `dig ollync.app +short` ou `nslookup ollync.app`
+   - **Le résultat doit être exactement `216.198.79.1`**
 
 2. **Vérifiez la configuration chez votre registrar** :
-   - Assurez-vous que l'enregistrement A est bien créé avec :
+   - Assurez-vous que l'enregistrement A est bien créé/modifié avec :
      - Type: A
      - Name: @ (ou vide)
-     - Value: 216.198.79.1
-   - Vérifiez qu'il n'y a pas de conflit avec d'autres enregistrements
+     - Value: **216.198.79.1** (exactement cette adresse, pas une autre)
+   - Vérifiez qu'il n'y a pas plusieurs enregistrements A en conflit
+   - Supprimez tous les anciens enregistrements A qui pointent vers d'autres IPs
 
 3. **Attendez la propagation** :
-   - La propagation DNS peut prendre jusqu'à 48 heures
+   - La propagation DNS peut prendre entre **quelques minutes et 48 heures**
    - Essayez de cliquer sur "Refresh" dans Vercel toutes les heures
+   - Vérifiez régulièrement avec `dig ollync.app +short`
 
 4. **Contactez votre registrar** :
    - Si après 24-48h cela ne fonctionne toujours pas, contactez le support de votre registrar
    - Vérifiez que votre domaine n'a pas de restrictions spéciales
+   - Demandez-leur de vérifier que l'enregistrement A est bien configuré
 
 5. **Contactez le support Vercel** :
-   - Si tout semble correct mais que Vercel ne détecte toujours pas la configuration, contactez le [support Vercel](https://vercel.com/support)
+   - Si le DNS pointe bien vers `216.198.79.1` mais que Vercel affiche toujours "Invalid Configuration", contactez le [support Vercel](https://vercel.com/support)
+
+### Erreur ERR_CONNECTION_REFUSED
+
+Cette erreur signifie généralement que :
+- Le DNS est configuré mais pointe vers la mauvaise IP
+- OU le DNS n'est pas encore propagé vers l'IP correcte de Vercel
+- OU Vercel n'a pas encore activé le domaine car il détecte toujours "Invalid Configuration"
+
+**Solution** : Suivez les étapes ci-dessus pour corriger le DNS. Une fois que le DNS pointe vers `216.198.79.1` et que Vercel affiche "Valid", l'erreur devrait disparaître.
 

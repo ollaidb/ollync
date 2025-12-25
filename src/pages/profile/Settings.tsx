@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Settings as SettingsIcon, User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2 } from 'lucide-react'
+import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2 } from 'lucide-react'
 import './Settings.css'
 
 const Settings = () => {

@@ -1,4 +1,3 @@
-import { Lock } from 'lucide-react'
 import BackButton from '../../components/BackButton'
 import './LegalPage.css'
 

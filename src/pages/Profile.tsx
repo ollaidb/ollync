@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { User, Settings as SettingsIcon, Shield, HelpCircle, FileText, LogOut, ChevronRight, LucideIcon, FileEdit } from 'lucide-react'
+import { User, Settings as SettingsIcon, Shield, HelpCircle, LogOut, ChevronRight, LucideIcon, FileEdit } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
