@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Briefcase, Edit2, Plus, DollarSign, RefreshCw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { useConsent } from '../../hooks/useConsent'
 import PageHeader from '../../components/PageHeader'
+import ConsentModal from '../../components/ConsentModal'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -48,6 +50,15 @@ const EditPublicProfile = () => {
   const [showStatusSuggestions, setShowStatusSuggestions] = useState(false)
   const [selectedStatusForDescription, setSelectedStatusForDescription] = useState<string | null>(null)
   const [statusDescription, setStatusDescription] = useState('')
+
+  // Hook de consentement pour les données personnelles du profil
+  const profileConsent = useConsent('profile_data')
+
+  // Gérer le refus : rediriger vers la page précédente
+  const handleRejectConsent = () => {
+    profileConsent.handleReject()
+    navigate(-1) // Retour à la page précédente
+  }
 
   const fetchProfile = useCallback(async () => {
     if (!user) {
@@ -421,7 +432,16 @@ const EditPublicProfile = () => {
     return socialObj
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
+    if (!user) return
+
+    // Vérifier le consentement avant de sauvegarder
+    profileConsent.requireConsent(async () => {
+      await performSave()
+    })
+  }
+
+  const performSave = async () => {
     if (!user) return
 
     setSaving(true)
@@ -1001,6 +1021,15 @@ const EditPublicProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de consentement pour les données personnelles */}
+      <ConsentModal
+        visible={profileConsent.showModal}
+        title={profileConsent.messages.title}
+        message={profileConsent.messages.message}
+        onAccept={profileConsent.handleAccept}
+        onReject={handleRejectConsent}
+      />
     </div>
   )
 }

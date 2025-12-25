@@ -10,6 +10,13 @@ import Settings from './profile/Settings'
 import Security from './profile/Security'
 import Help from './profile/Help'
 import Legal from './profile/Legal'
+import Contact from './profile/Contact'
+import MentionsLegales from './profile/MentionsLegales'
+import PolitiqueConfidentialite from './profile/PolitiqueConfidentialite'
+import CGU from './profile/CGU'
+import CGV from './profile/CGV'
+import PolitiqueCookies from './profile/PolitiqueCookies'
+import PageSecurite from './profile/PageSecurite'
 import PersonalInfo from './profile/PersonalInfo'
 import PaymentMethods from './profile/PaymentMethods'
 import Appearance from './profile/Appearance'
@@ -23,6 +30,7 @@ import Annonces from './profile/Annonces'
 import Mail from './profile/Mail'
 import OnlineStatus from './profile/OnlineStatus'
 import DataManagement from './profile/DataManagement'
+import DeleteAccount from './profile/DeleteAccount'
 import './Profile.css'
 
 interface ProfileData {
@@ -49,6 +57,7 @@ const Profile = () => {
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showSignOutModal, setShowSignOutModal] = useState(false)
 
   // Si un ID est fourni dans /profile/public/:id, c'est un profil public d'un autre utilisateur
   // Ou si un ID est fourni dans /profile/:id et que ce n'est pas l'utilisateur connecté
@@ -62,7 +71,9 @@ const Profile = () => {
     if (location.pathname.startsWith('/profile/settings')) return 'settings'
     if (location.pathname.startsWith('/profile/security')) return 'security'
     if (location.pathname === '/profile/help') return 'help'
+    if (location.pathname === '/profile/contact') return 'contact'
     if (location.pathname === '/profile/legal') return 'legal'
+    if (location.pathname.startsWith('/profile/legal/')) return 'legal-page'
     if (location.pathname === '/profile/annonces') return 'annonces'
     return 'menu'
   }
@@ -154,6 +165,10 @@ const Profile = () => {
     }
   }
 
+  const handleSignOutClick = () => {
+    setShowSignOutModal(true)
+  }
+
   const handleSignOut = async () => {
     try {
       await signOut()
@@ -212,6 +227,10 @@ const Profile = () => {
       return <DataManagement />
     }
 
+    if (location.pathname === '/profile/settings/delete-account') {
+      return <DeleteAccount />
+    }
+
     if (location.pathname === '/profile/security/account-security') {
       return <AccountSecurity />
     }
@@ -234,6 +253,26 @@ const Profile = () => {
 
     if (location.pathname === '/profile/annonces') {
       return <Annonces />
+    }
+
+    // Routes pour les pages légales individuelles
+    if (location.pathname === '/profile/legal/mentions-legales') {
+      return <MentionsLegales />
+    }
+    if (location.pathname === '/profile/legal/politique-confidentialite') {
+      return <PolitiqueConfidentialite />
+    }
+    if (location.pathname === '/profile/legal/cgu') {
+      return <CGU />
+    }
+    if (location.pathname === '/profile/legal/cgv') {
+      return <CGV />
+    }
+    if (location.pathname === '/profile/legal/politique-cookies') {
+      return <PolitiqueCookies />
+    }
+    if (location.pathname === '/profile/legal/securite') {
+      return <PageSecurite />
     }
 
     switch (currentSection) {
@@ -262,6 +301,8 @@ const Profile = () => {
         return <Security />
       case 'help':
         return <Help />
+      case 'contact':
+        return <Contact />
       case 'legal':
         return <Legal />
       case 'annonces':
@@ -271,35 +312,49 @@ const Profile = () => {
     }
   }
 
+  const getPageTitle = () => {
+    if (location.pathname === '/profile/annonces') return 'Mes annonces'
+    if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return 'Aide'
+    if (location.pathname === '/profile/contact') return 'Contact'
+    if (location.pathname.startsWith('/profile/settings')) return 'Paramètres'
+    if (location.pathname.startsWith('/profile/security')) return 'Connexion et sécurité'
+    if (location.pathname === '/profile/legal' || location.pathname.startsWith('/profile/legal/')) return 'Informations légales'
+    return 'Mon compte'
+  }
+
   const renderMenu = () => {
+    // Si l'utilisateur n'est pas connecté, afficher l'écran de connexion
+    if (!user) {
+      return (
+        <div className="profile-content-not-connected">
+          <User className="profile-not-connected-icon" strokeWidth={1.5} />
+          <h2 className="profile-not-connected-title">Vous n'êtes pas connecté</h2>
+          <p className="profile-not-connected-text">Connectez-vous pour accéder à votre profil</p>
+          <button 
+            className="profile-not-connected-button" 
+            onClick={() => navigate('/auth/register')}
+          >
+            S'inscrire
+          </button>
+          <p className="profile-not-connected-login-link">
+            Déjà un compte ?{' '}
+            <button 
+              className="profile-not-connected-link" 
+              onClick={() => navigate('/auth/login')}
+            >
+              Se connecter
+            </button>
+          </p>
+        </div>
+      )
+    }
+
     // Utiliser uniquement les données de profiles (synchronisées depuis auth.users)
     // Ne pas utiliser de fallback avec l'email pour éviter les noms automatiques
-    const displayName = user 
-      ? (profile?.full_name || profile?.username || 'Utilisateur')
-      : 'Se connecter'
-
-    // Menu items de base (toujours disponibles)
-    const baseMenuItems: MenuItem[] = [
-      { 
-        id: 'help', 
-        icon: HelpCircle, 
-        label: 'Aide', 
-        path: '/profile/help',
-        onClick: () => navigate('/profile/help'),
-        requiresAuth: false
-      },
-      { 
-        id: 'legal', 
-        icon: FileText, 
-        label: 'Pages légales', 
-        path: '/profile/legal',
-        onClick: () => navigate('/profile/legal'),
-        requiresAuth: false
-      }
-    ]
+    const displayName = profile?.full_name || profile?.username || 'Utilisateur'
 
     // Menu items nécessitant une connexion
-    const authMenuItems: MenuItem[] = user ? [
+    const authMenuItems: MenuItem[] = [
       { 
         id: 'annonces', 
         icon: FileEdit, 
@@ -323,42 +378,36 @@ const Profile = () => {
         path: '/profile/security',
         onClick: () => navigate('/profile/security'),
         requiresAuth: true
+      },
+      { 
+        id: 'help', 
+        icon: HelpCircle, 
+        label: 'Aide', 
+        path: '/profile/help',
+        onClick: () => navigate('/profile/help'),
+        requiresAuth: false
       }
-    ] : []
-
-    const menuItems = [...authMenuItems, ...baseMenuItems]
+    ]
 
     return (
       <div className="profile-menu-page">
         {/* Carte de profil */}
         <div 
           className="profile-card" 
-          onClick={() => {
-            if (user) {
-              navigate('/profile/public')
-            } else {
-              navigate('/auth/login')
-            }
-          }}
+          onClick={() => navigate('/profile/public')}
         >
           <div className="profile-card-avatar">
-            {user ? (
-              profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt={displayName}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
-                  }}
-                />
-              ) : (
-                <div className="profile-card-avatar-placeholder">
-                  {(displayName[0] || 'U').toUpperCase()}
-                </div>
-              )
+            {profile?.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={displayName}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
+                }}
+              />
             ) : (
               <div className="profile-card-avatar-placeholder">
-                <User size={24} />
+                {(displayName[0] || 'U').toUpperCase()}
               </div>
             )}
           </div>
@@ -368,7 +417,7 @@ const Profile = () => {
 
         {/* Liste des options */}
         <div className="profile-menu-list">
-          {menuItems.map((item) => {
+          {authMenuItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
             return (
@@ -383,7 +432,7 @@ const Profile = () => {
                   <span className="profile-menu-item-label">{item.label}</span>
                   <ChevronRight size={18} className="profile-menu-item-chevron" />
                 </button>
-                {item.subItems && user && (
+                {item.subItems && (
                   <div className="profile-menu-subitems">
                     {item.subItems.map((subItem, index) => (
                       <button
@@ -402,29 +451,16 @@ const Profile = () => {
           })}
         </div>
 
-        {/* Bouton de déconnexion ou connexion */}
-        {user ? (
-          <button
-            className="profile-menu-item profile-menu-item-logout"
-            onClick={handleSignOut}
-          >
-            <div className="profile-menu-item-icon">
-              <LogOut size={20} />
-            </div>
-            <span className="profile-menu-item-label">Déconnexion</span>
-          </button>
-        ) : (
-          <button
-            className="profile-menu-item profile-menu-item-login"
-            onClick={() => navigate('/auth/login')}
-          >
-            <div className="profile-menu-item-icon">
-              <User size={20} />
-            </div>
-            <span className="profile-menu-item-label">Se connecter</span>
-            <ChevronRight size={18} className="profile-menu-item-chevron" />
-          </button>
-        )}
+        {/* Bouton de déconnexion */}
+        <button
+          className="profile-menu-item profile-menu-item-logout"
+          onClick={handleSignOutClick}
+        >
+          <div className="profile-menu-item-icon">
+            <LogOut size={20} />
+          </div>
+          <span className="profile-menu-item-label">Déconnexion</span>
+        </button>
       </div>
     )
   }
@@ -438,7 +474,7 @@ const Profile = () => {
             <div className="profile-header-content">
               <BackButton />
               <h1 className="profile-title">
-                {location.pathname === '/profile/annonces' ? 'Mes annonces' : 'Mon compte'}
+                {getPageTitle()}
               </h1>
               <div className="profile-header-spacer"></div>
             </div>
@@ -453,6 +489,33 @@ const Profile = () => {
             renderContent()
           )}
         </div>
+
+        {/* Modal de confirmation de déconnexion */}
+        {showSignOutModal && (
+          <div className="modal-overlay" onClick={() => setShowSignOutModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Déconnexion</h3>
+              <p>Voulez-vous vraiment vous déconnecter ?</p>
+              <div className="modal-actions">
+                <button 
+                  className="btn-cancel" 
+                  onClick={() => setShowSignOutModal(false)}
+                >
+                  Annuler
+                </button>
+                <button 
+                  className="btn-confirm" 
+                  onClick={() => {
+                    setShowSignOutModal(false)
+                    handleSignOut()
+                  }}
+                >
+                  Déconnexion
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

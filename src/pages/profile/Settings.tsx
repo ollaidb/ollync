@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Settings as SettingsIcon, User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight } from 'lucide-react'
-import PageHeader from '../../components/PageHeader'
+import { Settings as SettingsIcon, User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2 } from 'lucide-react'
 import './Settings.css'
 
 const Settings = () => {
@@ -48,37 +47,37 @@ const Settings = () => {
       icon: Database,
       label: 'Gestion de mes données',
       path: '/profile/settings/data-management'
+    },
+    {
+      id: 'delete-account',
+      icon: Trash2,
+      label: 'Suppression de compte',
+      path: '/profile/settings/delete-account'
     }
   ]
 
   return (
-    <div className="page">
-      <PageHeader title="Mon compte" />
-      <div className="page-content settings-page">
+    <div className="settings-page">
         <div className="settings-container">
           <div className="settings-section">
-            <div className="settings-section-header">
-              <SettingsIcon size={20} />
-              <h2 className="settings-section-title">Paramètres</h2>
-            </div>
             <div className="settings-menu-list">
               {menuItems.map((item) => {
                 const Icon = item.icon
+                const isDestructive = item.id === 'delete-account'
                 return (
                   <button
                     key={item.id}
-                    className="settings-menu-item"
+                    className={`settings-menu-item ${isDestructive ? 'settings-menu-item-destructive' : ''}`}
                     onClick={() => navigate(item.path)}
                   >
-                    <div className="settings-menu-item-icon">
+                    <div className={`settings-menu-item-icon ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`}>
                       <Icon size={20} />
                     </div>
                     <span className="settings-menu-item-label">{item.label}</span>
-                    <ChevronRight size={18} className="settings-menu-item-chevron" />
+                    {!isDestructive && <ChevronRight size={18} className="settings-menu-item-chevron" />}
                   </button>
                 )
               })}
-            </div>
           </div>
         </div>
       </div>

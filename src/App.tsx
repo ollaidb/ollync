@@ -49,6 +49,7 @@ function AppContent() {
           <Route path="/profile/settings/appearance" element={<Profile />} />
           <Route path="/profile/settings/notifications" element={<Profile />} />
           <Route path="/profile/settings/data-management" element={<Profile />} />
+          <Route path="/profile/settings/delete-account" element={<Profile />} />
           <Route path="/profile/security" element={<Profile />} />
           <Route path="/profile/security/account-security" element={<Profile />} />
           <Route path="/profile/security/password" element={<Profile />} />
@@ -56,7 +57,14 @@ function AppContent() {
           <Route path="/profile/security/two-factor" element={<Profile />} />
           <Route path="/profile/security/devices" element={<Profile />} />
           <Route path="/profile/help" element={<Profile />} />
+          <Route path="/profile/contact" element={<Profile />} />
           <Route path="/profile/legal" element={<Profile />} />
+          <Route path="/profile/legal/mentions-legales" element={<Profile />} />
+          <Route path="/profile/legal/politique-confidentialite" element={<Profile />} />
+          <Route path="/profile/legal/cgu" element={<Profile />} />
+          <Route path="/profile/legal/cgv" element={<Profile />} />
+          <Route path="/profile/legal/politique-cookies" element={<Profile />} />
+          <Route path="/profile/legal/securite" element={<Profile />} />
           <Route path="/profile/annonces" element={<Profile />} />
           <Route path="/profile/:id" element={<Profile />} />
           {/* Nouvelles routes - Catégories principales */}

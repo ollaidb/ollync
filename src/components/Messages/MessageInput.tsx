@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react'
 import { Send, Image, Video, File, MapPin, DollarSign, Calendar, Share2, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
+import { useConsent } from '../../hooks/useConsent'
+import ConsentModal from '../ConsentModal'
 import './MessageInput.css'
 
 interface MessageInputProps {
@@ -19,6 +21,10 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const docInputRef = useRef<HTMLInputElement>(null)
+
+  // Hooks de consentement
+  const mediaConsent = useConsent('media')
+  const locationConsent = useConsent('location')
 
   const sendMessage = async (type: MessageType = 'text', extraData?: Record<string, unknown>) => {
     if (!message.trim() && type === 'text') return
@@ -53,7 +59,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
-  const handleFileUpload = async (file: File, type: 'photo' | 'video' | 'document') => {
+  const performFileUpload = async (file: File, type: 'photo' | 'video' | 'document') => {
     if (disabled || sending) return
 
     setSending(true)
@@ -103,6 +109,18 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
+  const handleFileUpload = (file: File, type: 'photo' | 'video' | 'document') => {
+    // Pour les photos et vidéos, on demande le consentement médias
+    // Pour les documents, pas de consentement nécessaire selon les spécifications
+    if (type === 'photo' || type === 'video') {
+      mediaConsent.requireConsent(() => {
+        performFileUpload(file, type)
+      })
+    } else {
+      performFileUpload(file, type)
+    }
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video' | 'document') => {
     const file = e.target.files?.[0]
     if (file) {
@@ -119,6 +137,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   }
 
   const handleLocation = () => {
+    locationConsent.requireConsent(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -135,6 +154,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     } else {
       alert('La géolocalisation n\'est pas supportée par votre navigateur')
     }
+    })
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -289,6 +309,23 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         accept=".pdf,.doc,.docx,.txt"
         onChange={(e) => handleFileSelect(e, 'document')}
         style={{ display: 'none' }}
+      />
+
+      {/* Modals de consentement */}
+      <ConsentModal
+        visible={mediaConsent.showModal}
+        title={mediaConsent.messages.title}
+        message={mediaConsent.messages.message}
+        onAccept={mediaConsent.handleAccept}
+        onReject={mediaConsent.handleReject}
+      />
+
+      <ConsentModal
+        visible={locationConsent.showModal}
+        title={locationConsent.messages.title}
+        message={locationConsent.messages.message}
+        onAccept={locationConsent.handleAccept}
+        onReject={locationConsent.handleReject}
       />
     </div>
   )

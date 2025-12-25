@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight } from 'lucide-react'
-import PageHeader from '../../components/PageHeader'
 import './Security.css'
 
 const Security = () => {
@@ -40,15 +39,9 @@ const Security = () => {
   ]
 
   return (
-    <div className="page">
-      <PageHeader title="Mon compte" />
-      <div className="page-content security-page">
+    <div className="security-page">
         <div className="security-container">
           <div className="security-section">
-            <div className="security-section-header">
-              <Shield size={20} />
-              <h2 className="security-section-title">Connexion et Sécurité</h2>
-            </div>
             <div className="security-menu-list">
               {menuItems.map((item) => {
                 const Icon = item.icon
@@ -66,7 +59,6 @@ const Security = () => {
                   </button>
                 )
               })}
-            </div>
           </div>
         </div>
       </div>

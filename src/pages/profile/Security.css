@@ -17,25 +17,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.security-section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.security-section-header svg {
-  color: #999;
-}
-
-.security-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
 .security-menu-list {
   display: flex;
   flex-direction: column;

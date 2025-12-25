@@ -1,0 +1,106 @@
+.consent-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.consent-modal-content {
+  background: var(--card);
+  padding: 24px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+}
+
+.consent-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--foreground);
+}
+
+.consent-modal-message {
+  margin: 0 0 24px 0;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.consent-modal-message p {
+  margin: 0 0 12px 0;
+}
+
+.consent-modal-message p:last-child {
+  margin-bottom: 0;
+}
+
+.consent-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.consent-modal-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.consent-modal-button-reject {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.consent-modal-button-reject:hover {
+  background: var(--border);
+}
+
+.consent-modal-button-accept {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.consent-modal-button-accept:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+  .consent-modal-content {
+    padding: 20px;
+    max-width: 90%;
+  }
+
+  .consent-modal-title {
+    font-size: 18px;
+  }
+
+  .consent-modal-message {
+    font-size: 14px;
+  }
+
+  .consent-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .consent-modal-button {
+    width: 100%;
+  }
+}
+

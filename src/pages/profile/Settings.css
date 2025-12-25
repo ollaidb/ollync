@@ -17,25 +17,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.settings-section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.settings-section-header svg {
-  color: #666;
-}
-
-.settings-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
 .settings-menu-list {
   display: flex;
   flex-direction: column;
@@ -85,6 +66,38 @@
 .settings-menu-item-chevron {
   color: #999;
   flex-shrink: 0;
+}
+
+.settings-menu-item-destructive {
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+  padding-top: 20px;
+  color: #ef4444;
+}
+
+.settings-menu-item-destructive .settings-menu-item-label {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.settings-menu-item-icon-destructive {
+  color: #ef4444;
+}
+
+.settings-menu-item-destructive:hover {
+  background: #fef2f2;
+}
+
+.settings-menu-item-destructive:hover .settings-menu-item-label {
+  color: #dc2626;
+}
+
+.settings-menu-item-destructive:hover .settings-menu-item-icon-destructive {
+  color: #dc2626;
+}
+
+.settings-menu-item-destructive .settings-menu-item-chevron {
+  display: none;
 }
 
 @media (max-width: 768px) {

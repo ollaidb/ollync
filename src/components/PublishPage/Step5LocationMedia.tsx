@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { useConsent } from '../../hooks/useConsent'
 import { LocationAutocomplete } from '../Location/LocationAutocomplete'
+import ConsentModal from '../ConsentModal'
 import './Step5LocationMedia.css'
 
 interface FormData {
@@ -34,7 +36,30 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Hooks de consentement
+  const locationConsent = useConsent('location')
+  const mediaConsent = useConsent('media')
+
+  // Gérer le refus pour la localisation
+  const handleRejectLocation = () => {
+    locationConsent.handleReject()
+    // L'action est simplement annulée, l'utilisateur reste sur la page
+  }
+
+  // Gérer le refus pour les médias
+  const handleRejectMedia = () => {
+    mediaConsent.handleReject()
+    // L'action est simplement annulée, l'utilisateur reste sur la page
+  }
+
+  // Gérer le clic sur le bouton de localisation GPS
+  const handleGetLocationClick = () => {
+    locationConsent.requireConsent(() => {
+      onGetMyLocation()
+    })
+  }
+
+  const performImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
     if (!user) {
@@ -105,6 +130,13 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     setUploading(false)
   }
 
+  // Envelopper handleImageUpload avec le consentement
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    mediaConsent.requireConsent(() => {
+      performImageUpload(e)
+    })
+  }
+
   const removeImage = (index: number) => {
     const newImages = formData.images.filter((_, i) => i !== index)
     onUpdateFormData({ images: newImages })
@@ -145,7 +177,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
         />
         <button
           className="location-button"
-          onClick={onGetMyLocation}
+          onClick={handleGetLocationClick}
         >
           Utiliser ma localisation GPS
         </button>
@@ -225,6 +257,23 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
           <span>Marquer comme urgent</span>
         </label>
       </div>
+
+      {/* Modals de consentement */}
+      <ConsentModal
+        visible={locationConsent.showModal}
+        title={locationConsent.messages.title}
+        message={locationConsent.messages.message}
+        onAccept={locationConsent.handleAccept}
+        onReject={handleRejectLocation}
+      />
+
+      <ConsentModal
+        visible={mediaConsent.showModal}
+        title={mediaConsent.messages.title}
+        message={mediaConsent.messages.message}
+        onAccept={mediaConsent.handleAccept}
+        onReject={handleRejectMedia}
+      />
     </div>
   )
 }

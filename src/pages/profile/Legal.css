@@ -27,55 +27,81 @@
 .legal-section {
   background: var(--card);
   border-radius: 16px;
-  padding: 32px;
+  padding: 24px;
   margin-bottom: 24px;
   box-shadow: var(--shadow-sm);
 }
 
-.legal-header {
+.legal-menu-list {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border);
 }
 
-.legal-header h3 {
-  font-size: 22px;
+.legal-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.legal-menu-item:hover {
+  background: var(--border);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.legal-menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.legal-menu-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-foreground);
+  flex-shrink: 0;
+}
+
+.legal-menu-text {
+  flex: 1;
+}
+
+.legal-menu-text h3 {
+  font-size: 18px;
   font-weight: 600;
-  color: var(--card-foreground);
+  color: var(--foreground);
+  margin: 0 0 4px 0;
+}
+
+.legal-menu-text p {
+  font-size: 14px;
+  color: var(--muted-foreground);
   margin: 0;
 }
 
-.legal-header svg {
-  color: var(--primary);
-}
-
-.legal-content {
+.legal-menu-arrow {
   color: var(--muted-foreground);
-  line-height: 1.8;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
-.legal-content h4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--card-foreground);
-  margin: 24px 0 12px 0;
-}
-
-.legal-content h4:first-of-type {
-  margin-top: 0;
-}
-
-.legal-content p {
-  margin: 0 0 16px 0;
-  font-size: 15px;
-}
-
-.legal-content strong {
-  color: var(--card-foreground);
-  font-weight: 600;
+.legal-menu-item:hover .legal-menu-arrow {
+  color: var(--primary);
 }
 
 @media (max-width: 768px) {
@@ -84,19 +110,24 @@
   }
 
   .legal-section {
-    padding: 24px 16px;
+    padding: 20px 16px;
   }
 
-  .legal-header h3 {
-    font-size: 20px;
+  .legal-menu-item {
+    padding: 16px;
   }
 
-  .legal-content h4 {
+  .legal-menu-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .legal-menu-text h3 {
     font-size: 16px;
   }
 
-  .legal-content p {
-    font-size: 14px;
+  .legal-menu-text p {
+    font-size: 13px;
   }
 }
 
