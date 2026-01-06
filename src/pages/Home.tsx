@@ -57,26 +57,8 @@ const Home = () => {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  // Détection si on est sur web (largeur > 768px) ou mobile
-  const [isWeb, setIsWeb] = useState(false)
-  
   // Nombre d'annonces par section : maximum 6 avec bouton "Afficher plus"
   const maxPostsPerSection = 6
-  const visiblePostsPerSection = 2 // Afficher seulement 2 annonces visibles
-
-  // Détecter la taille d'écran au montage et lors du redimensionnement
-  useEffect(() => {
-    const checkIsWeb = () => {
-      setIsWeb(window.innerWidth > 768)
-    }
-    
-    // Vérifier immédiatement
-    checkIsWeb()
-    
-    // Écouter les changements de taille
-    window.addEventListener('resize', checkIsWeb)
-    return () => window.removeEventListener('resize', checkIsWeb)
-  }, [])
 
   const fetchRecentPosts = async (page = 1, limit = 20) => {
     const offset = (page - 1) * limit
@@ -142,12 +124,12 @@ const Home = () => {
         .eq('slug', categorySlug)
         .single()
 
-      if (!category) {
+      if (!category || !(category as { id: string }).id) {
         return []
       }
 
       const posts = await fetchPostsWithRelations({
-        categoryId: category.id,
+        categoryId: (category as { id: string }).id,
         status: 'active',
         limit: maxPostsPerSection,
         orderBy: 'created_at',
@@ -226,7 +208,7 @@ const Home = () => {
         .eq('id', user.id)
         .single()
 
-      const userLocation = userProfile?.location || null
+      const userLocation = (userProfile as { location?: string | null } | null)?.location || null
 
       // 2. Récupérer les données comportementales de l'utilisateur
       const [favoritesResult, likesResult, interestsResult, searchesResult] = await Promise.all([
