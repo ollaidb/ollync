@@ -43,6 +43,26 @@ const Home = () => {
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [urgentPosts, setUrgentPosts] = useState<Post[]>([])
 
+  // Détection si on est sur web (largeur > 768px) ou mobile
+  const [isWeb, setIsWeb] = useState(false)
+  
+  // Nombre d'annonces par section : 6 pour web, 5 pour mobile (comme actuellement)
+  const postsPerSection = isWeb ? 6 : 5
+
+  // Détecter la taille d'écran au montage et lors du redimensionnement
+  useEffect(() => {
+    const checkIsWeb = () => {
+      setIsWeb(window.innerWidth > 768)
+    }
+    
+    // Vérifier immédiatement
+    checkIsWeb()
+    
+    // Écouter les changements de taille
+    window.addEventListener('resize', checkIsWeb)
+    return () => window.removeEventListener('resize', checkIsWeb)
+  }, [])
+
   const fetchPosts = async (_query: unknown, limit = 10) => {
     return await fetchPostsWithRelations({
       status: 'active',
@@ -53,7 +73,7 @@ const Home = () => {
   }
 
   const fetchRecentPosts = async () => {
-    const posts = await fetchPosts({}, 5)
+    const posts = await fetchPosts({}, postsPerSection)
     setRecentPosts(posts)
   }
 
@@ -76,7 +96,7 @@ const Home = () => {
         }
         return 0
       })
-      .slice(0, 5)
+      .slice(0, postsPerSection)
 
     setUrgentPosts(urgent)
   }
@@ -92,7 +112,7 @@ const Home = () => {
     }
     loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [postsPerSection])
 
 
   if (loading) {

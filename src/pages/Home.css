@@ -324,6 +324,31 @@
   flex-shrink: 0;
 }
 
+/* Version Web - Grille avec 6 annonces visibles + scroll horizontal */
+@media (min-width: 769px) {
+  .home-posts-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - (5 * 12px)) / 6);
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .home-posts-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-posts-grid .post-card {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+}
+
 /* Styles pour les anciens blocs (conservés pour compatibilité) */
 .home-post-block {
   width: 66.67%;
@@ -456,6 +481,16 @@
 
   .home-posts-grid {
     gap: 10px;
+    /* S'assurer que le scroll horizontal reste pour mobile */
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .home-posts-grid .post-card {
+    width: 58%;
+    min-width: 58%;
+    flex-shrink: 0;
   }
 
   .home-post-block {
