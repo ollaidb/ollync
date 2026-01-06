@@ -160,12 +160,13 @@
   color: #3c4043;
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
 }
 
 .auth-button-google:hover:not(:disabled) {
@@ -179,6 +180,39 @@
 }
 
 .google-icon {
+  flex-shrink: 0;
+}
+
+.auth-button-apple {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: #000000;
+  color: white;
+  border: 1px solid #000000;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.auth-button-apple:hover:not(:disabled) {
+  background: #1a1a1a;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.auth-button-apple:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.apple-icon {
   flex-shrink: 0;
 }
 
@@ -198,11 +232,12 @@
   color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
   width: 100%;
+  white-space: nowrap;
 }
 
 .auth-method-button:hover:not(:disabled) {
