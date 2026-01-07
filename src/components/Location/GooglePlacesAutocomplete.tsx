@@ -30,6 +30,7 @@ export const GooglePlacesAutocomplete = ({
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
   const isInitializedRef = useRef(false)
+  const [inputValue, setInputValue] = useState(value)
 
   // Récupération de la clé API depuis les variables d'environnement
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +74,7 @@ export const GooglePlacesAutocomplete = ({
         city = cityComponent?.long_name || ''
       }
 
+      setInputValue(address)
       onChange(address)
       onLocationSelect({
         address,
@@ -93,26 +95,26 @@ export const GooglePlacesAutocomplete = ({
     }
   }, [isLoaded, loadError, onChange, onLocationSelect])
 
-  // Synchroniser la valeur de l'input avec la prop value
+  // Synchroniser l'état local avec la prop value quand elle change depuis l'extérieur
   useEffect(() => {
-    if (inputRef.current && inputRef.current.value !== value) {
-      // Mettre à jour uniquement si la valeur change depuis l'extérieur
-      // (par exemple, lors du chargement initial ou d'une réinitialisation)
-      inputRef.current.value = value
+    if (value !== inputValue && document.activeElement !== inputRef.current) {
+      setInputValue(value)
     }
   }, [value])
 
   const handleClear = () => {
+    setInputValue('')
     onChange('')
     if (inputRef.current) {
-      inputRef.current.value = ''
       inputRef.current.focus()
     }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Mettre à jour la valeur quand l'utilisateur tape
-    onChange(e.target.value)
+    const newValue = e.target.value
+    setInputValue(newValue)
+    onChange(newValue)
   }
 
   if (!apiKey || apiKey === 'YOUR_API_KEY') {
@@ -124,9 +126,11 @@ export const GooglePlacesAutocomplete = ({
           type="text"
           className="location-input"
           placeholder="⚠️ Clé API Google Maps non configurée"
-          defaultValue={value}
+          value={inputValue}
           onChange={handleInputChange}
           disabled={true}
+          autoComplete="off"
+          formNoValidate
         />
         </div>
       </div>
@@ -142,9 +146,11 @@ export const GooglePlacesAutocomplete = ({
           type="text"
           className="location-input"
           placeholder="Erreur lors du chargement de Google Maps"
-          defaultValue={value}
+          value={inputValue}
           onChange={handleInputChange}
           disabled={true}
+          autoComplete="off"
+          formNoValidate
         />
         </div>
       </div>
@@ -160,9 +166,11 @@ export const GooglePlacesAutocomplete = ({
           type="text"
           className="location-input"
           placeholder="Chargement de Google Maps..."
-          defaultValue={value}
+          value={inputValue}
           onChange={handleInputChange}
           disabled={true}
+          autoComplete="off"
+          formNoValidate
         />
           <Loader size={18} className="location-input-loader" />
         </div>
@@ -178,11 +186,13 @@ export const GooglePlacesAutocomplete = ({
           type="text"
           className="location-input"
           placeholder={placeholder}
-          defaultValue={value}
+          value={inputValue}
           onChange={handleInputChange}
           disabled={disabled}
+          autoComplete="off"
+          formNoValidate
         />
-        {value && (
+        {inputValue && (
           <button
             type="button"
             className="location-input-clear"
@@ -192,7 +202,7 @@ export const GooglePlacesAutocomplete = ({
             <X size={16} />
           </button>
         )}
-        {(!value || value.length === 0) && (
+        {(!inputValue || inputValue.length === 0) && (
           <MapPin size={20} className="location-input-icon" />
         )}
       </div>

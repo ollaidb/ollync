@@ -8,6 +8,7 @@ import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
 import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import { EmptyState } from '../../components/EmptyState'
 import PostCard from '../../components/PostCard'
+import { useToastContext } from '../../contexts/ToastContext'
 import './PublicProfile.css'
 
 interface ProfileData {
@@ -70,6 +71,7 @@ interface Review {
 const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOwnProfile?: boolean }) => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showSuccess } = useToastContext()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -270,6 +272,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       if (!error) {
         setIsFavorite(true)
         setFollowersCount(prev => prev + 1)
+        showSuccess('Ajouté dans favoris')
       }
     }
   }

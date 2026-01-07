@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Trash2, Archive, Edit, MoreVertical, Calendar, CheckCircle, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { useConfirmation } from '../../hooks/useConfirmation'
+import ConfirmationModal from '../../components/ConfirmationModal'
 import './Annonces.css'
 
 interface Post {
@@ -26,6 +28,7 @@ const Annonces = () => {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
+  const confirmation = useConfirmation()
 
   // Vérifier si une annonce peut être éditée (moins de 24h après publication)
   const canEditPost = (post: Post): boolean => {
@@ -125,57 +128,69 @@ const Annonces = () => {
 
   // Supprimer une annonce
   const handleDelete = async (postId: string) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer définitivement cette annonce ?')) {
-      return
-    }
+    confirmation.confirm(
+      {
+        title: 'Supprimer l\'annonce',
+        message: 'Cette action est irréversible. Êtes-vous sûr de vouloir supprimer définitivement cette annonce ?',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Annuler'
+      },
+      async () => {
+        if (!user?.id) return
 
-    if (!user?.id) return
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', postId)
+            .eq('user_id', user.id)
 
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', postId)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error deleting post:', error)
-        alert('Erreur lors de la suppression de l\'annonce')
-      } else {
-        setPosts(posts.filter(p => p.id !== postId))
-        setActionMenuOpen(null)
+          if (error) {
+            console.error('Error deleting post:', error)
+            alert('Erreur lors de la suppression de l\'annonce')
+          } else {
+            setPosts(posts.filter(p => p.id !== postId))
+            setActionMenuOpen(null)
+          }
+        } catch (error) {
+          console.error('Error in handleDelete:', error)
+          alert('Erreur lors de la suppression de l\'annonce')
+        }
       }
-    } catch (error) {
-      console.error('Error in handleDelete:', error)
-      alert('Erreur lors de la suppression de l\'annonce')
-    }
+    )
   }
 
   // Marquer une annonce comme réalisée
   const handleComplete = async (postId: string) => {
     if (!user?.id) return
 
-    if (!window.confirm('Marquer cette annonce comme réalisée ? Elle ne sera plus visible publiquement.')) {
-      return
-    }
+    confirmation.confirm(
+      {
+        title: 'Marquer comme réalisée',
+        message: 'Marquer cette annonce comme réalisée ? Elle ne sera plus visible publiquement.',
+        confirmLabel: 'Continuer',
+        cancelLabel: 'Annuler'
+      },
+      async () => {
+        try {
+          const { error } = await (supabase.from('posts') as any)
+            .update({ status: 'completed' })
+            .eq('id', postId)
+            .eq('user_id', user.id)
 
-    try {
-      const { error } = await (supabase.from('posts') as any)
-        .update({ status: 'completed' })
-        .eq('id', postId)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error completing post:', error)
-        alert('Erreur lors de la validation de l\'annonce')
-      } else {
-        setPosts(posts.map(p => p.id === postId ? { ...p, status: 'completed' } : p))
-        setActionMenuOpen(null)
+          if (error) {
+            console.error('Error completing post:', error)
+            alert('Erreur lors de la validation de l\'annonce')
+          } else {
+            setPosts(posts.map(p => p.id === postId ? { ...p, status: 'completed' } : p))
+            setActionMenuOpen(null)
+          }
+        } catch (error) {
+          console.error('Error in handleComplete:', error)
+          alert('Erreur lors de la validation de l\'annonce')
+        }
       }
-    } catch (error) {
-      console.error('Error in handleComplete:', error)
-      alert('Erreur lors de la validation de l\'annonce')
-    }
+    )
   }
 
   // Archiver une annonce
@@ -205,27 +220,33 @@ const Annonces = () => {
   const handleReactivate = async (postId: string) => {
     if (!user?.id) return
 
-    if (!window.confirm('Remettre cette annonce en ligne ? Elle sera à nouveau visible publiquement.')) {
-      return
-    }
+    confirmation.confirm(
+      {
+        title: 'Remettre en ligne',
+        message: 'Remettre cette annonce en ligne ? Elle sera à nouveau visible publiquement.',
+        confirmLabel: 'Continuer',
+        cancelLabel: 'Annuler'
+      },
+      async () => {
+        try {
+          const { error } = await (supabase.from('posts') as any)
+            .update({ status: 'active' })
+            .eq('id', postId)
+            .eq('user_id', user.id)
 
-    try {
-      const { error } = await (supabase.from('posts') as any)
-        .update({ status: 'active' })
-        .eq('id', postId)
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Error reactivating post:', error)
-        alert('Erreur lors de la remise en ligne de l\'annonce')
-      } else {
-        setPosts(posts.map(p => p.id === postId ? { ...p, status: 'active' } : p))
-        setActionMenuOpen(null)
+          if (error) {
+            console.error('Error reactivating post:', error)
+            alert('Erreur lors de la remise en ligne de l\'annonce')
+          } else {
+            setPosts(posts.map(p => p.id === postId ? { ...p, status: 'active' } : p))
+            setActionMenuOpen(null)
+          }
+        } catch (error) {
+          console.error('Error in handleReactivate:', error)
+          alert('Erreur lors de la remise en ligne de l\'annonce')
+        }
       }
-    } catch (error) {
-      console.error('Error in handleReactivate:', error)
-      alert('Erreur lors de la remise en ligne de l\'annonce')
-    }
+    )
   }
 
   // Éditer une annonce (rediriger vers la page de publication avec l'ID)
@@ -431,6 +452,19 @@ const Annonces = () => {
         <div
           className="annonces-overlay"
           onClick={() => setActionMenuOpen(null)}
+        />
+      )}
+
+      {/* Modal de confirmation */}
+      {confirmation.options && (
+        <ConfirmationModal
+          visible={confirmation.isOpen}
+          title={confirmation.options.title}
+          message={confirmation.options.message}
+          onConfirm={confirmation.handleConfirm}
+          onCancel={confirmation.handleCancel}
+          confirmLabel={confirmation.options.confirmLabel}
+          cancelLabel={confirmation.options.cancelLabel}
         />
       )}
     </div>

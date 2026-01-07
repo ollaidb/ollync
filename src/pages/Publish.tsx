@@ -6,6 +6,7 @@ import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
 import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
+import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
@@ -19,6 +20,7 @@ import './Publish.css'
 export default function Publish() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showSuccess } = useToastContext()
   
   // Récupérer les catégories enrichies avec les niveaux 3 et 4
   const enrichedPublicationTypes = useMemo(() => {
@@ -106,7 +108,10 @@ export default function Publish() {
   }
 
   const handlePublishPost = (status: 'draft' | 'active') => {
-    handlePublish(formData, navigate, status)
+    const showToastMessage = (message: string) => {
+      showSuccess(message)
+    }
+    handlePublish(formData, navigate, status, showToastMessage)
   }
 
   if (!user) {

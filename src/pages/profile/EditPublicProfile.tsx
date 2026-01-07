@@ -4,8 +4,11 @@ import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, 
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
+import { useConfirmation } from '../../hooks/useConfirmation'
+import { useToastContext } from '../../contexts/ToastContext'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
+import ConfirmationModal from '../../components/ConfirmationModal'
 import { GooglePlacesAutocomplete } from '../../components/Location/GooglePlacesAutocomplete'
 import './EditPublicProfile.css'
 
@@ -54,6 +57,8 @@ const EditPublicProfile = () => {
 
   // Hook de consentement pour les données personnelles du profil
   const profileConsent = useConsent('profile_data')
+  const confirmation = useConfirmation()
+  const { showSuccess } = useToastContext()
 
   // Gérer le refus : rediriger vers la page précédente
   const handleRejectConsent = () => {
@@ -272,7 +277,8 @@ const EditPublicProfile = () => {
           } : s
         )
       }))
-      } else {
+      showSuccess('Enregistré')
+    } else {
       // Ajouter un nouveau service
       setProfile(prev => ({
         ...prev,
@@ -283,18 +289,27 @@ const EditPublicProfile = () => {
           value: serviceForm.value.trim()
         }]
       }))
+      showSuccess('Enregistré')
     }
 
     handleCloseServiceModal()
   }
 
   const handleRemoveService = (index: number) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
-      setProfile(prev => ({
-        ...prev,
-        services: prev.services.filter((_, i) => i !== index)
-      }))
-    }
+    confirmation.confirm(
+      {
+        title: 'Supprimer le service',
+        message: 'Êtes-vous sûr de vouloir supprimer ce service ?',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Annuler'
+      },
+      () => {
+        setProfile(prev => ({
+          ...prev,
+          services: prev.services.filter((_, i) => i !== index)
+        }))
+      }
+    )
   }
 
   const handleAddSocialLink = () => {
@@ -486,7 +501,11 @@ const EditPublicProfile = () => {
         console.error('Error updating profile:', profileError)
         alert('Erreur lors de la mise à jour du profil')
       } else {
-        navigate('/profile/public')
+        showSuccess('Validé')
+        // Petit délai pour laisser le toast s'afficher avant la navigation
+        setTimeout(() => {
+          navigate('/profile/public')
+        }, 500)
       }
     } catch (err) {
       console.error('Error saving profile:', err)
@@ -1034,7 +1053,21 @@ const EditPublicProfile = () => {
         message={profileConsent.messages.message}
         onAccept={profileConsent.handleAccept}
         onReject={handleRejectConsent}
+        learnMoreLink={profileConsent.learnMoreLink}
       />
+
+      {/* Modal de confirmation */}
+      {confirmation.options && (
+        <ConfirmationModal
+          visible={confirmation.isOpen}
+          title={confirmation.options.title}
+          message={confirmation.options.message}
+          onConfirm={confirmation.handleConfirm}
+          onCancel={confirmation.handleCancel}
+          confirmLabel={confirmation.options.confirmLabel}
+          cancelLabel={confirmation.options.cancelLabel}
+        />
+      )}
     </div>
   )
 }

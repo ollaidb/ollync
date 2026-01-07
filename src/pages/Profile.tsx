@@ -31,6 +31,7 @@ import Mail from './profile/Mail'
 import OnlineStatus from './profile/OnlineStatus'
 import DataManagement from './profile/DataManagement'
 import DeleteAccount from './profile/DeleteAccount'
+import ConfirmationModal from '../components/ConfirmationModal'
 import './Profile.css'
 
 interface ProfileData {
@@ -492,29 +493,18 @@ const Profile = () => {
 
         {/* Modal de confirmation de déconnexion */}
         {showSignOutModal && (
-          <div className="modal-overlay" onClick={() => setShowSignOutModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Déconnexion</h3>
-              <p>Voulez-vous vraiment vous déconnecter ?</p>
-              <div className="modal-actions">
-                <button 
-                  className="btn-cancel" 
-                  onClick={() => setShowSignOutModal(false)}
-                >
-                  Annuler
-                </button>
-                <button 
-                  className="btn-confirm" 
-                  onClick={() => {
-                    setShowSignOutModal(false)
-                    handleSignOut()
-                  }}
-                >
-                  Déconnexion
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmationModal
+            visible={showSignOutModal}
+            title="Déconnexion"
+            message="Voulez-vous vraiment vous déconnecter ?"
+            onConfirm={() => {
+              setShowSignOutModal(false)
+              handleSignOut()
+            }}
+            onCancel={() => setShowSignOutModal(false)}
+            confirmLabel="Déconnexion"
+            cancelLabel="Annuler"
+          />
         )}
       </div>
     </div>

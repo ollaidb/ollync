@@ -5,24 +5,46 @@ export type ConsentType =
   | 'location'
   | 'media'
   | 'profile_data'
+  | 'messaging'
+  | 'cookies'
+  | 'behavioral_data'
 
 interface ConsentMessages {
   title: string
   message: string
+  learnMoreLink?: string
 }
 
 const CONSENT_MESSAGES: Record<ConsentType, ConsentMessages> = {
   location: {
     title: 'Utilisation de la localisation',
-    message: 'La localisation permet d\'afficher votre profil et vos annonces selon votre zone géographique.\n\nSouhaitez-vous autoriser l\'utilisation de votre localisation ?'
+    message: 'Votre localisation permet d\'afficher votre profil et vos annonces selon votre zone géographique. Souhaitez-vous autoriser l\'utilisation de votre localisation ?',
+    learnMoreLink: '/profile/legal/politique-confidentialite'
   },
   media: {
     title: 'Utilisation des médias',
-    message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon les paramètres de l\'application.\n\nSouhaitez-vous autoriser l\'utilisation et l\'affichage de vos médias ?'
+    message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser l\'utilisation et l\'affichage de vos médias ?',
+    learnMoreLink: '/profile/legal/politique-confidentialite'
   },
   profile_data: {
     title: 'Utilisation des données personnelles',
-    message: 'Les informations que vous renseignez sur votre profil peuvent être visibles par d\'autres utilisateurs selon les paramètres de l\'application.\n\nSouhaitez-vous autoriser l\'enregistrement et l\'affichage de ces informations ?'
+    message: 'Vos informations peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser leur enregistrement et leur affichage ?',
+    learnMoreLink: '/profile/legal/politique-confidentialite'
+  },
+  messaging: {
+    title: 'Utilisation de la messagerie',
+    message: 'La messagerie permet d\'échanger avec d\'autres utilisateurs. Vos conversations sont privées et sécurisées. Souhaitez-vous activer la messagerie ?',
+    learnMoreLink: '/profile/legal/politique-confidentialite'
+  },
+  cookies: {
+    title: 'Utilisation des cookies',
+    message: 'Nous utilisons des cookies pour améliorer votre expérience et personnaliser le contenu. Souhaitez-vous accepter l\'utilisation des cookies ?',
+    learnMoreLink: '/profile/legal/politique-cookies'
+  },
+  behavioral_data: {
+    title: 'Analyse de votre comportement',
+    message: 'Nous analysons votre comportement pour vous proposer du contenu personnalisé et adapté à vos préférences. Souhaitez-vous autoriser cette analyse ?',
+    learnMoreLink: '/profile/legal/politique-confidentialite'
   }
 }
 
@@ -97,7 +119,8 @@ export const useConsent = (consentType: ConsentType) => {
     requireConsent,
     handleAccept,
     handleReject,
-    messages: consentMessages
+    messages: consentMessages,
+    learnMoreLink: consentMessages.learnMoreLink
   }
 }
 

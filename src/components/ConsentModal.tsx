@@ -1,4 +1,4 @@
-import './ConsentModal.css'
+import ConfirmationModal from './ConfirmationModal'
 
 interface ConsentModalProps {
   visible: boolean
@@ -6,39 +6,28 @@ interface ConsentModalProps {
   message: string
   onAccept: () => void
   onReject: () => void
+  learnMoreLink?: string
 }
 
-const ConsentModal = ({ visible, title, message, onAccept, onReject }: ConsentModalProps) => {
-  if (!visible) return null
-
-  // Convertir les sauts de ligne en éléments <p>
-  const messageParagraphs = message.split('\n\n').filter(p => p.trim())
-
+const ConsentModal = ({ 
+  visible, 
+  title, 
+  message, 
+  onAccept, 
+  onReject,
+  learnMoreLink 
+}: ConsentModalProps) => {
   return (
-    <div className="consent-modal-overlay" onClick={onReject}>
-      <div className="consent-modal-content" onClick={(e) => e.stopPropagation()}>
-        <h3 className="consent-modal-title">{title}</h3>
-        <div className="consent-modal-message">
-          {messageParagraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
-        <div className="consent-modal-actions">
-          <button 
-            className="consent-modal-button consent-modal-button-reject" 
-            onClick={onReject}
-          >
-            Annuler
-          </button>
-          <button 
-            className="consent-modal-button consent-modal-button-accept" 
-            onClick={onAccept}
-          >
-            Accepter
-          </button>
-        </div>
-      </div>
-    </div>
+    <ConfirmationModal
+      visible={visible}
+      title={title}
+      message={message}
+      onConfirm={onAccept}
+      onCancel={onReject}
+      confirmLabel="Accepter"
+      cancelLabel="Annuler"
+      learnMoreLink={learnMoreLink}
+    />
   )
 }
 

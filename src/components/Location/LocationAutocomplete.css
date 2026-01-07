@@ -33,6 +33,19 @@
   transition: border-color 0.2s;
 }
 
+/* Masquer les icônes de validation HTML5 natives */
+.location-input::-webkit-validation-bubble-message {
+  display: none;
+}
+
+.location-input:invalid {
+  box-shadow: none;
+}
+
+.location-input:invalid::-webkit-validation-bubble-icon {
+  display: none;
+}
+
 .location-input:focus {
   outline: none;
   border-color: #007bff;

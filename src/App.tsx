@@ -18,6 +18,7 @@ import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import { ToastProvider } from './contexts/ToastContext'
 import './App.css'
 
 function AppContent() {
@@ -25,9 +26,10 @@ function AppContent() {
   const isAuthPage = location.pathname.startsWith('/auth/')
 
   return (
-    <div className="app">
-      <main className={`main-content without-header`}>
-        <Routes>
+    <ToastProvider>
+      <div className="app">
+        <main className={`main-content without-header`}>
+          <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
           <Route path="/feed" element={<Feed />} />
@@ -101,8 +103,9 @@ function AppContent() {
           <Route path="/auth/register" element={<Register />} />
         </Routes>
       </main>
-      {!isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/') && <Footer />}
-    </div>
+        {!isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/') && <Footer />}
+      </div>
+    </ToastProvider>
   )
 }
 

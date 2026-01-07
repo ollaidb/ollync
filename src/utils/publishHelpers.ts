@@ -174,7 +174,8 @@ export const getMyLocation = async (
 export const handlePublish = async (
   formData: FormData,
   navigate: (path: string) => void,
-  status: 'draft' | 'active'
+  status: 'draft' | 'active',
+  showToast?: (message: string) => void
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -316,7 +317,12 @@ export const handlePublish = async (
     }
 
     if (data) {
-      alert(status === 'draft' ? 'Brouillon enregistré avec succès !' : 'Annonce publiée avec succès !')
+      const message = status === 'draft' ? 'Enregistré' : 'Annonce publiée'
+      if (showToast) {
+        showToast(message)
+      } else {
+        alert(status === 'draft' ? 'Brouillon enregistré avec succès !' : 'Annonce publiée avec succès !')
+      }
       navigate(`/post/${(data as any).id}`)
     }
   } catch (error: any) {

@@ -8,6 +8,8 @@ import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { formatRelativeDate } from '../utils/profileHelpers'
 import { GoogleMapComponent } from '../components/Maps/GoogleMap'
+import ConfirmationModal from '../components/ConfirmationModal'
+import { useToastContext } from '../contexts/ToastContext'
 import './PostDetails.css'
 
 interface Post {
@@ -65,6 +67,7 @@ const PostDetails = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showSuccess } = useToastContext()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
@@ -359,6 +362,9 @@ const PostDetails = () => {
             await (supabase.from('posts') as any).update({ likes_count: newLikesCount }).eq('id', id)
           }
           
+          // Afficher le toast de confirmation
+          showSuccess('Liké')
+          
           // Déclencher un événement personnalisé pour notifier les autres composants
           window.dispatchEvent(new CustomEvent('likeChanged', { 
             detail: { postId: id, liked: true } 
@@ -467,6 +473,7 @@ const PostDetails = () => {
       if (data) {
         setMatchRequest({ id: data.id, status: data.status })
         setShowSendRequestModal(false)
+        showSuccess('Demande envoyée')
       }
     } catch (error) {
       console.error('Error sending match request:', error)
@@ -496,6 +503,7 @@ const PostDetails = () => {
 
       setMatchRequest(null)
       setShowCancelRequestModal(false)
+      showSuccess('Demande annulée')
     } catch (error) {
       console.error('Error cancelling match request:', error)
       alert('Erreur lors de l\'annulation de la demande')
@@ -1011,78 +1019,41 @@ const PostDetails = () => {
 
         {/* Modal de confirmation d'envoi de demande */}
         {showSendRequestModal && (
-          <div className="modal-overlay" onClick={() => setShowSendRequestModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Envoyer une demande de match ?</h3>
-              <p>
-                Vous allez envoyer une demande de match à l'auteur de cette annonce. 
-                Si votre demande est acceptée, vous pourrez commencer à échanger avec cette personne.
-              </p>
-              <div className="modal-actions">
-                <button 
-                  className="btn-cancel" 
-                  onClick={() => setShowSendRequestModal(false)}
-                  disabled={loadingRequest}
-                >
-                  Annuler
-                </button>
-                <button 
-                  className="btn-confirm" 
-                  onClick={handleSendRequest}
-                  disabled={loadingRequest}
-                >
-                  {loadingRequest ? 'Envoi...' : 'Envoyer'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmationModal
+            visible={showSendRequestModal}
+            title="Envoyer une demande de match"
+            message="Vous allez envoyer une demande de match à l'auteur de cette annonce. Si votre demande est acceptée, vous pourrez commencer à échanger avec cette personne."
+            onConfirm={handleSendRequest}
+            onCancel={() => setShowSendRequestModal(false)}
+            confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
+            cancelLabel="Annuler"
+          />
         )}
 
         {/* Modal de confirmation d'annulation de demande */}
         {showCancelRequestModal && (
-          <div className="modal-overlay" onClick={() => setShowCancelRequestModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Annuler cette demande ?</h3>
-              <p>
-                Vous allez annuler la demande de match que vous avez envoyée. 
-                Vous pourrez toujours renvoyer une nouvelle demande plus tard.
-              </p>
-              <div className="modal-actions">
-                <button 
-                  className="btn-cancel" 
-                  onClick={() => setShowCancelRequestModal(false)}
-                  disabled={loadingRequest}
-                >
-                  Non, garder la demande
-                </button>
-                <button 
-                  className="btn-confirm" 
-                  onClick={handleCancelRequest}
-                  disabled={loadingRequest}
-                >
-                  {loadingRequest ? 'Annulation...' : 'Oui, annuler'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmationModal
+            visible={showCancelRequestModal}
+            title="Annuler cette demande"
+            message="Vous allez annuler la demande de match que vous avez envoyée. Vous pourrez toujours renvoyer une nouvelle demande plus tard."
+            onConfirm={handleCancelRequest}
+            onCancel={() => setShowCancelRequestModal(false)}
+            confirmLabel={loadingRequest ? 'Annulation...' : 'Oui, annuler'}
+            cancelLabel="Non, garder la demande"
+          />
         )}
 
         {/* Modal de confirmation de suppression */}
         {showDeleteConfirm && (
-          <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>Supprimer l'annonce ?</h3>
-              <p>Cette action est irréversible.</p>
-              <div className="modal-actions">
-                <button className="btn-cancel" onClick={() => setShowDeleteConfirm(false)}>
-                  Annuler
-                </button>
-                <button className="btn-confirm" onClick={handleDelete}>
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfirmationModal
+            visible={showDeleteConfirm}
+            title="Supprimer l'annonce"
+            message="Cette action est irréversible."
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+            confirmLabel="Supprimer"
+            cancelLabel="Annuler"
+          />
         )}
       </div>
     </div>

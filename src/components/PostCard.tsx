@@ -1,7 +1,8 @@
 import { Heart, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useToastContext } from '../contexts/ToastContext'
 import './PostCard.css'
 
 interface PostCardProps {
@@ -40,16 +41,27 @@ interface PostCardProps {
 
 const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCardProps) => {
   const navigate = useNavigate()
+  const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [checkingLike, setCheckingLike] = useState(true)
 
   // Vérifier si le post est liké par l'utilisateur actuel au chargement
+  // Utiliser une vérification optimisée avec cache
   useEffect(() => {
     const checkLiked = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
+          setCheckingLike(false)
+          return
+        }
+
+        // Vérifier d'abord dans le cache local (sessionStorage)
+        const cacheKey = `like_${user.id}_${post.id}`
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached !== null) {
+          setLiked(cached === 'true')
           setCheckingLike(false)
           return
         }
@@ -63,11 +75,10 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
           .maybeSingle()
 
         // Si erreur ou pas de données, le post n'est pas liké
-        if (error || !data) {
-          setLiked(false)
-        } else {
-          setLiked(true)
-        }
+        const isLiked = !error && !!data
+        setLiked(isLiked)
+        // Mettre en cache
+        sessionStorage.setItem(cacheKey, String(isLiked))
         setCheckingLike(false)
       } catch (error) {
         console.error('Error checking like:', error)
@@ -126,6 +137,10 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
         setLiked(false)
         setLikesCount(prev => Math.max(0, prev - 1))
         
+        // Mettre à jour le cache
+        const cacheKey = `like_${user.id}_${post.id}`
+        sessionStorage.setItem(cacheKey, 'false')
+        
         // Mettre à jour le compteur dans la base de données
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('posts') as any).update({ likes_count: Math.max(0, likesCount - 1) }).eq('id', post.id)
@@ -159,9 +174,16 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
           setLiked(true)
           setLikesCount(prev => prev + 1)
           
+          // Mettre à jour le cache
+          const cacheKey = `like_${user.id}_${post.id}`
+          sessionStorage.setItem(cacheKey, 'true')
+          
           // Mettre à jour le compteur dans la base de données
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase.from('posts') as any).update({ likes_count: likesCount + 1 }).eq('id', post.id)
+          
+          // Afficher le toast de confirmation
+          showSuccess('Liké')
           
           // Déclencher un événement personnalisé pour notifier les autres composants
           window.dispatchEvent(new CustomEvent('likeChanged', { 
@@ -291,14 +313,19 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
   if (viewMode === 'list') {
     return (
       <div className="post-card post-card-list" onClick={handleCardClick}>
-        <div className="post-card-image">
-          {mainImage ? (
-            <img src={mainImage} alt={post.title} />
-          ) : (
-            <div className="post-card-image-placeholder">
-              <ImageOff size={32} />
-            </div>
-          )}
+      <div className="post-card-image">
+        {mainImage ? (
+          <img 
+            src={mainImage} 
+            alt={post.title}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="post-card-image-placeholder">
+            <ImageOff size={32} />
+          </div>
+        )}
           <button
             type="button"
             className={`post-card-like-btn ${liked ? 'liked' : ''}`}
@@ -387,7 +414,12 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
     >
       <div className="post-card-image">
         {mainImage ? (
-          <img src={mainImage} alt={post.title} />
+          <img 
+            src={mainImage} 
+            alt={post.title}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="post-card-image-placeholder">
             <ImageOff size={40} />
@@ -466,5 +498,5 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
   )
 }
 
-export default PostCard
+export default memo(PostCard)
 

@@ -71,34 +71,35 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
     const userIds = [...new Set(posts.map((p: any) => p.user_id).filter(Boolean))]
     const categoryIds = [...new Set(posts.map((p: any) => p.category_id).filter(Boolean))]
 
-    // 3. Récupérer les profils
+    // 3. Récupérer les profils et catégories en parallèle pour améliorer les performances
     const profilesMap = new Map()
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .in('id', userIds)
+    const categoriesMap = new Map()
+    
+    const [profilesResult, categoriesResult] = await Promise.all([
+      userIds.length > 0
+        ? supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url')
+            .in('id', userIds)
+        : Promise.resolve({ data: null, error: null }),
+      categoryIds.length > 0
+        ? supabase
+            .from('categories')
+            .select('id, name, slug')
+            .in('id', categoryIds)
+        : Promise.resolve({ data: null, error: null })
+    ])
 
-      if (!profilesError && profiles) {
-        profiles.forEach((profile: any) => {
-          profilesMap.set(profile.id, profile)
-        })
-      }
+    if (!profilesResult.error && profilesResult.data) {
+      profilesResult.data.forEach((profile: any) => {
+        profilesMap.set(profile.id, profile)
+      })
     }
 
-    // 4. Récupérer les catégories
-    const categoriesMap = new Map()
-    if (categoryIds.length > 0) {
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name, slug')
-        .in('id', categoryIds)
-
-      if (!categoriesError && categories) {
-        categories.forEach((category: any) => {
-          categoriesMap.set(category.id, category)
-        })
-      }
+    if (!categoriesResult.error && categoriesResult.data) {
+      categoriesResult.data.forEach((category: any) => {
+        categoriesMap.set(category.id, category)
+      })
     }
 
     // 5. Combiner les données

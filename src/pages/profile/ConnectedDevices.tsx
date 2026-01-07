@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { Smartphone, Monitor, Tablet, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { useConfirmation } from '../../hooks/useConfirmation'
 import PageHeader from '../../components/PageHeader'
+import ConfirmationModal from '../../components/ConfirmationModal'
 import './ConnectedDevices.css'
 
 interface Device {
@@ -18,6 +20,7 @@ const ConnectedDevices = () => {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const confirmation = useConfirmation()
 
   useEffect(() => {
     if (user) {
@@ -131,48 +134,60 @@ const ConnectedDevices = () => {
       return
     }
 
-    if (!window.confirm('Êtes-vous sûr de vouloir déconnecter cet appareil ?')) {
-      return
-    }
-
-    setDisconnecting(deviceId)
-    try {
-      // Note: Supabase ne permet pas de déconnecter une session spécifique directement
-      // On peut seulement déconnecter toutes les sessions sauf la session actuelle
-      // Pour une vraie gestion par appareil, il faudrait une table dédiée
-      alert('La déconnexion d\'un appareil spécifique nécessite une configuration supplémentaire. Utilisez "Déconnecter tous les appareils" pour l\'instant.')
-      setDisconnecting(null)
-    } catch (error) {
-      console.error('Error in handleDisconnectDevice:', error)
-      alert('Erreur lors de la déconnexion de l\'appareil')
-      setDisconnecting(null)
-    }
+    confirmation.confirm(
+      {
+        title: 'Déconnecter l\'appareil',
+        message: 'Êtes-vous sûr de vouloir déconnecter cet appareil ?',
+        confirmLabel: 'Déconnecter',
+        cancelLabel: 'Annuler'
+      },
+      () => {
+        setDisconnecting(deviceId)
+        try {
+          // Note: Supabase ne permet pas de déconnecter une session spécifique directement
+          // On peut seulement déconnecter toutes les sessions sauf la session actuelle
+          // Pour une vraie gestion par appareil, il faudrait une table dédiée
+          alert('La déconnexion d\'un appareil spécifique nécessite une configuration supplémentaire. Utilisez "Déconnecter tous les appareils" pour l\'instant.')
+          setDisconnecting(null)
+        } catch (error) {
+          console.error('Error in handleDisconnectDevice:', error)
+          alert('Erreur lors de la déconnexion de l\'appareil')
+          setDisconnecting(null)
+        }
+      }
+    )
   }
 
   const handleDisconnectAll = async () => {
     if (!user) return
 
-    if (!window.confirm('Êtes-vous sûr de vouloir déconnecter tous les appareils ? Vous devrez vous reconnecter.')) {
-      return
-    }
+    confirmation.confirm(
+      {
+        title: 'Déconnecter tous les appareils',
+        message: 'Êtes-vous sûr de vouloir déconnecter tous les appareils ? Vous devrez vous reconnecter.',
+        confirmLabel: 'Déconnecter',
+        cancelLabel: 'Annuler'
+      },
+      async () => {
+        setDisconnecting('all')
+        try {
+          const { error } = await supabase.auth.signOut()
 
-    setDisconnecting('all')
-    try {
-      const { error } = await supabase.auth.signOut()
-
-      if (error) {
-        console.error('Error disconnecting all devices:', error)
-        alert('Erreur lors de la déconnexion')
-      } else {
-        // Rediriger vers la page de connexion
-        window.location.href = '/auth/login'
+          if (error) {
+            console.error('Error disconnecting all devices:', error)
+            alert('Erreur lors de la déconnexion')
+          } else {
+            // Rediriger vers la page de connexion
+            window.location.href = '/auth/login'
+          }
+        } catch (error) {
+          console.error('Error in handleDisconnectAll:', error)
+          alert('Erreur lors de la déconnexion')
+        } finally {
+          setDisconnecting(null)
+        }
       }
-    } catch (error) {
-      console.error('Error in handleDisconnectAll:', error)
-      alert('Erreur lors de la déconnexion')
-    } finally {
-      setDisconnecting(null)
-    }
+    )
   }
 
   if (loading) {
@@ -268,6 +283,19 @@ const ConnectedDevices = () => {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmation */}
+      {confirmation.options && (
+        <ConfirmationModal
+          visible={confirmation.isOpen}
+          title={confirmation.options.title}
+          message={confirmation.options.message}
+          onConfirm={confirmation.handleConfirm}
+          onCancel={confirmation.handleCancel}
+          confirmLabel={confirmation.options.confirmLabel}
+          cancelLabel={confirmation.options.cancelLabel}
+        />
+      )}
     </div>
   )
 }

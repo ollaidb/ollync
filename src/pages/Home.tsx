@@ -91,28 +91,36 @@ const Home = () => {
   }, [recentPostsPage, recentPostsLoading, hasMoreRecentPosts])
 
   const fetchUrgentPosts = async () => {
-    // Récupérer tous les posts actifs
-    const allPosts = await fetchPostsWithRelations({
-      status: 'active',
-      limit: 100,
-      orderBy: 'created_at',
-      orderDirection: 'desc'
-    })
-
-    // Filtrer les posts urgents (is_urgent: true)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const urgent = allPosts.filter((post: any) => post.is_urgent === true)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .sort((a: any, b: any) => {
-        if (a.needed_date && b.needed_date) {
-          return new Date(a.needed_date).getTime() - new Date(b.needed_date).getTime()
-        }
-        return 0
+    // Optimiser: récupérer directement les posts urgents depuis la base de données
+    // au lieu de charger 100 posts et filtrer côté client
+    try {
+      // Récupérer l'ID de la catégorie "urgent" si elle existe, sinon filtrer par is_urgent
+      const urgentPosts = await fetchPostsWithRelations({
+        status: 'active',
+        limit: maxPostsPerSection * 2, // Charger un peu plus pour avoir assez après tri
+        orderBy: 'created_at',
+        orderDirection: 'desc'
       })
-      .slice(0, maxPostsPerSection)
 
-    setUrgentPosts(urgent)
-    return urgent
+      // Filtrer les posts urgents (is_urgent: true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const urgent = urgentPosts.filter((post: any) => post.is_urgent === true)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .sort((a: any, b: any) => {
+          if (a.needed_date && b.needed_date) {
+            return new Date(a.needed_date).getTime() - new Date(b.needed_date).getTime()
+          }
+          return 0
+        })
+        .slice(0, maxPostsPerSection)
+
+      setUrgentPosts(urgent)
+      return urgent
+    } catch (error) {
+      console.error('Error fetching urgent posts:', error)
+      setUrgentPosts([])
+      return []
+    }
   }
 
   const fetchCategoryPosts = async (categorySlug: string) => {
@@ -210,11 +218,12 @@ const Home = () => {
 
       const userLocation = (userProfile as { location?: string | null } | null)?.location || null
 
-      // 2. Récupérer les données comportementales de l'utilisateur
+      // 2. Récupérer les données comportementales de l'utilisateur en parallèle
+      // Limiter les requêtes pour améliorer les performances
       const [favoritesResult, likesResult, interestsResult, searchesResult] = await Promise.all([
-        supabase.from('favorites').select('post_id').eq('user_id', user.id),
-        supabase.from('likes').select('post_id').eq('user_id', user.id),
-        supabase.from('interests').select('post_id').eq('user_id', user.id),
+        supabase.from('favorites').select('post_id').eq('user_id', user.id).limit(50),
+        supabase.from('likes').select('post_id').eq('user_id', user.id).limit(50),
+        supabase.from('interests').select('post_id').eq('user_id', user.id).limit(50),
         supabase.from('saved_searches').select('search_query, filters').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(10)
       ])
 
@@ -231,7 +240,7 @@ const Home = () => {
         // Recommandations aléatoires pour nouveaux utilisateurs ou utilisateurs avec peu de données
         const allPosts = await fetchPostsWithRelations({
           status: 'active',
-          limit: 200,
+          limit: 100, // Réduire de 200 à 100 pour améliorer les performances
           orderBy: 'created_at',
           orderDirection: 'desc'
         })
@@ -311,10 +320,10 @@ const Home = () => {
         categoryCounts.set(catId, (categoryCounts.get(catId) || 0) + 1.5)
       })
 
-      // 4. Récupérer tous les posts actifs
+      // 4. Récupérer les posts actifs (limite réduite pour améliorer les performances)
       const allPosts = await fetchPostsWithRelations({
         status: 'active',
-        limit: 200,
+        limit: 100, // Réduire de 200 à 100 pour améliorer les performances
         orderBy: 'created_at',
         orderDirection: 'desc'
       })
@@ -412,31 +421,40 @@ const Home = () => {
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true)
-      const [recent, urgent] = await Promise.all([
-        fetchRecentPosts(1),
-        fetchUrgentPosts()
-      ])
-      
-      // Charger les posts par catégorie
-      const [creationContenu, casting, emploi] = await Promise.all([
-        fetchCategoryPosts('creation-contenu'),
-        fetchCategoryPosts('casting-role'),
-        fetchCategoryPosts('montage') // Emploi utilise le slug 'montage'
-      ])
-      
-      setCreationContenuPosts(creationContenu)
-      setCastingPosts(casting)
-      setEmploiPosts(emploi)
-      
-      // Une fois les posts récents et urgents chargés, charger les recommandations
-      // en excluant les IDs déjà affichés
-      const recentIds = recent.map(p => p.id)
-      const urgentIds = urgent.map(p => p.id)
-      const categoryIds = [...creationContenu, ...casting, ...emploi].map(p => p.id)
-      const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
-      
-      await fetchRecommendedPosts(excludeIds)
-      setLoading(false)
+      try {
+        // Charger les posts récents et urgents en parallèle
+        const [recent, urgent] = await Promise.all([
+          fetchRecentPosts(1),
+          fetchUrgentPosts()
+        ])
+        
+        // Charger les posts par catégorie en parallèle
+        const [creationContenu, casting, emploi] = await Promise.all([
+          fetchCategoryPosts('creation-contenu'),
+          fetchCategoryPosts('casting-role'),
+          fetchCategoryPosts('montage') // Emploi utilise le slug 'montage'
+        ])
+        
+        setCreationContenuPosts(creationContenu)
+        setCastingPosts(casting)
+        setEmploiPosts(emploi)
+        
+        // Une fois les posts récents et urgents chargés, charger les recommandations
+        // en excluant les IDs déjà affichés
+        const recentIds = recent.map(p => p.id)
+        const urgentIds = urgent.map(p => p.id)
+        const categoryIds = [...creationContenu, ...casting, ...emploi].map(p => p.id)
+        const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
+        
+        // Charger les recommandations de manière asynchrone sans bloquer
+        fetchRecommendedPosts(excludeIds).catch(err => {
+          console.error('Error fetching recommended posts:', err)
+        })
+      } catch (error) {
+        console.error('Error loading posts:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps

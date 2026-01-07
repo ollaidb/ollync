@@ -46,15 +46,15 @@ const Search = () => {
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [showLocationFilter, setShowLocationFilter] = useState(false)
 
-  // Ordre des nouvelles catégories
-  const categoryOrder = [
+  // Ordre des nouvelles catégories (déplacé en constante pour éviter les re-créations)
+  const categoryOrder = useMemo(() => [
     'creation-contenu',
     'casting-role',
     'montage',
     'projets-equipe',
     'services',
     'vente'
-  ]
+  ], [])
 
   // Générer les filtres dynamiquement depuis les catégories
   const filters = useMemo(() => {
@@ -72,20 +72,21 @@ const Search = () => {
           label: cat.name
         }))
     ]
-  }, [categories])
+  }, [categories, categoryOrder])
 
   useEffect(() => {
     fetchCategories()
   }, [])
 
   useEffect(() => {
+    // Augmenter le debounce à 500ms pour réduire les requêtes inutiles
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim() || locationFilter) {
         searchPosts(searchQuery || '')
       } else {
         setResults([])
       }
-    }, 300)
+    }, 500)
 
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,12 +143,13 @@ const Search = () => {
       }
 
       // Rechercher dans les posts avec la requête de recherche
+      // Réduire la limite initiale pour améliorer les performances
       let postsQuery = supabase
         .from('posts')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
-        .limit(100) // Augmenter la limite pour le filtrage par distance
+        .limit(50) // Limite réduite pour améliorer les performances
 
       // Filtre par texte de recherche
       if (query.trim()) {
@@ -177,14 +179,14 @@ const Search = () => {
       // Filtrer par distance si un filtre de localisation est actif
       let filteredPosts = posts
       if (locationCoords) {
-        filteredPosts = posts.filter((post: any) => {
+        filteredPosts = posts.filter((post) => {
           if (!post.location_lat || !post.location_lng) return false
           
           const distance = calculateDistance(
             locationCoords.lat,
             locationCoords.lng,
-            post.location_lat,
-            post.location_lng
+            post.location_lat as number,
+            post.location_lng as number
           )
           
           return distance <= 50 // 50 km de rayon
@@ -203,36 +205,37 @@ const Search = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const categoryIds = [...new Set(filteredPosts.map((p: any) => p.category_id).filter(Boolean))]
 
-      // Récupérer les profils
+      // Récupérer les profils et catégories en parallèle pour améliorer les performances
       const profilesMap = new Map()
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url')
-          .in('id', userIds)
+      const categoriesMap = new Map()
+      
+      const [profilesResult, categoriesResult] = await Promise.all([
+        userIds.length > 0
+          ? supabase
+              .from('profiles')
+              .select('id, username, full_name, avatar_url')
+              .in('id', userIds)
+          : Promise.resolve({ data: null }),
+        categoryIds.length > 0
+          ? supabase
+              .from('categories')
+              .select('id, name, slug')
+              .in('id', categoryIds)
+          : Promise.resolve({ data: null })
+      ])
 
-        if (profiles) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          profiles.forEach((profile: any) => {
-            profilesMap.set(profile.id, profile)
-          })
-        }
+      if (profilesResult.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        profilesResult.data.forEach((profile: any) => {
+          profilesMap.set(profile.id, profile)
+        })
       }
 
-      // Récupérer les catégories
-      const categoriesMap = new Map()
-      if (categoryIds.length > 0) {
-        const { data: cats } = await supabase
-          .from('categories')
-          .select('id, name, slug')
-          .in('id', categoryIds)
-
-        if (cats) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          cats.forEach((category: any) => {
-            categoriesMap.set(category.id, category)
-          })
-        }
+      if (categoriesResult.data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        categoriesResult.data.forEach((category: any) => {
+          categoriesMap.set(category.id, category)
+        })
       }
 
       // Combiner les données

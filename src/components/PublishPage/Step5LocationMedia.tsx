@@ -265,6 +265,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
         message={locationConsent.messages.message}
         onAccept={locationConsent.handleAccept}
         onReject={handleRejectLocation}
+        learnMoreLink={locationConsent.learnMoreLink}
       />
 
       <ConsentModal
@@ -273,6 +274,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={handleRejectMedia}
+        learnMoreLink={mediaConsent.learnMoreLink}
       />
     </div>
   )
