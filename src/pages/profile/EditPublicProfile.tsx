@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
+import { GooglePlacesAutocomplete } from '../../components/Location/GooglePlacesAutocomplete'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -591,12 +592,16 @@ const EditPublicProfile = () => {
                 <MapPin size={16} />
                 Localisation (Ville)
               </label>
-              <input
-                type="text"
-                id="location"
+              <GooglePlacesAutocomplete
                 value={profile.location}
-                onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Ex: Paris, France"
+                onChange={(value) => setProfile(prev => ({ ...prev, location: value }))}
+                onLocationSelect={(location) => {
+                  setProfile(prev => ({
+                    ...prev,
+                    location: location.city || location.address.split(',')[0].trim() || location.address
+                  }))
+                }}
+                placeholder="Rechercher une adresse (ex: Paris, France)"
               />
             </div>
 

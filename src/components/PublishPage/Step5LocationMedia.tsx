@@ -3,7 +3,7 @@ import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
-import { LocationAutocomplete } from '../Location/LocationAutocomplete'
+import { GooglePlacesAutocomplete } from '../Location/GooglePlacesAutocomplete'
 import ConsentModal from '../ConsentModal'
 import './Step5LocationMedia.css'
 
@@ -163,7 +163,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
 
       <div className="form-group">
         <label className="form-label">Lieu *</label>
-        <LocationAutocomplete
+        <GooglePlacesAutocomplete
           value={formData.location_address || formData.location || ''}
           onChange={(value) => {
             // Si l'utilisateur tape manuellement, on met à jour juste location
@@ -172,7 +172,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
             }
           }}
           onLocationSelect={handleLocationSelect}
-          placeholder="Lieu"
+          placeholder="Rechercher une adresse (ex: Paris, France)"
           className="step5-location-autocomplete"
         />
         <button

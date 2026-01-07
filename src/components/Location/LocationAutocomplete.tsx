@@ -94,13 +94,13 @@ export const LocationAutocomplete = ({
     setIsLoading(true)
     try {
       // Utilisation de l'API Nominatim d'OpenStreetMap (gratuite)
+      // Recherche mondiale activée - pas de restriction géographique
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?` +
         `q=${encodeURIComponent(query)}&` +
         `format=json&` +
         `limit=5&` +
         `addressdetails=1&` +
-        `countrycodes=fr&` + // Limiter à la France (optionnel, retirez si vous voulez international)
         `accept-language=fr`,
         {
           headers: {
