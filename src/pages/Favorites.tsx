@@ -334,11 +334,6 @@ const Favorites = () => {
             <BackButton />
             <div>
               <h1 className="favorites-title">Favoris</h1>
-              <p className="favorites-subtitle">
-                {activeTab === 'posts'
-                  ? `${favoritePosts.length} publication${favoritePosts.length > 1 ? 's' : ''}`
-                  : `${followedProfiles.length} profil${followedProfiles.length > 1 ? 's' : ''}`}
-              </p>
             </div>
             <button
               className="search-button"
@@ -355,13 +350,13 @@ const Favorites = () => {
               className={`favorites-tab ${activeTab === 'posts' ? 'active' : ''}`}
               onClick={() => setActiveTab('posts')}
             >
-              Publications
+              Publications {favoritePosts.length > 0 && `(${favoritePosts.length})`}
             </button>
             <button
               className={`favorites-tab ${activeTab === 'profiles' ? 'active' : ''}`}
               onClick={() => setActiveTab('profiles')}
             >
-              Profils suivis
+              Profils suivis {followedProfiles.length > 0 && `(${followedProfiles.length})`}
             </button>
           </div>
         </div>
@@ -398,12 +393,12 @@ const Favorites = () => {
             {activeTab === 'posts' && (
               <>
                 {favoritePosts.length > 0 ? (
-                  <div className="posts-grid">
+                  <div className="posts-list">
                     {favoritePosts.map((post) => (
                       <PostCard 
                         key={post.id} 
                         post={post} 
-                        viewMode="grid" 
+                        viewMode="list" 
                         isLiked={true} 
                         onLike={fetchLikedPosts} 
                       />

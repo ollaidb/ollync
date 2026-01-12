@@ -312,7 +312,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
 
   if (viewMode === 'list') {
     return (
-      <div className="post-card post-card-list" onClick={handleCardClick}>
+      <div className={`post-card post-card-list ${post.is_urgent ? 'post-card-urgent-border' : ''}`} onClick={handleCardClick}>
       <div className="post-card-image">
         {mainImage ? (
           <img 
@@ -338,14 +338,8 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
           >
             <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
-          {getPaymentDisplay() && (
-            <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
-          )}
           {post.category && (
             <div className="post-card-category-badge">{post.category.name}</div>
-          )}
-          {post.is_urgent && (
-            <div className="post-card-urgent-badge">URGENT</div>
           )}
         </div>
         <div className="post-card-content">
@@ -353,26 +347,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
             <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
           </div>
           <p className="post-card-description">{post.description.substring(0, 100)}...</p>
-          <div className="post-card-info">
-            {(post.location || post.number_of_people || post.needed_date) && (
-              <div className="post-card-info-row">
-            {post.location && (
-              <span className="post-card-location">
-                    <MapPin size={10} /> {post.location}
-                  </span>
-                )}
-                {post.number_of_people && (
-                  <span className="post-card-people">
-                    <Users size={10} /> {post.number_of_people}
-                  </span>
-                )}
-                {post.needed_date && (
-                  <span className="post-card-date">
-                    <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-              </span>
-            )}
-              </div>
-            )}
+          <div className="post-card-footer">
             {post.user && (
               <div className="post-card-profile" onClick={handleProfileClick}>
                 <div className="post-card-avatar">
@@ -392,6 +367,9 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
                 </div>
                 <div className="post-card-profile-name">{displayName}</div>
               </div>
+            )}
+            {getPaymentDisplay() && (
+              <div className="post-card-payment-display">{getPaymentDisplay()}</div>
             )}
           </div>
         </div>
