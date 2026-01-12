@@ -126,7 +126,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 110px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   padding-left: 0;
   padding-right: 0;
@@ -148,7 +148,7 @@
   column-count: 2;
   column-gap: 12px;
   column-fill: balance;
-  padding: 3px 12px;
+  padding: 20px 12px 3px 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -521,7 +521,7 @@
 
   /* Zone scrollable optimisée mobile */
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 55px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   }
 
@@ -577,7 +577,7 @@
   }
 
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 53px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   }
 
