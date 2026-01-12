@@ -848,12 +848,17 @@
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    position: relative !important;
+    z-index: 1002 !important;
   }
 
   .profile-header-actions {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    position: relative !important;
+    z-index: 1002 !important;
+    min-width: 32px !important;
   }
 
   .profile-back-button svg,

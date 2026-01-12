@@ -731,7 +731,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         <BackButton className="profile-back-button" />
         <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          {(isOwnProfile || profileId === user?.id) ? (
+          {(isOwnProfile || !userId || userId === user?.id || profileId === user?.id) ? (
             <button
               className="profile-header-action-btn"
               onClick={() => navigate('/profile/edit')}
