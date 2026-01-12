@@ -5,6 +5,7 @@
 
 export interface SupabasePost {
   id: string
+  user_id?: string
   title: string
   description: string
   price?: number | null
@@ -31,6 +32,7 @@ export interface SupabasePost {
 
 export interface MappedPost {
   id: string
+  user_id?: string
   title: string
   description: string
   price?: number | null

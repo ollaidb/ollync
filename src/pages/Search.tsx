@@ -12,6 +12,8 @@ interface Post {
   description: string
   price?: number | null
   location?: string | null
+  location_lat?: number | null
+  location_lng?: number | null
   images?: string[] | null
   likes_count: number
   comments_count: number
@@ -177,16 +179,16 @@ const Search = () => {
       }
 
       // Filtrer par distance si un filtre de localisation est actif
-      let filteredPosts = posts
+      let filteredPosts = posts as Post[]
       if (locationCoords) {
-        filteredPosts = posts.filter((post) => {
+        filteredPosts = (posts as Post[]).filter((post) => {
           if (!post.location_lat || !post.location_lng) return false
           
           const distance = calculateDistance(
             locationCoords.lat,
             locationCoords.lng,
-            post.location_lat as number,
-            post.location_lng as number
+            post.location_lat,
+            post.location_lng
           )
           
           return distance <= 50 // 50 km de rayon
