@@ -585,6 +585,20 @@
   color: var(--foreground);
 }
 
+.profile-edit-btn {
+  flex: 0 0 auto;
+  min-width: 48px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-edit-btn:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
 /* ============================================
    7. BLOC CONTENU (scrollable)
    ============================================ */
@@ -1074,6 +1088,11 @@
     padding: 10px 5px;
     gap: 6px;
     margin-top: 8px;
+  }
+
+  .profile-edit-btn {
+    min-width: 44px;
+    padding: 10px;
   }
 
   .profile-menu-btn {

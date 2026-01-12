@@ -742,16 +742,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         <BackButton className="profile-back-button" />
         <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) ? (
-            <button
-              className="profile-header-action-btn"
-              onClick={() => navigate('/profile/edit')}
-              aria-label="Éditer le profil"
-              style={{ display: 'flex', visibility: 'visible', opacity: 1 }}
-            >
-              <Edit size={20} />
-            </button>
-          ) : (
+          {!(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
             <div className="profile-menu-container">
               <button 
                 className="profile-header-action-btn"
@@ -846,7 +837,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         </div>
       </div>
 
-      {/* 3. MENU SECONDAIRE : À propos / Annonce / Avis */}
+      {/* 3. MENU SECONDAIRE : À propos / Annonce / Avis / Bouton édition */}
       <div className="profile-secondary-menu">
         <button
           className={`profile-menu-btn ${activeTab === 'a-propos' ? 'active' : ''}`}
@@ -866,6 +857,15 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         >
           avis
         </button>
+        {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
+          <button
+            className="profile-menu-btn profile-edit-btn"
+            onClick={() => navigate('/profile/edit')}
+            aria-label="Éditer le profil"
+          >
+            <Edit size={18} />
+          </button>
+        )}
       </div>
 
       {/* 4. BLOC CONTENU (scrollable) */}
