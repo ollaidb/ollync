@@ -14,6 +14,7 @@ import Service from './pages/Service'
 import Vente from './pages/Vente'
 import PostDetails from './pages/PostDetails'
 import SwipePage from './pages/SwipePage'
+import UsersPage from './pages/UsersPage'
 import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
@@ -21,6 +22,7 @@ import Register from './pages/Register'
 import UrgentPosts from './pages/UrgentPosts'
 import RecentPosts from './pages/RecentPosts'
 import { ToastProvider } from './contexts/ToastContext'
+import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import './App.css'
 
 function AppContent() {
@@ -28,8 +30,9 @@ function AppContent() {
   const isAuthPage = location.pathname.startsWith('/auth/')
 
   return (
-    <ToastProvider>
-      <div className="app">
+    <NavigationHistoryProvider>
+      <ToastProvider>
+        <div className="app">
         <main className={`main-content without-header`}>
           <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -99,6 +102,7 @@ function AppContent() {
           <Route path="/publier-annonce" element={<Publish />} />
           <Route path="/post/:id" element={<PostDetails />} />
           <Route path="/swipe" element={<SwipePage />} />
+          <Route path="/users" element={<UsersPage />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/urgent" element={<UrgentPosts />} />
@@ -109,7 +113,8 @@ function AppContent() {
       </main>
         {!isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/') && <Footer />}
       </div>
-    </ToastProvider>
+      </ToastProvider>
+    </NavigationHistoryProvider>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Users, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
 import { PostCardSkeleton } from './PostCardSkeleton'
@@ -298,7 +298,13 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             />
           </div>
           <div className="category-header-actions">
-            <Sparkles size={24} className="category-sparkle-icon" />
+            <button 
+              onClick={() => navigate('/users')}
+              className="category-users-button"
+              title="Voir les utilisateurs"
+            >
+              <Users size={24} className="category-users-icon" />
+            </button>
           </div>
         </div>
       </div>

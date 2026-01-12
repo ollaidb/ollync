@@ -69,11 +69,26 @@
   gap: 8px;
 }
 
-.category-sparkle-icon {
+.category-users-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  border-radius: 8px;
+}
+
+.category-users-button:hover {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+.category-users-icon {
   color: var(--accent-foreground);
   flex-shrink: 0;
-  cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
 
