@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, ChevronDown, ChevronUp, Linkedin, Globe } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -697,7 +697,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     
     // S'assurer que chaque service a les bonnes propriétés et valeurs nettoyées
     // Filtrer d'abord les services invalides, puis nettoyer les autres
-    const cleanedServices = (profile.services as Service[])
+    const cleanedServices = (profile.services as (Service | string)[])
       .filter((service) => {
         // Filtrer les services null/undefined
         if (!service) return false
@@ -713,6 +713,17 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         return true
       })
       .map((service, index) => {
+        // S'assurer que service est un objet Service, pas une string
+        if (typeof service === 'string') {
+          // Si c'est une string, la convertir en Service minimal
+          return {
+            name: service.trim(),
+            description: '',
+            payment_type: 'price' as const,
+            value: ''
+          }
+        }
+        
         const cleanedName = cleanValue(service.name)
         const cleanedDescription = cleanValue(service.description)
         const cleanedValue = cleanValue(service.value)
