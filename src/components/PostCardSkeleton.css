@@ -1,0 +1,110 @@
+.post-card-skeleton {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.post-card-skeleton-list {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+}
+
+.post-card-skeleton-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.post-card-skeleton-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  position: relative;
+}
+
+.post-card-skeleton-list .post-card-skeleton-image {
+  width: 200px;
+  min-width: 200px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+}
+
+.post-card-skeleton-content {
+  padding: 12px 16px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.post-card-skeleton-title {
+  height: 16px;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  width: 90%;
+}
+
+.post-card-skeleton-title-short {
+  height: 16px;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  width: 60%;
+}
+
+.post-card-skeleton-info {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.post-card-skeleton-badge {
+  height: 20px;
+  width: 60px;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.post-card-skeleton-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.post-card-skeleton-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.post-card-skeleton-name {
+  height: 14px;
+  width: 80px;
+  background: linear-gradient(90deg, var(--muted) 25%, rgba(255, 255, 255, 0.1) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
