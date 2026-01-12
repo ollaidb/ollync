@@ -926,18 +926,19 @@ const EditPublicProfile = () => {
                   
                   if (typeof service === 'string') {
                     // Si c'est une string, vérifier si c'est du JSON
+                    const serviceStr: string = service
                     try {
-                      const parsed = JSON.parse(service)
+                      const parsed = JSON.parse(serviceStr)
                       if (typeof parsed === 'string') {
                         serviceName = parsed
                       } else if (parsed && typeof parsed === 'object' && parsed.name) {
                         serviceName = String(parsed.name).trim()
                       } else {
-                        serviceName = service
+                        serviceName = serviceStr
                       }
                     } catch {
                       // Ce n'est pas du JSON, utiliser la string directement
-                      serviceName = service.trim()
+                      serviceName = serviceStr.trim()
                     }
                   } else if (service && typeof service === 'object') {
                     // Si c'est un objet, extraire uniquement le nom
