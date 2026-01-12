@@ -692,6 +692,9 @@ const PostDetails = () => {
           </div>
         </div>
 
+        {/* Bloc vide pour l'espace en haut */}
+        <div className="post-hero-spacer"></div>
+
         {/* Carrousel d'images avec swipe */}
         <div 
           className="post-hero-image"

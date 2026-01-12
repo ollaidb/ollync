@@ -213,12 +213,19 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Bloc vide pour l'espace en haut de l'image */
+.post-hero-spacer {
+  width: 100%;
+  height: 60px;
+  flex-shrink: 0;
+}
+
 /* Image principale (hero) avec carrousel */
 .post-hero-image {
   position: relative;
   width: 100%;
   height: 400px;
-  margin-top: calc(env(safe-area-inset-top, 0px) + 66px);
+  margin-top: calc(env(safe-area-inset-top, 0px) + 50px);
   background: var(--muted);
   display: flex;
   align-items: center;
@@ -329,7 +336,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -1385,9 +1392,13 @@
     height: 18px;
   }
 
+  .post-hero-spacer {
+    height: 40px;
+  }
+
   .post-hero-image {
     height: 300px;
-    margin-top: calc(env(safe-area-inset-top, 0px) + 45px);
+    margin-top: calc(env(safe-area-inset-top, 0px) + 35px);
   }
 
   .post-hero-image-counter {
@@ -1429,7 +1440,8 @@
   }
 
   .post-details-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 75px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
   }
 
   .post-details-page.has-media .post-details-scrollable {
