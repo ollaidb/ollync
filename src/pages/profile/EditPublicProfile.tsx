@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Briefcase, Edit2, Plus, DollarSign, RefreshCw } from 'lucide-react'
+import { Save, X, Camera, MapPin, FileText, Instagram, Linkedin, Globe, Search, Edit2, Plus, DollarSign, RefreshCw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
@@ -26,7 +26,6 @@ const EditPublicProfile = () => {
     username: '',
     full_name: '',
     location: '',
-    distance: '',
     bio: '',
     skills: [] as string[],
     services: [] as Array<{
@@ -36,11 +35,10 @@ const EditPublicProfile = () => {
       value: string
     }>,
     socialLinks: [] as string[],
-    phone: '',
-    email: '',
-    phone_verified: false,
-    email_verified: false,
-    statuses: [] as Array<{ name: string; description: string }>
+      phone: '',
+      email: '',
+      phone_verified: false,
+      email_verified: false
   })
   const [newSocialLink, setNewSocialLink] = useState('')
   const [interestSearch, setInterestSearch] = useState('')
@@ -54,10 +52,6 @@ const EditPublicProfile = () => {
     payment_type: 'price' as 'price' | 'exchange',
     value: ''
   })
-  const [statusSearch, setStatusSearch] = useState('')
-  const [showStatusSuggestions, setShowStatusSuggestions] = useState(false)
-  const [selectedStatusForDescription, setSelectedStatusForDescription] = useState<string | null>(null)
-  const [statusDescription, setStatusDescription] = useState('')
 
   // Hook de consentement pour les données personnelles du profil
   const profileConsent = useConsent('profile_data')
@@ -113,7 +107,6 @@ const EditPublicProfile = () => {
       username: authUsername || (profileData as { username?: string | null }).username || '',
       full_name: authFullName || (profileData as { full_name?: string | null }).full_name || '',
       location: (profileData as { location?: string | null }).location || '',
-      distance: (profileData as { distance?: string | null }).distance || '',
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
       services: (() => {
@@ -139,29 +132,59 @@ const EditPublicProfile = () => {
           return []
         }
         
-        console.log(`📦 Services récupérés pour édition: ${parsedData.length}`)
+        console.log(`📦 Services récupérés pour édition: ${parsedData.length}`, parsedData)
         
         // Si les services sont encore des strings (ancien format), les convertir
         if (parsedData.length > 0 && typeof parsedData[0] === 'string') {
-          return (parsedData as string[]).map(name => ({
-            name,
-            description: '',
-            payment_type: 'price' as const,
-            value: ''
-          }))
+          const converted = (parsedData as string[]).map(name => {
+            // Si la string est du JSON, le parser
+            let serviceName = name
+            try {
+              const parsed = JSON.parse(name)
+              serviceName = typeof parsed === 'string' ? parsed : (parsed?.name || name)
+            } catch {
+              // Ce n'est pas du JSON, utiliser la string directement
+              serviceName = name
+            }
+            return {
+              name: serviceName,
+              description: '',
+              payment_type: 'price' as const,
+              value: ''
+            }
+          })
+          return converted
         }
         
         // Normaliser les services - s'assurer que tous sont bien formatés
-        const normalized = (parsedData as Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>).map((service, index) => {
+        const normalized = (parsedData as Array<any>).map((service, index) => {
+          // Si le service est une string, la convertir
+          if (typeof service === 'string') {
+            let serviceName = service
+            try {
+              const parsed = JSON.parse(service)
+              serviceName = typeof parsed === 'string' ? parsed : (parsed?.name || service)
+            } catch {
+              serviceName = service
+            }
+            return {
+              name: serviceName,
+              description: '',
+              payment_type: 'price' as const,
+              value: ''
+            }
+          }
+          
+          // Si c'est un objet, normaliser
           const normalizedService = {
-            name: String(service.name || '').trim(),
-            description: String(service.description || '').trim(),
-            payment_type: (service.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
-            value: String(service.value || '').trim()
+            name: String(service?.name || '').trim(),
+            description: String(service?.description || '').trim(),
+            payment_type: (service?.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+            value: String(service?.value || '').trim()
           }
           console.log(`  Service ${index}:`, normalizedService)
           return normalizedService
-        })
+        }).filter(service => service.name && service.name.trim().length > 0) // Filtrer les services sans nom
         
         console.log(`✅ Services normalisés pour édition: ${normalized.length}`)
         return normalized
@@ -170,8 +193,7 @@ const EditPublicProfile = () => {
       phone: (profileData as { phone?: string | null }).phone || '',
       email: user.email || '',
       phone_verified: (profileData as { phone_verified?: boolean | null }).phone_verified || false,
-      email_verified: !!user.email_confirmed_at,
-      statuses: (profileData as { statuses?: Array<{ name: string; description: string }> | null }).statuses || []
+      email_verified: !!user.email_confirmed_at
     })
     
     setLoading(false)
@@ -354,7 +376,7 @@ const EditPublicProfile = () => {
     })
   }
 
-  const handleSaveService = () => {
+  const handleSaveService = async () => {
     if (!serviceForm.name.trim()) {
       alert('Le nom du service est obligatoire')
       return
@@ -374,38 +396,65 @@ const EditPublicProfile = () => {
       return
     }
 
+    if (!user) return
+
+    const updatedService = {
+      name: serviceForm.name.trim(),
+      description: serviceForm.description.trim(),
+      payment_type: serviceForm.payment_type,
+      value: serviceForm.value.trim()
+    }
+
+    let updatedServices: Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>
+    
     if (editingServiceIndex !== null) {
       // Modifier un service existant
-      setProfile(prev => ({
-        ...prev,
-        services: prev.services.map((s, i) =>
-          i === editingServiceIndex ? {
-            name: serviceForm.name.trim(),
-            description: serviceForm.description.trim(),
-            payment_type: serviceForm.payment_type,
-            value: serviceForm.value.trim()
-          } : s
-        )
-      }))
-      showSuccess('Enregistré')
+      updatedServices = profile.services.map((s, i) =>
+        i === editingServiceIndex ? updatedService : s
+      )
     } else {
       // Ajouter un nouveau service
-      setProfile(prev => ({
-        ...prev,
-        services: [...prev.services, {
-          name: serviceForm.name.trim(),
-          description: serviceForm.description.trim(),
-          payment_type: serviceForm.payment_type,
-          value: serviceForm.value.trim()
-        }]
-      }))
-      showSuccess('Enregistré')
+      updatedServices = [...profile.services, updatedService]
+    }
+
+    // Mettre à jour l'état local
+    setProfile(prev => ({
+      ...prev,
+      services: updatedServices
+    }))
+
+    // Sauvegarder immédiatement dans la base de données
+    try {
+      console.log(`💾 Sauvegarde automatique de ${updatedServices.length} services:`, updatedServices)
+      // Toujours sauvegarder le tableau, même s'il est vide, pour écraser la valeur existante
+      const servicesToSave = updatedServices.length > 0 ? updatedServices : []
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase.from('profiles') as any)
+        .upsert({
+          id: user.id,
+          services: servicesToSave,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        })
+
+      if (profileError) {
+        console.error('❌ Erreur lors de la sauvegarde automatique:', profileError)
+        alert('Erreur lors de la sauvegarde du service')
+      } else {
+        console.log('✅ Service sauvegardé automatiquement avec succès')
+        showSuccess('Service enregistré')
+      }
+    } catch (err) {
+      console.error('Error saving service:', err)
+      alert('Erreur lors de la sauvegarde du service')
     }
 
     handleCloseServiceModal()
   }
 
-  const handleRemoveService = (index: number) => {
+  const handleRemoveService = async (index: number) => {
     confirmation.confirm(
       {
         title: 'Supprimer le service',
@@ -413,11 +462,54 @@ const EditPublicProfile = () => {
         confirmLabel: 'Supprimer',
         cancelLabel: 'Annuler'
       },
-      () => {
+      async () => {
+        if (!user) return
+
+        const updatedServices = profile.services.filter((_, i) => i !== index)
+        
+        // Mettre à jour l'état local
         setProfile(prev => ({
           ...prev,
-          services: prev.services.filter((_, i) => i !== index)
+          services: updatedServices
         }))
+
+        // Sauvegarder immédiatement dans la base de données
+        try {
+          console.log(`💾 Sauvegarde automatique après suppression: ${updatedServices.length} services restants`)
+          // Toujours sauvegarder le tableau, même s'il est vide, pour écraser la valeur existante
+          const servicesToSave = updatedServices.length > 0 ? updatedServices : []
+          
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: profileError } = await (supabase.from('profiles') as any)
+            .upsert({
+              id: user.id,
+              services: servicesToSave,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
+            })
+
+          if (profileError) {
+            console.error('❌ Erreur lors de la sauvegarde automatique:', profileError)
+            alert('Erreur lors de la suppression du service')
+            // Restaurer l'état en cas d'erreur
+            setProfile(prev => ({
+              ...prev,
+              services: profile.services
+            }))
+          } else {
+            console.log('✅ Service supprimé et sauvegardé automatiquement')
+            showSuccess('Service supprimé')
+          }
+        } catch (err) {
+          console.error('Error removing service:', err)
+          alert('Erreur lors de la suppression du service')
+          // Restaurer l'état en cas d'erreur
+          setProfile(prev => ({
+            ...prev,
+            services: profile.services
+          }))
+        }
       }
     )
   }
@@ -432,88 +524,54 @@ const EditPublicProfile = () => {
     }
   }
 
-  const handleRemoveSocialLink = (link: string) => {
+  const handleRemoveSocialLink = async (link: string) => {
+    if (!user) return
+
+    const updatedSocialLinks = profile.socialLinks.filter(l => l !== link)
+    
+    // Mettre à jour l'état local
     setProfile(prev => ({
       ...prev,
-      socialLinks: prev.socialLinks.filter(l => l !== link)
+      socialLinks: updatedSocialLinks
     }))
-  }
 
-  // Liste de recommandations de statuts basée sur l'application
-  const statusRecommendations = [
-    'Créateur de contenu',
-    'Photographe',
-    'Vidéaste',
-    'Monteur vidéo',
-    'Graphiste',
-    'Influenceur',
-    'Youtuber',
-    'Podcasteur',
-    'Blogueur',
-    'Community Manager',
-    'Stratège en contenu',
-    'Réalisateur',
-    'Scénariste',
-    'Acteur',
-    'Modèle',
-    'Figurant',
-    'Voix off',
-    'Motion designer',
-    'Web designer',
-    'Développeur',
-    'Entrepreneur',
-    'Coach',
-    'Consultant',
-    'Freelance',
-    'Artiste',
-    'Musicien',
-    'DJ',
-    'Événementiel',
-    'Organisateur d\'événements',
-    'Journaliste',
-    'Rédacteur',
-    'Traducteur',
-    'Interprète',
-    'Formateur',
-    'Éducateur',
-    'Mentor'
-  ]
+    // Sauvegarder immédiatement dans la base de données
+    try {
+      console.log(`💾 Sauvegarde automatique après suppression de lien social: ${updatedSocialLinks.length} liens restants`)
+      const socialLinksToSave = convertSocialLinksToObject(updatedSocialLinks)
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase.from('profiles') as any)
+        .upsert({
+          id: user.id,
+          social_links: Object.keys(socialLinksToSave).length > 0 ? socialLinksToSave : {},
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        })
 
-  // Filtrer les recommandations de statuts selon la recherche
-  const filteredStatusRecommendations = statusRecommendations.filter(status =>
-    status.toLowerCase().includes(statusSearch.toLowerCase())
-  )
-
-  // Ajouter un statut
-  const handleAddStatus = (statusName: string) => {
-    const trimmedName = statusName.trim()
-    if (trimmedName && !profile.statuses.some(s => s.name === trimmedName)) {
+      if (profileError) {
+        console.error('❌ Erreur lors de la sauvegarde automatique:', profileError)
+        alert('Erreur lors de la suppression du lien social')
+        // Restaurer l'état en cas d'erreur
+        setProfile(prev => ({
+          ...prev,
+          socialLinks: profile.socialLinks
+        }))
+      } else {
+        console.log('✅ Lien social supprimé et sauvegardé automatiquement')
+      }
+    } catch (err) {
+      console.error('Error removing social link:', err)
+      alert('Erreur lors de la suppression du lien social')
+      // Restaurer l'état en cas d'erreur
       setProfile(prev => ({
         ...prev,
-        statuses: [...prev.statuses, { name: trimmedName, description: '' }]
+        socialLinks: profile.socialLinks
       }))
-      setStatusSearch('')
-      setShowStatusSuggestions(false)
     }
   }
 
-  // Supprimer un statut
-  const handleRemoveStatus = (statusName: string) => {
-    setProfile(prev => ({
-      ...prev,
-      statuses: prev.statuses.filter(s => s.name !== statusName)
-    }))
-  }
-
-  // Mettre à jour la description d'un statut
-  const handleUpdateStatusDescription = (statusName: string, description: string) => {
-    setProfile(prev => ({
-      ...prev,
-      statuses: prev.statuses.map(s =>
-        s.name === statusName ? { ...s, description } : s
-      )
-    }))
-  }
 
   // Détecter le type de réseau social à partir de l'URL
   const detectSocialType = (url: string): { type: string; icon: typeof Instagram | typeof Linkedin | typeof Globe; name: string } => {
@@ -592,7 +650,9 @@ const EditPublicProfile = () => {
       console.log(`💾 Sauvegarde de ${profile.services.length} services:`, profile.services)
       
       // Préparer les données pour la sauvegarde
-      const servicesToSave = profile.services.length > 0 ? profile.services : null
+      // Toujours sauvegarder les tableaux (même vides) pour écraser les valeurs existantes
+      const servicesToSave = profile.services.length > 0 ? profile.services : []
+      const skillsToSave = profile.skills.length > 0 ? profile.skills : []
       console.log(`💾 Services à sauvegarder (${profile.services.length}):`, servicesToSave)
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -603,13 +663,11 @@ const EditPublicProfile = () => {
           phone: profile.phone || null,
           bio: profile.bio || null,
           location: profile.location || null,
-          distance: profile.distance || null,
           avatar_url: profile.avatar_url || null,
-          skills: profile.skills.length > 0 ? profile.skills : null,
+          skills: skillsToSave,
           services: servicesToSave,
           social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
-          statuses: profile.statuses.length > 0 ? profile.statuses : null,
           updated_at: new Date().toISOString()
         })
         .select()
@@ -728,10 +786,7 @@ const EditPublicProfile = () => {
 
             {/* Localisation */}
             <div className="form-group">
-              <label htmlFor="location">
-                <MapPin size={16} />
-                Localisation (Ville)
-              </label>
+              <label htmlFor="location">Localisation</label>
               <GooglePlacesAutocomplete
                 value={profile.location}
                 onChange={(value) => setProfile(prev => ({ ...prev, location: value }))}
@@ -741,33 +796,13 @@ const EditPublicProfile = () => {
                     location: location.city || location.address.split(',')[0].trim() || location.address
                   }))
                 }}
-                placeholder="Rechercher une adresse (ex: Paris, France)"
+                placeholder="Trouver votre ville"
               />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="distance">Distance (rayon de recherche)</label>
-              <select
-                id="distance"
-                value={profile.distance}
-                onChange={(e) => setProfile(prev => ({ ...prev, distance: e.target.value }))}
-              >
-                <option value="">Sélectionner</option>
-                <option value="5">5 km</option>
-                <option value="10">10 km</option>
-                <option value="25">25 km</option>
-                <option value="50">50 km</option>
-                <option value="100">100 km</option>
-                <option value="unlimited">Illimité</option>
-              </select>
             </div>
 
             {/* Bio & Description */}
             <div className="form-group">
-              <label htmlFor="bio">
-                <FileText size={16} />
-                Bio & Description
-              </label>
+              <label htmlFor="bio">Bio & Description</label>
               <textarea
                 id="bio"
                 value={profile.bio}
@@ -782,7 +817,6 @@ const EditPublicProfile = () => {
             {/* Centres d'intérêt */}
             <div className="form-group">
               <label>Centres d'intérêt</label>
-              <p className="form-hint">Ajoutez vos centres d'intérêt basés sur les catégories de l'application ou créez les vôtres</p>
               
               {/* Liste des centres d'intérêt ajoutés */}
               <div className="tags-list">
@@ -803,7 +837,6 @@ const EditPublicProfile = () => {
               {/* Barre de recherche avec suggestions */}
               <div className="interest-search-container" ref={interestSearchRef}>
                 <div className="interest-search-wrapper">
-                  <Search size={18} className="interest-search-icon" />
                   <input
                     type="text"
                     className="interest-search-input"
@@ -828,7 +861,7 @@ const EditPublicProfile = () => {
                         }
                       }
                     }}
-                    placeholder="Rechercher un centre d'intérêt..."
+                    placeholder="Chercher votre intérêt"
                   />
                 </div>
                 
@@ -881,59 +914,72 @@ const EditPublicProfile = () => {
             {/* Services */}
             <div className="form-group">
               <label>Services</label>
-              <div className="services-list">
-                  {profile.services.map((service, index) => (
-                  <div key={index} className="service-item">
-                    <div className="service-header">
-                      <div className="service-info">
-                        <h4 className="service-name">{service.name}</h4>
-                        {service.description && (
-                          <p className="service-description">{service.description}</p>
-                        )}
-                        <div className="service-payment-info">
-                          <span className="service-payment-type">
-                            {service.payment_type === 'price' ? (
-                              <>
-                                <DollarSign size={14} />
-                                Prix: {service.value}
-                              </>
-                            ) : (
-                              <>
-                                <RefreshCw size={14} />
-                                Échange: {service.value}
-                              </>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="service-actions">
+              <p className="form-hint">Cliquez sur un service pour le modifier</p>
+              
+              {/* Liste des services ajoutés */}
+              <div className="tags-list">
+                {profile.services.map((service, originalIndex) => {
+                  // Extraire uniquement le nom du service
+                  let serviceName = ''
+                  
+                  if (!service) return null
+                  
+                  if (typeof service === 'string') {
+                    // Si c'est une string, vérifier si c'est du JSON
+                    try {
+                      const parsed = JSON.parse(service)
+                      if (typeof parsed === 'string') {
+                        serviceName = parsed
+                      } else if (parsed && typeof parsed === 'object' && parsed.name) {
+                        serviceName = String(parsed.name).trim()
+                      } else {
+                        serviceName = service
+                      }
+                    } catch {
+                      // Ce n'est pas du JSON, utiliser la string directement
+                      serviceName = service.trim()
+                    }
+                  } else if (service && typeof service === 'object') {
+                    // Si c'est un objet, extraire uniquement le nom
+                    serviceName = String(service.name || '').trim()
+                  }
+                  
+                  // Ne pas afficher si le nom est vide ou si ça ressemble à du JSON brut
+                  if (!serviceName || serviceName.trim().length === 0 || serviceName.startsWith('{')) {
+                    return null
+                  }
+                  
+                  return (
+                    <span 
+                      key={originalIndex} 
+                      className="tag service-tag"
+                      onClick={() => handleOpenServiceModal(originalIndex)}
+                    >
+                      {serviceName}
                       <button
                         type="button"
-                          className="service-edit-button"
-                          onClick={() => handleOpenServiceModal(index)}
+                        className="tag-remove"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveService(originalIndex)
+                        }}
                       >
-                          <Edit2 size={16} />
+                        <X size={14} />
                       </button>
-                  <button
-                    type="button"
-                          className="service-remove-button"
-                          onClick={() => handleRemoveService(index)}
-                  >
-                          <X size={16} />
-                  </button>
-                </div>
-                    </div>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="service-add-button"
-                  onClick={() => handleOpenServiceModal()}
-                >
-                  <Plus size={18} />
-                  Ajouter un service
-                </button>
+                    </span>
+                  )
+                })}
               </div>
+
+              {/* Bouton pour ajouter un service */}
+              <button
+                type="button"
+                className="service-add-button"
+                onClick={() => handleOpenServiceModal()}
+              >
+                <Plus size={18} />
+                Ajouter un service
+              </button>
             </div>
 
             {/* Modal pour ajouter/modifier un service */}
@@ -1066,7 +1112,7 @@ const EditPublicProfile = () => {
                         handleAddSocialLink()
                       }
                     }}
-                    placeholder="Ajouter un lien (ex: @username, https://instagram.com/...)"
+                    placeholder="Ajouter un lien"
                   />
                   <button
                     type="button"
@@ -1079,138 +1125,8 @@ const EditPublicProfile = () => {
               </div>
             </div>
 
-            {/* Statuts */}
-            <div className="form-group">
-              <label className="section-label">
-                <Briefcase size={18} />
-                Statuts professionnels
-              </label>
-              <p className="form-hint">Ajoutez vos statuts professionnels, rôles ou compétences principales (comme un CV)</p>
-              
-              {/* Liste des statuts ajoutés */}
-              <div className="statuses-list">
-                {profile.statuses.map((status, index) => (
-                  <div key={index} className="status-item">
-                    <div className="status-header">
-                      <div className="status-name-wrapper">
-                        <Briefcase size={16} />
-                        <span className="status-name">{status.name}</span>
-                        <button
-                          type="button"
-                          className="status-remove"
-                          onClick={() => handleRemoveStatus(status.name)}
-                        >
-                          <X size={14} />
-                        </button>
-                    </div>
-                  <button
-                    type="button"
-                        className="status-description-toggle"
-                        onClick={() => {
-                          if (selectedStatusForDescription === status.name) {
-                            setSelectedStatusForDescription(null)
-                            setStatusDescription('')
-                          } else {
-                            setSelectedStatusForDescription(status.name)
-                            setStatusDescription(status.description)
-                          }
-                        }}
-                  >
-                        <Edit2 size={14} />
-                        {status.description ? 'Modifier description' : 'Ajouter description'}
-                  </button>
-              </div>
-                    {selectedStatusForDescription === status.name && (
-                      <div className="status-description-editor">
-                        <textarea
-                          value={statusDescription}
-                          onChange={(e) => setStatusDescription(e.target.value)}
-                          onBlur={() => {
-                            handleUpdateStatusDescription(status.name, statusDescription)
-                            setSelectedStatusForDescription(null)
-                          }}
-                          placeholder="Décrivez ce que vous faites, vos diplômes, vos prestations..."
-                          rows={3}
-                          maxLength={500}
-                        />
-                        <div className="char-count">{statusDescription.length}/500</div>
-                    </div>
-                    )}
-                    {status.description && selectedStatusForDescription !== status.name && (
-                      <div className="status-description-display">
-                        <p>{status.description}</p>
-                  </div>
-                    )}
-                    </div>
-                ))}
-                    </div>
-
-              {/* Recherche et ajout de statut */}
-              <div className="status-search-container">
-                <div className="status-search-wrapper">
-                  <Search size={18} className="status-search-icon" />
-                  <input
-                    type="text"
-                    className="status-search-input"
-                    value={statusSearch}
-                    onChange={(e) => {
-                      setStatusSearch(e.target.value)
-                      setShowStatusSuggestions(true)
-                    }}
-                    onFocus={() => setShowStatusSuggestions(true)}
-                    placeholder="Rechercher un statut (ex: Créateur de contenu, Photographe...)"
-                  />
-                </div>
-                
-                {/* Suggestions de statuts */}
-                {showStatusSuggestions && statusSearch && (
-                  <div className="status-suggestions">
-                    {filteredStatusRecommendations.length > 0 ? (
-                      filteredStatusRecommendations.map((status, index) => (
-                      <button
-                          key={index}
-                        type="button"
-                          className="status-suggestion-item"
-                          onClick={() => handleAddStatus(status)}
-                      >
-                          {status}
-                      </button>
-                      ))
-                    ) : (
-                      <div className="status-suggestion-item no-results">
-                        Aucun résultat trouvé
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Liste complète des recommandations si pas de recherche */}
-                {showStatusSuggestions && !statusSearch && (
-                  <div className="status-suggestions">
-                    <div className="status-suggestions-header">Recommandations</div>
-                    {statusRecommendations.map((status, index) => (
-                        <button
-                        key={index}
-                          type="button"
-                        className="status-suggestion-item"
-                        onClick={() => handleAddStatus(status)}
-                        >
-                        {status}
-                        </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Actions */}
             <div className="form-actions">
-              <button
-                className="cancel-button"
-                onClick={() => navigate('/profile/public')}
-              >
-                Annuler
-              </button>
               <button
                 className="save-button"
                 onClick={handleSave}

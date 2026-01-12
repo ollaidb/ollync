@@ -9,6 +9,7 @@ import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import { EmptyState } from '../../components/EmptyState'
 import PostCard from '../../components/PostCard'
 import { useToastContext } from '../../contexts/ToastContext'
+import ServiceDetailModal from '../../components/ServiceDetailModal'
 import './PublicProfile.css'
 
 interface Service {
@@ -94,7 +95,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [reportType, setReportType] = useState<'behavior' | 'post' | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState<string>('')
-  const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set())
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
 
   const profileId = userId || user?.id
 
@@ -296,14 +297,19 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   const value = extractValue(serviceObj.value)
                   const payment_type = serviceObj.payment_type === 'exchange' ? 'exchange' : 'price'
                   
-                  if (!name || name.startsWith('{') || name.startsWith('[')) {
-                    console.warn(`  ⚠️ Service ${index} ignoré (name invalide après parsing):`, name)
+                  // Ne pas filtrer si le nom est vide - on peut avoir un service sans nom
+                  // Mais on filtre si c'est du JSON brut
+                  if (name && (name.startsWith('{') || name.startsWith('['))) {
+                    console.warn(`  ⚠️ Service ${index} ignoré (name est du JSON brut):`, name)
                     return null
                   }
                   
-                  console.log(`  ✅ Service ${index} parsé depuis string:`, { name, description, payment_type, value })
+                  // Si pas de nom mais qu'on a une description ou une valeur, créer un service avec un nom par défaut
+                  const finalName = name || `Service ${index + 1}`
+                  
+                  console.log(`  ✅ Service ${index} parsé depuis string:`, { name: finalName, description, payment_type, value })
                   return {
-                    name: name.trim(),
+                    name: finalName.trim(),
                     description: description.trim(),
                     payment_type: payment_type as 'price' | 'exchange',
                     value: value.trim()
@@ -356,10 +362,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               console.warn(`  ⚠️ Service ${index} ignoré (format invalide):`, service, typeof service)
               return null
             }).filter((s): s is Service => {
-              // Filtrer uniquement les services vraiment invalides
-              const isValid = s !== null && s.name !== '' && !s.name.startsWith('{') && !s.name.startsWith('[')
+              // Filtrer uniquement les services vraiment invalides (null ou JSON brut)
+              // Accepter les services même sans nom (on affichera un nom par défaut)
+              const isValid = s !== null && !s.name.startsWith('{') && !s.name.startsWith('[')
               if (!isValid) {
-                console.warn(`  🗑️ Service filtré:`, s)
+                console.warn(`  🗑️ Service filtré (invalide):`, s)
               }
               return isValid
             })
@@ -689,13 +696,29 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
     
     // S'assurer que chaque service a les bonnes propriétés et valeurs nettoyées
-    const cleanedServices = (profile.services as Service[]).map((service, index) => {
-      const cleanedName = cleanValue(service.name)
-      const cleanedDescription = cleanValue(service.description)
-      const cleanedValue = cleanValue(service.value)
-      
-      console.log(`🧹 Service ${index} nettoyé:`, {
-        name: cleanedName,
+    // Filtrer d'abord les services invalides, puis nettoyer les autres
+    const cleanedServices = (profile.services as Service[])
+      .filter((service) => {
+        // Filtrer les services null/undefined
+        if (!service) return false
+        
+        // Filtrer les services qui sont des strings JSON brutes
+        if (typeof service === 'string') {
+          const trimmed = service.trim()
+          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+            return false
+          }
+        }
+        
+        return true
+      })
+      .map((service, index) => {
+        const cleanedName = cleanValue(service.name)
+        const cleanedDescription = cleanValue(service.description)
+        const cleanedValue = cleanValue(service.value)
+        
+        console.log(`🧹 Service ${index} nettoyé:`, {
+          name: cleanedName,
         description: cleanedDescription,
         value: cleanedValue,
         payment_type: service.payment_type
@@ -708,7 +731,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         value: cleanedValue
       }
     }).filter(s => {
-      const isValid = s.name !== '' && !s.name.startsWith('{') && !s.name.startsWith('[')
+      // Filtrer les services invalides :
+      // - Services sans nom ou nom vide
+      // - Services avec nom qui est du JSON brut
+      const hasValidName = s.name && s.name.trim().length > 0
+      const isNotJson = !s.name.startsWith('{') && !s.name.startsWith('[')
+      const isValid = hasValidName && isNotJson
+      
       if (!isValid) {
         console.warn('⚠️ Service filtré (invalide):', s)
       }
@@ -721,19 +750,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
     return cleanedServices
   })()
-
-  // Toggle l'expansion d'un service
-  const toggleServiceExpansion = (index: number) => {
-    setExpandedServices(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(index)) {
-        newSet.delete(index)
-      } else {
-        newSet.add(index)
-      }
-      return newSet
-    })
-  }
 
   return (
     <div className="public-profile-page">
@@ -876,7 +892,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             {/* BLOC BIO */}
             {profile.bio && (
               <div className="profile-bio-block">
-                <div className="bio-label">bio</div>
                 <p className="bio-text">{profile.bio}</p>
               </div>
             )}
@@ -977,39 +992,23 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               <div className="profile-services-section">
                 <h3 className="services-title">services</h3>
                 <div className="services-list-container">
-                  {(() => {
-                    const validServices = services.filter((service) => {
-                      // Filtrer les services invalides
-                      const name = String(service.name || '').trim()
-                      const isValid = name && !name.startsWith('{') && !name.startsWith('[') && name !== ''
-                      if (!isValid) {
-                        console.warn(`🗑️ Service filtré à l'affichage:`, service)
-                      }
-                      return isValid
-                    })
-                    
-                    console.log(`📊 Affichage de ${validServices.length} services valides sur ${services.length} services au total`)
-                    
-                    return validServices.map((service, filteredIndex) => {
-                      // Utiliser un index unique basé sur le nom du service pour éviter les conflits
-                      const serviceKey = `${service.name}-${filteredIndex}`
+                  {services.map((service, index) => {
                     // S'assurer que les valeurs sont bien des strings propres
                     const serviceName = String(service.name || '').trim()
                     const serviceDescription = service.description ? String(service.description).trim() : ''
                     const serviceValue = service.value ? String(service.value).trim() : ''
                     
-                    // Trouver l'index original dans le tableau services pour l'expansion
-                    const originalIndex = services.findIndex(s => s === service)
-                    const isExpanded = expandedServices.has(originalIndex)
-                    const hasLongDescription = serviceDescription && serviceDescription.length > 100
-                    const displayDescription = isExpanded 
-                      ? serviceDescription 
-                      : (serviceDescription?.substring(0, 100) || '')
+                    // Utiliser un index unique basé sur le nom du service pour éviter les conflits
+                    const serviceKey = `${serviceName}-${index}`
                     
                     return (
-                      <div key={serviceKey} className="service-block">
+                      <div 
+                        key={serviceKey} 
+                        className="service-block"
+                        onClick={() => setSelectedService(service)}
+                      >
                         <div className="service-block-header">
-                          <h4 className="service-block-title">{serviceName}</h4>
+                          <h4 className="service-block-title">{serviceName || `Service ${index + 1}`}</h4>
                           <div className="service-block-payment">
                             {service.payment_type === 'price' && serviceValue && (
                               <div className="service-block-price">
@@ -1029,39 +1028,15 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                         {serviceDescription && (
                           <div className="service-block-description-section">
                             <p className="service-block-description-text">
-                              {displayDescription}{!isExpanded && hasLongDescription && '...'}
+                              {serviceDescription.length > 150 
+                                ? serviceDescription.substring(0, 150) + '...' 
+                                : serviceDescription}
                             </p>
-                            {hasLongDescription && (
-                              <button
-                                className="service-read-more-btn"
-                                onClick={() => toggleServiceExpansion(originalIndex)}
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    <span>Lire moins</span>
-                                    <ChevronUp size={14} />
-                                  </>
-                                ) : (
-                                  <>
-                                    <span>Lire plus</span>
-                                    <ChevronDown size={14} />
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        
-                        {isExpanded && service.payment_type === 'exchange' && serviceValue && (
-                          <div className="service-block-exchange-details">
-                            <p className="service-exchange-label">Échange proposé :</p>
-                            <p className="service-exchange-value">{serviceValue}</p>
                           </div>
                         )}
                       </div>
                     )
-                    })
-                  })()}
+                  })}
                 </div>
               </div>
             )}
@@ -1140,6 +1115,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         fullName={profile.full_name}
         username={profile.username}
         onClose={() => setShowPhotoModal(false)}
+      />
+
+      <ServiceDetailModal
+        service={selectedService}
+        onClose={() => setSelectedService(null)}
       />
 
       {/* Modal de signalement */}

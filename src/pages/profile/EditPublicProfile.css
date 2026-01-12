@@ -14,7 +14,7 @@
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
 }
 
 .form-group {
@@ -402,9 +402,8 @@
   border-top: 1px solid #E5E7EB;
 }
 
-.cancel-button,
 .save-button {
-  flex: 1;
+  width: 100%;
   padding: 14px 24px;
   border-radius: 8px;
   font-size: 15px;
@@ -415,19 +414,7 @@
   justify-content: center;
   gap: 8px;
   transition: all 0.2s;
-}
-
-.cancel-button {
-  background: #F3F4F6;
-  color: #374151;
-  border: none;
-}
-
-.cancel-button:hover {
-  background: #E5E7EB;
-}
-
-.save-button {
+  background: #6366F1;
   background: #6366F1;
   color: white;
   border: none;
@@ -1067,7 +1054,7 @@
   }
 
   .form-section {
-    gap: 24px;
+    gap: 14px;
   }
 
   .form-actions {

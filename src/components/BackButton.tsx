@@ -34,6 +34,16 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
     // Règle 1 : Pour les sous-pages de profil (ex: /profile/settings/personal-info)
     // Retourner au niveau parent (ex: /profile/settings ou /profile)
     if (path.startsWith('/profile/')) {
+      // Cas spécial : si on vient de /profile/public, retourner vers /profile/public
+      if (path === '/profile/edit') {
+        const previousPath = getPreviousPath()
+        if (previousPath === '/profile/public' || previousPath.startsWith('/profile/public')) {
+          markNavigatingBack()
+          navigate('/profile/public')
+          return
+        }
+      }
+      
       // Si on est dans une sous-page (plus de 2 parties : /profile/xxx)
       if (pathParts.length > 2) {
         // Retourner au niveau parent

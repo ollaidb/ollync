@@ -398,11 +398,13 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .service-block:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--primary);
+  transform: translateY(-2px);
 }
 
 .service-block-header {
@@ -520,54 +522,55 @@
 }
 
 /* ============================================
-   5. LIENS SOCIAUX (bloc bleu arrondi)
+   5. RÉSEAUX SOCIAUX (icônes indépendantes)
    ============================================ */
 
-.profile-social-block {
-  background-color: var(--primary);
-  border-radius: 16px;
-  padding: 12px;
-  margin: 12px 5px 0;
+.profile-social-icons {
   display: flex;
-  justify-content: center;
+  align-items: center;
   gap: 16px;
-  box-shadow: var(--shadow-md);
+  margin: 12px 15px 0;
+  padding: 0;
+  flex-wrap: wrap;
 }
 
-.social-icon-link {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+.social-icon-independent {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--muted);
-  opacity: 0.2;
-  color: var(--primary-foreground);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--card);
+  color: var(--foreground);
   text-decoration: none;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
-.social-icon-link:hover {
-  background-color: var(--muted);
-  opacity: 0.3;
-}
-
-.social-icon-link svg {
+.social-icon-independent:hover {
+  background-color: var(--primary);
   color: var(--primary-foreground);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.tiktok-icon {
-  width: 32px;
-  height: 32px;
+.social-icon-independent svg {
+  color: inherit;
+}
+
+.tiktok-icon-small {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background-color: var(--foreground);
   color: var(--background);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -580,7 +583,7 @@
   gap: 8px;
   padding: 12px 20px;
   background-color: var(--background);
-  margin-top: 12px;
+  margin-top: 4px;
 }
 
 .profile-menu-btn {
@@ -626,7 +629,7 @@
 
 /* Mode À propos */
 .profile-content-a-propos {
-  padding-top: 12px;
+  padding-top: 4px;
   padding-bottom: 1px;
   display: flex;
   flex-direction: column;
@@ -1080,21 +1083,31 @@
     font-size: 13px;
   }
 
-  .profile-social-block {
-    margin: 12px 5px 0;
-    padding: 12px;
-    border-radius: 12px;
+  .profile-social-icons {
+    margin: 12px 12px 0;
+    gap: 12px;
   }
 
-  .social-icon-link {
-    width: 40px;
-    height: 40px;
+  .social-icon-independent {
+    width: 36px;
+    height: 36px;
+  }
+
+  .social-icon-independent svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tiktok-icon-small {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
   }
 
   .profile-secondary-menu {
     padding: 10px 5px;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   .profile-menu-btn {

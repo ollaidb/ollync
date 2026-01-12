@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Loader, X } from 'lucide-react'
+import { Loader, X, Search } from 'lucide-react'
 import { useLoadScript } from '@react-google-maps/api'
 import './LocationAutocomplete.css'
 
@@ -203,7 +203,7 @@ export const GooglePlacesAutocomplete = ({
           </button>
         )}
         {(!inputValue || inputValue.length === 0) && (
-          <MapPin size={20} className="location-input-icon" />
+          <Search size={18} className="location-input-icon" />
         )}
       </div>
     </div>
