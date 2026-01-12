@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Grid, List, Filter, Loader } from 'lucide-react'
+import { Grid, List, Filter, Loader, RefreshCw } from 'lucide-react'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { EmptyState } from '../components/EmptyState'
+import { PostCardSkeleton } from '../components/PostCardSkeleton'
+import RecommendationsSection from '../components/RecommendationsSection'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './Feed.css'
 
@@ -35,40 +37,63 @@ const Feed = () => {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
 
-  const POSTS_PER_PAGE = 20
+  const POSTS_PER_PAGE = 15 // Réduit de 20 à 15 pour un chargement initial plus rapide
 
-  const fetchPosts = async (pageNum: number) => {
-    setLoading(true)
-    
-    const posts = await fetchPostsWithRelations({
-      status: 'active',
-      limit: POSTS_PER_PAGE,
-      offset: pageNum * POSTS_PER_PAGE,
-      orderBy: 'created_at',
-      orderDirection: 'desc'
-    })
-
-    if (pageNum === 0) {
-      setPosts(posts)
+  const fetchPosts = async (pageNum: number, isInitial = false) => {
+    if (isInitial) {
+      setLoading(true)
+      setError(null)
     } else {
-      setPosts(prev => [...prev, ...posts])
+      setLoadingMore(true)
     }
-    setHasMore(posts.length === POSTS_PER_PAGE)
-    setLoading(false)
+    
+    try {
+      const fetchedPosts = await fetchPostsWithRelations({
+        status: 'active',
+        limit: POSTS_PER_PAGE,
+        offset: pageNum * POSTS_PER_PAGE,
+        orderBy: 'created_at',
+        orderDirection: 'desc',
+        useCache: pageNum === 0 // Utiliser le cache seulement pour la première page
+      })
+
+      if (pageNum === 0) {
+        setPosts(fetchedPosts)
+      } else {
+        setPosts(prev => [...prev, ...fetchedPosts])
+      }
+      setHasMore(fetchedPosts.length === POSTS_PER_PAGE)
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching posts:', err)
+      setError('Erreur lors du chargement des annonces')
+      if (pageNum === 0) {
+        setPosts([])
+      }
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  const handleRetry = () => {
+    fetchPosts(0, true)
   }
 
   useEffect(() => {
-    fetchPosts(0)
+    fetchPosts(0, true)
   }, [])
 
   const loadMore = () => {
-    if (!loading && hasMore) {
+    if (!loadingMore && !loading && hasMore) {
       const nextPage = page + 1
       setPage(nextPage)
-      fetchPosts(nextPage)
+      fetchPosts(nextPage, false)
     }
   }
 
@@ -114,11 +139,23 @@ const Feed = () => {
 
         {/* Zone scrollable */}
         <div className="feed-scrollable">
+          {/* État de chargement initial - afficher des skeletons */}
           {loading && posts.length === 0 ? (
-            <div className="loading-container">
-              <Loader className="spinner-large" size={48} />
-              <p>Chargement...</p>
+            <div className={`posts-container ${viewMode}`}>
+              <PostCardSkeleton viewMode={viewMode} count={6} />
             </div>
+          ) : error ? (
+            /* État d'erreur */
+            <div className="feed-error-container">
+              <p className="feed-error-message">{error}</p>
+              <button className="feed-retry-btn" onClick={handleRetry}>
+                <RefreshCw size={16} />
+                Réessayer
+              </button>
+            </div>
+          ) : posts.length === 0 ? (
+            /* État vide */
+            <EmptyState type="category" customTitle="Aucune annonce disponible" />
           ) : (
             <>
               <div className={`posts-container ${viewMode}`}>
@@ -127,10 +164,19 @@ const Feed = () => {
                 ))}
               </div>
 
+              {/* Section de recommandations - affichée après les annonces normales */}
+              {!loading && posts.length > 0 && (
+                <RecommendationsSection viewMode={viewMode} />
+              )}
+
               {hasMore && (
                 <div className="load-more-container">
-                  <button className="load-more-btn" onClick={loadMore} disabled={loading}>
-                    {loading ? (
+                  <button 
+                    className="load-more-btn" 
+                    onClick={loadMore} 
+                    disabled={loadingMore || loading}
+                  >
+                    {loadingMore ? (
                       <>
                         <Loader className="spinner" size={20} />
                         Chargement...
@@ -140,10 +186,6 @@ const Feed = () => {
                     )}
                   </button>
                 </div>
-              )}
-
-              {posts.length === 0 && !loading && (
-                <EmptyState type="category" customTitle="Aucune annonce disponible" />
               )}
             </>
           )}

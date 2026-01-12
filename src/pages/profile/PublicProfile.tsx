@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit, MoreHorizontal, AlertTriangle, Flag } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -10,6 +10,13 @@ import { EmptyState } from '../../components/EmptyState'
 import PostCard from '../../components/PostCard'
 import { useToastContext } from '../../contexts/ToastContext'
 import './PublicProfile.css'
+
+interface Service {
+  name: string
+  description: string
+  payment_type: 'price' | 'exchange'
+  value: string
+}
 
 interface ProfileData {
   id: string
@@ -21,7 +28,7 @@ interface ProfileData {
   created_at: string
   availability?: string | null
   skills?: string[]
-  services?: string[]
+  services?: Service[] | string[] // Peut être un tableau d'objets ou de strings (compatibilité)
   languages?: Array<{ name: string; level: string }>
   badges?: string[]
   social_links?: {
@@ -87,69 +94,293 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [reportType, setReportType] = useState<'behavior' | 'post' | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState<string>('')
+  const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set())
 
   const profileId = userId || user?.id
 
   const fetchProfile = useCallback(async () => {
-    if (!profileId) return
+    if (!profileId) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', profileId)
-      .single()
+    console.log('🔍 Récupération du profil pour:', profileId)
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('Profil non trouvé, tentative de création depuis auth.users...')
-        
-        if (user && user.id === profileId) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: newProfile, error: createError } = await (supabase.from('profiles') as any)
-            .insert({
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('⚠️ Profil non trouvé dans la base de données, tentative de création...')
+          
+          if (user && user.id === profileId) {
+            // Créer le profil avec les données de auth.users
+            const profileData = {
               id: user.id,
               email: user.email || null,
-              full_name: user.user_metadata?.full_name || null,
-              username: user.user_metadata?.username || null
-            })
-            .select()
-            .single()
-
-          if (createError) {
-            console.error('Error creating profile:', createError)
-            setProfile({
-              id: user.id,
+              full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
               username: user.user_metadata?.username || null,
-              full_name: user.user_metadata?.full_name || null,
-              avatar_url: null,
-              bio: null,
-              location: null,
-              created_at: new Date().toISOString()
-            })
-          } else if (newProfile) {
-            setProfile(newProfile)
-            setLoading(false)
-            return
+              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+            }
+            
+            console.log('📝 Création du profil avec les données:', profileData)
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: newProfile, error: createError } = await (supabase.from('profiles') as any)
+              .insert(profileData)
+              .select()
+              .single()
+
+            if (createError) {
+              console.error('❌ Erreur lors de la création du profil:', createError)
+              // Créer un profil minimal pour l'affichage
+              setProfile({
+                id: user.id,
+                username: user.user_metadata?.username || null,
+                full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+                bio: null,
+                location: null,
+                created_at: new Date().toISOString()
+              })
+            } else if (newProfile) {
+              console.log('✅ Profil créé avec succès:', newProfile)
+              setProfile(newProfile as ProfileData)
+              setLoading(false)
+              return
+            }
+          } else {
+            console.warn('⚠️ Impossible de créer le profil : utilisateur non connecté ou ID différent')
+            setProfile(null)
+          }
+        } else {
+          console.error('❌ Erreur lors de la récupération du profil:', error)
+          setProfile(null)
+        }
+      } else if (data) {
+        console.log('✅ Profil récupéré avec succès:', data)
+        // S'assurer que social_links est correctement parsé depuis JSONB
+        const profileData = data as ProfileData
+        // Si social_links est une string, le parser en JSON
+        if (profileData.social_links && typeof profileData.social_links === 'string') {
+          try {
+            profileData.social_links = JSON.parse(profileData.social_links)
+          } catch (e) {
+            profileData.social_links = null
           }
         }
-      } else {
-        console.error('Error fetching profile:', error)
-      }
-    } else if (data) {
-      // S'assurer que social_links est correctement parsé depuis JSONB
-      const profileData = data as ProfileData
-      // Si social_links est une string, le parser en JSON
-      if (profileData.social_links && typeof profileData.social_links === 'string') {
-        try {
-          profileData.social_links = JSON.parse(profileData.social_links)
-        } catch (e) {
-          profileData.social_links = null
+        
+        // Parser les services - version simplifiée et robuste
+        console.log('🔍 Format des services avant parsing:', typeof profileData.services, profileData.services)
+        
+        if (profileData.services) {
+          let parsedServices: unknown = profileData.services
+          
+          console.log('🔍 Format des services avant parsing:', typeof parsedServices, parsedServices)
+          
+          // Si c'est une string JSON, la parser
+          if (typeof parsedServices === 'string') {
+            try {
+              parsedServices = JSON.parse(parsedServices)
+              console.log('  → Après premier parsing:', typeof parsedServices, parsedServices)
+              // Si le résultat est encore une string, parser une deuxième fois
+              if (typeof parsedServices === 'string') {
+                try {
+                  parsedServices = JSON.parse(parsedServices)
+                  console.log('  → Après deuxième parsing:', typeof parsedServices, parsedServices)
+                } catch (e2) {
+                  console.error('Erreur parsing services (double):', e2)
+                  parsedServices = []
+                }
+              }
+            } catch (e) {
+              console.error('Erreur parsing services:', e)
+              parsedServices = []
+            }
+          }
+          
+          // Normaliser en tableau d'objets Service
+          if (Array.isArray(parsedServices)) {
+            console.log(`📦 Nombre de services trouvés dans la base: ${parsedServices.length}`)
+            console.log(`📦 Type du premier service:`, typeof parsedServices[0], parsedServices[0])
+            
+            profileData.services = parsedServices.map((service: unknown, index: number): Service | null => {
+              console.log(`🔍 Traitement service ${index}:`, typeof service, service)
+              
+              // Fonction récursive pour parser les strings JSON (peut être doublement échappées)
+              const parseJsonRecursive = (val: unknown, depth = 0): unknown => {
+                if (depth > 5) {
+                  console.warn(`  ⚠️ Limite de récursion atteinte pour:`, val)
+                  return val // Limite de récursion
+                }
+                
+                if (typeof val === 'string') {
+                  const trimmed = val.trim()
+                  // Si ça ressemble à du JSON, essayer de le parser
+                  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+                      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                      (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+                    try {
+                      const parsed = JSON.parse(trimmed)
+                      // Si c'est encore une string, réessayer
+                      if (typeof parsed === 'string') {
+                        return parseJsonRecursive(parsed, depth + 1)
+                      }
+                      return parsed
+                    } catch (e) {
+                      // Ce n'est pas du JSON valide, retourner la string
+                      return trimmed
+                    }
+                  }
+                  return trimmed
+                }
+                return val
+              }
+              
+              // Fonction pour extraire une valeur textuelle d'un service
+              const extractValue = (val: unknown): string => {
+                if (val === null || val === undefined) return ''
+                
+                // Si c'est déjà une string simple, la retourner
+                if (typeof val === 'string') {
+                  const trimmed = val.trim()
+                  // Si ça ressemble à du JSON, essayer de le parser
+                  if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('"')) {
+                    const parsed = parseJsonRecursive(val)
+                    if (typeof parsed === 'string') return parsed.trim()
+                    if (typeof parsed === 'object' && parsed !== null && 'name' in parsed) {
+                      return String((parsed as { name?: unknown }).name || '').trim()
+                    }
+                    return String(parsed).trim()
+                  }
+                  return trimmed
+                }
+                
+                // Si c'est un objet, essayer d'extraire une valeur
+                if (typeof val === 'object' && val !== null) {
+                  if ('name' in val && typeof (val as { name?: unknown }).name === 'string') {
+                    return (val as { name: string }).name.trim()
+                  }
+                  return String(val)
+                }
+                
+                return String(val).trim()
+              }
+              
+              // Si c'est une string, essayer de la parser d'abord
+              if (typeof service === 'string') {
+                const parsedService = parseJsonRecursive(service)
+                console.log(`  → Après parsing récursif:`, typeof parsedService, parsedService)
+                
+                // Si après parsing c'est un objet avec name, l'utiliser
+                if (parsedService && typeof parsedService === 'object' && parsedService !== null && 'name' in parsedService) {
+                  const serviceObj = parsedService as Record<string, unknown>
+                  const name = extractValue(serviceObj.name)
+                  const description = extractValue(serviceObj.description)
+                  const value = extractValue(serviceObj.value)
+                  const payment_type = serviceObj.payment_type === 'exchange' ? 'exchange' : 'price'
+                  
+                  if (!name || name.startsWith('{') || name.startsWith('[')) {
+                    console.warn(`  ⚠️ Service ${index} ignoré (name invalide après parsing):`, name)
+                    return null
+                  }
+                  
+                  console.log(`  ✅ Service ${index} parsé depuis string:`, { name, description, payment_type, value })
+                  return {
+                    name: name.trim(),
+                    description: description.trim(),
+                    payment_type: payment_type as 'price' | 'exchange',
+                    value: value.trim()
+                  }
+                }
+                
+                // Si c'est toujours une string après parsing, c'est juste un nom
+                if (typeof parsedService === 'string' && parsedService.trim()) {
+                  console.log(`  ✅ Service ${index} (nom simple):`, parsedService)
+                  return {
+                    name: parsedService.trim(),
+                    description: '',
+                    payment_type: 'price' as const,
+                    value: ''
+                  }
+                }
+              }
+              
+              // Si c'est déjà un objet Service valide, l'utiliser directement
+              if (service && typeof service === 'object' && service !== null) {
+                const serviceObj = service as Record<string, unknown>
+                
+                // Vérifier si c'est un objet avec des propriétés de service
+                if ('name' in serviceObj || 'description' in serviceObj || 'payment_type' in serviceObj) {
+                  const name = extractValue(serviceObj.name)
+                  const description = extractValue(serviceObj.description)
+                  const value = extractValue(serviceObj.value)
+                  const payment_type = serviceObj.payment_type === 'exchange' ? 'exchange' : 'price'
+                  
+                  // Ne pas filtrer si le name est vide - on peut avoir un service sans nom
+                  // Mais on filtre si c'est du JSON brut
+                  if (name && (name.startsWith('{') || name.startsWith('['))) {
+                    console.warn(`  ⚠️ Service ${index} ignoré (name est du JSON brut):`, name)
+                    return null
+                  }
+                  
+                  // Si pas de nom mais qu'on a une description ou une valeur, créer un service avec un nom par défaut
+                  const finalName = name || `Service ${index + 1}`
+                  
+                  console.log(`  ✅ Service ${index} (objet direct):`, { name: finalName, description, payment_type, value })
+                  return {
+                    name: finalName.trim(),
+                    description: description.trim(),
+                    payment_type: payment_type as 'price' | 'exchange',
+                    value: value.trim()
+                  }
+                }
+              }
+              
+              console.warn(`  ⚠️ Service ${index} ignoré (format invalide):`, service, typeof service)
+              return null
+            }).filter((s): s is Service => {
+              // Filtrer uniquement les services vraiment invalides
+              const isValid = s !== null && s.name !== '' && !s.name.startsWith('{') && !s.name.startsWith('[')
+              if (!isValid) {
+                console.warn(`  🗑️ Service filtré:`, s)
+              }
+              return isValid
+            })
+            
+            console.log(`✅ Services normalisés: ${profileData.services.length} services valides sur ${parsedServices.length} trouvés`)
+          } else {
+            console.warn('⚠️ Services n\'est pas un tableau:', parsedServices)
+            profileData.services = []
+          }
+        } else {
+          console.log('ℹ️ Aucun service dans le profil')
+          profileData.services = []
         }
+        
+        // Debug final
+        const servicesCount = profileData.services?.length || 0
+        console.log(`✅ Services finaux après parsing: ${servicesCount} services`)
+        if (servicesCount > 0) {
+          console.log('📋 Détail des services finaux:', profileData.services)
+        }
+        
+        setProfile(profileData)
+      } else {
+        console.warn('⚠️ Aucune donnée retournée')
+        setProfile(null)
       }
-      setProfile(profileData)
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération du profil:', error)
+      setProfile(null)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [profileId, user])
 
   const fetchFollowersCount = useCallback(async () => {
@@ -324,9 +555,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
 
     try {
-      // @ts-ignore - reports table exists but not in types
-      const { error } = await supabase
-        .from('reports')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('reports') as any)
         .insert({
           reporter_id: user.id,
           reported_user_id: profileId,
@@ -335,7 +565,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           report_reason: reportReason,
           report_category: reportType,
           description: null
-        } as any)
+        })
 
       if (error) {
         console.error('Error submitting report:', error)
@@ -361,7 +591,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         checkFollowing()
       }
     }
-  }, [profileId, user, isOwnProfile, fetchProfile, fetchFollowersCount, checkFollowing])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, user, isOwnProfile])
 
   useEffect(() => {
     if (profileId && activeTab === 'annonces') {
@@ -370,7 +601,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       fetchReviews()
     }
     // Pour "à propos", pas besoin de fetch, les données sont déjà dans profile
-  }, [profileId, activeTab, fetchPosts, fetchReviews])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, activeTab])
 
   if (loading) {
     return (
@@ -390,11 +622,107 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
 
-  // Centres d'intérêt (combinaison de skills et services)
-  const interests = [
-    ...(profile.skills || []),
-    ...(profile.services || [])
-  ]
+  // Centres d'intérêt (uniquement skills, pas les services)
+  const interests = profile.skills || []
+
+  // Services (objets avec name, description, payment_type, value)
+  // Les services sont déjà parsés dans fetchProfile, on les utilise directement
+  const services: Service[] = (() => {
+    if (!profile.services || profile.services.length === 0) {
+      console.log('ℹ️ Aucun service dans le profil pour l\'affichage')
+      return []
+    }
+    
+    console.log(`📋 Services à afficher: ${profile.services.length}`, profile.services)
+    
+    // Fonction pour nettoyer une valeur et extraire uniquement le texte
+    const cleanValue = (val: unknown): string => {
+      if (val === null || val === undefined) return ''
+      
+      // Si c'est déjà une string, vérifier si c'est du JSON
+      if (typeof val === 'string') {
+        // Si ça ressemble à du JSON, essayer de le parser
+        const trimmed = val.trim()
+        if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.endsWith('}') || trimmed.endsWith(']'))) {
+          try {
+            const parsed = JSON.parse(trimmed)
+            // Si c'est un objet, extraire les valeurs textuelles
+            if (parsed && typeof parsed === 'object') {
+              // Si c'est un objet service, extraire name, description, value
+              if ('name' in parsed) {
+                return String(parsed.name || '')
+              }
+              // Sinon, ne pas afficher l'objet JSON
+              return ''
+            }
+            return String(parsed)
+          } catch (e) {
+            // Ce n'est pas du JSON valide, retourner tel quel
+            return trimmed
+          }
+        }
+        return trimmed
+      }
+      
+      // Si c'est un objet, extraire les valeurs
+      if (typeof val === 'object') {
+        // Si c'est un objet avec name, utiliser name
+        if ('name' in val) {
+          return cleanValue((val as { name: unknown }).name)
+        }
+        // Sinon, ne pas afficher l'objet
+        return ''
+      }
+      
+      return String(val).trim()
+    }
+    
+    // S'assurer que chaque service a les bonnes propriétés et valeurs nettoyées
+    const cleanedServices = (profile.services as Service[]).map((service, index) => {
+      const cleanedName = cleanValue(service.name)
+      const cleanedDescription = cleanValue(service.description)
+      const cleanedValue = cleanValue(service.value)
+      
+      console.log(`🧹 Service ${index} nettoyé:`, {
+        name: cleanedName,
+        description: cleanedDescription,
+        value: cleanedValue,
+        payment_type: service.payment_type
+      })
+      
+      return {
+        name: cleanedName,
+        description: cleanedDescription,
+        payment_type: (service.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+        value: cleanedValue
+      }
+    }).filter(s => {
+      const isValid = s.name !== '' && !s.name.startsWith('{') && !s.name.startsWith('[')
+      if (!isValid) {
+        console.warn('⚠️ Service filtré (invalide):', s)
+      }
+      return isValid
+    })
+    
+    console.log(`✅ Services finaux à afficher: ${cleanedServices.length} sur ${profile.services?.length || 0} récupérés`)
+    if (cleanedServices.length !== (profile.services?.length || 0)) {
+      console.warn(`⚠️ Certains services ont été filtrés: ${(profile.services?.length || 0) - cleanedServices.length} services invalides`)
+    }
+    return cleanedServices
+  })()
+
+  // Toggle l'expansion d'un service
+  const toggleServiceExpansion = (index: number) => {
+    setExpandedServices(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
 
   return (
     <div className="public-profile-page">
@@ -403,7 +731,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         <BackButton className="profile-back-button" />
         <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          {isOwnProfile ? (
+          {(isOwnProfile || profileId === user?.id) ? (
             <button
               className="profile-header-action-btn"
               onClick={() => navigate('/profile/edit')}
@@ -554,6 +882,100 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                       {interest}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* SERVICES */}
+            {services.length > 0 && (
+              <div className="profile-services-section">
+                <h3 className="services-title">services</h3>
+                <div className="services-list-container">
+                  {(() => {
+                    const validServices = services.filter((service) => {
+                      // Filtrer les services invalides
+                      const name = String(service.name || '').trim()
+                      const isValid = name && !name.startsWith('{') && !name.startsWith('[') && name !== ''
+                      if (!isValid) {
+                        console.warn(`🗑️ Service filtré à l'affichage:`, service)
+                      }
+                      return isValid
+                    })
+                    
+                    console.log(`📊 Affichage de ${validServices.length} services valides sur ${services.length} services au total`)
+                    
+                    return validServices.map((service, filteredIndex) => {
+                      // Utiliser un index unique basé sur le nom du service pour éviter les conflits
+                      const serviceKey = `${service.name}-${filteredIndex}`
+                    // S'assurer que les valeurs sont bien des strings propres
+                    const serviceName = String(service.name || '').trim()
+                    const serviceDescription = service.description ? String(service.description).trim() : ''
+                    const serviceValue = service.value ? String(service.value).trim() : ''
+                    
+                    // Trouver l'index original dans le tableau services pour l'expansion
+                    const originalIndex = services.findIndex(s => s === service)
+                    const isExpanded = expandedServices.has(originalIndex)
+                    const hasLongDescription = serviceDescription && serviceDescription.length > 100
+                    const displayDescription = isExpanded 
+                      ? serviceDescription 
+                      : (serviceDescription?.substring(0, 100) || '')
+                    
+                    return (
+                      <div key={serviceKey} className="service-block">
+                        <div className="service-block-header">
+                          <h4 className="service-block-title">{serviceName}</h4>
+                          <div className="service-block-payment">
+                            {service.payment_type === 'price' && serviceValue && (
+                              <div className="service-block-price">
+                                <DollarSign size={16} />
+                                <span>{serviceValue}</span>
+                              </div>
+                            )}
+                            {service.payment_type === 'exchange' && (
+                              <div className="service-block-exchange-badge">
+                                <RefreshCw size={16} />
+                                <span>Échange</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {serviceDescription && (
+                          <div className="service-block-description-section">
+                            <p className="service-block-description-text">
+                              {displayDescription}{!isExpanded && hasLongDescription && '...'}
+                            </p>
+                            {hasLongDescription && (
+                              <button
+                                className="service-read-more-btn"
+                                onClick={() => toggleServiceExpansion(originalIndex)}
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <span>Lire moins</span>
+                                    <ChevronUp size={14} />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Lire plus</span>
+                                    <ChevronDown size={14} />
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {isExpanded && service.payment_type === 'exchange' && serviceValue && (
+                          <div className="service-block-exchange-details">
+                            <p className="service-exchange-label">Échange proposé :</p>
+                            <p className="service-exchange-value">{serviceValue}</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                    })
+                  })()}
                 </div>
               </div>
             )}

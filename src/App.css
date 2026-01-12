@@ -15,11 +15,11 @@
 }
 
 .main-content.without-header {
-  padding-top: 50px;
+  padding-top: 0;
 }
 
 .main-content.without-header.category-page {
-  padding-top: 90px;
+  padding-top: 0;
 }
 
 @media (max-width: 768px) {
@@ -28,7 +28,7 @@
   }
 
   .main-content.without-header {
-    padding-top: 50px;
+    padding-top: 0;
   }
 }
 

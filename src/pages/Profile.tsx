@@ -184,9 +184,14 @@ const Profile = () => {
   }
 
   const renderContent = () => {
-    // Si c'est un profil public, afficher directement le profil public
+    // Si c'est un profil public d'un autre utilisateur, afficher le profil public
     if (isPublicProfile) {
-      return <PublicProfile userId={id} isOwnProfile={id === user?.id} />
+      return <PublicProfile userId={id} isOwnProfile={false} />
+    }
+    
+    // Si c'est /profile/public/:id et que c'est le propre profil de l'utilisateur
+    if (location.pathname.startsWith('/profile/public/') && id && id === user?.id) {
+      return <PublicProfile userId={id} isOwnProfile={true} />
     }
 
     // Gérer les sous-pages
@@ -289,7 +294,7 @@ const Profile = () => {
             </div>
           )
         }
-        return <PublicProfile userId={user.id} isOwnProfile />
+        return <PublicProfile userId={user.id} isOwnProfile={true} />
       case 'settings':
         return <Settings />
       case 'security':

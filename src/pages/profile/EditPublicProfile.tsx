@@ -10,6 +10,7 @@ import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { GooglePlacesAutocomplete } from '../../components/Location/GooglePlacesAutocomplete'
+import { publicationTypes } from '../../constants/publishData'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -40,8 +41,10 @@ const EditPublicProfile = () => {
     email_verified: false,
     statuses: [] as Array<{ name: string; description: string }>
   })
-  const [newSkill, setNewSkill] = useState('')
   const [newSocialLink, setNewSocialLink] = useState('')
+  const [interestSearch, setInterestSearch] = useState('')
+  const [showInterestSuggestions, setShowInterestSuggestions] = useState(false)
+  const interestSearchRef = useRef<HTMLDivElement>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null)
   const [serviceForm, setServiceForm] = useState({
@@ -111,17 +114,53 @@ const EditPublicProfile = () => {
       skills: (profileData as { skills?: string[] | null }).skills || [],
       services: (() => {
         const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }> | string[] | null }).services
-        if (!servicesData) return []
+        if (!servicesData) {
+          console.log('ℹ️ Aucun service dans le profil (édition)')
+          return []
+        }
+        
+        // Si c'est une string JSON, la parser
+        let parsedData = servicesData
+        if (typeof servicesData === 'string') {
+          try {
+            parsedData = JSON.parse(servicesData)
+          } catch (e) {
+            console.error('Erreur parsing services (édition):', e)
+            return []
+          }
+        }
+        
+        if (!Array.isArray(parsedData)) {
+          console.warn('⚠️ Services n\'est pas un tableau (édition):', parsedData)
+          return []
+        }
+        
+        console.log(`📦 Services récupérés pour édition: ${parsedData.length}`)
+        
         // Si les services sont encore des strings (ancien format), les convertir
-        if (Array.isArray(servicesData) && servicesData.length > 0 && typeof servicesData[0] === 'string') {
-          return (servicesData as string[]).map(name => ({
+        if (parsedData.length > 0 && typeof parsedData[0] === 'string') {
+          return (parsedData as string[]).map(name => ({
             name,
             description: '',
             payment_type: 'price' as const,
             value: ''
           }))
         }
-        return servicesData as Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>
+        
+        // Normaliser les services - s'assurer que tous sont bien formatés
+        const normalized = (parsedData as Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>).map((service, index) => {
+          const normalizedService = {
+            name: String(service.name || '').trim(),
+            description: String(service.description || '').trim(),
+            payment_type: (service.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+            value: String(service.value || '').trim()
+          }
+          console.log(`  Service ${index}:`, normalizedService)
+          return normalizedService
+        })
+        
+        console.log(`✅ Services normalisés pour édition: ${normalized.length}`)
+        return normalized
       })(),
       socialLinks: socialLinksArray,
       phone: (profileData as { phone?: string | null }).phone || '',
@@ -141,6 +180,23 @@ const EditPublicProfile = () => {
     setLoading(false)
   }
   }, [user, fetchProfile])
+
+  // Fermer les suggestions quand on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (interestSearchRef.current && !interestSearchRef.current.contains(event.target as Node)) {
+        setShowInterestSuggestions(false)
+      }
+    }
+
+    if (showInterestSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showInterestSuggestions])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -198,21 +254,71 @@ const EditPublicProfile = () => {
     setUploadingAvatar(false)
   }
 
-  const handleAddSkill = () => {
-    if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
-      setProfile(prev => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()]
-      }))
-      setNewSkill('')
-    }
-  }
 
   const handleRemoveSkill = (skill: string) => {
     setProfile(prev => ({
       ...prev,
       skills: prev.skills.filter(s => s !== skill)
     }))
+  }
+
+  // Générer la liste des options de centres d'intérêt basée sur les catégories
+  const getInterestOptions = useCallback(() => {
+    const options: string[] = []
+    
+    publicationTypes.forEach(category => {
+      if (category.slug === 'creation-contenu') {
+        // Pour "Création de contenu", ajouter la catégorie principale
+        options.push('Création de contenu')
+        // Ajouter aussi les sous-catégories
+        category.subcategories.forEach(sub => {
+          if (sub.slug !== 'tout') {
+            options.push(sub.name)
+          }
+        })
+      } else {
+        // Pour les autres catégories (Casting, Emploi, etc.), ajouter uniquement les sous-catégories
+        category.subcategories.forEach(sub => {
+          if (sub.slug !== 'tout') {
+            options.push(sub.name)
+          }
+        })
+      }
+    })
+    
+    return options.sort()
+  }, [])
+
+  // Filtrer les options selon la recherche
+  const filteredInterestOptions = useCallback(() => {
+    const allOptions = getInterestOptions()
+    if (!interestSearch.trim()) {
+      return allOptions
+    }
+    const searchLower = interestSearch.toLowerCase()
+    return allOptions.filter(option => 
+      option.toLowerCase().includes(searchLower)
+    )
+  }, [interestSearch, getInterestOptions])
+
+  // Ajouter un centre d'intérêt
+  const handleAddInterest = (interest: string) => {
+    const trimmedInterest = interest.trim()
+    if (trimmedInterest && !profile.skills.includes(trimmedInterest)) {
+      setProfile(prev => ({
+        ...prev,
+        skills: [...prev.skills, trimmedInterest]
+      }))
+      setInterestSearch('')
+      setShowInterestSuggestions(false)
+    }
+  }
+
+  // Ajouter un centre d'intérêt personnalisé (pas dans la liste)
+  const handleAddCustomInterest = () => {
+    if (interestSearch.trim() && !profile.skills.includes(interestSearch.trim())) {
+      handleAddInterest(interestSearch)
+    }
   }
 
   const handleOpenServiceModal = (index?: number) => {
@@ -479,8 +585,14 @@ const EditPublicProfile = () => {
       }
 
       // 2. Mettre à jour les autres champs dans profiles
+      console.log(`💾 Sauvegarde de ${profile.services.length} services:`, profile.services)
+      
+      // Préparer les données pour la sauvegarde
+      const servicesToSave = profile.services.length > 0 ? profile.services : null
+      console.log(`💾 Services à sauvegarder (${profile.services.length}):`, servicesToSave)
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: profileError } = await (supabase.from('profiles') as any)
+      const { error: profileError, data: savedData } = await (supabase.from('profiles') as any)
         .upsert({
           id: user.id,
           email: profile.email,
@@ -490,17 +602,22 @@ const EditPublicProfile = () => {
           distance: profile.distance || null,
           avatar_url: profile.avatar_url || null,
           skills: profile.skills.length > 0 ? profile.skills : null,
-          services: profile.services.length > 0 ? profile.services : null,
+          services: servicesToSave,
           social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
           statuses: profile.statuses.length > 0 ? profile.statuses : null,
           updated_at: new Date().toISOString()
         })
+        .select()
 
       if (profileError) {
-        console.error('Error updating profile:', profileError)
+        console.error('❌ Erreur lors de la sauvegarde:', profileError)
         alert('Erreur lors de la mise à jour du profil')
       } else {
+        console.log('✅ Profil sauvegardé avec succès:', savedData)
+        if (savedData && savedData[0]) {
+          console.log(`✅ Services sauvegardés: ${savedData[0].services?.length || 0}`, savedData[0].services)
+        }
         showSuccess('Validé')
         // Petit délai pour laisser le toast s'afficher avant la navigation
         setTimeout(() => {
@@ -658,45 +775,102 @@ const EditPublicProfile = () => {
               <div className="char-count">{profile.bio.length}/500</div>
             </div>
 
-            {/* Compétences */}
+            {/* Centres d'intérêt */}
             <div className="form-group">
-              <label>Compétences & Capacités</label>
-              <div className="tags-input-container">
-                <div className="tags-list">
-                  {profile.skills.map((skill, index) => (
-                    <span key={index} className="tag">
-                      {skill}
-                      <button
-                        type="button"
-                        className="tag-remove"
-                        onClick={() => handleRemoveSkill(skill)}
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="tag-input-wrapper">
+              <label>Centres d'intérêt</label>
+              <p className="form-hint">Ajoutez vos centres d'intérêt basés sur les catégories de l'application ou créez les vôtres</p>
+              
+              {/* Liste des centres d'intérêt ajoutés */}
+              <div className="tags-list">
+                {profile.skills.map((skill, index) => (
+                  <span key={index} className="tag">
+                    {skill}
+                    <button
+                      type="button"
+                      className="tag-remove"
+                      onClick={() => handleRemoveSkill(skill)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              {/* Barre de recherche avec suggestions */}
+              <div className="interest-search-container" ref={interestSearchRef}>
+                <div className="interest-search-wrapper">
+                  <Search size={18} className="interest-search-icon" />
                   <input
                     type="text"
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
+                    className="interest-search-input"
+                    value={interestSearch}
+                    onChange={(e) => {
+                      setInterestSearch(e.target.value)
+                      setShowInterestSuggestions(true)
+                    }}
+                    onFocus={() => setShowInterestSuggestions(true)}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
-                        handleAddSkill()
+                        // Si la recherche correspond exactement à une option, l'ajouter
+                        // Sinon, proposer d'ajouter comme option personnalisée
+                        const exactMatch = filteredInterestOptions().find(
+                          opt => opt.toLowerCase() === interestSearch.toLowerCase()
+                        )
+                        if (exactMatch) {
+                          handleAddInterest(exactMatch)
+                        } else if (interestSearch.trim()) {
+                          handleAddCustomInterest()
+                        }
                       }
                     }}
-                    placeholder="Ajouter une compétence"
+                    placeholder="Rechercher un centre d'intérêt..."
                   />
-                  <button
-                    type="button"
-                    className="tag-add-button"
-                    onClick={handleAddSkill}
-                  >
-                    Ajouter
-                  </button>
                 </div>
+                
+                {/* Suggestions de centres d'intérêt */}
+                {showInterestSuggestions && (
+                  <div className="interest-suggestions">
+                    {/* Afficher toutes les options si pas de recherche, sinon filtrer */}
+                    {filteredInterestOptions().length > 0 ? (
+                      <>
+                        {filteredInterestOptions().map((option, index) => {
+                          const isAlreadyAdded = profile.skills.includes(option)
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              className={`interest-suggestion-item ${isAlreadyAdded ? 'disabled' : ''}`}
+                              onClick={() => !isAlreadyAdded && handleAddInterest(option)}
+                              disabled={isAlreadyAdded}
+                            >
+                              {option}
+                              {isAlreadyAdded && <span className="already-added-badge">Ajouté</span>}
+                            </button>
+                          )
+                        })}
+                      </>
+                    ) : (
+                      <div className="interest-suggestion-item no-results">
+                        Aucun résultat trouvé
+                      </div>
+                    )}
+                    
+                    {/* Option pour ajouter une valeur personnalisée si la recherche ne correspond à rien */}
+                    {interestSearch.trim() && 
+                     !filteredInterestOptions().some(opt => opt.toLowerCase() === interestSearch.toLowerCase()) &&
+                     !profile.skills.includes(interestSearch.trim()) && (
+                      <button
+                        type="button"
+                        className="interest-suggestion-item custom-option"
+                        onClick={handleAddCustomInterest}
+                      >
+                        <Plus size={16} />
+                        Ajouter "{interestSearch.trim()}" comme option personnalisée
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

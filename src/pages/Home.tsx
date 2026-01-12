@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bell, Search, Loader, Sparkles, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Bell, Search, Sparkles, Plus } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -51,46 +51,22 @@ const Home = () => {
   const [castingPosts, setCastingPosts] = useState<Post[]>([])
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
 
-  // Scroll infini pour annonces récentes
-  const [recentPostsPage, setRecentPostsPage] = useState(1)
-  const [recentPostsLoading, setRecentPostsLoading] = useState(false)
-  const [hasMoreRecentPosts, setHasMoreRecentPosts] = useState(true)
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  // Nombre d'annonces par section : maximum 6 avec bouton "Afficher plus"
-  const maxPostsPerSection = 6
+  // Nombre d'annonces par section : maximum 5 avec bouton "+"
+  const maxPostsPerSection = 5
 
-  const fetchRecentPosts = async (page = 1, limit = 12) => {
-    const offset = (page - 1) * limit
+  const fetchRecentPosts = async () => {
     const posts = await fetchPostsWithRelations({
       status: 'active',
-      limit,
-      offset,
+      limit: maxPostsPerSection * 2, // Charger un peu plus pour avoir assez
       orderBy: 'created_at',
       orderDirection: 'desc',
-      useCache: page === 1
+      useCache: true
     })
     
-    if (page === 1) {
-      setRecentPosts(posts)
-    } else {
-      setRecentPosts(prev => [...prev, ...posts])
-    }
-    
-    setHasMoreRecentPosts(posts.length === limit)
+    setRecentPosts(posts)
     return posts
   }
-
-  const loadMoreRecentPosts = useCallback(async () => {
-    if (recentPostsLoading || !hasMoreRecentPosts) return
-    
-    setRecentPostsLoading(true)
-    const nextPage = recentPostsPage + 1
-    await fetchRecentPosts(nextPage)
-    setRecentPostsPage(nextPage)
-    setRecentPostsLoading(false)
-  }, [recentPostsPage, recentPostsLoading, hasMoreRecentPosts])
 
   const fetchUrgentPosts = async () => {
     // Optimiser: récupérer directement les posts urgents depuis la base de données
@@ -475,7 +451,7 @@ const Home = () => {
       try {
         // Charger les posts récents et urgents en parallèle
         const [recent, urgent] = await Promise.all([
-          fetchRecentPosts(1),
+          fetchRecentPosts(),
           fetchUrgentPosts()
         ])
         
@@ -511,35 +487,6 @@ const Home = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Observer pour le scroll infini des annonces récentes
-  useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-    }
-
-    if (!hasMoreRecentPosts || recentPostsLoading) {
-      return
-    }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreRecentPosts && !recentPostsLoading) {
-          loadMoreRecentPosts()
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current)
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [hasMoreRecentPosts, recentPostsLoading, loadMoreRecentPosts])
 
 
   if (loading) {
@@ -724,11 +671,10 @@ const Home = () => {
                 ))}
                 {urgentPosts.length >= maxPostsPerSection && (
                   <button
-                    className="home-show-more-btn"
-                    onClick={() => navigate('/search?urgent=true')}
+                    className="home-show-more-btn home-plus-btn"
+                    onClick={() => navigate('/urgent')}
                   >
-                    <span>Afficher plus d'annonces</span>
-                    <ChevronRight size={20} />
+                    <Plus size={32} />
                   </button>
                 )}
               </div>
@@ -745,11 +691,10 @@ const Home = () => {
                 ))}
                 {recommendedPosts.length >= maxPostsPerSection && (
                   <button
-                    className="home-show-more-btn"
+                    className="home-show-more-btn home-plus-btn"
                     onClick={() => navigate('/search?recommended=true')}
                   >
-                    <span>Afficher plus d'annonces</span>
-                    <ChevronRight size={20} />
+                    <Plus size={32} />
                   </button>
                 )}
               </div>
@@ -766,11 +711,10 @@ const Home = () => {
                 ))}
                 {creationContenuPosts.length >= maxPostsPerSection && (
                   <button
-                    className="home-show-more-btn"
+                    className="home-show-more-btn home-plus-btn"
                     onClick={() => navigate('/creation-contenu')}
                   >
-                    <span>Afficher plus d'annonces</span>
-                    <ChevronRight size={20} />
+                    <Plus size={32} />
                   </button>
                 )}
               </div>
@@ -787,11 +731,10 @@ const Home = () => {
                 ))}
                 {castingPosts.length >= maxPostsPerSection && (
                   <button
-                    className="home-show-more-btn"
+                    className="home-show-more-btn home-plus-btn"
                     onClick={() => navigate('/casting-role')}
                   >
-                    <span>Afficher plus d'annonces</span>
-                    <ChevronRight size={20} />
+                    <Plus size={32} />
                   </button>
                 )}
               </div>
@@ -808,33 +751,46 @@ const Home = () => {
                 ))}
                 {emploiPosts.length >= maxPostsPerSection && (
                   <button
-                    className="home-show-more-btn"
+                    className="home-show-more-btn home-plus-btn"
                     onClick={() => navigate('/montage')}
                   >
-                    <span>Afficher plus d'annonces</span>
-                    <ChevronRight size={20} />
+                    <Plus size={32} />
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Section Annonces récentes - EN DERNIER avec scroll infini */}
-          <div className="home-posts-section">
-            <h2 className="home-section-title">annonce recente</h2>
-            <div className="home-posts-grid">
-              {recentPosts.map((post) => (
-                <PostCard key={post.id} post={post} viewMode="grid" />
-              ))}
-              {recentPostsLoading && (
-                <div className="home-loading-more">
-                  <Loader size={24} />
-                </div>
-              )}
+          {/* Section Annonces récentes - EN DERNIER - Plusieurs sections de 5 annonces */}
+          {recentPosts.length > 0 && (
+            <div className="home-posts-section">
+              <h2 className="home-section-title">annonce recente</h2>
+              {/* Créer plusieurs sections de 5 annonces */}
+              {Array.from({ length: Math.ceil(recentPosts.length / maxPostsPerSection) }).map((_, sectionIndex) => {
+                const sectionPosts = recentPosts.slice(
+                  sectionIndex * maxPostsPerSection,
+                  (sectionIndex + 1) * maxPostsPerSection
+                )
+                
+                return (
+                  <div key={sectionIndex} className="home-posts-grid" style={{ marginBottom: sectionIndex < Math.ceil(recentPosts.length / maxPostsPerSection) - 1 ? '20px' : '0' }}>
+                    {sectionPosts.map((post) => (
+                      <PostCard key={post.id} post={post} viewMode="grid" />
+                    ))}
+                    {/* Bouton "+" après chaque section de 5 annonces */}
+                    {sectionPosts.length === maxPostsPerSection && (
+                      <button
+                        className="home-show-more-btn home-plus-btn"
+                        onClick={() => navigate('/recent')}
+                      >
+                        <Plus size={32} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-            {/* Point d'observation pour le scroll infini */}
-            <div ref={loadMoreRef} className="home-infinite-scroll-trigger" />
-          </div>
+          )}
         </div>
       </div>
       <Footer />

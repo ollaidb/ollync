@@ -18,6 +18,8 @@ import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import UrgentPosts from './pages/UrgentPosts'
+import RecentPosts from './pages/RecentPosts'
 import { ToastProvider } from './contexts/ToastContext'
 import './App.css'
 
@@ -99,6 +101,8 @@ function AppContent() {
           <Route path="/swipe" element={<SwipePage />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/urgent" element={<UrgentPosts />} />
+          <Route path="/recent" element={<RecentPosts />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
         </Routes>

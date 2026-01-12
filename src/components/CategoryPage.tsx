@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Search, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
+import { PostCardSkeleton } from './PostCardSkeleton'
 import BackButton from './BackButton'
 import { EmptyState } from './EmptyState'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
@@ -150,9 +151,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       categoryId,
       subCategoryId,
       status: 'active',
-      limit: 50,
+      limit: 15, // Réduit de 50 à 15 pour un chargement initial plus rapide
       orderBy: 'created_at',
-      orderDirection: 'desc'
+      orderDirection: 'desc',
+      useCache: true
     })
 
     // Filtrer par sous-sous-menu (N3) si présent
@@ -265,6 +267,19 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
   const currentSubMenu = submenu || ''
   const isAllSelected = !submenu || submenu === 'tout'
+
+  // Grouper les posts par sections de 3 maximum
+  const postsSections = useMemo(() => {
+    const sections: Post[][] = []
+    const POSTS_PER_SECTION = 3
+    
+    // Créer des sections de 3 posts maximum
+    for (let i = 0; i < filteredPosts.length; i += POSTS_PER_SECTION) {
+      sections.push(filteredPosts.slice(i, i + POSTS_PER_SECTION))
+    }
+    
+    return sections
+  }, [filteredPosts])
 
   return (
     <div className="category-page-new">
@@ -542,23 +557,29 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         </div>
       </div>
 
-      {/* 4. Liste des annonces (Grille 2 colonnes) */}
+      {/* 4. Liste des annonces par section avec scroll horizontal (3 par section) */}
       <div className="category-content-section">
         {loading ? (
-          <div className="category-loading">
-            <p>Chargement...</p>
+          <div className="category-posts-section">
+            <div className="category-posts-grid">
+              <PostCardSkeleton viewMode="grid" count={3} />
+            </div>
           </div>
-        ) : filteredPosts.length === 0 ? (
+        ) : postsSections.length === 0 ? (
           <EmptyState 
             type="category"
             customTitle={searchQuery ? `Aucun résultat pour "${searchQuery}"` : undefined}
           />
         ) : (
-          <div className="category-posts-grid">
-            {filteredPosts.map((post) => (
-              <PostCard key={post.id} post={post} viewMode="grid" />
-            ))}
-          </div>
+          postsSections.map((sectionPosts, index) => (
+            <div key={index} className="category-posts-section">
+              <div className="category-posts-grid">
+                {sectionPosts.map((post) => (
+                  <PostCard key={post.id} post={post} viewMode="grid" />
+                ))}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
