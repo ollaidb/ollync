@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import PostCard from '../components/PostCard'
+import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import { useAuth } from '../hooks/useSupabase'
@@ -60,14 +61,15 @@ const Home = () => {
   // Nombre d'annonces par section : maximum 6 avec bouton "Afficher plus"
   const maxPostsPerSection = 6
 
-  const fetchRecentPosts = async (page = 1, limit = 20) => {
+  const fetchRecentPosts = async (page = 1, limit = 12) => {
     const offset = (page - 1) * limit
     const posts = await fetchPostsWithRelations({
       status: 'active',
       limit,
       offset,
       orderBy: 'created_at',
-      orderDirection: 'desc'
+      orderDirection: 'desc',
+      useCache: page === 1
     })
     
     if (page === 1) {
@@ -141,7 +143,8 @@ const Home = () => {
         status: 'active',
         limit: maxPostsPerSection,
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        useCache: true
       })
 
       return posts
@@ -192,16 +195,13 @@ const Home = () => {
       })
 
       // Trier par engagement (likes + comments + views)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const popular = allPosts
-        .filter((post: any) => !excludePostIds.includes(post.id))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((post: any) => ({
+        .filter((post) => !excludePostIds.includes(post.id))
+        .map((post) => ({
           ...post,
-          engagementScore: (post.likes_count || 0) + (post.comments_count || 0) * 2 + (post.views_count || 0) * 0.1
+          engagementScore: (post.likes_count || 0) + (post.comments_count || 0) * 2 + ((post as Post & { views_count?: number }).views_count || 0) * 0.1
         }))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .sort((a: any, b: any) => b.engagementScore - a.engagementScore)
+        .sort((a, b) => (b as Post & { engagementScore: number }).engagementScore - (a as Post & { engagementScore: number }).engagementScore)
         .slice(0, maxPostsPerSection)
 
       setRecommendedPosts(popular)
@@ -220,20 +220,40 @@ const Home = () => {
 
       // 2. Récupérer les données comportementales de l'utilisateur en parallèle
       // Limiter les requêtes pour améliorer les performances
-      const [favoritesResult, likesResult, interestsResult, searchesResult] = await Promise.all([
+      // Gérer l'erreur saved_searches gracieusement (peut ne pas exister)
+      const [favoritesResult, likesResult, interestsResult] = await Promise.all([
         supabase.from('favorites').select('post_id').eq('user_id', user.id).limit(50),
         supabase.from('likes').select('post_id').eq('user_id', user.id).limit(50),
-        supabase.from('interests').select('post_id').eq('user_id', user.id).limit(50),
-        supabase.from('saved_searches').select('search_query, filters').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(10)
+        supabase.from('interests').select('post_id').eq('user_id', user.id).limit(50)
       ])
 
-      const favoritePostIds = favoritesResult.data?.map((f: any) => f.post_id) || []
-      const likePostIds = likesResult.data?.map((l: any) => l.post_id) || []
-      const interestPostIds = interestsResult.data?.map((i: any) => i.post_id) || []
+      // Récupérer saved_searches séparément pour gérer l'erreur 404 silencieusement
+      // (la table peut ne pas exister dans certaines bases de données)
+      let searchesData: Array<{ search_query?: string; filters?: { category_id?: string } }> = []
+      try {
+        const searchesResult = await supabase
+          .from('saved_searches')
+          .select('search_query, filters')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(10)
+        
+        if (!searchesResult.error) {
+          searchesData = searchesResult.data || []
+        }
+      } catch (error) {
+        // Table saved_searches n'existe pas - ignorer silencieusement
+        searchesData = []
+      }
+
+      // Gérer les erreurs gracieusement
+      const favoritePostIds = favoritesResult.data?.map((f: { post_id: string }) => f.post_id) || []
+      const likePostIds = likesResult.data?.map((l: { post_id: string }) => l.post_id) || []
+      const interestPostIds = interestsResult.data?.map((i: { post_id: string }) => i.post_id) || []
       
       // 3. Vérifier si l'utilisateur a assez de données comportementales
       // Si moins de 3 interactions (likes + favoris + intérêts + recherches), utiliser des recommandations aléatoires
-      const totalInteractions = favoritePostIds.length + likePostIds.length + interestPostIds.length + (searchesResult.data?.length || 0)
+      const totalInteractions = favoritePostIds.length + likePostIds.length + interestPostIds.length + (searchesData?.length || 0)
       const hasEnoughData = totalInteractions >= 3
 
       if (!hasEnoughData) {
@@ -270,7 +290,7 @@ const Home = () => {
       
       // Extraire les catégories des recherches sauvegardées
       const searchCategories = new Set<string>()
-      searchesResult.data?.forEach((search: any) => {
+      searchesData?.forEach((search: { filters?: { category_id?: string }; search_query?: string }) => {
         if (search.filters?.category_id) {
           searchCategories.add(search.filters.category_id)
         }
@@ -301,7 +321,7 @@ const Home = () => {
           const favoritePostIdsSet = new Set(favoritePostIds)
           const interestPostIdsSet = new Set(interestPostIds)
           
-          interactedPosts.forEach((post: any) => {
+          interactedPosts.forEach((post: Post & { category_id?: string }) => {
             const categoryId = post.category_id
             if (categoryId) {
               let weight = 1
@@ -334,9 +354,8 @@ const Home = () => {
 
       // 6. Calculer le score de recommandation selon l'algorithme
       // Pondérations : Localisation 30%, Catégories 25%, Intérêts 20%, Engagement 15%, Récence 10%
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const postsWithScores = allPosts
-        .filter((post: any) => 
+        .filter((post) => 
           !excludedIds.has(post.id) && 
           post.user_id !== user.id &&
           !swipedIds.has(post.id)
@@ -402,21 +421,53 @@ const Home = () => {
         orderDirection: 'desc'
       })
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const popular = allPosts
-        .filter((post: any) => !excludePostIds.includes(post.id))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((post: any) => ({
+        .filter((post) => !excludePostIds.includes(post.id))
+        .map((post) => ({
           ...post,
-          engagementScore: (post.likes_count || 0) + (post.comments_count || 0) * 2 + (post.views_count || 0) * 0.1
+          engagementScore: (post.likes_count || 0) + (post.comments_count || 0) * 2 + ((post as Post & { views_count?: number }).views_count || 0) * 0.1
         }))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .sort((a: any, b: any) => b.engagementScore - a.engagementScore)
+        .sort((a, b) => (b as Post & { engagementScore: number }).engagementScore - (a as Post & { engagementScore: number }).engagementScore)
         .slice(0, maxPostsPerSection)
 
       setRecommendedPosts(popular)
     }
   }
+
+  // Gérer la session OAuth après callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      try {
+        // Vérifier si on vient d'un callback OAuth
+        const hashParams = window.location.hash
+        const searchParams = new URLSearchParams(window.location.search)
+        
+        if (hashParams.includes('access_token') || searchParams.has('code')) {
+          console.log('🔐 Détection callback OAuth, récupération de la session...')
+          
+          // Attendre un peu pour que Supabase traite le callback
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Récupérer la session
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+          
+          if (sessionError) {
+            console.error('❌ Erreur lors de la récupération de la session:', sessionError)
+          } else if (session) {
+            console.log('✅ Session OAuth récupérée avec succès:', session.user.email)
+            // Nettoyer l'URL
+            window.history.replaceState({}, document.title, window.location.pathname)
+          } else {
+            console.warn('⚠️ Aucune session trouvée après callback OAuth')
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors du traitement du callback OAuth:', error)
+      }
+    }
+    
+    handleOAuthCallback()
+  }, [])
 
   useEffect(() => {
     const loadAll = async () => {
@@ -560,9 +611,22 @@ const Home = () => {
           </div>
 
           <div className="home-scrollable">
-            <div className="loading-container">
-              <Loader className="spinner-large" size={48} />
-              <p>Chargement...</p>
+            {/* Section Hero */}
+            <div className="home-hero-section">
+              <div className="home-hero-block">
+                <div className="home-hero-text">
+                  <span className="home-hero-title">BIENVENUE</span>
+                  <span className="home-hero-subtitle">sur Ollyc</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Skeletons pour les sections de posts */}
+            <div className="home-posts-section">
+              <h2 className="home-section-title">chargement...</h2>
+              <div className="home-posts-grid">
+                <PostCardSkeleton viewMode="grid" count={6} />
+              </div>
             </div>
           </div>
         </div>
@@ -643,7 +707,10 @@ const Home = () => {
           {/* Section Hero */}
           <div className="home-hero-section">
             <div className="home-hero-block">
-              <span className="home-hero-text">hero</span>
+              <div className="home-hero-text">
+                <span className="home-hero-title">BIENVENUE</span>
+                <span className="home-hero-subtitle">sur Ollyc</span>
+              </div>
             </div>
           </div>
 
@@ -668,32 +735,22 @@ const Home = () => {
             </div>
           )}
 
-          {/* Section Recommandations - JUSTE APRÈS URGENT - Seulement si connecté */}
-          {user && (
+          {/* Section Recommandations - JUSTE APRÈS URGENT - Seulement si connecté ET s'il y a des recommandations */}
+          {user && recommendedPosts.length > 0 && !loading && (
             <div className="home-posts-section">
               <h2 className="home-section-title">recommandations</h2>
               <div className="home-posts-grid">
-                {recommendedPosts.length > 0 ? (
-                  <>
-                    {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
-                      <PostCard key={post.id} post={post} viewMode="grid" />
-                    ))}
-                    {recommendedPosts.length >= maxPostsPerSection && (
-                      <button
-                        className="home-show-more-btn"
-                        onClick={() => navigate('/search?recommended=true')}
-                      >
-                        <span>Afficher plus d'annonces</span>
-                        <ChevronRight size={20} />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  !loading && (
-                    <div className="home-empty-section">
-                      <p>Aucune recommandation pour le moment</p>
-                    </div>
-                  )
+                {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
+                  <PostCard key={post.id} post={post} viewMode="grid" />
+                ))}
+                {recommendedPosts.length >= maxPostsPerSection && (
+                  <button
+                    className="home-show-more-btn"
+                    onClick={() => navigate('/search?recommended=true')}
+                  >
+                    <span>Afficher plus d'annonces</span>
+                    <ChevronRight size={20} />
+                  </button>
                 )}
               </div>
             </div>
