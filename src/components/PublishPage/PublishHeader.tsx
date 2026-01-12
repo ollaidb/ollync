@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { PublicationType } from '../../constants/publishData'
+import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import './PublishHeader.css'
 
 interface PublishHeaderProps {
@@ -12,6 +13,7 @@ interface PublishHeaderProps {
 
 export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _selectedCategory }: PublishHeaderProps) => {
   const navigate = useNavigate()
+  const { getPreviousPath, markNavigatingBack, canGoBack } = useNavigationHistory()
   const totalSteps = 5
   const progress = step > 0 ? ((step + 1) / totalSteps) * 100 : 0
 
@@ -19,7 +21,16 @@ export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _sel
     if (step > 0) {
       onBack()
     } else {
-      navigate(-1)
+      // Utiliser l'historique de navigation pour retourner à la page précédente
+      const previousPath = getPreviousPath()
+      if (canGoBack() && previousPath) {
+        markNavigatingBack()
+        navigate(previousPath)
+      } else {
+        // Fallback: retourner vers /home
+        markNavigatingBack()
+        navigate('/home')
+      }
     }
   }
 

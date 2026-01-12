@@ -1,5 +1,8 @@
--- Script pour améliorer le trigger de création de profil pour mieux gérer l'authentification Google
--- Ce script améliore la fonction handle_new_user() pour extraire correctement les données depuis Google OAuth
+-- ============================================
+-- SCRIPT POUR CORRIGER LA CRÉATION DE PROFIL OAuth
+-- ============================================
+-- Ce script s'assure que le trigger fonctionne correctement
+-- pour créer automatiquement les profils lors de l'inscription OAuth (Google/Apple)
 
 -- 1. S'assurer que la colonne avatar_url existe
 DO $$ 
@@ -15,7 +18,8 @@ BEGIN
 END $$;
 
 -- 2. Fonction améliorée pour créer automatiquement un profil lors de l'inscription
--- Gère maintenant les données Google OAuth (full_name, name, avatar_url, etc.)
+-- Gère les données Google OAuth (full_name, name, avatar_url, picture, etc.)
+-- Gère aussi les données Apple OAuth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -24,7 +28,8 @@ DECLARE
   user_avatar_url TEXT;
 BEGIN
   -- Extraire le nom complet depuis différentes sources possibles
-  -- Google stocke généralement dans 'full_name' ou 'name'
+  -- Google stocke dans 'full_name' ou 'name'
+  -- Apple peut aussi stocker dans 'full_name'
   user_full_name := COALESCE(
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'name',
@@ -37,7 +42,8 @@ BEGIN
     NULL
   );
 
-  -- Extraire l'URL de l'avatar (pour Google)
+  -- Extraire l'URL de l'avatar (pour Google et autres providers)
+  -- Google stocke dans 'avatar_url' ou 'picture'
   user_avatar_url := COALESCE(
     NEW.raw_user_meta_data->>'avatar_url',
     NEW.raw_user_meta_data->>'picture',
@@ -57,7 +63,8 @@ BEGIN
     email = EXCLUDED.email,
     full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
     username = COALESCE(EXCLUDED.username, profiles.username),
-    avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url);
+    avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
+    updated_at = NOW();
   
   RETURN NEW;
 EXCEPTION
@@ -75,7 +82,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW 
   EXECUTE FUNCTION public.handle_new_user();
 
--- Vérification : Afficher les triggers existants
+-- 4. Vérification : Afficher le trigger créé
 SELECT 
   trigger_name, 
   event_manipulation, 
@@ -83,4 +90,10 @@ SELECT
   action_statement
 FROM information_schema.triggers
 WHERE trigger_name = 'on_auth_user_created';
+
+-- 5. Note : Ce script garantit que :
+--    - La colonne avatar_url existe dans la table profiles
+--    - La fonction handle_new_user() extrait correctement les données OAuth
+--    - Le trigger on_auth_user_created est bien créé et fonctionnel
+--    - Les profils sont créés automatiquement pour Google, Apple et autres providers OAuth
 

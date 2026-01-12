@@ -98,6 +98,17 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const profileId = userId || user?.id
 
+  // Log pour déboguer l'affichage du bouton
+  useEffect(() => {
+    console.log('🔍 PublicProfile Debug:', {
+      userId,
+      isOwnProfile,
+      'user?.id': user?.id,
+      profileId,
+      shouldShowEditButton: isOwnProfile || !userId || userId === user?.id || profileId === user?.id
+    })
+  }, [userId, isOwnProfile, user?.id, profileId])
+
   const fetchProfile = useCallback(async () => {
     if (!profileId) {
       setLoading(false)
@@ -731,11 +742,12 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         <BackButton className="profile-back-button" />
         <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          {(isOwnProfile || !userId || userId === user?.id || profileId === user?.id) ? (
+          {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) ? (
             <button
               className="profile-header-action-btn"
               onClick={() => navigate('/profile/edit')}
               aria-label="Éditer le profil"
+              style={{ display: 'flex', visibility: 'visible', opacity: 1 }}
             >
               <Edit size={20} />
             </button>

@@ -24,7 +24,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -65,14 +65,16 @@
 }
 
 .profile-header-actions {
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
   position: relative;
   z-index: 1001;
   overflow: visible;
-  visibility: visible;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-width: 36px;
 }
 
 .profile-header-action-btn {
@@ -81,7 +83,7 @@
   border-radius: 50%;
   background-color: var(--card);
   border: none;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -89,6 +91,10 @@
   transition: all 0.2s ease;
   box-shadow: var(--shadow-md);
   flex-shrink: 0;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 1002;
 }
 
 .profile-header-action-btn:hover {
@@ -834,6 +840,7 @@
     padding: calc(env(safe-area-inset-top, 0px) + 10px) 5px 3px;
     gap: 8px;
     border-bottom: 1px solid var(--border);
+    z-index: 1000 !important;
   }
 
   .profile-page-title {
