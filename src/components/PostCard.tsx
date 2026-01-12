@@ -37,10 +37,11 @@ interface PostCardProps {
   isLiked?: boolean
   onLike?: () => void
   hideProfile?: boolean
+  actionMenu?: React.ReactNode
   // onShare?: () => void
 }
 
-const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfile = false }: PostCardProps) => {
+const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfile = false, actionMenu }: PostCardProps) => {
   const navigate = useNavigate()
   const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
@@ -346,6 +347,11 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfil
         <div className="post-card-content">
           <div className="post-card-header">
             <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
+            {actionMenu && (
+              <div className="post-card-action-menu" onClick={(e) => e.stopPropagation()}>
+                {actionMenu}
+              </div>
+            )}
           </div>
           <p className="post-card-description">{post.description.substring(0, 100)}...</p>
           <div className={`post-card-footer ${hideProfile || !post.user ? 'post-card-footer-right-only' : ''}`}>

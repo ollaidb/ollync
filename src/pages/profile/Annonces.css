@@ -94,8 +94,9 @@
 .annonces-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
+
 
 .annonce-item {
   background: var(--card);
@@ -179,24 +180,29 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow-md);
-  min-width: 180px;
   z-index: 10;
   overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  padding: 4px;
 }
 
 .annonce-item-menu-item {
-  width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
   padding: 8px 12px;
   background: transparent;
   border: none;
-  text-align: left;
+  text-align: center;
   color: var(--foreground);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .annonce-item-menu-item:hover:not(.disabled) {

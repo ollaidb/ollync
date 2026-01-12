@@ -249,6 +249,14 @@
   margin-bottom: 0;
 }
 
+.post-card-list .post-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
 .post-card-title {
   font-size: 13px;
   font-weight: 600;
@@ -351,6 +359,17 @@
 
 .post-card-list .post-card-footer.post-card-footer-right-only {
   justify-content: flex-end;
+}
+
+.post-card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-card-action-menu {
+  flex-shrink: 0;
+  position: relative;
 }
 
 .post-card-list .post-card-profile {

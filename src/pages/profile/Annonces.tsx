@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, Archive, Edit, MoreVertical, Calendar, CheckCircle, RotateCcw } from 'lucide-react'
+import { Trash2, Archive, Edit, MoreHorizontal, Calendar, CheckCircle, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
 import ConfirmationModal from '../../components/ConfirmationModal'
+import PostCard from '../../components/PostCard'
+import { mapPosts } from '../../utils/postMapper'
 import './Annonces.css'
 
 interface Post {
@@ -15,6 +17,15 @@ interface Post {
   created_at: string
   updated_at: string
   needed_date: string | null
+  price?: number | null
+  payment_type?: string | null
+  location?: string | null
+  images?: string[] | null
+  likes_count: number
+  comments_count: number
+  delivery_available: boolean
+  is_urgent?: boolean
+  number_of_people?: number | null
   category?: {
     name: string
     slug: string
@@ -57,7 +68,7 @@ const Annonces = () => {
 
     setLoading(true)
     try {
-      // Récupérer les posts sans relation (plus fiable)
+      // Récupérer les posts avec toutes les données nécessaires
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
@@ -95,10 +106,19 @@ const Annonces = () => {
         }
       }
 
-      // Combiner les données
+      // Combiner les données avec les valeurs par défaut nécessaires
       const postsWithCategories = postsData.map((post: any) => ({
         ...post,
-        category: categoriesMap.get(post.category_id) || null
+        category: categoriesMap.get(post.category_id) || null,
+        likes_count: post.likes_count || 0,
+        comments_count: post.comments_count || 0,
+        delivery_available: post.delivery_available || false,
+        images: post.images || null,
+        price: post.price || null,
+        payment_type: post.payment_type || null,
+        location: post.location || null,
+        number_of_people: post.number_of_people || null,
+        is_urgent: post.is_urgent || false
       }))
 
       setPosts(postsWithCategories as Post[])
@@ -313,82 +333,76 @@ const Annonces = () => {
             {filteredPosts.map((post) => {
               const canEdit = canEditPost(post)
 
-              const handleItemClick = (e: React.MouseEvent) => {
-                // Ne pas naviguer si on clique sur le menu d'actions
-                const target = e.target as HTMLElement
-                if (target.closest('.annonce-item-actions') || 
-                    target.closest('.annonce-item-menu-button') ||
-                    target.closest('.annonce-item-menu')) {
-                  return
-                }
-                navigate(`/post/${post.id}`)
-              }
-
               const handleMenuClick = (e: React.MouseEvent) => {
                 e.stopPropagation()
                 setActionMenuOpen(actionMenuOpen === post.id ? null : post.id)
               }
 
-              return (
-                <div 
-                  key={post.id} 
-                  className="annonce-item"
-                  onClick={handleItemClick}
-                >
-                  <div className="annonce-item-content">
-                    <h3 className="annonce-item-title">{post.title}</h3>
-                    <div className="annonce-item-date">
-                      <Calendar size={14} />
-                      <span>
-                        {post.status === 'completed'
-                          ? `Réalisée le ${formatDate(post.updated_at || post.created_at)}`
-                          : post.status === 'archived'
-                          ? `Archivée le ${formatDate(post.updated_at || post.created_at)}`
-                          : `Publiée le ${formatDate(post.created_at)}`}
-                      </span>
-                    </div>
-                  </div>
+              const actionMenuContent = (
+                <div className="annonce-item-actions" onClick={handleMenuClick}>
+                  <button
+                    className="annonce-item-menu-button"
+                    onClick={handleMenuClick}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
 
-                  {/* Menu d'actions */}
-                  <div className="annonce-item-actions" onClick={handleMenuClick}>
-                    <button
-                      className="annonce-item-menu-button"
-                      onClick={handleMenuClick}
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-
-                    {actionMenuOpen === post.id && (
-                      <div className="annonce-item-menu">
-                        {post.status === 'active' && (
-                          <>
-                            {canEdit ? (
-                              <button
-                                className="annonce-item-menu-item"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleEdit(post.id)
-                                }}
-                              >
-                                <Edit size={14} />
-                                <span>Éditer</span>
-                              </button>
-                            ) : (
-                              <div className="annonce-item-menu-item disabled">
-                                <Edit size={14} />
-                                <span>Édition disponible pendant 24h</span>
-                              </div>
-                            )}
+                  {actionMenuOpen === post.id && (
+                    <div className="annonce-item-menu">
+                      {post.status === 'active' && (
+                        <>
+                          {canEdit ? (
                             <button
                               className="annonce-item-menu-item"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleComplete(post.id)
+                                handleEdit(post.id)
                               }}
                             >
-                              <CheckCircle size={14} />
-                              <span>Réaliser</span>
+                              <Edit size={14} />
+                              <span>Éditer</span>
                             </button>
+                          ) : (
+                            <div className="annonce-item-menu-item disabled">
+                              <Edit size={14} />
+                              <span>Édition disponible pendant 24h</span>
+                            </div>
+                          )}
+                          <button
+                            className="annonce-item-menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleComplete(post.id)
+                            }}
+                          >
+                            <CheckCircle size={14} />
+                            <span>Réaliser</span>
+                          </button>
+                          <button
+                            className="annonce-item-menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleArchive(post.id)
+                            }}
+                          >
+                            <Archive size={14} />
+                            <span>Archiver</span>
+                          </button>
+                        </>
+                      )}
+                      {(post.status === 'completed' || post.status === 'archived') && (
+                        <>
+                          <button
+                            className="annonce-item-menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleReactivate(post.id)
+                            }}
+                          >
+                            <RotateCcw size={14} />
+                            <span>Remettre en ligne</span>
+                          </button>
+                          {post.status === 'completed' && (
                             <button
                               className="annonce-item-menu-item"
                               onClick={(e) => {
@@ -399,48 +413,32 @@ const Annonces = () => {
                               <Archive size={14} />
                               <span>Archiver</span>
                             </button>
-                          </>
-                        )}
-                        {(post.status === 'completed' || post.status === 'archived') && (
-                          <>
-                            <button
-                              className="annonce-item-menu-item"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleReactivate(post.id)
-                              }}
-                            >
-                              <RotateCcw size={14} />
-                              <span>Remettre en ligne</span>
-                            </button>
-                            {post.status === 'completed' && (
-                              <button
-                                className="annonce-item-menu-item"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleArchive(post.id)
-                                }}
-                              >
-                                <Archive size={14} />
-                                <span>Archiver</span>
-                              </button>
-                            )}
-                          </>
-                        )}
-                        <button
-                          className="annonce-item-menu-item destructive"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDelete(post.id)
-                          }}
-                        >
-                          <Trash2 size={14} />
-                          <span>Supprimer</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          )}
+                        </>
+                      )}
+                      <button
+                        className="annonce-item-menu-item destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(post.id)
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        <span>Supprimer</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
+              )
+
+              return (
+                <PostCard 
+                  key={post.id}
+                  post={post} 
+                  viewMode="list" 
+                  hideProfile={true}
+                  actionMenu={actionMenuContent}
+                />
               )
             })}
           </div>
