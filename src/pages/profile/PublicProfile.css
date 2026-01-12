@@ -3,7 +3,7 @@
    ============================================ */
 
 :root {
-  --profile-header-height: 70px;
+  --profile-header-height: 50px;
 }
 
 .public-profile-page {
@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   padding-top: calc(env(safe-area-inset-top, 0px) + var(--profile-header-height));
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  padding-bottom: 0;
 }
 
 /* ============================================
@@ -586,7 +586,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 5px 3px;
+  padding: 0 5px 1px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
@@ -599,7 +599,7 @@
 /* Mode À propos */
 .profile-content-a-propos {
   padding-top: 12px;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -608,7 +608,7 @@
 /* Mode Annonce - Grille horizontale scrollable */
 .profile-content-annonces {
   padding-top: 12px;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
 }
 
 .profile-posts-grid {
@@ -618,7 +618,7 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
 }
 
 .profile-posts-grid::-webkit-scrollbar {
@@ -641,7 +641,7 @@
 /* Mode Match - Liste verticale */
 .profile-content-match {
   padding-top: 16px;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
 }
 
 .match-list {
@@ -707,7 +707,7 @@
 /* Mode Avis - Liste des avis */
 .profile-content-avis {
   padding-top: 12px;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
 }
 
 .reviews-list {
@@ -825,8 +825,8 @@
 /* Responsive */
 @media (max-width: 768px) {
   .public-profile-page {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
+    padding-bottom: 0;
   }
 
   .profile-page-header {
@@ -1061,7 +1061,7 @@
   }
 
   .profile-content-scrollable {
-    padding: 0 5px 3px;
+    padding: 0 5px 1px;
     margin-top: 0;
   }
 
