@@ -66,7 +66,7 @@
 }
 
 .profile-menu-page {
-  padding: 12px;
+  padding: 64px 12px 12px 12px;
   max-width: 600px;
   margin: 0 auto;
 }
@@ -427,7 +427,7 @@
   }
 
   .profile-menu-page {
-    padding: 10px;
+    padding: 53px 10px 10px 10px;
   }
 
   .profile-card {

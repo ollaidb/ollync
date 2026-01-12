@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -971,7 +971,7 @@ const Messages = () => {
               onClick={() => setShowCreateGroup(true)}
               title="Créer un groupe"
             >
-              <Users size={20} />
+              <Plus size={20} />
             </button>
           </div>
         </div>
