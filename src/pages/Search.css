@@ -227,8 +227,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 200px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 140px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   padding-left: 20px;
   padding-right: 20px;
   max-width: 1200px;
@@ -317,7 +317,7 @@
   }
 
   .search-content {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 180px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 130px);
     padding-left: 16px;
     padding-right: 16px;
   }

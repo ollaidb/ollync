@@ -3,7 +3,7 @@
    ============================================ */
 
 :root {
-  --profile-header-height: 10px;
+  --profile-header-height: 70px;
 }
 
 .public-profile-page {
@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   padding-top: calc(env(safe-area-inset-top, 0px) + var(--profile-header-height));
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
 }
 
 /* ============================================
@@ -335,6 +335,160 @@
 .interest-bubble:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   4.5. SERVICES (blocs verticaux scrollables)
+   ============================================ */
+
+.profile-services-section {
+  background-color: var(--background);
+  padding: 12px 5px 3px;
+  margin: 0;
+}
+
+.services-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 12px 0;
+  text-transform: lowercase;
+}
+
+.services-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.service-block {
+  background-color: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.service-block:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.service-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.service-block-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.service-block-payment {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.service-block-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.service-block-price svg {
+  flex-shrink: 0;
+}
+
+.service-block-exchange-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: var(--accent);
+  color: var(--foreground);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.service-block-exchange-badge svg {
+  flex-shrink: 0;
+}
+
+.service-block-description-section {
+  margin-top: 8px;
+}
+
+.service-block-description-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  margin: 8px 0 0 0;
+}
+
+.service-read-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: all 0.2s ease;
+  text-transform: lowercase;
+  margin-top: 4px;
+}
+
+.service-read-more-btn:hover {
+  color: var(--accent);
+}
+
+.service-read-more-btn svg {
+  flex-shrink: 0;
+}
+
+.service-block-exchange-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.service-exchange-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 6px 0;
+}
+
+.service-exchange-value {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--foreground);
+  margin: 0;
 }
 
 /* ============================================
@@ -664,8 +818,8 @@
 /* Responsive */
 @media (max-width: 768px) {
   .public-profile-page {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   }
 
   .profile-page-header {
@@ -823,6 +977,57 @@
   .interest-bubble {
     padding: 6px 12px;
     font-size: 12px;
+  }
+
+  .profile-services-section {
+    padding: 12px 5px 3px;
+    margin-top: 0;
+  }
+
+  .services-title {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .service-block {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .service-block-header {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .service-block-title {
+    font-size: 16px;
+  }
+
+  .service-block-description-text {
+    font-size: 13px;
+  }
+
+  .service-read-more-btn {
+    font-size: 12px;
+  }
+
+  .service-block-price,
+  .service-block-exchange-badge {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .service-block-exchange-details {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .service-exchange-label {
+    font-size: 11px;
+  }
+
+  .service-exchange-value {
+    font-size: 13px;
   }
 
   .profile-social-block {

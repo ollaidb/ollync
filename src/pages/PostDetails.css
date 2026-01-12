@@ -328,8 +328,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -1429,7 +1429,7 @@
   }
 
   .post-details-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 75px);
   }
 
   .post-details-page.has-media .post-details-scrollable {
