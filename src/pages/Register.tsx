@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Loader } from 'lucide-react'
+import { Loader, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import './Auth.css'
 
@@ -10,22 +10,95 @@ const Register = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  
+  // État pour l'acceptation de toutes les conditions
+  const [acceptAllConditions, setAcceptAllConditions] = useState(false)
+
+  // Fonction pour valider l'email
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Fonction pour calculer la force du mot de passe
+  const getPasswordStrength = (pwd: string) => {
+    const hasMinLength = pwd.length >= 8
+    const hasNumber = /\d/.test(pwd)
+    const hasUpperCase = /[A-Z]/.test(pwd)
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+
+    const criteriaMet = [hasMinLength, hasNumber, hasUpperCase, hasSpecialChar].filter(Boolean).length
+    const strength = (criteriaMet / 4) * 100
+
+    let strengthLabel = ''
+    let strengthColor = ''
+
+    if (strength === 0) {
+      strengthLabel = 'Très faible'
+      strengthColor = '#ef4444' // rouge
+    } else if (strength <= 25) {
+      strengthLabel = 'Faible'
+      strengthColor = '#f97316' // orange
+    } else if (strength <= 50) {
+      strengthLabel = 'Moyen'
+      strengthColor = '#eab308' // jaune
+    } else if (strength <= 75) {
+      strengthLabel = 'Bon'
+      strengthColor = '#84cc16' // vert clair
+    } else {
+      strengthLabel = 'Très sécurisé'
+      strengthColor = '#22c55e' // vert foncé
+    }
+
+    return {
+      hasMinLength,
+      hasNumber,
+      hasUpperCase,
+      hasSpecialChar,
+      strength,
+      strengthLabel,
+      strengthColor,
+      isValid: hasMinLength && hasNumber && hasUpperCase && hasSpecialChar
+    }
+  }
+
+  const passwordStrength = getPasswordStrength(password)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // Validation de l'email
+    if (!validateEmail(email)) {
+      setError('Veuillez entrer une adresse email valide')
+      return
+    }
+
+    // Vérifier que le nom d'utilisateur est rempli
+    if (!username.trim()) {
+      setError('Le nom d\'utilisateur est obligatoire')
+      return
+    }
+
+    // Validation du mot de passe
+    if (!passwordStrength.isValid) {
+      setError('Le mot de passe ne respecte pas tous les critères requis')
+      return
+    }
 
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas')
       return
     }
 
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères')
+    // Vérifier que toutes les conditions sont acceptées
+    if (!acceptAllConditions) {
+      setError('Veuillez accepter toutes les conditions pour créer un compte')
       return
     }
 
@@ -38,8 +111,7 @@ const Register = () => {
         password,
         options: {
           data: {
-            full_name: fullName || null,
-            username: username || null
+            username: username.trim()
           }
         }
       })
@@ -64,8 +136,7 @@ const Register = () => {
           const { error: profileError } = await (supabase.from('profiles') as any).insert({
             id: authData.user.id,
             email: authData.user.email,
-            full_name: fullName || null,
-            username: username || null
+            username: username.trim()
           })
 
           if (profileError) {
@@ -200,6 +271,8 @@ const Register = () => {
               S'inscrire avec Google
             </button>
 
+            {/* Bouton Apple temporairement masqué */}
+            {false && (
             <button
               type="button"
               className="auth-button-apple"
@@ -211,6 +284,7 @@ const Register = () => {
               </svg>
               S'inscrire avec Apple
             </button>
+            )}
           </div>
 
           <div className="auth-footer">
@@ -253,25 +327,14 @@ const Register = () => {
           )}
 
           <div className="form-group">
-            <label htmlFor="fullName">Nom complet (optionnel)</label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Jean Dupont"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="username">Nom d'utilisateur (optionnel)</label>
+            <label htmlFor="username">Nom d'utilisateur *</label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="jeandupont"
+              required
               disabled={loading}
             />
           </div>
@@ -286,41 +349,126 @@ const Register = () => {
               placeholder="votre@email.com"
               required
               disabled={loading}
+              className={email && !validateEmail(email) ? 'input-error' : ''}
             />
+            {email && !validateEmail(email) && (
+              <span className="input-error-message">Format d'email invalide</span>
+            )}
           </div>
 
           <div className="form-group">
             <label htmlFor="password">Mot de passe *</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              disabled={loading}
-            />
+            <div className="password-input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                className={`password-input ${password && !passwordStrength.isValid ? 'input-error' : ''}`}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            <p className="password-requirements-note">
+              Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (@, !, #, etc.)
+            </p>
+            
+            {/* Barre de force du mot de passe */}
+            {password && (
+              <div className="password-strength-indicator">
+                <div className="password-strength-bar-wrapper">
+                  <div
+                    className="password-strength-bar"
+                    style={{
+                      width: `${passwordStrength.strength}%`,
+                      backgroundColor: passwordStrength.strengthColor
+                    }}
+                  />
+                </div>
+                <div className="password-strength-label">
+                  <span style={{ color: passwordStrength.strengthColor }}>
+                    {passwordStrength.strengthLabel}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirmer le mot de passe *</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              disabled={loading}
-            />
+            <div className="password-input-wrapper">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+                disabled={loading}
+                className="password-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={loading}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Bloc des conditions */}
+          <div className="conditions-block">
+            <div className="condition-item">
+              <label className="condition-label">
+                <input
+                  type="checkbox"
+                  checked={acceptAllConditions}
+                  onChange={(e) => setAcceptAllConditions(e.target.checked)}
+                  disabled={loading}
+                  className="condition-checkbox"
+                />
+                <span className="condition-text">
+                  J'accepte toutes les <strong>conditions légales</strong> (CGU, Politique de confidentialité, CGV, Mentions légales)
+                </span>
+                <button
+                  type="button"
+                  className="condition-more-btn"
+                  onClick={() => navigate('/profile/legal')}
+                  disabled={loading}
+                >
+                  Plus
+                </button>
+              </label>
+            </div>
           </div>
 
           <button
             type="submit"
             className="auth-button"
-            disabled={loading}
+            disabled={
+              loading || 
+              !acceptAllConditions ||
+              !email.trim() ||
+              !validateEmail(email) ||
+              !username.trim() ||
+              !password ||
+              !passwordStrength.isValid ||
+              password !== confirmPassword
+            }
           >
             {loading ? (
               <>
