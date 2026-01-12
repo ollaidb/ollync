@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, Edit, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, ChevronDown, ChevronUp, Linkedin, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -813,6 +813,15 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           {profile.username && (
             <p className="profile-username-text">{profile.username}</p>
           )}
+          {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
+            <button
+              className="profile-edit-text-btn"
+              onClick={() => navigate('/profile/edit')}
+              aria-label="Modifier le profil"
+            >
+              modifier le profil
+            </button>
+          )}
           {profile.location && (
             <div className="profile-location-text">
               <span>{profile.location.split(',')[0].trim()}</span>
@@ -857,15 +866,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         >
           avis
         </button>
-        {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
-          <button
-            className="profile-menu-btn profile-edit-btn"
-            onClick={() => navigate('/profile/edit')}
-            aria-label="Éditer le profil"
-          >
-            <Edit size={18} />
-          </button>
-        )}
       </div>
 
       {/* 4. BLOC CONTENU (scrollable) */}
@@ -879,6 +879,80 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                 <div className="bio-label">bio</div>
                 <p className="bio-text">{profile.bio}</p>
               </div>
+            )}
+
+            {/* RÉSEAUX SOCIAUX - Icônes indépendantes */}
+            {profile.social_links && (
+              (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.linkedin || profile.social_links.twitter || profile.social_links.facebook || profile.social_links.website) && (
+                <div className="profile-social-icons">
+                  {profile.social_links.instagram && (
+                    <a
+                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="Instagram"
+                    >
+                      <Instagram size={24} />
+                    </a>
+                  )}
+                  {profile.social_links.tiktok && (
+                    <a
+                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="TikTok"
+                    >
+                      <div className="tiktok-icon-small">TT</div>
+                    </a>
+                  )}
+                  {profile.social_links.linkedin && (
+                    <a
+                      href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : `https://linkedin.com/in/${profile.social_links.linkedin.replace('@', '').replace(/^\/+/, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin size={24} />
+                    </a>
+                  )}
+                  {profile.social_links.twitter && (
+                    <a
+                      href={profile.social_links.twitter.startsWith('http') ? profile.social_links.twitter : `https://twitter.com/${profile.social_links.twitter.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="Twitter/X"
+                    >
+                      <Globe size={24} />
+                    </a>
+                  )}
+                  {profile.social_links.facebook && (
+                    <a
+                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="Facebook"
+                    >
+                      <Facebook size={24} />
+                    </a>
+                  )}
+                  {profile.social_links.website && (
+                    <a
+                      href={profile.social_links.website.startsWith('http') ? profile.social_links.website : `https://${profile.social_links.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-icon-independent"
+                      aria-label="Site web"
+                    >
+                      <Globe size={24} />
+                    </a>
+                  )}
+                </div>
+              )
             )}
 
             {/* CENTRES D'INTÉRÊT */}
@@ -990,44 +1064,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   })()}
                 </div>
               </div>
-            )}
-
-            {/* LIENS SOCIAUX */}
-            {profile.social_links && (
-              (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.facebook) && (
-                <div className="profile-social-block">
-                  {profile.social_links.instagram && (
-                    <a
-                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-link"
-                    >
-                      <Instagram size={24} />
-                    </a>
-                  )}
-                  {profile.social_links.tiktok && (
-                    <a
-                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-link"
-                    >
-                      <div className="tiktok-icon">TT</div>
-                    </a>
-                  )}
-                  {profile.social_links.facebook && (
-                    <a
-                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-link"
-                    >
-                      <Facebook size={24} />
-                    </a>
-                  )}
-                </div>
-              )
             )}
           </div>
         )}

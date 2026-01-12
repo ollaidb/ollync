@@ -205,6 +205,27 @@
   line-height: 1.2;
 }
 
+.profile-edit-text-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin: 2px 0;
+  text-transform: lowercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.profile-edit-text-btn:hover {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
 .profile-location-text {
   display: flex;
   align-items: center;
@@ -583,20 +604,6 @@
 .profile-menu-btn.active {
   background-color: var(--accent);
   color: var(--foreground);
-}
-
-.profile-edit-btn {
-  flex: 0 0 auto;
-  min-width: 48px;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-edit-btn:hover {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
 }
 
 /* ============================================
@@ -1088,11 +1095,6 @@
     padding: 10px 5px;
     gap: 6px;
     margin-top: 8px;
-  }
-
-  .profile-edit-btn {
-    min-width: 44px;
-    padding: 10px;
   }
 
   .profile-menu-btn {
