@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, Archive, Edit, MoreHorizontal, Calendar, CheckCircle, RotateCcw } from 'lucide-react'
+import { Trash2, Archive, Edit, MoreHorizontal, CheckCircle, RotateCcw } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import PostCard from '../../components/PostCard'
-import { mapPosts } from '../../utils/postMapper'
 import './Annonces.css'
 
 interface Post {
@@ -47,16 +46,6 @@ const Annonces = () => {
     const now = new Date()
     const hoursSinceCreation = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60)
     return hoursSinceCreation < 24
-  }
-
-  // Formater la date pour l'affichage
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
   }
 
   // Récupérer toutes les annonces de l'utilisateur
