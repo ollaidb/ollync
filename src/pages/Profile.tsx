@@ -55,7 +55,7 @@ const Profile = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id?: string }>()
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showSignOutModal, setShowSignOutModal] = useState(false)
@@ -87,6 +87,11 @@ const Profile = () => {
       return
     }
 
+    // Attendre que useAuth ait fini de charger avant de récupérer le profil
+    if (authLoading) {
+      return
+    }
+
     if (!user) {
       setLoading(false)
       return
@@ -94,7 +99,7 @@ const Profile = () => {
 
     fetchProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isPublicProfile])
+  }, [user, isPublicProfile, authLoading])
 
   const fetchProfile = async () => {
     if (!user) {
@@ -103,6 +108,8 @@ const Profile = () => {
     }
 
     try {
+      console.log('🔍 Récupération du profil pour l\'utilisateur:', user.id, user.email)
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url')
@@ -110,56 +117,43 @@ const Profile = () => {
         .single()
 
       if (error) {
-        // Si le profil n'existe pas (code PGRST116), créer le profil depuis auth.users
-        if (error.code === 'PGRST116') {
-          console.log('Profil non trouvé, création depuis auth.users...')
-          
-          // Créer le profil avec les données de auth.users
-          const profileInsert = {
-            id: user.id,
-            email: user.email || null,
-            full_name: user.user_metadata?.full_name || null,
-            username: user.user_metadata?.username || null
-          }
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert(profileInsert as never)
-            .select('id, username, full_name, avatar_url')
-            .single()
-
-          if (createError) {
-            console.error('Error creating profile:', createError)
-            // Même en cas d'erreur, on crée un profil minimal pour l'affichage
-            setProfile({
-              id: user.id,
-              username: user.user_metadata?.username || null,
-              full_name: user.user_metadata?.full_name || null,
-              avatar_url: null
-            })
-          } else if (newProfile) {
-            setProfile(newProfile)
-          }
-        } else {
-          console.error('Error fetching profile:', error)
-          // En cas d'erreur, on crée un profil minimal
-          setProfile({
-            id: user.id,
-            username: user.user_metadata?.username || null,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: null
-          })
-        }
+        // Si le profil n'existe pas (useAuth devrait l'avoir créé, mais au cas où)
+        // Utiliser user_metadata comme fallback
+        console.warn('⚠️ Profil non trouvé, utilisation des métadonnées utilisateur:', error.code)
+        setProfile({
+          id: user.id,
+          username: user.user_metadata?.username || null,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+        })
       } else if (data) {
-        setProfile(data)
+        console.log('✅ Profil récupéré avec succès:', data)
+        // Utiliser les données du profil avec fallback sur user_metadata si NULL
+        const profileData = data as ProfileData
+        setProfile({
+          id: profileData.id,
+          username: profileData.username || user.user_metadata?.username || null,
+          full_name: profileData.full_name || user.user_metadata?.full_name || user.user_metadata?.name || null,
+          avatar_url: profileData.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+        })
+      } else {
+        // Aucune donnée retournée, utiliser user_metadata
+        console.warn('⚠️ Aucune donnée retournée, utilisation des métadonnées utilisateur')
+        setProfile({
+          id: user.id,
+          username: user.user_metadata?.username || null,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+        })
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
-      // En cas d'erreur, on crée un profil minimal
+      console.error('❌ Erreur lors de la récupération du profil:', error)
+      // En cas d'erreur, utiliser user_metadata comme fallback
       setProfile({
         id: user.id,
         username: user.user_metadata?.username || null,
-        full_name: user.user_metadata?.full_name || null,
-        avatar_url: null
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null
       })
     } finally {
       setLoading(false)
@@ -484,7 +478,7 @@ const Profile = () => {
 
         {/* Zone scrollable */}
         <div className="profile-scrollable">
-          {loading && currentSection === 'menu' ? (
+          {(authLoading || loading) && currentSection === 'menu' ? (
             <div className="profile-loading">Chargement...</div>
           ) : (
             renderContent()

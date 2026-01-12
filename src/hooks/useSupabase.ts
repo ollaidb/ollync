@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
@@ -6,22 +6,126 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const isInitialLoadRef = useRef(true)
 
   useEffect(() => {
+    // Fonction pour vérifier et créer le profil si nécessaire
+    const ensureProfileExists = async (user: User) => {
+      try {
+        console.log('🔍 Vérification du profil pour l\'utilisateur:', user.id, user.email)
+        console.log('📋 Métadonnées utilisateur:', user.user_metadata)
+        
+        // Vérifier si le profil existe
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          console.log('✅ Profil existe déjà pour l\'utilisateur:', user.id)
+          return
+        }
+
+        // Si le profil n'existe pas, le créer
+        if (profileError && profileError.code === 'PGRST116') {
+          console.log('⚠️ Profil non trouvé (code PGRST116), création en cours...')
+          
+          // Extraire les données depuis user_metadata (pour OAuth)
+          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null
+          const username = user.user_metadata?.username || null
+          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null
+
+          console.log('📝 Données extraites:', { fullName, username, avatarUrl, email: user.email })
+
+          // Créer le profil
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: newProfile, error: insertError } = await (supabase.from('profiles') as any)
+            .insert({
+              id: user.id,
+              email: user.email || null,
+              full_name: fullName,
+              username: username,
+              avatar_url: avatarUrl
+            })
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error('❌ Erreur lors de la création du profil:', insertError)
+            console.error('Détails de l\'erreur:', JSON.stringify(insertError, null, 2))
+          } else {
+            console.log('✅ Profil créé avec succès pour l\'utilisateur OAuth:', newProfile)
+          }
+        } else if (profileError) {
+          console.error('❌ Erreur inattendue lors de la vérification du profil:', profileError)
+          console.error('Code d\'erreur:', profileError.code)
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la vérification du profil:', error)
+        if (error instanceof Error) {
+          console.error('Message d\'erreur:', error.message)
+          console.error('Stack trace:', error.stack)
+        }
+      }
+    }
+
     // Récupérer la session actuelle
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Erreur lors de la récupération de la session:', error)
+        setLoading(false)
+        isInitialLoadRef.current = false
+        return
+      }
+
       setSession(session)
-      setUser(session?.user ?? null)
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      
+      // Ne pas bloquer le chargement pour ensureProfileExists
+      // Le faire en arrière-plan pour ne pas bloquer l'application
+      if (currentUser) {
+        ensureProfileExists(currentUser).catch(err => {
+          console.error('❌ Erreur lors de ensureProfileExists (non bloquant):', err)
+        })
+      }
+      
       setLoading(false)
+      isInitialLoadRef.current = false
+    }).catch((error) => {
+      console.error('❌ Erreur lors de getSession:', error)
+      setLoading(false)
+      isInitialLoadRef.current = false
     })
 
     // Écouter les changements d'authentification
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 Événement d\'authentification:', event, session?.user?.email || 'Pas de session')
+      
       setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      
+      // Vérifier et créer le profil si l'utilisateur vient de s'authentifier (en arrière-plan)
+      if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        console.log('✅ Utilisateur authentifié, vérification du profil...')
+        ensureProfileExists(currentUser).catch(err => {
+          console.error('❌ Erreur lors de ensureProfileExists (non bloquant):', err)
+        })
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        console.log('👋 Utilisateur déconnecté')
+      }
+      
+      // Seulement mettre à jour loading si ce n'est pas le chargement initial
+      // (pour éviter les conflits avec getSession)
+      if (!isInitialLoadRef.current) {
+        setLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()
