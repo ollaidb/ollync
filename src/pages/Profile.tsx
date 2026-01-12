@@ -482,7 +482,7 @@ const Profile = () => {
         )}
 
         {/* Zone scrollable */}
-        <div className="profile-scrollable">
+        <div className={`profile-scrollable ${['annonces', 'settings', 'security', 'help'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
           {(authLoading || loading) && currentSection === 'menu' ? (
             <div className="profile-loading">Chargement...</div>
           ) : (

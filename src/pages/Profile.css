@@ -60,6 +60,11 @@
   display: none;
 }
 
+/* Augmenter le padding-top uniquement pour les pages spécifiques */
+.profile-scrollable.profile-scrollable-increased-padding {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
+}
+
 .profile-container {
   display: flex;
   min-height: calc(100vh - 200px);
@@ -424,6 +429,10 @@
   .profile-scrollable {
     padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+
+  .profile-scrollable.profile-scrollable-increased-padding {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
   }
 
   .profile-menu-page {
