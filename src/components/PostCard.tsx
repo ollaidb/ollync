@@ -36,10 +36,11 @@ interface PostCardProps {
   viewMode?: 'list' | 'grid'
   isLiked?: boolean
   onLike?: () => void
+  hideProfile?: boolean
   // onShare?: () => void
 }
 
-const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCardProps) => {
+const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfile = false }: PostCardProps) => {
   const navigate = useNavigate()
   const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
@@ -347,8 +348,8 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike }: PostCard
             <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
           </div>
           <p className="post-card-description">{post.description.substring(0, 100)}...</p>
-          <div className="post-card-footer">
-            {post.user && (
+          <div className={`post-card-footer ${hideProfile || !post.user ? 'post-card-footer-right-only' : ''}`}>
+            {!hideProfile && post.user && (
               <div className="post-card-profile" onClick={handleProfileClick}>
                 <div className="post-card-avatar">
                   {post.user.avatar_url ? (

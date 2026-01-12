@@ -1020,7 +1020,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           </div>
         )}
 
-        {/* Mode Annonce - Grille horizontale scrollable */}
+        {/* Mode Annonce - Liste avec photo à gauche */}
         {activeTab === 'annonces' && (
           <div className="profile-content-annonces">
             {postsLoading ? (
@@ -1028,9 +1028,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             ) : posts.length === 0 ? (
               <EmptyState type="posts" />
             ) : (
-              <div className="profile-posts-grid">
+              <div className="profile-posts-list">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="list" hideProfile={true} />
                 ))}
               </div>
             )}

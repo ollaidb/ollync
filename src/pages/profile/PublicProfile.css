@@ -631,6 +631,13 @@
   flex-shrink: 0;
 }
 
+/* Liste des posts - même style que la page des favoris */
+.profile-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* Mode Match - Liste verticale */
 .profile-content-match {
   padding-top: 16px;

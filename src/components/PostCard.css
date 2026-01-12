@@ -349,6 +349,10 @@
   gap: 12px;
 }
 
+.post-card-list .post-card-footer.post-card-footer-right-only {
+  justify-content: flex-end;
+}
+
 .post-card-list .post-card-profile {
   margin-top: 0;
 }
