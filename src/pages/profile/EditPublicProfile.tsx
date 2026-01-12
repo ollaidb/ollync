@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
 import { useConfirmation } from '../../hooks/useConfirmation'
 import { useToastContext } from '../../contexts/ToastContext'
+import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
@@ -62,11 +63,14 @@ const EditPublicProfile = () => {
   const profileConsent = useConsent('profile_data')
   const confirmation = useConfirmation()
   const { showSuccess } = useToastContext()
+  const { markNavigatingBack } = useNavigationHistory()
 
-  // Gérer le refus : rediriger vers la page précédente
+  // Gérer le refus : rediriger vers la page de profil
   const handleRejectConsent = () => {
     profileConsent.handleReject()
-    navigate(-1) // Retour à la page précédente
+    // Retourner vers /profile (niveau parent)
+    markNavigatingBack()
+    navigate('/profile')
   }
 
   const fetchProfile = useCallback(async () => {
