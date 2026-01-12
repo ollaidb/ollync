@@ -546,9 +546,9 @@ const Home = () => {
     return (
       <div className="app">
         <div className="home-page">
-          {/* BLOC BLEU CLAIR FIXE - Header, Recherche, Catégories */}
-          <div className="home-header-blue-block">
-            {/* Section 1: Logo + Icônes swipe et notification */}
+          {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
+          <div className="home-header-fixed">
+            {/* Logo + Icônes swipe et notification */}
             <div className="home-header-top">
               <BackButton hideOnHome={true} className="home-back-button" />
               <h1 
@@ -579,7 +579,7 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Section 2: Barre de recherche */}
+            {/* Barre de recherche au milieu */}
             <div className="home-search-container">
               <div 
                 className="home-search-bar"
@@ -589,8 +589,11 @@ const Home = () => {
                 <Search size={20} />
               </div>
             </div>
+          </div>
 
-            {/* Section 3: Catégories scrollables - Premier niveau */}
+          <div className="home-scrollable">
+
+            {/* Catégories scrollables - Directement sur la page */}
             <div className="home-categories-scroll">
               {publicationTypes.map((category) => {
                 const Icon = category.icon
@@ -608,9 +611,6 @@ const Home = () => {
                 )
               })}
             </div>
-          </div>
-
-          <div className="home-scrollable">
             {/* Section Hero */}
             <div className="home-hero-section">
               <div className="home-hero-block">
@@ -638,9 +638,9 @@ const Home = () => {
   return (
     <div className="app">
       <div className="home-page">
-        {/* BLOC BLEU CLAIR FIXE - Header, Recherche, Catégories */}
-        <div className="home-header-blue-block">
-          {/* Section 1: Logo + Icônes swipe et notification */}
+        {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
+        <div className="home-header-fixed">
+          {/* Logo + Icônes swipe et notification */}
           <div className="home-header-top">
             <BackButton hideOnHome={true} className="home-back-button" />
             <h1 
@@ -671,7 +671,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Section 2: Barre de recherche */}
+          {/* Barre de recherche au milieu */}
           <div className="home-search-container">
             <div 
               className="home-search-bar"
@@ -681,8 +681,12 @@ const Home = () => {
               <Search size={20} />
             </div>
           </div>
+        </div>
 
-          {/* Section 3: Catégories scrollables - Premier niveau */}
+        {/* CONTENU SCROLLABLE */}
+        <div className="home-scrollable">
+
+          {/* Catégories scrollables - Directement sur la page */}
           <div className="home-categories-scroll">
             {publicationTypes.map((category) => {
               const Icon = category.icon
@@ -700,10 +704,6 @@ const Home = () => {
               )
             })}
           </div>
-        </div>
-
-        {/* CONTENU SCROLLABLE */}
-        <div className="home-scrollable">
           {/* Section Hero */}
           <div className="home-hero-section">
             <div className="home-hero-block">
