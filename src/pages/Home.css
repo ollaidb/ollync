@@ -158,7 +158,7 @@
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding-top: 4px;
+  padding-top: 500px;
   padding-bottom: 12px;
   margin-bottom: 16px;
   margin-left: -20px;
@@ -219,10 +219,10 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 65px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 125px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
@@ -230,10 +230,10 @@
 
 @media (max-width: 768px) {
   .home-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
     padding-left: 11px;
     padding-right: 11px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   }
 }
 
@@ -383,9 +383,32 @@
   margin-bottom: 4px;
 }
 
+/* Bouton "+" pour accéder à plus d'annonces */
+.home-plus-btn {
+  flex-direction: column;
+  padding: 0;
+  border: 2px solid var(--border);
+  background-color: var(--background);
+}
+
+.home-plus-btn:hover {
+  background-color: var(--accent);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.home-plus-btn svg {
+  color: var(--primary);
+}
+
 @media (min-width: 769px) {
   .home-show-more-btn {
-    min-width: calc((100% - (5 * 12px)) / 6);
+    min-width: calc((100% - (4 * 12px)) / 5);
+    width: 100%;
+  }
+  
+  .home-plus-btn {
+    min-width: calc((100% - (4 * 12px)) / 5);
     width: 100%;
   }
 }

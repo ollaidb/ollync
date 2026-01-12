@@ -126,8 +126,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 110px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   padding-left: 0;
   padding-right: 0;
   max-width: 100%;
@@ -521,8 +521,8 @@
 
   /* Zone scrollable optimisée mobile */
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 96px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 55px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   }
 
   .swipe-masonry {
@@ -577,7 +577,8 @@
   }
 
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 92px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 53px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   }
 
   .swipe-masonry {
