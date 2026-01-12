@@ -72,6 +72,7 @@
   position: relative;
   z-index: 1001;
   overflow: visible;
+  visibility: visible;
 }
 
 .profile-header-action-btn {
@@ -844,6 +845,15 @@
   .profile-header-action-btn {
     width: 32px;
     height: 32px;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .profile-header-actions {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .profile-back-button svg,
