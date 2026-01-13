@@ -9,31 +9,27 @@ Ce guide explique comment activer les trois boutons de messagerie : **Médias**,
 
 ## 🚀 Installation
 
-### ⚠️ IMPORTANT : Exécutez d'abord la correction de la contrainte
+### ⚠️ IMPORTANT : Exécutez d'abord la correction de TOUTES les contraintes
 
-**Étape 0 : Corriger la contrainte `check_message_content`**
+**Étape 0 : Corriger TOUTES les contraintes (RECOMMANDÉ)**
 
-Cette étape est **OBLIGATOIRE** car la contrainte actuelle bloque l'envoi des rendez-vous, annonces et médias.
+Cette étape est **OBLIGATOIRE** car les contraintes actuelles bloquent l'envoi des rendez-vous, annonces et médias.
 
-**Option 1 : Supprimer complètement la contrainte (RECOMMANDÉ si vous avez des erreurs)**
-
-1. Ouvrez votre **Supabase Dashboard**
-2. Allez dans **SQL Editor**
-3. Créez une nouvelle requête
-4. Copiez-collez le contenu du fichier `remove_check_message_content_constraint.sql`
-5. Cliquez sur **Run** pour exécuter le script
-6. Vérifiez que vous voyez le message "✅ CONTRAINTE SUPPRIMÉE AVEC SUCCÈS!"
-
-**Option 2 : Corriger la contrainte (si vous voulez garder une validation au niveau DB)**
+**Option 1 : Corriger toutes les contraintes en une fois (RECOMMANDÉ)**
 
 1. Ouvrez votre **Supabase Dashboard**
 2. Allez dans **SQL Editor**
 3. Créez une nouvelle requête
-4. Copiez-collez le contenu du fichier `fix_check_message_content_constraint_v2.sql`
+4. Copiez-collez le contenu du fichier `fix_all_messaging_constraints.sql`
 5. Cliquez sur **Run** pour exécuter le script
-6. Vérifiez que vous voyez le message "✅ CONTRAINTE CORRIGÉE AVEC SUCCÈS!"
+6. Vérifiez que vous voyez le message "✅ CORRECTION TERMINÉE!"
 
-**Si vous avez toujours des erreurs après l'Option 2, utilisez l'Option 1.**
+**Option 2 : Corriger les contraintes une par une**
+
+Si l'Option 1 ne fonctionne pas, exécutez dans l'ordre :
+
+1. `fix_check_message_type_constraint.sql` - Corrige la contrainte sur les types de messages
+2. `remove_check_message_content_constraint.sql` - Supprime la contrainte sur le contenu (si elle bloque encore)
 
 ### Étape 1 : Exécuter le script principal
 
