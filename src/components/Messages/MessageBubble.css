@@ -68,16 +68,16 @@
 
 /* Images et vidéos standalone (sans container) - taille réduite */
 .message-image-standalone {
-  max-width: 50%;
-  max-height: 250px;
+  max-width: 65%;
+  max-height: 320px;
   border-radius: 12px;
   object-fit: cover;
   display: block;
 }
 
 .message-video-standalone {
-  max-width: 50%;
-  max-height: 250px;
+  max-width: 65%;
+  max-height: 320px;
   border-radius: 12px;
   display: block;
 }
