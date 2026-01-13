@@ -15,12 +15,25 @@ Ce guide explique comment activer les trois boutons de messagerie : **Médias**,
 
 Cette étape est **OBLIGATOIRE** car la contrainte actuelle bloque l'envoi des rendez-vous, annonces et médias.
 
+**Option 1 : Supprimer complètement la contrainte (RECOMMANDÉ si vous avez des erreurs)**
+
 1. Ouvrez votre **Supabase Dashboard**
 2. Allez dans **SQL Editor**
 3. Créez une nouvelle requête
-4. Copiez-collez le contenu du fichier `fix_check_message_content_constraint.sql`
+4. Copiez-collez le contenu du fichier `remove_check_message_content_constraint.sql`
+5. Cliquez sur **Run** pour exécuter le script
+6. Vérifiez que vous voyez le message "✅ CONTRAINTE SUPPRIMÉE AVEC SUCCÈS!"
+
+**Option 2 : Corriger la contrainte (si vous voulez garder une validation au niveau DB)**
+
+1. Ouvrez votre **Supabase Dashboard**
+2. Allez dans **SQL Editor**
+3. Créez une nouvelle requête
+4. Copiez-collez le contenu du fichier `fix_check_message_content_constraint_v2.sql`
 5. Cliquez sur **Run** pour exécuter le script
 6. Vérifiez que vous voyez le message "✅ CONTRAINTE CORRIGÉE AVEC SUCCÈS!"
+
+**Si vous avez toujours des erreurs après l'Option 2, utilisez l'Option 1.**
 
 ### Étape 1 : Exécuter le script principal
 
