@@ -129,7 +129,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
             <div className="message-calendar-info">
               <span className="message-calendar-title">{appointmentTitle}</span>
               {appointmentDateTime && (
-                <>
+                <div className="message-calendar-datetime">
                   <span className="message-calendar-date">
                     {new Date(appointmentDateTime).toLocaleDateString('fr-FR', { 
                       weekday: 'long',
@@ -144,7 +144,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
                       minute: '2-digit'
                     })}
                   </span>
-                </>
+                </div>
               )}
             </div>
           </div>
