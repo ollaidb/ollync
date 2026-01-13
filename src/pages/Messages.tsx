@@ -940,18 +940,16 @@ const Messages = () => {
           )}
         </div>
         {user && (selectedConversation || conversationId) && (
-          <div className="conversation-input-container">
-            <MessageInput
-              conversationId={selectedConversation?.id || conversationId || ''}
-              senderId={user.id}
-              onMessageSent={() => {
-                if (selectedConversation || conversationId) {
-                  loadMessages(selectedConversation?.id || conversationId || '')
-                  loadConversations()
-                }
-              }}
-            />
-          </div>
+          <MessageInput
+            conversationId={selectedConversation?.id || conversationId || ''}
+            senderId={user.id}
+            onMessageSent={() => {
+              if (selectedConversation || conversationId) {
+                loadMessages(selectedConversation?.id || conversationId || '')
+                loadConversations()
+              }
+            }}
+          />
         )}
       </div>
     )

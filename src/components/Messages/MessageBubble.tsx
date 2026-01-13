@@ -114,17 +114,37 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
           </div>
         )
       case 'calendar_request':
+        const calendarData = message.calendar_request_data as { 
+          title?: string
+          event_name?: string
+          appointment_datetime?: string
+          start_date?: string
+        } | null
+        const appointmentDateTime = calendarData?.appointment_datetime || calendarData?.start_date
+        const appointmentTitle = calendarData?.title || calendarData?.event_name || 'Rendez-vous'
+        
         return (
           <div className="message-calendar">
             <Calendar size={24} />
             <div className="message-calendar-info">
-              <span className="message-calendar-title">
-                {message.calendar_request_data && (message.calendar_request_data as { event_name?: string }).event_name}
-              </span>
-              {message.calendar_request_data && (message.calendar_request_data as { start_date?: string }).start_date && (
-                <span className="message-calendar-date">
-                  {new Date((message.calendar_request_data as { start_date?: string }).start_date || '').toLocaleDateString('fr-FR')}
-                </span>
+              <span className="message-calendar-title">{appointmentTitle}</span>
+              {appointmentDateTime && (
+                <>
+                  <span className="message-calendar-date">
+                    {new Date(appointmentDateTime).toLocaleDateString('fr-FR', { 
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                  <span className="message-calendar-time">
+                    à {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', { 
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </>
               )}
             </div>
           </div>

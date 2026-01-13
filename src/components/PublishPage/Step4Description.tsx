@@ -1,4 +1,5 @@
-import { shouldShowSocialNetwork } from '../../utils/publishHelpers'
+import { useEffect } from 'react'
+import { shouldShowSocialNetwork, shouldShowExchangeService } from '../../utils/publishHelpers'
 import './Step4Description.css'
 
 interface FormData {
@@ -51,13 +52,29 @@ export const Step4Description = ({
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
+  const showExchangeService = shouldShowExchangeService(selectedCategory?.slug)
+  
+  // Initialiser automatiquement exchange_type à 'prix' pour les catégories sans échange de service
+  useEffect(() => {
+    if (!showExchangeService) {
+      if (formData.exchange_type !== 'prix') {
+        onUpdateFormData({ 
+          exchange_type: 'prix',
+          exchange_service: ''
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showExchangeService])
   
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
     formData.title.trim().length > 0 && 
     formData.description.trim().length > 0 &&
-    formData.exchange_type.trim().length > 0 &&
-    (formData.exchange_type !== 'prix' || (formData.price && parseFloat(formData.price) > 0)) &&
+    (showExchangeService ? formData.exchange_type.trim().length > 0 : true) &&
+    ((!showExchangeService || formData.exchange_type === 'prix') 
+      ? (formData.price && parseFloat(formData.price) > 0) 
+      : true) &&
     (formData.exchange_type !== 'echange' || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
 
@@ -105,29 +122,46 @@ export const Step4Description = ({
         </div>
       )}
 
-      <div className="form-group">
-        <label className="form-label">Moyen de paiement *</label>
-        <select
-          className="form-select"
-          value={formData.exchange_type}
-            onChange={(e) => {
-            const newExchangeType = e.target.value
-            onUpdateFormData({ 
-              exchange_type: newExchangeType,
-              // Réinitialiser le prix si on passe à "échange"
-              price: newExchangeType === 'echange' ? '' : formData.price,
-              // Réinitialiser le service échangé si on passe à "prix"
-              exchange_service: newExchangeType === 'prix' ? '' : formData.exchange_service
-            })
-          }}
-        >
-          <option value="">Sélectionner...</option>
-          <option value="prix">Prix</option>
-          <option value="echange">Échange de service</option>
-        </select>
-      </div>
+      {showExchangeService ? (
+        <>
+          <div className="form-group">
+            <label className="form-label">Moyen de paiement *</label>
+            <select
+              className="form-select"
+              value={formData.exchange_type}
+              onChange={(e) => {
+                const newExchangeType = e.target.value
+                onUpdateFormData({ 
+                  exchange_type: newExchangeType,
+                  // Réinitialiser le prix si on passe à "échange"
+                  price: newExchangeType === 'echange' ? '' : formData.price,
+                  // Réinitialiser le service échangé si on passe à "prix"
+                  exchange_service: newExchangeType === 'prix' ? '' : formData.exchange_service
+                })
+              }}
+            >
+              <option value="">Sélectionner...</option>
+              <option value="prix">Prix</option>
+              <option value="echange">Échange de service</option>
+            </select>
+          </div>
 
-      {formData.exchange_type === 'prix' && (
+          {formData.exchange_type === 'prix' && (
+            <div className="form-group">
+              <label className="form-label">Prix (€) *</label>
+              <input
+                type="number"
+                className="form-input"
+                placeholder="0"
+                value={formData.price}
+                onChange={(e) => onUpdateFormData({ price: e.target.value })}
+                min="0"
+                step="0.01"
+              />
+            </div>
+          )}
+        </>
+      ) : (
         <div className="form-group">
           <label className="form-label">Prix (€) *</label>
           <input

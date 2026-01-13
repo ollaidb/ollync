@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
-import { Send, Image, Video, File, MapPin, DollarSign, Calendar, Share2, Loader } from 'lucide-react'
+import { Send, Image, Video, File, Calendar, Share2, Loader, Film, X, Megaphone } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import ConsentModal from '../ConsentModal'
+import CalendarPicker from './CalendarPicker'
+import PostSelector from './PostSelector'
 import './MessageInput.css'
 
 interface MessageInputProps {
@@ -18,13 +20,19 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [showMediaSubmenu, setShowMediaSubmenu] = useState(false)
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [showPostSelector, setShowPostSelector] = useState(false)
+  const [appointmentDate, setAppointmentDate] = useState<string | null>(null)
+  const [appointmentTime, setAppointmentTime] = useState('')
+  const [appointmentTitle, setAppointmentTitle] = useState('')
+  const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const docInputRef = useRef<HTMLInputElement>(null)
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
-  const locationConsent = useConsent('location')
 
   const sendMessage = async (type: MessageType = 'text', extraData?: Record<string, unknown>) => {
     if (!message.trim() && type === 'text') return
@@ -44,12 +52,51 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('messages') as any).insert(messageData)
+      const { error: messageError, data: messageResult } = await (supabase.from('messages') as any).insert(messageData).select()
 
-      if (error) throw error
+      if (messageError) throw messageError
+
+      // Si c'est un rendez-vous, créer l'entrée dans la table appointments
+      if (type === 'calendar_request' && extraData?.calendar_request_data) {
+        const calendarData = extraData.calendar_request_data as { appointment_datetime?: string; title?: string }
+        if (calendarData.appointment_datetime && messageResult?.[0]?.id) {
+          // Récupérer l'autre participant de la conversation
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('user1_id, user2_id')
+            .eq('id', conversationId)
+            .single()
+
+          if (conversation) {
+            const recipientId = conversation.user1_id === senderId ? conversation.user2_id : conversation.user1_id
+            
+            // Créer l'appointment
+            const { error: appointmentError } = await supabase
+              .from('appointments')
+              .insert({
+                message_id: messageResult[0].id,
+                conversation_id: conversationId,
+                sender_id: senderId,
+                recipient_id: recipientId,
+                appointment_datetime: calendarData.appointment_datetime,
+                title: calendarData.title || 'Rendez-vous',
+                status: 'pending'
+              })
+
+            if (appointmentError) {
+              console.error('Error creating appointment:', appointmentError)
+              // Ne pas bloquer l'envoi du message si l'appointment échoue
+            }
+          }
+        }
+      }
 
       setMessage('')
       setShowOptions(false)
+      setShowCalendarModal(false)
+      setAppointmentDate('')
+      setAppointmentTime('')
+      setAppointmentTitle('')
       onMessageSent()
     } catch (error) {
       console.error('Error sending message:', error)
@@ -121,7 +168,27 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video' | 'document') => {
+  const checkVideoDuration = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video')
+      const url = URL.createObjectURL(file)
+      
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url)
+        const duration = video.duration
+        resolve(duration <= 10) // 10 secondes maximum
+      }
+      
+      video.onerror = () => {
+        URL.revokeObjectURL(url)
+        resolve(false)
+      }
+      
+      video.src = url
+    })
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video' | 'document') => {
     const file = e.target.files?.[0]
     if (file) {
       if (type === 'photo' && !file.type.startsWith('image/')) {
@@ -132,29 +199,30 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         alert('Veuillez sélectionner une vidéo')
         return
       }
+      // Vérifier la durée des vidéos
+      if (type === 'video') {
+        const isValidDuration = await checkVideoDuration(file)
+        if (!isValidDuration) {
+          alert('La vidéo ne doit pas dépasser 10 secondes')
+          return
+        }
+      }
       handleFileUpload(file, type)
+      // Réinitialiser l'input pour permettre de sélectionner le même fichier
+      e.target.value = ''
     }
   }
 
-  const handleLocation = () => {
-    locationConsent.requireConsent(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const locationData = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          }
-          await sendMessage('location', { location_data: locationData })
-        },
-        () => {
-          alert('Impossible d\'obtenir votre localisation')
-        }
-      )
-    } else {
-      alert('La géolocalisation n\'est pas supportée par votre navigateur')
-    }
+  const handlePostSelect = (postId: string) => {
+    sendMessage('post_share', {
+      shared_post_id: postId
     })
+    setShowPostSelector(false)
+  }
+
+  const handleDateSelect = (date: string) => {
+    setAppointmentDate(date)
+    setCalendarStep('time')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -164,97 +232,199 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
+  const handleCalendarSubmit = () => {
+    if (!appointmentDate || !appointmentTime || !appointmentTitle.trim()) {
+      alert('Veuillez remplir tous les champs (titre, date et heure)')
+      return
+    }
+
+    // Combiner date et heure en ISO string
+    const appointmentDateTime = new Date(`${appointmentDate}T${appointmentTime}`).toISOString()
+    
+    // Vérifier que la date n'est pas dans le passé
+    if (new Date(appointmentDateTime) < new Date()) {
+      alert('La date et l\'heure du rendez-vous ne peuvent pas être dans le passé')
+      return
+    }
+
+    sendMessage('calendar_request', {
+      calendar_request_data: {
+        title: appointmentTitle.trim(),
+        appointment_datetime: appointmentDateTime,
+        event_name: appointmentTitle.trim()
+      }
+    })
+    
+    // Réinitialiser le formulaire
+    setAppointmentDate(null)
+    setAppointmentTime('')
+    setAppointmentTitle('')
+    setCalendarStep('date')
+  }
+
+  const handleCalendarClose = () => {
+    setShowCalendarModal(false)
+    setAppointmentDate(null)
+    setAppointmentTime('')
+    setAppointmentTitle('')
+    setCalendarStep('date')
+  }
+
   return (
-    <div className="message-input-container">
+    <>
+      {/* Overlay transparent avec bloc de rendez-vous au centre */}
+      {showCalendarModal && (
+        <div className="appointment-overlay">
+          <div className="appointment-inline-panel">
+          <div className="appointment-inline-header">
+            <h4>Créer un rendez-vous</h4>
+            <button 
+              className="appointment-inline-close"
+              onClick={handleCalendarClose}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="appointment-inline-body">
+            {calendarStep === 'date' ? (
+              <>
+                <div className="appointment-inline-form-group">
+                  <label>Titre *</label>
+                  <input
+                    type="text"
+                    value={appointmentTitle}
+                    onChange={(e) => setAppointmentTitle(e.target.value)}
+                    placeholder="Ex: Rendez-vous le 10 janvier"
+                    className="appointment-inline-input"
+                  />
+                </div>
+                <div className="appointment-inline-calendar-wrapper">
+                  <CalendarPicker
+                    selectedDate={appointmentDate}
+                    onDateSelect={handleDateSelect}
+                    minDate={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                {appointmentDate && (
+                  <button
+                    className="appointment-inline-next"
+                    onClick={() => setCalendarStep('time')}
+                  >
+                    Choisir l'heure →
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="appointment-inline-selected-date">
+                  <span className="appointment-inline-date-label">Date :</span>
+                  <span className="appointment-inline-date-value">
+                    {appointmentDate && new Date(appointmentDate).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="appointment-inline-form-group">
+                  <label>Heure *</label>
+                  <input
+                    type="time"
+                    value={appointmentTime}
+                    onChange={(e) => setAppointmentTime(e.target.value)}
+                    className="appointment-inline-input"
+                  />
+                </div>
+                <div className="appointment-inline-actions">
+                  <button
+                    className="appointment-inline-back"
+                    onClick={() => setCalendarStep('date')}
+                  >
+                    ← Retour
+                  </button>
+                  <button
+                    className="appointment-inline-submit"
+                    onClick={handleCalendarSubmit}
+                    disabled={sending || !appointmentTime}
+                  >
+                    {sending ? 'Envoi...' : 'Envoyer'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          </div>
+        </div>
+      )}
+
       {showOptions && (
         <div className="message-options-panel">
+          <div className="message-option-wrapper">
+            <button
+              className="message-option-btn"
+              onClick={() => setShowMediaSubmenu(!showMediaSubmenu)}
+              title="Médias"
+            >
+              <Film size={22} />
+              <span>Médias</span>
+            </button>
+            {showMediaSubmenu && (
+              <div className="message-media-submenu">
+                <button
+                  className="message-media-submenu-btn"
+                  onClick={() => {
+                    fileInputRef.current?.click()
+                    setShowMediaSubmenu(false)
+                  }}
+                  title="Photo"
+                >
+                  <Image size={18} />
+                  <span>Photo</span>
+                </button>
+                <button
+                  className="message-media-submenu-btn"
+                  onClick={() => {
+                    videoInputRef.current?.click()
+                    setShowMediaSubmenu(false)
+                  }}
+                  title="Vidéo"
+                >
+                  <Video size={18} />
+                  <span>Vidéo</span>
+                </button>
+                <button
+                  className="message-media-submenu-btn"
+                  onClick={() => {
+                    docInputRef.current?.click()
+                    setShowMediaSubmenu(false)
+                  }}
+                  title="Document"
+                >
+                  <File size={18} />
+                  <span>Document</span>
+                </button>
+              </div>
+            )}
+          </div>
           <button
             className="message-option-btn"
-            onClick={() => fileInputRef.current?.click()}
-            title="Photo"
+            onClick={() => setShowPostSelector(true)}
+            title="Annonce"
           >
-            <Image size={20} />
-            <span>Photo</span>
-          </button>
-          <button
-            className="message-option-btn"
-            onClick={() => videoInputRef.current?.click()}
-            title="Vidéo"
-          >
-            <Video size={20} />
-            <span>Vidéo</span>
-          </button>
-          <button
-            className="message-option-btn"
-            onClick={() => docInputRef.current?.click()}
-            title="Document"
-          >
-            <File size={20} />
-            <span>Document</span>
-          </button>
-          <button
-            className="message-option-btn"
-            onClick={handleLocation}
-            title="Localisation"
-          >
-            <MapPin size={20} />
-            <span>Localisation</span>
-          </button>
-          <button
-            className="message-option-btn"
-            onClick={() => {
-              const price = prompt('Montant:')
-              if (price) {
-                sendMessage('price', {
-                  price_data: {
-                    amount: parseFloat(price),
-                    currency: 'EUR',
-                    type: 'offer'
-                  }
-                })
-              }
-            }}
-            title="Prix"
-          >
-            <DollarSign size={20} />
-            <span>Prix</span>
-          </button>
-          <button
-            className="message-option-btn"
-            onClick={() => {
-              const rate = prompt('Tarif (par heure):')
-              if (rate) {
-                sendMessage('rate', {
-                  rate_data: {
-                    amount: parseFloat(rate),
-                    currency: 'EUR',
-                    period: 'hour'
-                  }
-                })
-              }
-            }}
-            title="Tarif"
-          >
-            <DollarSign size={20} />
-            <span>Tarif</span>
+            <Megaphone size={22} />
+            <span>Annonce</span>
           </button>
           <button
             className="message-option-btn"
             onClick={() => {
-              const eventName = prompt('Nom de l\'événement:')
-              if (eventName) {
-                sendMessage('calendar_request', {
-                  calendar_request_data: {
-                    event_name: eventName,
-                    start_date: new Date().toISOString()
-                  }
-                })
-              }
+              setShowCalendarModal(true)
+              setShowOptions(false)
             }}
-            title="Calendrier"
+            title="Rendez-vous"
           >
-            <Calendar size={20} />
-            <span>Calendrier</span>
+            <Calendar size={22} />
+            <span>Rendez-vous</span>
           </button>
         </div>
       )}
@@ -262,7 +432,10 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       <div className="message-input-wrapper">
         <button
           className="message-options-toggle"
-          onClick={() => setShowOptions(!showOptions)}
+          onClick={() => {
+            setShowOptions(!showOptions)
+            setShowMediaSubmenu(false)
+          }}
           title="Options"
         >
           <Share2 size={20} />
@@ -282,9 +455,9 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           className="message-send-btn"
         >
           {sending ? (
-            <Loader className="spinner" size={20} />
+            <Loader className="spinner" size={16} />
           ) : (
-            <Send size={20} />
+            <Send size={16} />
           )}
         </button>
       </div>
@@ -321,15 +494,16 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         learnMoreLink={mediaConsent.learnMoreLink}
       />
 
-      <ConsentModal
-        visible={locationConsent.showModal}
-        title={locationConsent.messages.title}
-        message={locationConsent.messages.message}
-        onAccept={locationConsent.handleAccept}
-        onReject={locationConsent.handleReject}
-        learnMoreLink={locationConsent.learnMoreLink}
-      />
-    </div>
+
+
+      {/* Modal pour sélectionner une annonce */}
+      {showPostSelector && (
+        <PostSelector
+          onPostSelect={handlePostSelect}
+          onClose={() => setShowPostSelector(false)}
+        />
+      )}
+    </>
   )
 }
 

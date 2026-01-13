@@ -56,7 +56,17 @@ export const usePublishNavigation = (
           setStep(2)
         }
       } else {
-        setStep(2)
+        // Si pas de subSubCategory/option, vérifier si la sous-catégorie a des options
+        // Si elle n'en a pas, retourner directement à l'étape 1 (sous-catégories)
+        const selectedCategory = publicationTypes.find(c => c.id === formData.category)
+        const selectedSubcategory = selectedCategory?.subcategories.find(s => s.id === formData.subcategory)
+        
+        if (selectedSubcategory?.options && selectedSubcategory.options.length > 0) {
+          setStep(2)
+        } else {
+          // La sous-catégorie n'a pas d'options, retourner directement aux sous-catégories
+          setStep(1)
+        }
       }
       setFormData({ title: '', description: '', socialNetwork: null })
     } else if (step === 4) {

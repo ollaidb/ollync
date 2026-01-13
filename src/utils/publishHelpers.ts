@@ -130,6 +130,21 @@ export const shouldShowSocialNetwork = (
   return relevantSubcategories ? relevantSubcategories.includes(subcategorySlug) : false
 }
 
+// Fonction pour déterminer si l'option "Échange de service" doit être affichée
+export const shouldShowExchangeService = (
+  categorySlug: string | null | undefined
+): boolean => {
+  if (!categorySlug) return true
+
+  // Catégories où l'échange de service n'est PAS disponible (uniquement Prix)
+  const categoriesWithoutExchange: string[] = [
+    'casting-role',  // Casting
+    'montage'        // Emploi
+  ]
+
+  return !categoriesWithoutExchange.includes(categorySlug)
+}
+
 export const getMyLocation = async (
   _formData: FormData,
   setFormData: (updates: Partial<FormData>) => void

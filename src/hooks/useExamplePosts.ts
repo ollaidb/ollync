@@ -6,6 +6,15 @@ interface ExamplePost {
   title: string
   description: string
   images?: string[]
+  is_urgent?: boolean
+  user_id?: string
+  user?: {
+    id?: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
+  likes_count?: number
 }
 
 export const useExamplePosts = (
@@ -41,7 +50,7 @@ export const useExamplePosts = (
 
         let query = supabase
           .from('posts')
-          .select('id, title, description, images')
+          .select('id, title, description, images, is_urgent, user_id, likes_count')
           .eq('category_id', (categoryData as any).id)
           .eq('status', 'active')
           .limit(3)
@@ -61,13 +70,38 @@ export const useExamplePosts = (
           }
         }
 
-        const { data, error } = await query
+        const { data: postsData, error } = await query
 
         if (error) {
           console.error('Error fetching example posts:', error)
           setExamplePosts([])
+        } else if (postsData && postsData.length > 0) {
+          // Récupérer les profils utilisateurs
+          const userIds = [...new Set(postsData.map((p: any) => p.user_id).filter(Boolean))]
+          let usersMap = new Map()
+          
+          if (userIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('id, username, full_name, avatar_url')
+              .in('id', userIds)
+            
+            if (profilesData) {
+              profilesData.forEach((profile: any) => {
+                usersMap.set(profile.id, profile)
+              })
+            }
+          }
+          
+          // Combiner les posts avec les profils
+          const postsWithUsers = postsData.map((post: any) => ({
+            ...post,
+            user: usersMap.get(post.user_id) || null
+          }))
+          
+          setExamplePosts(postsWithUsers)
         } else {
-          setExamplePosts(data || [])
+          setExamplePosts([])
         }
       } catch (error) {
         console.error('Error fetching example posts:', error)
