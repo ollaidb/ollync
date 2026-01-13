@@ -20,6 +20,16 @@ interface Category {
   slug: string
 }
 
+// Ordre des catégories (même que dans SwipePage)
+const categoryOrder = [
+  'creation-contenu',
+  'casting-role',
+  'montage',
+  'projets-equipe',
+  'services',
+  'vente'
+]
+
 const UsersPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -36,16 +46,6 @@ const UsersPage = () => {
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const USERS_PER_PAGE = 20
-
-  // Ordre des catégories (même que dans SwipePage)
-  const categoryOrder = [
-    'creation-contenu',
-    'casting-role',
-    'montage',
-    'projets-equipe',
-    'services',
-    'vente'
-  ]
 
   // Générer les filtres dynamiquement depuis les catégories
   const filters = useMemo(() => {
@@ -129,7 +129,7 @@ const UsersPage = () => {
         // Grouper les centres d'intérêt par utilisateur
         const userInterestsMap = new Map<string, Set<string>>()
         if (userInterestsData) {
-          userInterestsData.forEach((item: any) => {
+          userInterestsData.forEach((item: { user_id: string; category_id: string }) => {
             if (!userInterestsMap.has(item.user_id)) {
               userInterestsMap.set(item.user_id, new Set())
             }
@@ -206,8 +206,8 @@ const UsersPage = () => {
           
           const uniqueUserIds = [...new Set(
             (postsData || [])
-              .map((p: any) => p.user_id)
-              .filter(Boolean)
+              .map((p: { user_id?: string }) => p.user_id)
+              .filter((id): id is string => Boolean(id))
               .filter((id: string) => user ? id !== user.id : true)
           )]
 
@@ -252,7 +252,7 @@ const UsersPage = () => {
         // Extraire les user_ids uniques qui ont au moins un centre d'intérêt
         const uniqueUserIds = [...new Set(
           (userInterestsData || [])
-            .map((item: any) => item.user_id)
+            .map((item: { user_id: string }) => item.user_id)
             .filter(Boolean)
             .filter((id: string) => user ? id !== user.id : true)
         )]

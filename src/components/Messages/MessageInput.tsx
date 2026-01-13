@@ -14,7 +14,7 @@ interface MessageInputProps {
   disabled?: boolean
 }
 
-type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request'
+type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share'
 
 const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false }: MessageInputProps) => {
   const [message, setMessage] = useState('')
@@ -61,19 +61,20 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         const calendarData = extraData.calendar_request_data as { appointment_datetime?: string; title?: string }
         if (calendarData.appointment_datetime && messageResult?.[0]?.id) {
           // Récupérer l'autre participant de la conversation
-          const { data: conversation } = await supabase
+          const { data: conversation, error: convError } = await supabase
             .from('conversations')
             .select('user1_id, user2_id')
             .eq('id', conversationId)
             .single()
 
-          if (conversation) {
-            const recipientId = conversation.user1_id === senderId ? conversation.user2_id : conversation.user1_id
+          if (!convError && conversation) {
+            const conv = conversation as { user1_id: string; user2_id: string }
+            const recipientId = conv.user1_id === senderId ? conv.user2_id : conv.user1_id
             
-            // Créer l'appointment
-            const { error: appointmentError } = await supabase
-              .from('appointments')
-              .insert({
+            // Créer l'appointment (table peut ne pas exister encore, donc on ignore l'erreur)
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { error: appointmentError } = await (supabase.from('appointments') as any).insert({
                 message_id: messageResult[0].id,
                 conversation_id: conversationId,
                 sender_id: senderId,
@@ -83,9 +84,13 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
                 status: 'pending'
               })
 
-            if (appointmentError) {
-              console.error('Error creating appointment:', appointmentError)
-              // Ne pas bloquer l'envoi du message si l'appointment échoue
+              if (appointmentError) {
+                console.error('Error creating appointment:', appointmentError)
+                // Ne pas bloquer l'envoi du message si l'appointment échoue
+              }
+            } catch (err) {
+              console.error('Error creating appointment (table may not exist):', err)
+              // Ne pas bloquer l'envoi du message si la table n'existe pas encore
             }
           }
         }
