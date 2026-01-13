@@ -3,6 +3,9 @@
 -- ============================================
 -- Ce script active les trois boutons : Médias, Annonce, Rendez-vous
 -- Exécutez ce script dans votre SQL Editor Supabase
+-- 
+-- IMPORTANT: Exécutez d'abord fix_check_message_content_constraint.sql
+-- pour corriger la contrainte qui bloque l'envoi des messages
 -- ============================================
 
 -- ============================================
