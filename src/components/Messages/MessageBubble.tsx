@@ -1,4 +1,6 @@
-import { File, MapPin, DollarSign, Calendar, Share2 } from 'lucide-react'
+import { useState } from 'react'
+import { File, MapPin, DollarSign, Calendar, Share2, X } from 'lucide-react'
+import CalendarPicker from './CalendarPicker'
 import './MessageBubble.css'
 
 interface MessageBubbleProps {
@@ -31,6 +33,7 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProps) => {
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false)
 
   const renderMessageContent = () => {
     switch (message.message_type) {
@@ -124,30 +127,84 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
         const appointmentTitle = calendarData?.title || calendarData?.event_name || 'Rendez-vous'
         
         return (
-          <div className="message-calendar">
-            <Calendar size={24} />
-            <div className="message-calendar-info">
-              <span className="message-calendar-title">{appointmentTitle}</span>
-              {appointmentDateTime && (
-                <div className="message-calendar-datetime">
-                  <span className="message-calendar-date">
-                    {new Date(appointmentDateTime).toLocaleDateString('fr-FR', { 
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </span>
-                  <span className="message-calendar-time">
-                    à {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', { 
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              )}
+          <>
+            <div 
+              className="message-calendar"
+              onClick={() => setShowAppointmentModal(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              <Calendar size={24} />
+              <div className="message-calendar-info">
+                <span className="message-calendar-title">{appointmentTitle}</span>
+                {appointmentDateTime && (
+                  <div className="message-calendar-datetime">
+                    <span className="message-calendar-date">
+                      {new Date(appointmentDateTime).toLocaleDateString('fr-FR', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                    <span className="message-calendar-time">
+                      à {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', { 
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+            {showAppointmentModal && (
+              <div className="appointment-overlay" onClick={() => setShowAppointmentModal(false)}>
+                <div className="appointment-inline-panel" onClick={(e) => e.stopPropagation()}>
+                  <div className="appointment-inline-header">
+                    <h4>{appointmentTitle}</h4>
+                    <button 
+                      className="appointment-inline-close"
+                      onClick={() => setShowAppointmentModal(false)}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="appointment-inline-body">
+                    {appointmentDateTime && (
+                      <>
+                        <div className="appointment-inline-selected-date">
+                          <span className="appointment-inline-date-label">Date :</span>
+                          <span className="appointment-inline-date-value">
+                            {new Date(appointmentDateTime).toLocaleDateString('fr-FR', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <div className="appointment-inline-selected-date">
+                          <span className="appointment-inline-date-label">Heure :</span>
+                          <span className="appointment-inline-date-value">
+                            {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div className="appointment-inline-calendar-wrapper">
+                          <CalendarPicker
+                            selectedDate={new Date(appointmentDateTime).toISOString().split('T')[0]}
+                            onDateSelect={() => {}}
+                            minDate={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )
       case 'post_share':
         return (
