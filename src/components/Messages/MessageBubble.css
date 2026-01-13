@@ -275,3 +275,169 @@
   background-color: var(--muted);
 }
 
+
+/* Styles pour contenu standalone */
+.message-bubble-content.standalone {
+  max-width: 100%;
+  position: relative;
+}
+
+.message-bubble-wrapper.own .message-bubble-content.standalone {
+  align-items: flex-end;
+}
+
+.message-bubble-wrapper.other .message-bubble-content.standalone {
+  align-items: flex-start;
+}
+
+/* Images et vidéos standalone (sans container) */
+.message-image-standalone {
+  max-width: 70%;
+  max-height: 400px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
+
+.message-video-standalone {
+  max-width: 70%;
+  max-height: 400px;
+  border-radius: 12px;
+  display: block;
+}
+
+.message-time-standalone {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 4px;
+  text-align: right;
+  color: var(--muted-foreground);
+}
+
+.message-bubble-wrapper.own .message-time-standalone {
+  text-align: right;
+}
+
+.message-bubble-wrapper.other .message-time-standalone {
+  text-align: left;
+}
+
+/* Document standalone (juste le lien) */
+.message-document-standalone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--muted);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--foreground);
+  transition: background-color 0.2s;
+  max-width: 70%;
+}
+
+.message-document-standalone:hover {
+  background-color: var(--border);
+}
+
+.message-document-standalone svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.message-document-standalone span {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Rendez-vous avec couleur différente */
+.message-bubble.calendar-message.own {
+  background-color: #8B5CF6; /* Violet */
+  color: white;
+}
+
+.message-bubble.calendar-message.other {
+  background-color: #A78BFA; /* Violet clair */
+  color: white;
+}
+
+.message-bubble.calendar-message.own p,
+.message-bubble.calendar-message.other p {
+  color: white;
+}
+
+.message-bubble.calendar-message.own .message-calendar-date,
+.message-bubble.calendar-message.own .message-calendar-time,
+.message-bubble.calendar-message.other .message-calendar-date,
+.message-bubble.calendar-message.other .message-calendar-time {
+  color: white;
+  opacity: 0.95;
+}
+
+.message-bubble.calendar-message.own .message-time,
+.message-bubble.calendar-message.other .message-time {
+  color: white;
+  opacity: 0.9;
+}
+
+/* Bloc d'annonce partagée */
+.message-post-share {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 100%;
+}
+
+.message-post-share:hover {
+  background-color: var(--muted);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.message-post-share-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+
+.message-post-share-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.message-post-share-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-post-share-link {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.message-post-share:hover .message-post-share-link {
+  text-decoration: underline;
+}
