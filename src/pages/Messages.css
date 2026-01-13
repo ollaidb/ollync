@@ -902,7 +902,7 @@
   }
 
   .conversation-messages-list {
-    padding: 12px 8px;
+    padding: 12px 8px 0 8px;
     gap: 4px;
   }
 
