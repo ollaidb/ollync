@@ -52,6 +52,52 @@
   align-items: flex-start;
 }
 
+/* Styles pour contenu standalone */
+.message-bubble-content.standalone {
+  max-width: 100%;
+  position: relative;
+}
+
+.message-bubble-wrapper.own .message-bubble-content.standalone {
+  align-items: flex-end;
+}
+
+.message-bubble-wrapper.other .message-bubble-content.standalone {
+  align-items: flex-start;
+}
+
+/* Images et vidéos standalone (sans container) - taille réduite */
+.message-image-standalone {
+  max-width: 50%;
+  max-height: 250px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
+
+.message-video-standalone {
+  max-width: 50%;
+  max-height: 250px;
+  border-radius: 12px;
+  display: block;
+}
+
+.message-time-standalone {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 4px;
+  text-align: right;
+  color: var(--muted-foreground);
+}
+
+.message-bubble-wrapper.own .message-time-standalone {
+  text-align: right;
+}
+
+.message-bubble-wrapper.other .message-time-standalone {
+  text-align: left;
+}
+
 /* Bulle de message */
 .message-bubble {
   display: inline-flex;
@@ -364,22 +410,22 @@
   justify-content: center;
 }
 
-/* Bloc d'annonce partagée - sans background */
+/* Bloc d'annonce partagée - avec background blanc léger */
 .message-post-share {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0;
-  background-color: transparent;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.6);
   border: none;
-  border-radius: 0;
+  border-radius: 8px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
   max-width: 100%;
 }
 
 .message-post-share:hover {
-  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .message-post-share-avatar {
