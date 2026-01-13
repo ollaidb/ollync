@@ -99,7 +99,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       setMessage('')
       setShowOptions(false)
       setShowCalendarModal(false)
-      setAppointmentDate('')
+      setAppointmentDate(null)
       setAppointmentTime('')
       setAppointmentTitle('')
       onMessageSent()
@@ -218,11 +218,17 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
-  const handlePostSelect = (postId: string) => {
-    sendMessage('post_share', {
-      shared_post_id: postId
-    })
+  const handlePostSelect = async (postId: string) => {
+    if (disabled || sending) return
     setShowPostSelector(false)
+    try {
+      await sendMessage('post_share', {
+        shared_post_id: postId
+      })
+    } catch (error) {
+      console.error('Error sending post share:', error)
+      setShowPostSelector(true) // Rouvrir le sélecteur en cas d'erreur
+    }
   }
 
   const handleDateSelect = (date: string) => {
@@ -237,11 +243,13 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
-  const handleCalendarSubmit = () => {
+  const handleCalendarSubmit = async () => {
     if (!appointmentDate || !appointmentTime || !appointmentTitle.trim()) {
       alert('Veuillez remplir tous les champs (titre, date et heure)')
       return
     }
+
+    if (disabled || sending) return
 
     // Combiner date et heure en ISO string
     const appointmentDateTime = new Date(`${appointmentDate}T${appointmentTime}`).toISOString()
@@ -252,7 +260,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       return
     }
 
-    sendMessage('calendar_request', {
+    await sendMessage('calendar_request', {
       calendar_request_data: {
         title: appointmentTitle.trim(),
         appointment_datetime: appointmentDateTime,
@@ -260,7 +268,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       }
     })
     
-    // Réinitialiser le formulaire
+    // Réinitialiser le formulaire (sera fait dans sendMessage après succès)
     setAppointmentDate(null)
     setAppointmentTime('')
     setAppointmentTitle('')
