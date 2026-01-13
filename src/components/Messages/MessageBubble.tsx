@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { File, MapPin, DollarSign, Calendar, Share2, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabaseClient'
 import CalendarPicker from './CalendarPicker'
 import './MessageBubble.css'
 
@@ -34,43 +36,88 @@ interface MessageBubbleProps {
 
 const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProps) => {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
+  const [sharedPost, setSharedPost] = useState<{
+    title?: string
+    user?: {
+      id: string
+      username?: string | null
+      full_name?: string | null
+      avatar_url?: string | null
+    } | null
+  } | null>(null)
+  const navigate = useNavigate()
+
+  // Charger les infos du post partagé
+  useEffect(() => {
+    if (message.message_type === 'post_share' && message.shared_post_id) {
+      const fetchPost = async () => {
+        try {
+          const postId = message.shared_post_id
+          if (!postId) return
+          
+          const { data: postData } = await supabase
+            .from('posts')
+            .select('title, user_id')
+            .eq('id', postId)
+            .single()
+
+          if (postData) {
+            const post = postData as { title: string; user_id: string }
+            
+            // Récupérer le profil de l'utilisateur
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('id, username, full_name, avatar_url')
+              .eq('id', post.user_id)
+              .single()
+
+            setSharedPost({
+              title: post.title,
+              user: userData as {
+                id: string
+                username?: string | null
+                full_name?: string | null
+                avatar_url?: string | null
+              } | null
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching shared post:', error)
+        }
+      }
+      fetchPost()
+    }
+  }, [message.message_type, message.shared_post_id])
 
   const renderMessageContent = () => {
     switch (message.message_type) {
       case 'photo':
         return (
-          <div className="message-media">
-            {message.file_url && (
-              <img src={message.file_url} alt={message.file_name || 'Photo'} className="message-image" />
-            )}
-            {message.content && <p className="message-caption">{message.content}</p>}
-          </div>
+          message.file_url && (
+            <img src={message.file_url} alt={message.file_name || 'Photo'} className="message-image-standalone" />
+          )
         )
       case 'video':
         return (
-          <div className="message-media">
-            {message.file_url && (
-              <video src={message.file_url} controls className="message-video">
-                Votre navigateur ne supporte pas la vidéo.
-              </video>
-            )}
-            {message.content && <p className="message-caption">{message.content}</p>}
-          </div>
+          message.file_url && (
+            <video src={message.file_url} controls className="message-video-standalone">
+              Votre navigateur ne supporte pas la vidéo.
+            </video>
+          )
         )
       case 'document':
         return (
-          <div className="message-document">
-            <File size={24} />
-            <div className="message-document-info">
-              <span className="message-document-name">{message.file_name || 'Document'}</span>
-              {message.file_type && <span className="message-document-type">{message.file_type}</span>}
-            </div>
-            {message.file_url && (
-              <a href={message.file_url} target="_blank" rel="noopener noreferrer" className="message-document-download">
-                Télécharger
-              </a>
-            )}
-          </div>
+          message.file_url ? (
+            <a 
+              href={message.file_url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="message-document-standalone"
+            >
+              <File size={20} />
+              <span>{message.file_name || 'Document'}</span>
+            </a>
+          ) : null
         )
       case 'location':
         return (
@@ -129,7 +176,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
         return (
           <>
             <div 
-              className="message-calendar"
+              className={`message-calendar ${isOwn ? 'own' : 'other'}`}
               onClick={() => setShowAppointmentModal(true)}
               style={{ cursor: 'pointer' }}
             >
@@ -208,14 +255,23 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
         )
       case 'post_share':
         return (
-          <div className="message-share">
-            <Share2 size={24} />
-            <span>Annonce partagée</span>
-            {message.shared_post_id && (
-              <a href={`/post/${message.shared_post_id}`} className="message-share-link">
-                Voir l'annonce
-              </a>
+          <div 
+            className="message-post-share"
+            onClick={() => message.shared_post_id && navigate(`/post/${message.shared_post_id}`)}
+          >
+            {sharedPost?.user?.avatar_url && (
+              <img 
+                src={sharedPost.user.avatar_url} 
+                alt={sharedPost.user.full_name || sharedPost.user.username || ''}
+                className="message-post-share-avatar"
+              />
             )}
+            <div className="message-post-share-content">
+              <h4 className="message-post-share-title">
+                {sharedPost?.title || 'Annonce'}
+              </h4>
+              <span className="message-post-share-link">Voir l'annonce →</span>
+            </div>
           </div>
         )
       case 'profile_share':
@@ -235,23 +291,35 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
     }
   }
 
+  // Pour les images, vidéos et documents, pas de bulle de message
+  const isStandaloneMedia = message.message_type === 'photo' || message.message_type === 'video' || message.message_type === 'document'
+
   return (
     <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
-      {!isOwn && showAvatar && message.sender?.avatar_url && (
+      {!isOwn && showAvatar && message.sender?.avatar_url && !isStandaloneMedia && (
         <img 
           src={message.sender.avatar_url} 
           alt={message.sender.full_name || message.sender.username || ''} 
           className="message-avatar" 
         />
       )}
-      {!isOwn && !showAvatar && <div className="message-avatar-spacer"></div>}
-      <div className="message-bubble-content">
-        <div className={`message-bubble ${isOwn ? 'own' : 'other'}`}>
-          {renderMessageContent()}
-          <span className="message-time">
-            {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
+      {!isOwn && !showAvatar && !isStandaloneMedia && <div className="message-avatar-spacer"></div>}
+      <div className={`message-bubble-content ${isStandaloneMedia ? 'standalone' : ''}`}>
+        {isStandaloneMedia ? (
+          <>
+            {renderMessageContent()}
+            <span className="message-time-standalone">
+              {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </>
+        ) : (
+          <div className={`message-bubble ${isOwn ? 'own' : 'other'} ${message.message_type === 'calendar_request' ? 'calendar-message' : ''}`}>
+            {renderMessageContent()}
+            <span className="message-time">
+              {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
