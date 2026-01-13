@@ -9,13 +9,25 @@ Ce guide explique comment activer les trois boutons de messagerie : **Médias**,
 
 ## 🚀 Installation
 
-### Étape 1 : Exécuter le script SQL
+### ⚠️ IMPORTANT : Exécutez d'abord la correction de la contrainte
+
+**Étape 0 : Corriger la contrainte `check_message_content`**
+
+Cette étape est **OBLIGATOIRE** car la contrainte actuelle bloque l'envoi des rendez-vous, annonces et médias.
 
 1. Ouvrez votre **Supabase Dashboard**
 2. Allez dans **SQL Editor**
 3. Créez une nouvelle requête
-4. Copiez-collez le contenu du fichier `fix_messaging_features_complete.sql`
+4. Copiez-collez le contenu du fichier `fix_check_message_content_constraint.sql`
 5. Cliquez sur **Run** pour exécuter le script
+6. Vérifiez que vous voyez le message "✅ CONTRAINTE CORRIGÉE AVEC SUCCÈS!"
+
+### Étape 1 : Exécuter le script principal
+
+1. Dans le même **SQL Editor**
+2. Créez une nouvelle requête
+3. Copiez-collez le contenu du fichier `fix_messaging_features_complete.sql`
+4. Cliquez sur **Run** pour exécuter le script
 
 Le script va :
 - ✅ Ajouter les colonnes nécessaires à la table `messages`
