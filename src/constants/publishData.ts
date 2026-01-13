@@ -73,6 +73,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'evenements',
         name: 'Événements',
         slug: 'evenements'
+      },
+      {
+        id: 'live',
+        name: 'Live',
+        slug: 'live'
       }
     ]
   },
@@ -118,6 +123,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'invite-micro-trottoir',
         name: 'Invité micro-trottoir',
         slug: 'invite-micro-trottoir'
+      },
+      {
+        id: 'youtube-video',
+        name: 'YouTube vidéo',
+        slug: 'youtube-video'
       }
     ]
   },
@@ -233,11 +243,6 @@ export const publicationTypes: PublicationType[] = [
         id: 'setup-materiel',
         name: 'Setup matériel',
         slug: 'setup-materiel'
-      },
-      {
-        id: 'aide-live-moderation',
-        name: 'Aide Live / Modération',
-        slug: 'aide-live-moderation'
       }
     ]
   },
@@ -268,11 +273,6 @@ export const publicationTypes: PublicationType[] = [
         id: 'concepts-niches',
         name: 'Concepts / Niches',
         slug: 'concepts-niches'
-      },
-      {
-        id: 'pack-compte-contenu',
-        name: 'Pack compte + contenu',
-        slug: 'pack-compte-contenu'
       }
     ]
   }

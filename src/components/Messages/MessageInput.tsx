@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Send, Image, Video, File, Calendar, Share2, Loader, Film, X, Megaphone } from 'lucide-react'
+import { Send, Calendar, Share2, Loader, Film, X, Megaphone } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import ConsentModal from '../ConsentModal'
@@ -20,16 +20,13 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
-  const [showMediaSubmenu, setShowMediaSubmenu] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [showPostSelector, setShowPostSelector] = useState(false)
   const [appointmentDate, setAppointmentDate] = useState<string | null>(null)
   const [appointmentTime, setAppointmentTime] = useState('')
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const videoInputRef = useRef<HTMLInputElement>(null)
-  const docInputRef = useRef<HTMLInputElement>(null)
+  const mediaInputRef = useRef<HTMLInputElement>(null)
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
@@ -193,29 +190,43 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     })
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video' | 'document') => {
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      if (type === 'photo' && !file.type.startsWith('image/')) {
-        alert('Veuillez sélectionner une image')
-        return
-      }
-      if (type === 'video' && !file.type.startsWith('video/')) {
-        alert('Veuillez sélectionner une vidéo')
-        return
-      }
+    if (!file) return
+
+    // Détecter automatiquement le type de fichier
+    let fileType: 'photo' | 'video' | 'document' | null = null
+
+    if (file.type.startsWith('image/')) {
+      fileType = 'photo'
+    } else if (file.type.startsWith('video/')) {
+      fileType = 'video'
       // Vérifier la durée des vidéos
-      if (type === 'video') {
-        const isValidDuration = await checkVideoDuration(file)
-        if (!isValidDuration) {
-          alert('La vidéo ne doit pas dépasser 10 secondes')
-          return
-        }
+      const isValidDuration = await checkVideoDuration(file)
+      if (!isValidDuration) {
+        alert('La vidéo ne doit pas dépasser 10 secondes')
+        e.target.value = ''
+        return
       }
-      handleFileUpload(file, type)
-      // Réinitialiser l'input pour permettre de sélectionner le même fichier
+    } else if (
+      file.type === 'application/pdf' ||
+      file.type === 'application/msword' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.type === 'text/plain'
+    ) {
+      fileType = 'document'
+    } else {
+      alert('Type de fichier non supporté. Veuillez sélectionner une image, une vidéo ou un document.')
       e.target.value = ''
+      return
     }
+
+    if (fileType) {
+      handleFileUpload(file, fileType)
+    }
+
+    // Réinitialiser l'input pour permettre de sélectionner le même fichier
+    e.target.value = ''
   }
 
   const handlePostSelect = async (postId: string) => {
@@ -373,56 +384,23 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
       {showOptions && (
         <div className="message-options-panel">
-          <div className="message-option-wrapper">
-            <button
-              className="message-option-btn"
-              onClick={() => setShowMediaSubmenu(!showMediaSubmenu)}
-              title="Médias"
-            >
-              <Film size={22} />
-              <span>Médias</span>
-            </button>
-            {showMediaSubmenu && (
-              <div className="message-media-submenu">
-                <button
-                  className="message-media-submenu-btn"
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                    setShowMediaSubmenu(false)
-                  }}
-                  title="Photo"
-                >
-                  <Image size={18} />
-                  <span>Photo</span>
-                </button>
-                <button
-                  className="message-media-submenu-btn"
-                  onClick={() => {
-                    videoInputRef.current?.click()
-                    setShowMediaSubmenu(false)
-                  }}
-                  title="Vidéo"
-                >
-                  <Video size={18} />
-                  <span>Vidéo</span>
-                </button>
-                <button
-                  className="message-media-submenu-btn"
-                  onClick={() => {
-                    docInputRef.current?.click()
-                    setShowMediaSubmenu(false)
-                  }}
-                  title="Document"
-                >
-                  <File size={18} />
-                  <span>Document</span>
-                </button>
-              </div>
-            )}
-          </div>
           <button
             className="message-option-btn"
-            onClick={() => setShowPostSelector(true)}
+            onClick={() => {
+              mediaInputRef.current?.click()
+              setShowOptions(false)
+            }}
+            title="Médias"
+          >
+            <Film size={22} />
+            <span>Médias</span>
+          </button>
+          <button
+            className="message-option-btn"
+            onClick={() => {
+              setShowPostSelector(true)
+              setShowOptions(false)
+            }}
             title="Annonce"
           >
             <Megaphone size={22} />
@@ -445,10 +423,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       <div className="message-input-wrapper">
         <button
           className="message-options-toggle"
-          onClick={() => {
-            setShowOptions(!showOptions)
-            setShowMediaSubmenu(false)
-          }}
+          onClick={() => setShowOptions(!showOptions)}
           title="Options"
         >
           <Share2 size={20} />
@@ -476,24 +451,10 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       </div>
 
       <input
-        ref={fileInputRef}
+        ref={mediaInputRef}
         type="file"
-        accept="image/*"
-        onChange={(e) => handleFileSelect(e, 'photo')}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept="video/*"
-        onChange={(e) => handleFileSelect(e, 'video')}
-        style={{ display: 'none' }}
-      />
-      <input
-        ref={docInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx,.txt"
-        onChange={(e) => handleFileSelect(e, 'document')}
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+        onChange={handleMediaSelect}
         style={{ display: 'none' }}
       />
 

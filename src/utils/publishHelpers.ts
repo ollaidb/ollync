@@ -122,8 +122,8 @@ export const shouldShowSocialNetwork = (
     'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
     'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
     'montage': ['montage', 'live'],
-    'services': ['coaching-contenu', 'strategie-editoriale', 'aide-live-moderation'],
-    'vente': ['comptes', 'pack-compte-contenu']
+    'services': ['coaching-contenu', 'strategie-editoriale'],
+    'vente': ['comptes']
   }
 
   const relevantSubcategories = relevantCategories[categorySlug]

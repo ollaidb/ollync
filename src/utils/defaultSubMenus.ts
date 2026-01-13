@@ -9,7 +9,8 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Vlog', slug: 'vlog' },
     { name: 'Sketchs', slug: 'sketchs' },
     { name: 'Trends', slug: 'trends' },
-    { name: 'Événements', slug: 'evenements' }
+    { name: 'Événements', slug: 'evenements' },
+    { name: 'Live', slug: 'live' }
   ],
   montage: [
     { name: 'Montage', slug: 'montage' },
@@ -23,7 +24,8 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Modèle vidéo', slug: 'modele-video' },
     { name: 'Voix off', slug: 'voix-off' },
     { name: 'Invité podcast', slug: 'invite-podcast' },
-    { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' }
+    { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' },
+    { name: 'YouTube vidéo', slug: 'youtube-video' }
   ],
   'projets-equipe': [
     { name: 'Recherche équipe', slug: 'recherche-equipe' },
@@ -37,14 +39,12 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Coaching contenu', slug: 'coaching-contenu' },
     { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
     { name: 'Organisation', slug: 'organisation' },
-    { name: 'Setup matériel', slug: 'setup-materiel' },
-    { name: 'Aide Live / Modération', slug: 'aide-live-moderation' }
+    { name: 'Setup matériel', slug: 'setup-materiel' }
   ],
   vente: [
     { name: 'Comptes', slug: 'comptes' },
     { name: "Noms d'utilisateur", slug: 'noms-utilisateur' },
-    { name: 'Concepts / Niches', slug: 'concepts-niches' },
-    { name: 'Pack compte + contenu', slug: 'pack-compte-contenu' }
+    { name: 'Concepts / Niches', slug: 'concepts-niches' }
   ]
 }
 

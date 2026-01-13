@@ -23,7 +23,8 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'vlog': [],
     'sketchs': [],
     'trends': [],
-    'evenements': []
+    'evenements': [],
+    'live': []
   },
   'casting-role': {
     'figurant': [],
@@ -31,7 +32,8 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'modele-video': [],
     'voix-off': [],
     'invite-podcast': [],
-    'invite-micro-trottoir': []
+    'invite-micro-trottoir': [],
+    'youtube-video': []
   },
   'montage': {
     'montage': [],
@@ -51,8 +53,7 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'coaching-contenu': [],
     'strategie-editoriale': [],
     'organisation': [],
-    'setup-materiel': [],
-    'aide-live-moderation': []
+    'setup-materiel': []
   },
   'vente': {
     'comptes': [
@@ -64,8 +65,7 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
       { id: 'youtube', name: 'YouTube', slug: 'youtube' }
     ],
     'noms-utilisateur': [],
-    'concepts-niches': [],
-    'pack-compte-contenu': []
+    'concepts-niches': []
   },
   // Compatibilité avec les anciens slugs (à supprimer progressivement)
   match: {
