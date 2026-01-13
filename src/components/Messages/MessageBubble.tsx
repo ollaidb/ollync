@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { File, MapPin, DollarSign, Calendar, Share2, X } from 'lucide-react'
+import { File, MapPin, DollarSign, Calendar, Share2, X, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { useAuth } from '../../hooks/useSupabase'
 import CalendarPicker from './CalendarPicker'
 import './MessageBubble.css'
 
@@ -36,6 +37,7 @@ interface MessageBubbleProps {
 
 const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProps) => {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
+  const [showImageModal, setShowImageModal] = useState(false)
   const [sharedPost, setSharedPost] = useState<{
     title?: string
     user?: {
@@ -45,7 +47,35 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
       avatar_url?: string | null
     } | null
   } | null>(null)
+  const [appointmentId, setAppointmentId] = useState<string | null>(null)
+  const [editingAppointment, setEditingAppointment] = useState(false)
+  const [newAppointmentDate, setNewAppointmentDate] = useState<string | null>(null)
+  const [newAppointmentTime, setNewAppointmentTime] = useState('')
+  const [updatingAppointment, setUpdatingAppointment] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  // Charger l'appointment_id si c'est un rendez-vous
+  useEffect(() => {
+    if (message.message_type === 'calendar_request' && message.id) {
+      const fetchAppointment = async () => {
+        try {
+          const { data } = await supabase
+            .from('appointments')
+            .select('id')
+            .eq('message_id', message.id)
+            .single()
+          
+          if (data) {
+            setAppointmentId((data as { id: string }).id)
+          }
+        } catch (error) {
+          console.error('Error fetching appointment:', error)
+        }
+      }
+      fetchAppointment()
+    }
+  }, [message.message_type, message.id])
 
   // Charger les infos du post partagé
   useEffect(() => {
@@ -89,12 +119,91 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
     }
   }, [message.message_type, message.shared_post_id])
 
+  const handleUpdateAppointment = async () => {
+    if (!newAppointmentDate || !newAppointmentTime || !appointmentId || !user) return
+
+    setUpdatingAppointment(true)
+    try {
+      // Combiner date et heure
+      const [hours, minutes] = newAppointmentTime.split(':')
+      const newDateTime = new Date(newAppointmentDate)
+      newDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+
+      // Mettre à jour l'appointment
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: appointmentError } = await (supabase.from('appointments') as any).update({
+        appointment_datetime: newDateTime.toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq('id', appointmentId)
+
+      if (appointmentError) throw appointmentError
+
+      // Mettre à jour le message avec les nouvelles données
+      const calendarData = message.calendar_request_data as Record<string, unknown> || {}
+      calendarData.appointment_datetime = newDateTime.toISOString()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: messageError } = await (supabase.from('messages') as any).update({
+        calendar_request_data: calendarData
+      }).eq('id', message.id)
+
+      if (messageError) throw messageError
+
+      setEditingAppointment(false)
+      setShowAppointmentModal(false)
+      setNewAppointmentDate(null)
+      setNewAppointmentTime('')
+      
+      // Recharger la page pour voir les changements
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating appointment:', error)
+      alert('Erreur lors de la modification du rendez-vous')
+    } finally {
+      setUpdatingAppointment(false)
+    }
+  }
+
+  const handleCancelAppointment = async () => {
+    if (!appointmentId || !user) return
+    if (!confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) return
+
+    setUpdatingAppointment(true)
+    try {
+      // Mettre à jour le statut de l'appointment
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: appointmentError } = await (supabase.from('appointments') as any).update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      }).eq('id', appointmentId)
+
+      if (appointmentError) throw appointmentError
+
+      setShowAppointmentModal(false)
+      setEditingAppointment(false)
+      
+      // Recharger la page pour voir les changements
+      window.location.reload()
+    } catch (error) {
+      console.error('Error cancelling appointment:', error)
+      alert('Erreur lors de l\'annulation du rendez-vous')
+    } finally {
+      setUpdatingAppointment(false)
+    }
+  }
+
   const renderMessageContent = () => {
     switch (message.message_type) {
       case 'photo':
         return (
           message.file_url && (
-            <img src={message.file_url} alt={message.file_name || 'Photo'} className="message-image-standalone" />
+            <img 
+              src={message.file_url} 
+              alt={message.file_name || 'Photo'} 
+              className="message-image-standalone"
+              onClick={() => setShowImageModal(true)}
+              style={{ cursor: 'pointer' }}
+            />
           )
         )
       case 'video':
@@ -204,13 +313,23 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
               </div>
             </div>
             {showAppointmentModal && (
-              <div className="appointment-overlay" onClick={() => setShowAppointmentModal(false)}>
+              <div className="appointment-overlay" onClick={() => {
+                setShowAppointmentModal(false)
+                setEditingAppointment(false)
+                setNewAppointmentDate(null)
+                setNewAppointmentTime('')
+              }}>
                 <div className="appointment-inline-panel" onClick={(e) => e.stopPropagation()}>
                   <div className="appointment-inline-header">
                     <h4>{appointmentTitle}</h4>
                     <button 
                       className="appointment-inline-close"
-                      onClick={() => setShowAppointmentModal(false)}
+                      onClick={() => {
+                        setShowAppointmentModal(false)
+                        setEditingAppointment(false)
+                        setNewAppointmentDate(null)
+                        setNewAppointmentTime('')
+                      }}
                     >
                       <X size={18} />
                     </button>
@@ -218,33 +337,97 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
                   <div className="appointment-inline-body">
                     {appointmentDateTime && (
                       <>
-                        <div className="appointment-inline-selected-date">
-                          <span className="appointment-inline-date-label">Date :</span>
-                          <span className="appointment-inline-date-value">
-                            {new Date(appointmentDateTime).toLocaleDateString('fr-FR', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="appointment-inline-selected-date">
-                          <span className="appointment-inline-date-label">Heure :</span>
-                          <span className="appointment-inline-date-value">
-                            {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        <div className="appointment-inline-calendar-wrapper">
-                          <CalendarPicker
-                            selectedDate={new Date(appointmentDateTime).toISOString().split('T')[0]}
-                            onDateSelect={() => {}}
-                            minDate={new Date().toISOString().split('T')[0]}
-                          />
-                        </div>
+                        {!editingAppointment ? (
+                          <>
+                            <div className="appointment-inline-selected-date">
+                              <span className="appointment-inline-date-label">Date :</span>
+                              <span className="appointment-inline-date-value">
+                                {new Date(appointmentDateTime).toLocaleDateString('fr-FR', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="appointment-inline-selected-date">
+                              <span className="appointment-inline-date-label">Heure :</span>
+                              <span className="appointment-inline-date-value">
+                                {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <div className="appointment-inline-calendar-wrapper">
+                              <CalendarPicker
+                                selectedDate={new Date(appointmentDateTime).toISOString().split('T')[0]}
+                                onDateSelect={() => {}}
+                                minDate={new Date().toISOString().split('T')[0]}
+                              />
+                            </div>
+                            <div className="appointment-inline-actions">
+                              <button
+                                className="appointment-inline-edit-btn"
+                                onClick={() => {
+                                  setEditingAppointment(true)
+                                  setNewAppointmentDate(new Date(appointmentDateTime).toISOString().split('T')[0])
+                                  const timeStr = new Date(appointmentDateTime).toTimeString().slice(0, 5)
+                                  setNewAppointmentTime(timeStr)
+                                }}
+                              >
+                                Modifier
+                              </button>
+                              <button
+                                className="appointment-inline-cancel-btn"
+                                onClick={handleCancelAppointment}
+                                disabled={updatingAppointment}
+                              >
+                                <Trash2 size={16} />
+                                Annuler le rendez-vous
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="appointment-inline-form-group">
+                              <label>Date *</label>
+                              <CalendarPicker
+                                selectedDate={newAppointmentDate}
+                                onDateSelect={setNewAppointmentDate}
+                                minDate={new Date().toISOString().split('T')[0]}
+                              />
+                            </div>
+                            <div className="appointment-inline-form-group">
+                              <label>Heure *</label>
+                              <input
+                                type="time"
+                                value={newAppointmentTime}
+                                onChange={(e) => setNewAppointmentTime(e.target.value)}
+                                className="appointment-inline-input"
+                              />
+                            </div>
+                            <div className="appointment-inline-actions">
+                              <button
+                                className="appointment-inline-back-btn"
+                                onClick={() => {
+                                  setEditingAppointment(false)
+                                  setNewAppointmentDate(null)
+                                  setNewAppointmentTime('')
+                                }}
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                className="appointment-inline-save-btn"
+                                onClick={handleUpdateAppointment}
+                                disabled={updatingAppointment || !newAppointmentDate || !newAppointmentTime}
+                              >
+                                {updatingAppointment ? 'Enregistrement...' : 'Enregistrer'}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
@@ -321,6 +504,25 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
           </div>
         )}
       </div>
+      
+      {/* Modal pour afficher l'image en grand */}
+      {showImageModal && message.file_url && message.message_type === 'photo' && (
+        <div className="image-modal-overlay" onClick={() => setShowImageModal(false)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="image-modal-close"
+              onClick={() => setShowImageModal(false)}
+            >
+              <X size={24} />
+            </button>
+            <img 
+              src={message.file_url} 
+              alt={message.file_name || 'Photo'} 
+              className="image-modal-image"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
