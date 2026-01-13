@@ -363,3 +363,59 @@
   display: flex;
   justify-content: center;
 }
+
+/* Bloc d'annonce partagée - sans background */
+.message-post-share {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  max-width: 100%;
+}
+
+.message-post-share:hover {
+  opacity: 0.8;
+}
+
+.message-post-share-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+
+.message-post-share-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.message-post-share-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-post-share-link {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.message-post-share:hover .message-post-share-link {
+  text-decoration: underline;
+}
