@@ -552,6 +552,80 @@ const Messages = () => {
     if (!user) return []
 
     try {
+      const buildAppointmentsFromMessages = async () => {
+        const { data: convs, error: convError } = await supabase
+          .from('conversations')
+          .select('id, user1_id, user2_id, is_group')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .is('deleted_at', null)
+          .eq('is_group', false)
+
+        if (convError || !convs || convs.length === 0) {
+          if (convError) {
+            console.error('Error loading conversations for appointments fallback:', convError)
+          }
+          return []
+        }
+
+        const convIds = (convs as Array<{ id: string }>).map((conv) => conv.id)
+        const convOtherUserMap = new Map<string, string>()
+
+        ;(convs as Array<{ id: string; user1_id: string; user2_id: string }>).forEach((conv) => {
+          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
+          convOtherUserMap.set(conv.id, otherUserId)
+        })
+
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('messages')
+          .select('id, conversation_id, sender_id, created_at, calendar_request_data')
+          .in('conversation_id', convIds)
+          .eq('message_type', 'calendar_request')
+          .order('created_at', { ascending: false })
+
+        if (messagesError || !messagesData || messagesData.length === 0) {
+          if (messagesError) {
+            console.error('Error loading appointment messages:', messagesError)
+          }
+          return []
+        }
+
+        const otherUserIds = Array.from(
+          new Set(
+            (messagesData as Array<{ conversation_id: string }>).map((msg) => convOtherUserMap.get(msg.conversation_id)).filter(Boolean) as string[]
+          )
+        )
+
+        const usersResponse = otherUserIds.length > 0 ? await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', otherUserIds) : { data: [] as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> }
+
+        const usersMap = new Map((usersResponse.data || []).map((u) => [u.id, u]))
+
+        return (messagesData as Array<{
+          id: string
+          conversation_id: string
+          sender_id: string
+          created_at: string
+          calendar_request_data?: Record<string, unknown> | null
+        }>).map((msg) => {
+          const calendarData = (msg.calendar_request_data || {}) as { appointment_datetime?: string; title?: string }
+          const appointmentDatetime = calendarData.appointment_datetime || msg.created_at
+          const otherUserId = convOtherUserMap.get(msg.conversation_id) || ''
+
+          return {
+            id: msg.id,
+            conversation_id: msg.conversation_id,
+            sender_id: msg.sender_id,
+            recipient_id: otherUserId,
+            title: calendarData.title || 'Rendez-vous',
+            appointment_datetime: appointmentDatetime,
+            status: null,
+            other_user: otherUserId ? usersMap.get(otherUserId) || null : null
+          }
+        }).filter((appointment) => Boolean(appointment.appointment_datetime))
+      }
+
       const { data: appointmentsData, error } = await supabase
         .from('appointments')
         .select('*')
@@ -559,36 +633,40 @@ const Messages = () => {
         .not('status', 'in', '("declined","cancelled")')
         .order('appointment_datetime', { ascending: true })
 
+      if (!error && appointmentsData && appointmentsData.length > 0) {
+        const otherUserIds = (appointmentsData as Array<{ sender_id: string; recipient_id: string }>).map((appointment) =>
+          appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
+        )
+
+        const { data: users, error: usersError } = otherUserIds.length > 0 ? await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', [...new Set(otherUserIds)]) : { data: [], error: null }
+
+        if (usersError) {
+          console.error('Error loading appointment users:', usersError)
+        }
+
+        const usersMap = new Map((users as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((u) => [u.id, u]))
+
+        return (appointmentsData as Appointment[]).map((appointment) => {
+          const otherUserId = appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
+          return {
+            ...appointment,
+            other_user: usersMap.get(otherUserId) || null
+          }
+        })
+      }
+
       if (error) {
         console.error('Error loading appointments:', error)
-        return []
       }
 
-      if (!appointmentsData || appointmentsData.length === 0) {
-        return []
-      }
-
-      const otherUserIds = (appointmentsData as Array<{ sender_id: string; recipient_id: string }>).map((appointment) =>
-        appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
-      )
-
-      const { data: users, error: usersError } = otherUserIds.length > 0 ? await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .in('id', [...new Set(otherUserIds)]) : { data: [], error: null }
-
-      if (usersError) {
-        console.error('Error loading appointment users:', usersError)
-      }
-
-      const usersMap = new Map((users as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((u) => [u.id, u]))
-
-      return (appointmentsData as Appointment[]).map((appointment) => {
-        const otherUserId = appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
-        return {
-          ...appointment,
-          other_user: usersMap.get(otherUserId) || null
-        }
+      const fallbackAppointments = await buildAppointmentsFromMessages()
+      return fallbackAppointments.sort((a, b) => {
+        const dateA = new Date(a.appointment_datetime).getTime()
+        const dateB = new Date(b.appointment_datetime).getTime()
+        return dateA - dateB
       })
     } catch (error) {
       console.error('Error loading appointments:', error)

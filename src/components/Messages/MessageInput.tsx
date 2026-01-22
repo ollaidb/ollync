@@ -280,7 +280,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       return
     }
 
-    await     await sendMessage('calendar_request', {
+    await sendMessage('calendar_request', {
       calendar_request_data: {
         title: appointmentTitle.trim(),
         appointment_datetime: appointmentDateTime,
