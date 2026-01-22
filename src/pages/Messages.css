@@ -459,6 +459,15 @@
   white-space: nowrap;
 }
 
+.appointment-user-name {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .conversation-preview.unread {
   color: var(--foreground);
   font-weight: 600;

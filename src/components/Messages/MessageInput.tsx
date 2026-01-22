@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Send, Calendar, Share2, Loader, Film, X, Megaphone } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
@@ -12,11 +12,12 @@ interface MessageInputProps {
   senderId: string
   onMessageSent: () => void
   disabled?: boolean
+  openCalendarOnMount?: boolean
 }
 
 type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share'
 
-const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false }: MessageInputProps) => {
+const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false }: MessageInputProps) => {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
@@ -30,6 +31,14 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
+
+  useEffect(() => {
+    if (openCalendarOnMount) {
+      setShowCalendarModal(true)
+      setShowOptions(false)
+      setCalendarStep('date')
+    }
+  }, [openCalendarOnMount])
 
   const sendMessage = async (type: MessageType = 'text', extraData?: Record<string, unknown>) => {
     if (!message.trim() && type === 'text') return

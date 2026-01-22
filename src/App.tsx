@@ -76,6 +76,7 @@ function AppContent() {
           <Route path="/profile/legal/politique-cookies" element={<Profile />} />
           <Route path="/profile/legal/securite" element={<Profile />} />
           <Route path="/profile/annonces" element={<Profile />} />
+          <Route path="/profile/contracts" element={<Profile />} />
           <Route path="/profile/:id" element={<Profile />} />
           {/* Nouvelles routes - Catégories principales */}
           <Route path="/creation-contenu" element={<CreationContenu />} />

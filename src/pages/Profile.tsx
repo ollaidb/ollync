@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { User, Settings as SettingsIcon, Shield, HelpCircle, LogOut, ChevronRight, LucideIcon, FileEdit } from 'lucide-react'
+import { User, Settings as SettingsIcon, Shield, HelpCircle, LogOut, ChevronRight, LucideIcon, FileEdit, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -34,6 +34,7 @@ import Mail from './profile/Mail'
 import OnlineStatus from './profile/OnlineStatus'
 import DataManagement from './profile/DataManagement'
 import DeleteAccount from './profile/DeleteAccount'
+import Contracts from './profile/Contracts'
 import ConfirmationModal from '../components/ConfirmationModal'
 import './Profile.css'
 
@@ -82,6 +83,7 @@ const Profile = () => {
     if (location.pathname === '/profile/legal') return 'legal'
     if (location.pathname.startsWith('/profile/legal/')) return 'legal-page'
     if (location.pathname === '/profile/annonces') return 'annonces'
+    if (location.pathname === '/profile/contracts') return 'contracts'
     return 'menu'
   }
   
@@ -261,6 +263,10 @@ const Profile = () => {
       return <Annonces />
     }
 
+    if (location.pathname === '/profile/contracts') {
+      return <Contracts />
+    }
+
     // Routes pour les pages légales individuelles
     if (location.pathname === '/profile/legal/mentions-legales') {
       return <MentionsLegales />
@@ -323,6 +329,8 @@ const Profile = () => {
         return <Legal />
       case 'annonces':
         return <Annonces />
+      case 'contracts':
+        return <Contracts />
       default:
         return renderMenu()
     }
@@ -330,6 +338,7 @@ const Profile = () => {
 
   const getPageTitle = () => {
     if (location.pathname === '/profile/annonces') return 'Mes annonces'
+    if (location.pathname === '/profile/contracts') return 'Contrats'
     if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return 'Aide'
     if (location.pathname === '/profile/contact') return 'Contact'
     if (location.pathname === '/profile/resources') return 'Ressources'
@@ -380,6 +389,14 @@ const Profile = () => {
         label: 'Annonces', 
         path: '/profile/annonces',
         onClick: () => navigate('/profile/annonces'),
+        requiresAuth: true
+      },
+      { 
+        id: 'contracts', 
+        icon: FileText, 
+        label: 'Contrats', 
+        path: '/profile/contracts',
+        onClick: () => navigate('/profile/contracts'),
         requiresAuth: true
       },
       { 
@@ -501,7 +518,7 @@ const Profile = () => {
         )}
 
         {/* Zone scrollable */}
-        <div className={`profile-scrollable ${['annonces', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
+        <div className={`profile-scrollable ${['annonces', 'contracts', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
           {(authLoading || loading) && currentSection === 'menu' ? (
             <div className="profile-loading">Chargement...</div>
           ) : (

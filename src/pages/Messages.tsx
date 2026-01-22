@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import CreateGroupModal from '../components/Messages/CreateGroupModal'
+import CreateMessageActionModal from '../components/Messages/CreateMessageActionModal'
+import SelectUsersModal from '../components/Messages/SelectUsersModal'
 import MessageInput from '../components/Messages/MessageInput'
 import MessageBubble from '../components/Messages/MessageBubble'
 import { EmptyState } from '../components/EmptyState'
 import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
 import './Messages.css'
 
-type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'archived'
+type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'appointments' | 'archived'
 
 interface Conversation {
   id: string
@@ -63,6 +65,29 @@ interface MatchRequest {
   request_type?: 'sent' | 'received' // 'sent' si from_user_id = current_user, 'received' si to_user_id = current_user
 }
 
+interface Appointment {
+  id: string
+  conversation_id: string
+  sender_id: string
+  recipient_id: string
+  title: string
+  appointment_datetime: string
+  status?: string | null
+  other_user?: {
+    id: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
+}
+
+interface SelectableUser {
+  id: string
+  username?: string | null
+  full_name?: string | null
+  avatar_url?: string | null
+}
+
 interface Message {
   id: string
   content?: string | null
@@ -93,21 +118,29 @@ const Messages = () => {
   const { id: conversationId } = useParams<{ id?: string }>()
   const [searchParams] = useSearchParams()
   const postId = searchParams.get('post')
+  const openAppointment = searchParams.get('openAppointment') === '1'
   const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
   const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [showCreateGroup, setShowCreateGroup] = useState(false)
+  const [showCreateActionModal, setShowCreateActionModal] = useState(false)
+  const [showSelectGroupUsers, setShowSelectGroupUsers] = useState(false)
+  const [showSelectAppointmentUser, setShowSelectAppointmentUser] = useState(false)
+  const [selectableUsers, setSelectableUsers] = useState<SelectableUser[]>([])
+  const [selectableUsersLoading, setSelectableUsersLoading] = useState(false)
+  const [selectedGroupUsers, setSelectedGroupUsers] = useState<SelectableUser[]>([])
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
     const filterParam = searchParams.get('filter')
-    if (filterParam && ['all', 'posts', 'matches', 'match_requests', 'groups', 'archived'].includes(filterParam)) {
+    if (filterParam && ['all', 'posts', 'matches', 'match_requests', 'groups', 'appointments', 'archived'].includes(filterParam)) {
       setActiveFilter(filterParam as FilterType)
     }
   }, [searchParams])
@@ -118,8 +151,6 @@ const Messages = () => {
         handlePostMessage(postId)
       } else if (conversationId) {
         loadConversation(conversationId)
-      } else {
-        loadConversations()
       }
     } else {
       setLoading(false)
@@ -134,6 +165,15 @@ const Messages = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, user])
+
+  useEffect(() => {
+    if (openAppointment && (selectedConversation || conversationId)) {
+      const currentId = selectedConversation?.id || conversationId
+      if (currentId) {
+        navigate(`/messages/${currentId}`, { replace: true })
+      }
+    }
+  }, [openAppointment, selectedConversation, conversationId, navigate])
 
   const formatTime = (dateString: string | null | undefined): string => {
     if (!dateString) return ''
@@ -152,6 +192,13 @@ const Messages = () => {
     } else {
       return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
     }
+  }
+
+  const formatAppointmentDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    const datePart = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    return `${datePart} • ${timePart}`
   }
 
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
@@ -501,6 +548,109 @@ const Messages = () => {
     }
   }, [user])
 
+  const loadAppointments = useCallback(async () => {
+    if (!user) return []
+
+    try {
+      const { data: appointmentsData, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .not('status', 'in', '("declined","cancelled")')
+        .order('appointment_datetime', { ascending: true })
+
+      if (error) {
+        console.error('Error loading appointments:', error)
+        return []
+      }
+
+      if (!appointmentsData || appointmentsData.length === 0) {
+        return []
+      }
+
+      const otherUserIds = (appointmentsData as Array<{ sender_id: string; recipient_id: string }>).map((appointment) =>
+        appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
+      )
+
+      const { data: users, error: usersError } = otherUserIds.length > 0 ? await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', [...new Set(otherUserIds)]) : { data: [], error: null }
+
+      if (usersError) {
+        console.error('Error loading appointment users:', usersError)
+      }
+
+      const usersMap = new Map((users as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((u) => [u.id, u]))
+
+      return (appointmentsData as Appointment[]).map((appointment) => {
+        const otherUserId = appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
+        return {
+          ...appointment,
+          other_user: usersMap.get(otherUserId) || null
+        }
+      })
+    } catch (error) {
+      console.error('Error loading appointments:', error)
+      return []
+    }
+  }, [user])
+
+  const loadSelectableUsers = useCallback(async () => {
+    if (!user) return []
+
+    setSelectableUsersLoading(true)
+    try {
+      const { data: convs, error } = await supabase
+        .from('conversations')
+        .select('user1_id, user2_id, is_group')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .is('deleted_at', null)
+        .eq('is_group', false)
+
+      if (error) {
+        console.error('Error loading users from conversations:', error)
+        setSelectableUsers([])
+        return []
+      }
+
+      const otherUserIds = (convs as Array<{ user1_id: string; user2_id: string }> || [])
+        .map((conv) => (conv.user1_id === user.id ? conv.user2_id : conv.user1_id))
+        .filter(Boolean)
+
+      if (otherUserIds.length === 0) {
+        setSelectableUsers([])
+        return []
+      }
+
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', [...new Set(otherUserIds)])
+
+      if (usersError) {
+        console.error('Error loading selectable users:', usersError)
+        setSelectableUsers([])
+        return []
+      }
+
+      const normalizedUsers = (users as SelectableUser[] || []).sort((a, b) => {
+        const nameA = (a.full_name || a.username || '').toLowerCase()
+        const nameB = (b.full_name || b.username || '').toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+
+      setSelectableUsers(normalizedUsers)
+      return normalizedUsers
+    } catch (error) {
+      console.error('Error loading selectable users:', error)
+      setSelectableUsers([])
+      return []
+    } finally {
+      setSelectableUsersLoading(false)
+    }
+  }, [user])
+
   const loadConversations = useCallback(async () => {
     if (!user) return
 
@@ -509,6 +659,11 @@ const Messages = () => {
       // Charger les match_requests
       const requestsData = await loadMatchRequests()
       setMatchRequests(requestsData)
+
+      if (activeFilter === 'appointments') {
+        const appointmentsData = await loadAppointments()
+        setAppointments(appointmentsData)
+      }
 
       // Pour l'onglet "Tout" : toutes les conversations (même sans messages)
       // Exclure uniquement les conversations supprimées (soft delete)
@@ -703,8 +858,13 @@ const Messages = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, activeFilter, loadMatchRequests])
+  }, [user, activeFilter, loadMatchRequests, loadAppointments])
 
+  useEffect(() => {
+    if (user && !postId && !conversationId && !selectedConversation) {
+      loadConversations()
+    }
+  }, [user, postId, conversationId, selectedConversation, activeFilter, loadConversations])
 
   // Filtrer les match_requests selon l'onglet actif
   // Dans Messages, on affiche uniquement les demandes ENVOYÉES
@@ -751,11 +911,25 @@ const Messages = () => {
       return !!(conv as { is_group?: boolean }).is_group
     } else if (activeFilter === 'archived') {
       return !!(conv as { is_archived?: boolean }).is_archived
+    } else if (activeFilter === 'appointments') {
+      return false
     } else if (activeFilter === 'matches' || activeFilter === 'match_requests') {
       // Les matches sont gérés séparément via filteredMatches
       return false
     }
 
+    return true
+  })
+
+  const filteredAppointments = appointments.filter((appointment) => {
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const title = appointment.title?.toLowerCase() || ''
+      const name = (appointment.other_user?.full_name || appointment.other_user?.username || '').toLowerCase()
+      if (!title.includes(query) && !name.includes(query)) {
+        return false
+      }
+    }
     return true
   })
 
@@ -943,6 +1117,7 @@ const Messages = () => {
           <MessageInput
             conversationId={selectedConversation?.id || conversationId || ''}
             senderId={user.id}
+            openCalendarOnMount={openAppointment}
             onMessageSent={() => {
               if (selectedConversation || conversationId) {
                 loadMessages(selectedConversation?.id || conversationId || '')
@@ -966,8 +1141,8 @@ const Messages = () => {
           <div className="messages-header-actions">
             <button
               className="messages-create-group-btn"
-              onClick={() => setShowCreateGroup(true)}
-              title="Créer un groupe"
+              onClick={() => setShowCreateActionModal(true)}
+              title="Créer"
             >
               <Plus size={20} />
             </button>
@@ -1012,6 +1187,13 @@ const Messages = () => {
           >
             <Users size={16} />
             Groupes
+          </button>
+          <button
+            className={`messages-filter-btn ${activeFilter === 'appointments' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('appointments')}
+          >
+            <Calendar size={16} />
+            Rendez-vous
           </button>
           <button
             className={`messages-filter-btn ${activeFilter === 'archived' ? 'active' : ''}`}
@@ -1166,6 +1348,46 @@ const Messages = () => {
               ))}
             </div>
           )
+        ) : activeFilter === 'appointments' ? (
+          filteredAppointments.length === 0 ? (
+            <EmptyState
+              type="messages"
+              customTitle="Aucun rendez-vous"
+              customSubtext="Vos rendez-vous apparaîtront ici."
+            />
+          ) : (
+            <div className="conversations-list">
+              {filteredAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="conversation-item appointment-item"
+                  onClick={() => navigate(`/messages/${appointment.conversation_id}`)}
+                >
+                  <div className="conversation-avatar-wrapper">
+                    <img
+                      src={appointment.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`}
+                      alt={appointment.other_user?.full_name || appointment.other_user?.username || 'User'}
+                      className="conversation-avatar"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`
+                      }}
+                    />
+                  </div>
+                  <div className="conversation-info">
+                    <div className="conversation-item-header">
+                      <h3 className="conversation-name">{appointment.title}</h3>
+                      <span className="conversation-time">
+                        {formatAppointmentDate(appointment.appointment_datetime)}
+                      </span>
+                    </div>
+                    <p className="appointment-user-name">
+                      {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredConversations.length === 0 ? (
           <EmptyState 
             type={
@@ -1229,9 +1451,66 @@ const Messages = () => {
       </div>
       <CreateGroupModal
         visible={showCreateGroup}
-        onClose={() => setShowCreateGroup(false)}
+        participants={selectedGroupUsers}
+        onClose={() => {
+          setShowCreateGroup(false)
+          setSelectedGroupUsers([])
+        }}
         onSuccess={() => {
           loadConversations()
+          setSelectedGroupUsers([])
+        }}
+      />
+      <CreateMessageActionModal
+        visible={showCreateActionModal}
+        onClose={() => setShowCreateActionModal(false)}
+        onCreateGroup={async () => {
+          setShowCreateActionModal(false)
+          setShowSelectGroupUsers(true)
+          await loadSelectableUsers()
+        }}
+        onCreateAppointment={async () => {
+          setShowCreateActionModal(false)
+          setShowSelectAppointmentUser(true)
+          await loadSelectableUsers()
+        }}
+      />
+      <SelectUsersModal
+        visible={showSelectGroupUsers}
+        title="Choisir les participants"
+        users={selectableUsers}
+        loading={selectableUsersLoading}
+        multiple
+        confirmLabel="Continuer"
+        emptyText="Aucun utilisateur disponible pour un groupe"
+        onClose={() => setShowSelectGroupUsers(false)}
+        onConfirm={(users) => {
+          setSelectedGroupUsers(users)
+          setShowSelectGroupUsers(false)
+          setShowCreateGroup(true)
+        }}
+      />
+      <SelectUsersModal
+        visible={showSelectAppointmentUser}
+        title="Choisir un utilisateur"
+        users={selectableUsers}
+        loading={selectableUsersLoading}
+        emptyText="Aucun utilisateur disponible pour un rendez-vous"
+        onClose={() => setShowSelectAppointmentUser(false)}
+        onSelectUser={async (selectedUser) => {
+          if (!user) return
+          setShowSelectAppointmentUser(false)
+          try {
+            const conversation = await findOrCreateConversation(selectedUser.id)
+            if (conversation && (conversation as { id: string }).id) {
+              navigate(`/messages/${(conversation as { id: string }).id}?openAppointment=1`)
+            } else {
+              alert('Erreur lors de la création de la conversation')
+            }
+          } catch (error) {
+            console.error('Error opening appointment conversation:', error)
+            alert('Erreur lors de l\'ouverture de la conversation')
+          }
         }}
       />
       {selectedMatchRequest && user && (

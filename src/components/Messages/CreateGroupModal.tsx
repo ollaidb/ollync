@@ -8,9 +8,15 @@ interface CreateGroupModalProps {
   visible: boolean
   onClose: () => void
   onSuccess: () => void
+  participants?: Array<{
+    id: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  }>
 }
 
-const CreateGroupModal = ({ visible, onClose, onSuccess }: CreateGroupModalProps) => {
+const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: CreateGroupModalProps) => {
   const { user } = useAuth()
   const [groupName, setGroupName] = useState('')
   const [groupPhoto, setGroupPhoto] = useState<File | null>(null)
@@ -50,6 +56,11 @@ const CreateGroupModal = ({ visible, onClose, onSuccess }: CreateGroupModalProps
 
     if (!groupName.trim()) {
       setError('Veuillez entrer un nom pour le groupe')
+      return
+    }
+
+    if (participants.length === 0) {
+      setError('Sélectionnez au moins un participant')
       return
     }
 
@@ -143,6 +154,18 @@ const CreateGroupModal = ({ visible, onClose, onSuccess }: CreateGroupModalProps
             user_id: user.id,
             is_active: true
           })
+
+        const participantRows = participants
+          .filter((participant) => participant.id !== user.id)
+          .map((participant) => ({
+            conversation_id: conversation.id,
+            user_id: participant.id,
+            is_active: true
+          }))
+
+        if (participantRows.length > 0) {
+          await (supabase.from('conversation_participants') as any).insert(participantRows)
+        }
       }
 
       // Réinitialiser le formulaire
@@ -222,6 +245,31 @@ const CreateGroupModal = ({ visible, onClose, onSuccess }: CreateGroupModalProps
               maxLength={50}
               disabled={loading}
             />
+          </div>
+
+          <div className="create-group-participants">
+            <span className="create-group-participants-label">Participants</span>
+            {participants.length === 0 ? (
+              <span className="create-group-participants-empty">Aucun participant sélectionné</span>
+            ) : (
+              <div className="create-group-participants-list">
+                {participants.map((participant) => {
+                  const name = participant.full_name || participant.username || 'Utilisateur'
+                  return (
+                    <div key={participant.id} className="create-group-participant">
+                      <img
+                        src={participant.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`}
+                        alt={name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`
+                        }}
+                      />
+                      <span>{name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {error && (
