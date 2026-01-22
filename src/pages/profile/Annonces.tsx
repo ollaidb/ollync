@@ -322,8 +322,6 @@ const Annonces = () => {
         ) : (
           <div className="annonces-list">
             {filteredPosts.map((post) => {
-              const canEdit = canEditPost(post)
-
               const handleMenuClick = (e: React.MouseEvent) => {
                 e.stopPropagation()
                 setActionMenuOpen(actionMenuOpen === post.id ? null : post.id)
