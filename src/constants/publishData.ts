@@ -78,6 +78,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'live',
         name: 'Live',
         slug: 'live'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
       }
     ]
   },
@@ -128,6 +133,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'youtube-video',
         name: 'YouTube vidéo',
         slug: 'youtube-video'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
       }
     ]
   },
@@ -163,6 +173,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'ecriture-contenu',
         name: 'Écriture de contenu',
         slug: 'ecriture-contenu'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
       }
     ]
   },
@@ -180,19 +195,19 @@ export const publicationTypes: PublicationType[] = [
         slug: 'tout'
       },
       {
-        id: 'recherche-equipe',
-        name: 'Recherche équipe',
-        slug: 'recherche-equipe'
+        id: 'projet-emission',
+        name: 'Émission',
+        slug: 'projet-emission'
       },
       {
-        id: 'projet-media',
-        name: 'media',
-        slug: 'projet-media'
+        id: 'projet-newsletter',
+        name: 'Newsletter',
+        slug: 'projet-newsletter'
       },
       {
-        id: 'projet-youtube',
-        name: 'YouTube',
-        slug: 'projet-youtube'
+        id: 'projet-interview',
+        name: 'Interview',
+        slug: 'projet-interview'
       },
       {
         id: 'projet-podcast',
@@ -200,13 +215,28 @@ export const publicationTypes: PublicationType[] = [
         slug: 'projet-podcast'
       },
       {
-        id: 'projet-documentaire',
-        name: 'documentaire',
-        slug: 'projet-documentaire'
+        id: 'projet-youtube',
+        name: 'Chaîne YouTube',
+        slug: 'projet-youtube'
+      },
+      {
+        id: 'projet-magazine',
+        name: 'Magazine',
+        slug: 'projet-magazine'
+      },
+      {
+        id: 'projet-blog',
+        name: 'Blog',
+        slug: 'projet-blog'
+      },
+      {
+        id: 'projet-media',
+        name: 'Média',
+        slug: 'projet-media'
       },
       {
         id: 'autre',
-        name: 'autre',
+        name: 'Autre',
         slug: 'autre'
       }
     ]
@@ -243,6 +273,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'setup-materiel',
         name: 'Setup matériel',
         slug: 'setup-materiel'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
       }
     ]
   },
@@ -273,6 +308,11 @@ export const publicationTypes: PublicationType[] = [
         id: 'concepts-niches',
         name: 'Concepts / Niches',
         slug: 'concepts-niches'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
       }
     ]
   }

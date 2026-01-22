@@ -10,13 +10,15 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Sketchs', slug: 'sketchs' },
     { name: 'Trends', slug: 'trends' },
     { name: 'Événements', slug: 'evenements' },
-    { name: 'Live', slug: 'live' }
+    { name: 'Live', slug: 'live' },
+    { name: 'Autre', slug: 'autre' }
   ],
   montage: [
     { name: 'Montage', slug: 'montage' },
     { name: 'micro-trottoir', slug: 'micro-trottoir' },
     { name: 'live', slug: 'live' },
-    { name: 'Écriture de contenu', slug: 'ecriture-contenu' }
+    { name: 'Écriture de contenu', slug: 'ecriture-contenu' },
+    { name: 'Autre', slug: 'autre' }
   ],
   'casting-role': [
     { name: 'Figurant', slug: 'figurant' },
@@ -25,26 +27,32 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Voix off', slug: 'voix-off' },
     { name: 'Invité podcast', slug: 'invite-podcast' },
     { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' },
-    { name: 'YouTube vidéo', slug: 'youtube-video' }
+    { name: 'YouTube vidéo', slug: 'youtube-video' },
+    { name: 'Autre', slug: 'autre' }
   ],
   'projets-equipe': [
-    { name: 'Recherche équipe', slug: 'recherche-equipe' },
-    { name: 'media', slug: 'projet-media' },
-    { name: 'YouTube', slug: 'projet-youtube' },
+    { name: 'Émission', slug: 'projet-emission' },
+    { name: 'Newsletter', slug: 'projet-newsletter' },
+    { name: 'Interview', slug: 'projet-interview' },
     { name: 'Podcast', slug: 'projet-podcast' },
-    { name: 'documentaire', slug: 'projet-documentaire' },
-    { name: 'autre', slug: 'autre' }
+    { name: 'Chaîne YouTube', slug: 'projet-youtube' },
+    { name: 'Magazine', slug: 'projet-magazine' },
+    { name: 'Blog', slug: 'projet-blog' },
+    { name: 'Média', slug: 'projet-media' },
+    { name: 'Autre', slug: 'autre' }
   ],
   services: [
     { name: 'Coaching contenu', slug: 'coaching-contenu' },
     { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
     { name: 'Organisation', slug: 'organisation' },
-    { name: 'Setup matériel', slug: 'setup-materiel' }
+    { name: 'Setup matériel', slug: 'setup-materiel' },
+    { name: 'Autre', slug: 'autre' }
   ],
   vente: [
     { name: 'Comptes', slug: 'comptes' },
     { name: "Noms d'utilisateur", slug: 'noms-utilisateur' },
-    { name: 'Concepts / Niches', slug: 'concepts-niches' }
+    { name: 'Concepts / Niches', slug: 'concepts-niches' },
+    { name: 'Autre', slug: 'autre' }
   ]
 }
 

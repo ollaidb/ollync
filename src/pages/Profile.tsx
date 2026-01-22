@@ -11,6 +11,9 @@ import Security from './profile/Security'
 import Help from './profile/Help'
 import Legal from './profile/Legal'
 import Contact from './profile/Contact'
+import Resources from './profile/Resources'
+import ResourcesBusiness from './profile/ResourcesBusiness'
+import ResourcesIncome from './profile/ResourcesIncome'
 import MentionsLegales from './profile/MentionsLegales'
 import PolitiqueConfidentialite from './profile/PolitiqueConfidentialite'
 import CGU from './profile/CGU'
@@ -73,6 +76,9 @@ const Profile = () => {
     if (location.pathname.startsWith('/profile/security')) return 'security'
     if (location.pathname === '/profile/help') return 'help'
     if (location.pathname === '/profile/contact') return 'contact'
+    if (location.pathname === '/profile/resources') return 'resources'
+    if (location.pathname === '/profile/resources/creation-entreprise') return 'resources-page'
+    if (location.pathname === '/profile/resources/declaration-revenus') return 'resources-page'
     if (location.pathname === '/profile/legal') return 'legal'
     if (location.pathname.startsWith('/profile/legal/')) return 'legal-page'
     if (location.pathname === '/profile/annonces') return 'annonces'
@@ -303,6 +309,16 @@ const Profile = () => {
         return <Help />
       case 'contact':
         return <Contact />
+      case 'resources':
+        return <Resources />
+      case 'resources-page':
+        if (location.pathname === '/profile/resources/creation-entreprise') {
+          return <ResourcesBusiness />
+        }
+        if (location.pathname === '/profile/resources/declaration-revenus') {
+          return <ResourcesIncome />
+        }
+        return <Resources />
       case 'legal':
         return <Legal />
       case 'annonces':
@@ -316,6 +332,9 @@ const Profile = () => {
     if (location.pathname === '/profile/annonces') return 'Mes annonces'
     if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return 'Aide'
     if (location.pathname === '/profile/contact') return 'Contact'
+    if (location.pathname === '/profile/resources') return 'Ressources'
+    if (location.pathname === '/profile/resources/creation-entreprise') return 'Créer son entreprise'
+    if (location.pathname === '/profile/resources/declaration-revenus') return 'Déclarer ses revenus'
     if (location.pathname.startsWith('/profile/settings')) return 'Paramètres'
     if (location.pathname.startsWith('/profile/security')) return 'Connexion et sécurité'
     if (location.pathname === '/profile/legal' || location.pathname.startsWith('/profile/legal/')) return 'Informations légales'
@@ -482,7 +501,7 @@ const Profile = () => {
         )}
 
         {/* Zone scrollable */}
-        <div className={`profile-scrollable ${['annonces', 'settings', 'security', 'help'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
+        <div className={`profile-scrollable ${['annonces', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
           {(authLoading || loading) && currentSection === 'menu' ? (
             <div className="profile-loading">Chargement...</div>
           ) : (

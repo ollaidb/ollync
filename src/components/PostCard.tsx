@@ -269,22 +269,35 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfil
   const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
 
   const getPaymentDisplay = () => {
-    if (post.payment_type === 'prix' && post.price) {
+    const paymentType = post.payment_type || ''
+    const hasPrice = post.price !== null && post.price !== undefined
+
+    if ((paymentType === 'prix' || paymentType === 'co-creation' || paymentType === 'remuneration') && hasPrice) {
       return `${post.price} €`
     }
-    if (post.payment_type === 'echange') {
-      return 'Échange'
+
+    switch (paymentType) {
+      case 'echange':
+        return 'Échange de service'
+      case 'co-creation':
+        return hasPrice ? `${post.price} €` : 'Co-création'
+      case 'participation':
+        return 'Participation'
+      case 'association':
+        return 'Association'
+      case 'partage-revenus':
+        return 'Partage de revenus'
+      case 'remuneration':
+        return hasPrice ? `${post.price} €` : 'Rémunération'
+      case 'prix':
+        return hasPrice ? `${post.price} €` : 'Prix'
+      case 'benevole':
+        return 'Bénévole'
+      case 'pourcentage':
+        return 'Pourcentage'
+      default:
+        return hasPrice ? `${post.price} €` : null
     }
-    if (post.payment_type === 'benevole') {
-      return 'Bénévole'
-    }
-    if (post.payment_type === 'pourcentage') {
-      return 'Pourcentage'
-    }
-    if (post.price) {
-      return `${post.price} €`
-    }
-    return null
   }
 
   const handleCardClick = (e: React.MouseEvent) => {

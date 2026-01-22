@@ -18,6 +18,8 @@ interface FormData {
   location_visible_to_participants_only: boolean
   exchange_type: string
   exchange_service?: string
+  revenue_share_percentage?: string
+  co_creation_details?: string
   urgent: boolean
   images: string[]
   video: string | null
@@ -33,6 +35,52 @@ interface FormData {
 interface ValidationResult {
   isValid: boolean
   errors: string[]
+}
+
+interface PaymentOptionConfig {
+  id: string
+  name: string
+  requiresPrice?: boolean
+  requiresPercentage?: boolean
+  requiresExchangeService?: boolean
+}
+
+const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
+  montage: ['remuneration'],
+  services: ['remuneration', 'echange']
+}
+
+const DEFAULT_PAYMENT_OPTIONS = [
+  'co-creation',
+  'participation',
+  'association',
+  'partage-revenus',
+  'remuneration',
+  'echange'
+]
+
+const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
+  'co-creation': { id: 'co-creation', name: 'Co-création' },
+  participation: { id: 'participation', name: 'Participation' },
+  association: { id: 'association', name: 'Association' },
+  'partage-revenus': { id: 'partage-revenus', name: 'Partage de revenus', requiresPercentage: true },
+  remuneration: { id: 'remuneration', name: 'Rémunération', requiresPrice: true },
+  prix: { id: 'prix', name: 'Prix', requiresPrice: true },
+  echange: { id: 'echange', name: 'Échange de service', requiresExchangeService: true }
+}
+
+export const getPaymentOptionsForCategory = (
+  categorySlug?: string | null
+): PaymentOptionConfig[] => {
+  const optionIds = PAYMENT_OPTIONS_BY_CATEGORY[categorySlug ?? ''] || DEFAULT_PAYMENT_OPTIONS
+  return optionIds.map((id) => PAYMENT_OPTION_CONFIGS[id] || { id, name: id })
+}
+
+export const getPaymentOptionConfig = (
+  paymentType?: string | null
+): PaymentOptionConfig | null => {
+  if (!paymentType) return null
+  return PAYMENT_OPTION_CONFIGS[paymentType] || { id: paymentType, name: paymentType }
 }
 
 /**
@@ -85,17 +133,28 @@ export const validatePublishForm = (
     errors.push('Le moyen de paiement est obligatoire')
   }
   
-  // Si le moyen de paiement est "prix", le prix doit être rempli et supérieur à 0
-  if (formData.exchange_type === 'prix') {
+  const allowedPaymentOptions = getPaymentOptionsForCategory(formData.category).map((option) => option.id)
+  if (formData.exchange_type && !allowedPaymentOptions.includes(formData.exchange_type)) {
+    errors.push('Le moyen de paiement sélectionné n\'est pas disponible pour cette catégorie')
+  }
+
+  const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
+  if (paymentConfig?.requiresPrice) {
     if (!formData.price || formData.price.trim().length === 0 || parseFloat(formData.price) <= 0) {
-      errors.push('Le prix est obligatoire lorsque vous choisissez "Prix" comme moyen de paiement')
+      errors.push('Le prix est obligatoire pour ce moyen de paiement')
     }
   }
   
-  // Si le moyen de paiement est "échange", le service échangé doit être décrit
-  if (formData.exchange_type === 'echange') {
+  if (paymentConfig?.requiresExchangeService) {
     if (!formData.exchange_service || formData.exchange_service.trim().length === 0) {
       errors.push('La description du service échangé est obligatoire lorsque vous choisissez "Échange de service"')
+    }
+  }
+
+  if (paymentConfig?.requiresPercentage) {
+    const percentage = formData.revenue_share_percentage ? parseFloat(formData.revenue_share_percentage) : NaN
+    if (!formData.revenue_share_percentage || Number.isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      errors.push('Le pourcentage est obligatoire et doit être compris entre 0 et 100')
     }
   }
 
@@ -128,21 +187,6 @@ export const shouldShowSocialNetwork = (
 
   const relevantSubcategories = relevantCategories[categorySlug]
   return relevantSubcategories ? relevantSubcategories.includes(subcategorySlug) : false
-}
-
-// Fonction pour déterminer si l'option "Échange de service" doit être affichée
-export const shouldShowExchangeService = (
-  categorySlug: string | null | undefined
-): boolean => {
-  if (!categorySlug) return true
-
-  // Catégories où l'échange de service n'est PAS disponible (uniquement Prix)
-  const categoriesWithoutExchange: string[] = [
-    'casting-role',  // Casting
-    'montage'        // Emploi
-  ]
-
-  return !categoriesWithoutExchange.includes(categorySlug)
 }
 
 export const getMyLocation = async (
@@ -282,6 +326,14 @@ export const handlePublish = async (
   // Si c'est un échange de service, ajouter la description du service à la description
   if (formData.exchange_type === 'echange' && formData.exchange_service) {
     descriptionValue += `\n\nService échangé : ${formData.exchange_service.trim()}`
+  }
+
+  if (formData.exchange_type === 'partage-revenus' && formData.revenue_share_percentage) {
+    descriptionValue += `\n\nPartage de revenus : ${formData.revenue_share_percentage.trim()}%`
+  }
+
+  if (formData.exchange_type === 'co-creation' && formData.co_creation_details) {
+    descriptionValue += `\n\nCo-création : ${formData.co_creation_details.trim()}`
   }
   
   const postData: any = {

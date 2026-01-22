@@ -647,6 +647,32 @@ const PostDetails = () => {
 
   const hasAddress = post.location_address || (post.location_lat && post.location_lng)
 
+  const formatPaymentType = (paymentType?: string | null) => {
+    if (!paymentType) return null
+    switch (paymentType) {
+      case 'prix':
+        return 'Prix'
+      case 'echange':
+        return 'Échange de service'
+      case 'co-creation':
+        return 'Co-création'
+      case 'participation':
+        return 'Participation'
+      case 'association':
+        return 'Association'
+      case 'partage-revenus':
+        return 'Partage de revenus'
+      case 'remuneration':
+        return 'Rémunération'
+      case 'benevole':
+        return 'Bénévole'
+      case 'pourcentage':
+        return 'Pourcentage'
+      default:
+        return paymentType
+    }
+  }
+
   // Fonctions pour le swipe des images
   const minSwipeDistance = 50
 
@@ -766,11 +792,7 @@ const PostDetails = () => {
               )}
               {post.payment_type && (
                 <span className="post-title-meta-item">
-                  {post.payment_type === 'benevole' ? 'Bénévole' : 
-                   post.payment_type === 'prix' ? 'Payant' : 
-                   post.payment_type === 'echange' ? 'Échange' : 
-                   post.payment_type === 'pourcentage' ? 'Pourcentage' : 
-                   post.payment_type}
+                  {formatPaymentType(post.payment_type)}
                 </span>
               )}
               <span className="post-title-meta-item">
@@ -850,11 +872,7 @@ const PostDetails = () => {
                 <div className="post-info-item">
                   <span className="post-info-label">Moyen de paiement :</span>
                   <span className="post-info-value">
-                    {post.payment_type === 'benevole' ? 'Bénévole' : 
-                     post.payment_type === 'prix' ? 'Payant' : 
-                     post.payment_type === 'echange' ? 'Échange' : 
-                     post.payment_type === 'pourcentage' ? 'Pourcentage' : 
-                     post.payment_type}
+                    {formatPaymentType(post.payment_type)}
                   </span>
                 </div>
               )}

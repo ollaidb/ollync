@@ -46,6 +46,8 @@ export default function Publish() {
     location_visible_to_participants_only: false,
     exchange_type: '',
     exchange_service: '',
+    revenue_share_percentage: '',
+    co_creation_details: '',
     urgent: false,
     images: [] as string[],
     video: null as string | null,

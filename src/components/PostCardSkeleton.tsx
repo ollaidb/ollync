@@ -26,3 +26,5 @@ export const PostCardSkeleton = ({ viewMode = 'grid', count = 1 }: PostCardSkele
 
   return <>{skeletons}</>
 }
+
+

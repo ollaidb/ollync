@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, Mail, Phone, MapPin, FileText, Save } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Save, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -14,9 +14,9 @@ const PersonalInfo = () => {
     full_name: '',
     email: '',
     phone: '',
-    bio: '',
     location: '',
-    avatar_url: ''
+    avatar_url: '',
+    birth_date: ''
   })
 
   useEffect(() => {
@@ -52,14 +52,18 @@ const PersonalInfo = () => {
     
     // Utiliser les données de auth.users pour les noms, profiles pour le reste
     const profileData = data || {}
+    const normalizedBirthDate = (profileData as { birth_date?: string | null }).birth_date
+      ? (profileData as { birth_date?: string | null }).birth_date?.split('T')[0] || ''
+      : ''
+
     setProfile({
       username: authUsername || (profileData as { username?: string | null }).username || '',
       full_name: authFullName || (profileData as { full_name?: string | null }).full_name || '',
       email: user.email || (profileData as { email?: string | null }).email || '',
       phone: (profileData as { phone?: string | null }).phone || '',
-      bio: (profileData as { bio?: string | null }).bio || '',
       location: (profileData as { location?: string | null }).location || '',
-      avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || ''
+      avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || '',
+      birth_date: normalizedBirthDate
     })
     
     setLoading(false)
@@ -94,9 +98,9 @@ const PersonalInfo = () => {
           id: user.id,
           email: profile.email,
           phone: profile.phone,
-          bio: profile.bio,
           location: profile.location,
           avatar_url: profile.avatar_url,
+          birth_date: profile.birth_date || null,
           updated_at: new Date().toISOString()
         })
 
@@ -218,17 +222,19 @@ const PersonalInfo = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bio">
-                <FileText size={16} />
-                Bio
+              <label htmlFor="birth_date">
+                <Calendar size={16} />
+                Date de naissance
               </label>
-              <textarea
-                id="bio"
-                value={profile.bio}
-                onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                placeholder="Parlez-nous de vous..."
-                rows={4}
+              <input
+                type="date"
+                id="birth_date"
+                value={profile.birth_date}
+                onChange={(e) => setProfile(prev => ({ ...prev, birth_date: e.target.value }))}
               />
+              <span className="form-helper">
+                Cette date nous permet d&rsquo;envoyer des vœux d&rsquo;anniversaire et des notifications de fêtes.
+              </span>
             </div>
 
             <button

@@ -193,7 +193,8 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Sketchs', 'sketchs'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Trends', 'trends'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Événements', 'evenements'),
-  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Live', 'live')
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Live', 'live'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
@@ -205,7 +206,8 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'casting-role'), 'Voix off', 'voix-off'),
   ((SELECT id FROM categories WHERE slug = 'casting-role'), 'Invité podcast', 'invite-podcast'),
   ((SELECT id FROM categories WHERE slug = 'casting-role'), 'Invité micro-trottoir', 'invite-micro-trottoir'),
-  ((SELECT id FROM categories WHERE slug = 'casting-role'), 'YouTube vidéo', 'youtube-video')
+  ((SELECT id FROM categories WHERE slug = 'casting-role'), 'YouTube vidéo', 'youtube-video'),
+  ((SELECT id FROM categories WHERE slug = 'casting-role'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
@@ -214,18 +216,22 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'montage'), 'Montage', 'montage'),
   ((SELECT id FROM categories WHERE slug = 'montage'), 'micro-trottoir', 'micro-trottoir'),
   ((SELECT id FROM categories WHERE slug = 'montage'), 'live', 'live'),
-  ((SELECT id FROM categories WHERE slug = 'montage'), 'Écriture de contenu', 'ecriture-contenu')
+  ((SELECT id FROM categories WHERE slug = 'montage'), 'Écriture de contenu', 'ecriture-contenu'),
+  ((SELECT id FROM categories WHERE slug = 'montage'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
 -- 4. Projet (projets-equipe)
 INSERT INTO sub_categories (category_id, name, slug) VALUES
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Recherche équipe', 'recherche-equipe'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'media', 'projet-media'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'YouTube', 'projet-youtube'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Émission', 'projet-emission'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Newsletter', 'projet-newsletter'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Interview', 'projet-interview'),
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Podcast', 'projet-podcast'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'documentaire', 'projet-documentaire'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'autre', 'autre')
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Chaîne YouTube', 'projet-youtube'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Magazine', 'projet-magazine'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Blog', 'projet-blog'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Média', 'projet-media'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
@@ -234,7 +240,8 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'services'), 'Coaching contenu', 'coaching-contenu'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Stratégie éditoriale', 'strategie-editoriale'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Organisation', 'organisation'),
-  ((SELECT id FROM categories WHERE slug = 'services'), 'Setup matériel', 'setup-materiel')
+  ((SELECT id FROM categories WHERE slug = 'services'), 'Setup matériel', 'setup-materiel'),
+  ((SELECT id FROM categories WHERE slug = 'services'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
@@ -242,7 +249,8 @@ SET name = EXCLUDED.name;
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Comptes', 'comptes'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Noms d''utilisateur', 'noms-utilisateur'),
-  ((SELECT id FROM categories WHERE slug = 'vente'), 'Concepts / Niches', 'concepts-niches')
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Concepts / Niches', 'concepts-niches'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 

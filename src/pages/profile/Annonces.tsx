@@ -135,6 +135,8 @@ const Annonces = () => {
     return false
   })
 
+  const activePost = actionMenuOpen ? posts.find(post => post.id === actionMenuOpen) : null
+
   // Supprimer une annonce
   const handleDelete = async (postId: string) => {
     confirmation.confirm(
@@ -328,95 +330,13 @@ const Annonces = () => {
               }
 
               const actionMenuContent = (
-                <div className="annonce-item-actions" onClick={handleMenuClick}>
+                <div className="annonce-item-actions">
                   <button
                     className="annonce-item-menu-button"
                     onClick={handleMenuClick}
                   >
                     <MoreHorizontal size={16} />
                   </button>
-
-                  {actionMenuOpen === post.id && (
-                    <div className="annonce-item-menu">
-                      {post.status === 'active' && (
-                        <>
-                          {canEdit ? (
-                            <button
-                              className="annonce-item-menu-item"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEdit(post.id)
-                              }}
-                            >
-                              <Edit size={14} />
-                              <span>Éditer</span>
-                            </button>
-                          ) : (
-                            <div className="annonce-item-menu-item disabled">
-                              <Edit size={14} />
-                              <span>Édition disponible pendant 24h</span>
-                            </div>
-                          )}
-                          <button
-                            className="annonce-item-menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleComplete(post.id)
-                            }}
-                          >
-                            <CheckCircle size={14} />
-                            <span>Réaliser</span>
-                          </button>
-                          <button
-                            className="annonce-item-menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleArchive(post.id)
-                            }}
-                          >
-                            <Archive size={14} />
-                            <span>Archiver</span>
-                          </button>
-                        </>
-                      )}
-                      {(post.status === 'completed' || post.status === 'archived') && (
-                        <>
-                          <button
-                            className="annonce-item-menu-item"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleReactivate(post.id)
-                            }}
-                          >
-                            <RotateCcw size={14} />
-                            <span>Remettre en ligne</span>
-                          </button>
-                          {post.status === 'completed' && (
-                            <button
-                              className="annonce-item-menu-item"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleArchive(post.id)
-                              }}
-                            >
-                              <Archive size={14} />
-                              <span>Archiver</span>
-                            </button>
-                          )}
-                        </>
-                      )}
-                      <button
-                        className="annonce-item-menu-item destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(post.id)
-                        }}
-                      >
-                        <Trash2 size={14} />
-                        <span>Supprimer</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
               )
 
@@ -440,6 +360,70 @@ const Annonces = () => {
           className="annonces-overlay"
           onClick={() => setActionMenuOpen(null)}
         />
+      )}
+
+      {actionMenuOpen && activePost && (
+        <div className="annonce-item-menu" onClick={(e) => e.stopPropagation()}>
+          {activePost.status === 'active' && (
+            <>
+              {canEditPost(activePost) ? (
+                <button
+                  className="annonce-item-menu-item"
+                  onClick={() => handleEdit(activePost.id)}
+                >
+                  <Edit size={14} />
+                  <span>Éditer</span>
+                </button>
+              ) : (
+                <div className="annonce-item-menu-item disabled">
+                  <Edit size={14} />
+                  <span>Édition disponible pendant 24h</span>
+                </div>
+              )}
+              <button
+                className="annonce-item-menu-item"
+                onClick={() => handleComplete(activePost.id)}
+              >
+                <CheckCircle size={14} />
+                <span>Réaliser</span>
+              </button>
+              <button
+                className="annonce-item-menu-item"
+                onClick={() => handleArchive(activePost.id)}
+              >
+                <Archive size={14} />
+                <span>Archiver</span>
+              </button>
+            </>
+          )}
+          {(activePost.status === 'completed' || activePost.status === 'archived') && (
+            <>
+              <button
+                className="annonce-item-menu-item"
+                onClick={() => handleReactivate(activePost.id)}
+              >
+                <RotateCcw size={14} />
+                <span>Remettre en ligne</span>
+              </button>
+              {activePost.status === 'completed' && (
+                <button
+                  className="annonce-item-menu-item"
+                  onClick={() => handleArchive(activePost.id)}
+                >
+                  <Archive size={14} />
+                  <span>Archiver</span>
+                </button>
+              )}
+            </>
+          )}
+          <button
+            className="annonce-item-menu-item destructive"
+            onClick={() => handleDelete(activePost.id)}
+          >
+            <Trash2 size={14} />
+            <span>Supprimer</span>
+          </button>
+        </div>
       )}
 
       {/* Modal de confirmation */}

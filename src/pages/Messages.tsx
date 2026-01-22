@@ -710,9 +710,9 @@ const Messages = () => {
   // Dans Messages, on affiche uniquement les demandes ENVOYÉES
   const filteredMatchRequests = matchRequests.filter((request) => {
     if (activeFilter === 'match_requests') {
-      // Demandes : uniquement les demandes ENVOYÉES en attente (pending)
+      // Demandes : afficher les demandes ENVOYÉES, même si elles ont été acceptées
       // request_type est déjà 'sent' car on charge seulement from_user_id = current_user
-      return request.status === 'pending' && request.request_type === 'sent'
+      return request.request_type === 'sent' && (request.status === 'pending' || request.status === 'accepted')
     }
     return false
   })

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { shouldShowSocialNetwork, shouldShowExchangeService } from '../../utils/publishHelpers'
+import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import './Step4Description.css'
 
 interface FormData {
@@ -10,6 +10,8 @@ interface FormData {
   price: string
   exchange_type: string
   exchange_service?: string
+  revenue_share_percentage?: string
+  co_creation_details?: string
   category?: string | null
   subcategory?: string | null
   subSubCategory?: string | null
@@ -52,30 +54,45 @@ export const Step4Description = ({
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
-  const showExchangeService = shouldShowExchangeService(selectedCategory?.slug)
+  const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
+  const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
+  const requiresPrice = !!paymentConfig?.requiresPrice
+  const requiresExchangeService = !!paymentConfig?.requiresExchangeService
+  const requiresRevenueShare = !!paymentConfig?.requiresPercentage
+  const showCoCreationDetails = formData.exchange_type === 'co-creation'
   
-  // Initialiser automatiquement exchange_type à 'prix' pour les catégories sans échange de service
+  // Synchroniser le moyen de paiement avec la catégorie sélectionnée
   useEffect(() => {
-    if (!showExchangeService) {
-      if (formData.exchange_type !== 'prix') {
-        onUpdateFormData({ 
-          exchange_type: 'prix',
-          exchange_service: ''
-        })
-      }
+    if (paymentOptions.length === 0) return
+    const hasValidPayment = paymentOptions.some((option) => option.id === formData.exchange_type)
+    const shouldAutoSelect = paymentOptions.length === 1 && !hasValidPayment
+    const shouldFixInvalid = !!formData.exchange_type && !hasValidPayment
+
+    if (shouldAutoSelect || shouldFixInvalid) {
+      onUpdateFormData({
+        exchange_type: paymentOptions[0].id,
+        price: '',
+        exchange_service: '',
+        revenue_share_percentage: '',
+        co_creation_details: ''
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showExchangeService])
+  }, [paymentOptions, formData.exchange_type])
   
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
     formData.title.trim().length > 0 && 
     formData.description.trim().length > 0 &&
-    (showExchangeService ? formData.exchange_type.trim().length > 0 : true) &&
-    ((!showExchangeService || formData.exchange_type === 'prix') 
-      ? (formData.price && parseFloat(formData.price) > 0) 
-      : true) &&
-    (formData.exchange_type !== 'echange' || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
+    formData.exchange_type.trim().length > 0 &&
+    (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
+    (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
+    (!requiresRevenueShare || (
+      formData.revenue_share_percentage && 
+      !Number.isNaN(parseFloat(formData.revenue_share_percentage)) &&
+      parseFloat(formData.revenue_share_percentage) > 0 &&
+      parseFloat(formData.revenue_share_percentage) <= 100
+    )) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
 
   return (
@@ -122,46 +139,33 @@ export const Step4Description = ({
         </div>
       )}
 
-      {showExchangeService ? (
-        <>
-          <div className="form-group">
-            <label className="form-label">Moyen de paiement *</label>
-            <select
-              className="form-select"
-              value={formData.exchange_type}
-              onChange={(e) => {
-                const newExchangeType = e.target.value
-                onUpdateFormData({ 
-                  exchange_type: newExchangeType,
-                  // Réinitialiser le prix si on passe à "échange"
-                  price: newExchangeType === 'echange' ? '' : formData.price,
-                  // Réinitialiser le service échangé si on passe à "prix"
-                  exchange_service: newExchangeType === 'prix' ? '' : formData.exchange_service
-                })
-              }}
-            >
-              <option value="">Sélectionner...</option>
-              <option value="prix">Prix</option>
-              <option value="echange">Échange de service</option>
-            </select>
-          </div>
+      <div className="form-group">
+        <label className="form-label">Moyen de paiement *</label>
+        <select
+          className="form-select"
+          value={formData.exchange_type}
+          onChange={(e) => {
+            const newExchangeType = e.target.value
+            onUpdateFormData({ 
+              exchange_type: newExchangeType,
+              price: newExchangeType === 'remuneration' ? formData.price : '',
+              exchange_service: newExchangeType === 'echange' ? formData.exchange_service : '',
+              revenue_share_percentage: newExchangeType === 'partage-revenus' ? formData.revenue_share_percentage : '',
+              co_creation_details: newExchangeType === 'co-creation' ? formData.co_creation_details : ''
+            })
+          }}
+          disabled={paymentOptions.length === 1}
+        >
+          {paymentOptions.length > 1 && <option value="">Sélectionner...</option>}
+          {paymentOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-          {formData.exchange_type === 'prix' && (
-            <div className="form-group">
-              <label className="form-label">Prix (€) *</label>
-              <input
-                type="number"
-                className="form-input"
-                placeholder="0"
-                value={formData.price}
-                onChange={(e) => onUpdateFormData({ price: e.target.value })}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          )}
-        </>
-      ) : (
+      {requiresPrice && (
         <div className="form-group">
           <label className="form-label">Prix (€) *</label>
           <input
@@ -176,7 +180,7 @@ export const Step4Description = ({
         </div>
       )}
 
-      {formData.exchange_type === 'echange' && (
+      {requiresExchangeService && (
         <div className="form-group">
           <label className="form-label">Décrivez le service échangé *</label>
           <textarea
@@ -185,6 +189,35 @@ export const Step4Description = ({
             value={formData.exchange_service || ''}
             onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
             rows={4}
+          />
+        </div>
+      )}
+
+      {requiresRevenueShare && (
+        <div className="form-group">
+          <label className="form-label">Pourcentage de partage (%) *</label>
+          <input
+            type="number"
+            className="form-input"
+            placeholder="0"
+            value={formData.revenue_share_percentage || ''}
+            onChange={(e) => onUpdateFormData({ revenue_share_percentage: e.target.value })}
+            min="0"
+            max="100"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {showCoCreationDetails && (
+        <div className="form-group">
+          <label className="form-label">Détails de co-création (optionnel)</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Ajoutez une précision si besoin..."
+            value={formData.co_creation_details || ''}
+            onChange={(e) => onUpdateFormData({ co_creation_details: e.target.value })}
+            rows={3}
           />
         </div>
       )}

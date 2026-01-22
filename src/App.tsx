@@ -65,6 +65,9 @@ function AppContent() {
           <Route path="/profile/security/devices" element={<Profile />} />
           <Route path="/profile/help" element={<Profile />} />
           <Route path="/profile/contact" element={<Profile />} />
+          <Route path="/profile/resources" element={<Profile />} />
+          <Route path="/profile/resources/creation-entreprise" element={<Profile />} />
+          <Route path="/profile/resources/declaration-revenus" element={<Profile />} />
           <Route path="/profile/legal" element={<Profile />} />
           <Route path="/profile/legal/mentions-legales" element={<Profile />} />
           <Route path="/profile/legal/politique-confidentialite" element={<Profile />} />

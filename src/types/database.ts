@@ -48,6 +48,7 @@ export interface Database {
           phone: string | null
           bio: string | null
           location: string | null
+          birth_date: string | null
           created_at: string
           updated_at: string
         }
@@ -60,6 +61,7 @@ export interface Database {
           phone?: string | null
           bio?: string | null
           location?: string | null
+          birth_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -72,6 +74,7 @@ export interface Database {
           phone?: string | null
           bio?: string | null
           location?: string | null
+          birth_date?: string | null
           created_at?: string
           updated_at?: string
         }
