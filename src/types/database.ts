@@ -38,6 +38,62 @@ export interface Database {
           updated_at?: string
         }
       }
+      contracts: {
+        Row: {
+          id: string
+          post_id: string | null
+          application_id: string | null
+          creator_id: string
+          counterparty_id: string
+          contract_type: string
+          payment_type: string | null
+          price: number | null
+          revenue_share_percentage: number | null
+          exchange_service: string | null
+          contract_content: string
+          custom_clauses: string | null
+          status: string | null
+          agreement_confirmed: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          post_id?: string | null
+          application_id?: string | null
+          creator_id: string
+          counterparty_id: string
+          contract_type: string
+          payment_type?: string | null
+          price?: number | null
+          revenue_share_percentage?: number | null
+          exchange_service?: string | null
+          contract_content: string
+          custom_clauses?: string | null
+          status?: string | null
+          agreement_confirmed?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string | null
+          application_id?: string | null
+          creator_id?: string
+          counterparty_id?: string
+          contract_type?: string
+          payment_type?: string | null
+          price?: number | null
+          revenue_share_percentage?: number | null
+          exchange_service?: string | null
+          contract_content?: string
+          custom_clauses?: string | null
+          status?: string | null
+          agreement_confirmed?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+      }
       profiles: {
         Row: {
           id: string

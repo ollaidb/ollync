@@ -53,7 +53,9 @@ interface ContractRecord {
   creator?: ProfileSummary | null
 }
 
-type SelectionMode = 'owner' | 'applicant'
+type SelectedContext =
+  | { mode: 'owner'; post: PostSummary }
+  | { mode: 'applicant'; post: PostSummary; application: ApplicationSummary; owner: ProfileSummary }
 
 const Contracts = () => {
   const { user } = useAuth()
@@ -80,20 +82,19 @@ const Contracts = () => {
 
   const [contracts, setContracts] = useState<ContractRecord[]>([])
 
-  const selectedContext = useMemo(() => {
+  const selectedContext = useMemo<SelectedContext | null>(() => {
     if (!selectedOption) return null
     const [mode, value] = selectedOption.split(':')
     if (mode === 'owner') {
       const post = ownedPosts.find((item) => item.id === value)
-      return post ? { mode: 'owner' as SelectionMode, post } : null
+      return post ? { mode: 'owner' as const, post } : null
     }
     if (mode === 'applicant') {
       const application = acceptedAsApplicant.find((item) => item.id === value)
       const post = application ? applicantPostMap[application.post_id] : null
       const owner = post ? ownerProfileMap[post.user_id] : null
-      return application && post && owner
-        ? { mode: 'applicant' as SelectionMode, post, application, owner }
-        : null
+      if (!application || !post || !owner) return null
+      return { mode: 'applicant' as const, post, application, owner }
     }
     return null
   }, [acceptedAsApplicant, applicantPostMap, ownedPosts, ownerProfileMap, selectedOption])
@@ -517,8 +518,8 @@ const Contracts = () => {
             contractKind: resolvedContractType
           })
 
-          const { data: createdContracts, error: insertError } = await supabase
-            .from('contracts')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: createdContracts, error: insertError } = await (supabase.from('contracts') as any)
             .insert({
               post_id: selectedContext.post.id,
               application_id: application.id,
@@ -560,8 +561,8 @@ const Contracts = () => {
           contractKind: resolvedContractType
         })
 
-        const { data: createdContracts, error: insertError } = await supabase
-          .from('contracts')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: createdContracts, error: insertError } = await (supabase.from('contracts') as any)
           .insert({
             post_id: selectedContext.post.id,
             application_id: selectedContext.application.id,
