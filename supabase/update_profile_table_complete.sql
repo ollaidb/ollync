@@ -180,7 +180,15 @@ BEGIN
   END IF;
 END $$;
 
--- 10. Vérification finale - Afficher toutes les colonnes de la table profiles
+-- 10. Unicité email et téléphone (sécurité)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_email_unique
+  ON profiles (lower(email))
+  WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_phone_unique
+  ON profiles (phone)
+  WHERE phone IS NOT NULL;
+
+-- 11. Vérification finale - Afficher toutes les colonnes de la table profiles
 SELECT 
   column_name,
   data_type,
@@ -191,7 +199,7 @@ WHERE table_schema = 'public'
   AND table_name = 'profiles'
 ORDER BY ordinal_position;
 
--- 11. Message de confirmation
+-- 12. Message de confirmation
 DO $$ 
 BEGIN
   RAISE NOTICE '========================================';

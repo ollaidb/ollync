@@ -33,6 +33,8 @@ interface Post {
   user_id: string
   payment_type?: string | null
   media_type?: string | null
+  external_link?: string | null
+  document_url?: string | null
   user?: {
     id: string
     username?: string | null
@@ -406,6 +408,7 @@ const PostDetails = () => {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .select('id, status')
         .eq('from_user_id', user.id)
@@ -453,6 +456,7 @@ const PostDetails = () => {
 
     setLoadingRequest(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .insert({
           from_user_id: user.id,
@@ -616,6 +620,13 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
+
+  const getDocumentName = (url?: string | null) => {
+    if (!url) return 'Document PDF'
+    const cleanUrl = url.split('?')[0]
+    const fileName = cleanUrl.split('/').pop()
+    return fileName ? decodeURIComponent(fileName) : 'Document PDF'
+  }
 
   if (loading) {
     return (
@@ -912,6 +923,40 @@ const PostDetails = () => {
                   </div>
               </div>
             )}
+
+              {/* Lien externe */}
+              {post.external_link && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Lien :</span>
+                  <span className="post-info-value">
+                    <a
+                      className="post-external-link"
+                      href={post.external_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Ouvrir le lien
+                    </a>
+                  </span>
+                </div>
+              )}
+
+              {/* Document PDF */}
+              {post.document_url && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Document :</span>
+                  <span className="post-info-value">
+                    <a
+                      className="post-document-link"
+                      href={post.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {getDocumentName(post.document_url)}
+                    </a>
+                  </span>
+                </div>
+              )}
 
               {/* Carte Google Maps */}
               {post.location_lat && post.location_lng && (

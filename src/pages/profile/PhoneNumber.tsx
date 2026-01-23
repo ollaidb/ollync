@@ -84,7 +84,11 @@ const PhoneNumber = () => {
 
       if (updateError) {
         console.error('Error updating phone:', updateError)
-        setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du numéro' })
+        if (updateError.code === '23505') {
+          setMessage({ type: 'error', text: 'Ce numéro de téléphone est déjà utilisé par un autre compte' })
+        } else {
+          setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du numéro' })
+        }
         setSaving(false)
         return
       }

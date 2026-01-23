@@ -7,6 +7,7 @@ export const useAuth = () => {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const isInitialLoadRef = useRef(true)
+  const lastActivityUpdateRef = useRef<number>(0)
 
   useEffect(() => {
     // Fonction pour vérifier et créer le profil si nécessaire
@@ -70,6 +71,23 @@ export const useAuth = () => {
       }
     }
 
+    const updateLastActivity = async (userId: string) => {
+      const now = Date.now()
+      if (now - lastActivityUpdateRef.current < 60000) {
+        return
+      }
+      lastActivityUpdateRef.current = now
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('profiles') as any)
+          .update({ last_activity_at: new Date().toISOString() })
+          .eq('id', userId)
+      } catch (error) {
+        console.error('❌ Erreur lors de la mise à jour de la dernière activité:', error)
+      }
+    }
+
     // Récupérer la session actuelle
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
@@ -88,6 +106,9 @@ export const useAuth = () => {
       if (currentUser) {
         ensureProfileExists(currentUser).catch(err => {
           console.error('❌ Erreur lors de ensureProfileExists (non bloquant):', err)
+        })
+        updateLastActivity(currentUser.id).catch(err => {
+          console.error('❌ Erreur lors de updateLastActivity (non bloquant):', err)
         })
       }
       
@@ -114,6 +135,9 @@ export const useAuth = () => {
         console.log('✅ Utilisateur authentifié, vérification du profil...')
         ensureProfileExists(currentUser).catch(err => {
           console.error('❌ Erreur lors de ensureProfileExists (non bloquant):', err)
+        })
+        updateLastActivity(currentUser.id).catch(err => {
+          console.error('❌ Erreur lors de updateLastActivity (non bloquant):', err)
         })
       }
       

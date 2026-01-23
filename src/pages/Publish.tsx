@@ -57,6 +57,8 @@ export default function Publish() {
     maxParticipants: '1',
     duration_minutes: '',
     visibility: 'public',
+    externalLink: '',
+    documentUrl: '',
   })
 
   const { step, setStep, handleBack, getBreadcrumb } = usePublishNavigation(

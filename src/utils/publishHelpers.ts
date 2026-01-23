@@ -29,6 +29,8 @@ interface FormData {
   maxParticipants: string
   duration_minutes: string
   visibility: string
+  externalLink?: string
+  documentUrl?: string
   [key: string]: any
 }
 
@@ -335,6 +337,15 @@ export const handlePublish = async (
   if (formData.exchange_type === 'co-creation' && formData.co_creation_details) {
     descriptionValue += `\n\nCo-création : ${formData.co_creation_details.trim()}`
   }
+
+  const normalizeExternalLink = (link?: string) => {
+    const trimmedLink = link?.trim()
+    if (!trimmedLink) return null
+    if (/^https?:\/\//i.test(trimmedLink)) {
+      return trimmedLink
+    }
+    return `https://${trimmedLink}`
+  }
   
   const postData: any = {
     user_id: user.id,
@@ -358,7 +369,9 @@ export const handlePublish = async (
       || (formData.option && formData.option.trim()) 
       || null,
     needed_date: formData.deadline || null,
-    number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null
+    number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
+    external_link: normalizeExternalLink(formData.externalLink),
+    document_url: formData.documentUrl?.trim() || null
   }
 
   // Si N4 existe, on peut l'ajouter dans un champ JSON ou texte

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, MoreVertical } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -31,6 +31,7 @@ interface Conversation {
     username?: string | null
     full_name?: string | null
     avatar_url?: string | null
+    last_activity_at?: string | null
   } | null
   postTitle?: string | null
   unread?: number
@@ -136,6 +137,12 @@ const Messages = () => {
   const [selectableUsers, setSelectableUsers] = useState<SelectableUser[]>([])
   const [selectableUsersLoading, setSelectableUsersLoading] = useState(false)
   const [selectedGroupUsers, setSelectedGroupUsers] = useState<SelectableUser[]>([])
+  const [showConversationActions, setShowConversationActions] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -199,6 +206,29 @@ const Messages = () => {
     const datePart = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
     const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     return `${datePart} • ${timePart}`
+  }
+
+  const formatLastSeen = (dateString?: string | null): string => {
+    if (!dateString) return 'Dernière activité : inconnue'
+
+    const date = new Date(dateString)
+    const now = new Date()
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const diffInMs = todayOnly.getTime() - dateOnly.getTime()
+    const diffInDays = Math.max(0, Math.floor(diffInMs / (1000 * 60 * 60 * 24)))
+
+    if (diffInDays === 0) {
+      const timePart = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      return `Dernière activité : ${timePart}`
+    }
+
+    if (diffInDays === 1) {
+      return 'Dernière activité : hier'
+    }
+
+    const dayLabel = diffInDays > 1 ? 'jours' : 'jour'
+    return `Dernière activité : il y a ${diffInDays} ${dayLabel}`
   }
 
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
@@ -304,6 +334,18 @@ const Messages = () => {
 
     setLoading(true)
     try {
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('user_blocks')
+        .select('blocked_id')
+        .eq('blocker_id', user.id)
+
+      if (blocksError) {
+        console.error('Error loading user blocks:', blocksError)
+      }
+
+      const blockedIds = (blocksData || []).map((block) => (block as { blocked_id: string }).blocked_id)
+      setBlockedUserIds(blockedIds)
+
       const { data: conv } = await supabase
         .from('conversations')
         .select('*')
@@ -318,11 +360,18 @@ const Messages = () => {
 
       const convData = conv as { id: string; user1_id: string; user2_id: string; post_id?: string | null }
       const otherUserId = convData.user1_id === user.id ? convData.user2_id : convData.user1_id
+      const blockedIdsSet = new Set(blockedIds)
+
+      if (blockedIdsSet.has(otherUserId)) {
+        setLoading(false)
+        navigate('/messages')
+        return
+      }
 
       // Récupérer les informations de l'utilisateur
       const { data: otherUser } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url')
+        .select('id, username, full_name, avatar_url, last_activity_at')
         .eq('id', otherUserId)
         .single()
 
@@ -343,7 +392,13 @@ const Messages = () => {
       setSelectedConversation({
         ...convData,
         other_user: otherUser ? {
-          ...(otherUser as { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null })
+          ...(otherUser as {
+            id: string
+            username?: string | null
+            full_name?: string | null
+            avatar_url?: string | null
+            last_activity_at?: string | null
+          })
         } : null,
         postTitle
       } as Conversation)
@@ -423,11 +478,11 @@ const Messages = () => {
     }
   }
 
-  // Charger les match_requests (demandes envoyées uniquement pour l'affichage dans Messages)
+  // Charger les match_requests (demandes envoyées et reçues pour l'affichage dans Messages)
   // 
   // LOGIQUE DE RÉPARTITION DES MATCH_REQUESTS :
-  // - Messages > "Demandes" : Affiche uniquement les demandes ENVOYÉES (from_user_id = current_user) avec status='pending'
-  // - Messages > "Matchs" : Affiche uniquement les matchs ACCEPTÉS (status='accepted' ET from_user_id = current_user)
+  // - Messages > "Demandes" : Affiche les demandes ENVOYÉES/REÇUES en attente (status='pending')
+  // - Messages > "Matchs" : Affiche les matchs ACCEPTÉS (status='accepted') pour envoyées et reçues
   // - Notifications : Affiche les notifications pour :
   //   * match_request_received : Quand on RECOIT une demande (to_user_id = current_user)
   //   * match_request_accepted : Quand quelqu'un ACCEPTE notre demande (from_user_id = current_user ET status='accepted')
@@ -436,12 +491,12 @@ const Messages = () => {
     if (!user) return []
 
     try {
-      // Charger uniquement les demandes ENVOYÉES par l'utilisateur (from_user_id = current_user)
+      // Charger les demandes ENVOYÉES et REÇUES par l'utilisateur
       const { data: requestsData, error } = await supabase
         .from('match_requests')
         .select('*')
-        .eq('from_user_id', user.id) // Seulement les demandes envoyées
-        .in('status', ['pending', 'accepted'])
+        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .in('status', ['pending', 'accepted', 'declined', 'cancelled'])
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -734,6 +789,19 @@ const Messages = () => {
 
     setLoading(true)
     try {
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('user_blocks')
+        .select('blocked_id')
+        .eq('blocker_id', user.id)
+
+      if (blocksError) {
+        console.error('Error loading user blocks:', blocksError)
+      }
+
+      const blockedIdsArray = (blocksData || []).map((block) => (block as { blocked_id: string }).blocked_id)
+      setBlockedUserIds(blockedIdsArray)
+      const blockedIds = new Set(blockedIdsArray)
+
       // Charger les match_requests
       const requestsData = await loadMatchRequests()
       setMatchRequests(requestsData)
@@ -806,9 +874,14 @@ const Messages = () => {
         const usersMap = new Map((users as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((u) => [u.id, u]))
         const postsMap = new Map((posts as Array<{ id: string; title: string }> || []).map((p) => [p.id, p.title]))
 
+        const visibleConvs = (convs as Array<{ id: string; user1_id: string; user2_id: string; post_id?: string | null; last_message_at?: string | null; is_group?: boolean }>).filter((conv) => {
+          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
+          return !blockedIds.has(otherUserId)
+        })
+
         // Pour chaque conversation, récupérer le dernier message et compter les non-lus
         const convsWithData = await Promise.all(
-          (convs as Array<{ id: string; user1_id: string; user2_id: string; post_id?: string | null; last_message_at?: string | null; is_group?: boolean }>).map(async (conv) => {
+          visibleConvs.map(async (conv) => {
             const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
             const otherUser = usersMap.get(otherUserId) || null
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
@@ -938,6 +1011,39 @@ const Messages = () => {
     }
   }, [user, activeFilter, loadMatchRequests, loadAppointments])
 
+  const handleReportSubmit = async () => {
+    if (!user || !selectedConversation?.other_user?.id || !reportReason) {
+      alert('Veuillez sélectionner une raison.')
+      return
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('reports') as any)
+        .insert({
+          reporter_id: user.id,
+          reported_user_id: selectedConversation.other_user.id,
+          reported_post_id: null,
+          report_type: 'profile',
+          report_reason: reportReason,
+          report_category: 'behavior',
+          description: null
+        })
+
+      if (error) {
+        console.error('Error submitting report:', error)
+        alert('Erreur lors de l\'envoi du signalement')
+      } else {
+        alert('Signalement envoyé avec succès. Merci de votre contribution.')
+        setShowReportModal(false)
+        setReportReason('')
+      }
+    } catch (error) {
+      console.error('Error in handleReportSubmit:', error)
+      alert('Erreur lors de l\'envoi du signalement')
+    }
+  }
+
   useEffect(() => {
     if (user && !postId && !conversationId && !selectedConversation) {
       loadConversations()
@@ -945,29 +1051,36 @@ const Messages = () => {
   }, [user, postId, conversationId, selectedConversation, activeFilter, loadConversations])
 
   // Filtrer les match_requests selon l'onglet actif
-  // Dans Messages, on affiche uniquement les demandes ENVOYÉES
+  // Dans Messages, l'onglet "Demandes" affiche uniquement les demandes en attente
   const filteredMatchRequests = matchRequests.filter((request) => {
+    if (blockedUserIds.includes(request.other_user?.id || '')) {
+      return false
+    }
     if (activeFilter === 'match_requests') {
-      // Demandes : afficher les demandes ENVOYÉES, même si elles ont été acceptées
-      // request_type est déjà 'sent' car on charge seulement from_user_id = current_user
-      return request.request_type === 'sent' && (request.status === 'pending' || request.status === 'accepted')
+      // Demandes : afficher les demandes ENVOYÉES/REÇUES en attente
+      return request.status === 'pending'
     }
     return false
   })
 
   // Filtrer les matches selon l'onglet actif
-  // L'onglet "Match" affiche uniquement les matchs ACCEPTÉS (demandes qu'on a envoyées et qui ont été acceptées)
+  // L'onglet "Match" affiche uniquement les matchs ACCEPTÉS (envoyés ou reçus)
   // Les conversations créées à partir de ces matches apparaîtront aussi dans "Tout" si elles ont des messages
   const filteredMatches = matchRequests.filter((request) => {
+    if (blockedUserIds.includes(request.other_user?.id || '')) {
+      return false
+    }
     if (activeFilter === 'matches') {
-      // Match : afficher uniquement les match_requests ACCEPTÉES qu'on a envoyées
-      // (status='accepted' ET from_user_id = current_user)
-      return request.status === 'accepted' && request.request_type === 'sent'
+      // Match : afficher uniquement les match_requests ACCEPTÉES
+      return request.status === 'accepted'
     }
     return false
   })
 
   const filteredConversations = conversations.filter((conv) => {
+    if (blockedUserIds.includes(conv.other_user?.id || '')) {
+      return false
+    }
     // Filtre par recherche textuelle
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
@@ -1000,6 +1113,9 @@ const Messages = () => {
   })
 
   const filteredAppointments = appointments.filter((appointment) => {
+    if (blockedUserIds.includes(appointment.other_user?.id || '')) {
+      return false
+    }
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       const title = appointment.title?.toLowerCase() || ''
@@ -1095,6 +1211,7 @@ const Messages = () => {
     const otherUserUsername = selectedConversation?.other_user?.username
     const displayName = otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')
     const groupedMessages = groupMessagesByDate(messages)
+    const otherUserId = selectedConversation?.other_user?.id
 
     return (
       <div className="messages-page-container conversation-page">
@@ -1108,9 +1225,247 @@ const Messages = () => {
           />
           <div className="conversation-header-center">
             <h1 className="conversation-header-name">{displayName}</h1>
+            <p className="conversation-header-status">
+              {formatLastSeen(selectedConversation?.other_user?.last_activity_at)}
+            </p>
           </div>
-          <div className="conversation-header-spacer"></div>
+          <div className="conversation-header-actions">
+            <button
+              className="conversation-actions-button"
+              type="button"
+              onClick={() => setShowConversationActions((prev) => !prev)}
+              aria-label="Actions de conversation"
+            >
+              <MoreVertical size={20} />
+            </button>
+          </div>
         </div>
+        {showConversationActions && (
+          <div
+            className="conversation-actions-overlay"
+            onClick={() => setShowConversationActions(false)}
+          >
+            <div
+              className="conversation-actions-menu"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3 className="conversation-actions-title">Actions</h3>
+              <button
+                className="conversation-action-item"
+                type="button"
+                onClick={() => {
+                  setShowConversationActions(false)
+                  setReportReason('')
+                  setShowReportModal(true)
+                }}
+              >
+                Signaler l'utilisateur
+              </button>
+              <button
+                className="conversation-action-item"
+                type="button"
+                onClick={() => {
+                  setShowConversationActions(false)
+                  setShowBlockConfirm(true)
+                }}
+              >
+                Bloquer l'utilisateur
+              </button>
+              <button
+                className="conversation-action-item danger"
+                type="button"
+                onClick={() => {
+                  setShowConversationActions(false)
+                  setShowDeleteConfirm(true)
+                }}
+              >
+                Supprimer la conversation
+              </button>
+              <button
+                className="conversation-action-item cancel"
+                type="button"
+                onClick={() => setShowConversationActions(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+        {showReportModal && (
+          <div
+            className="conversation-modal-overlay"
+            onClick={() => {
+              setShowReportModal(false)
+              setReportReason('')
+            }}
+          >
+            <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+              <div className="conversation-modal-header">
+                <h2>Signaler</h2>
+                <button
+                  className="conversation-modal-close"
+                  onClick={() => {
+                    setShowReportModal(false)
+                    setReportReason('')
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="conversation-modal-body">
+                <p className="conversation-modal-question">Raison du signalement :</p>
+                <div className="conversation-reasons-list">
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'suspect' ? 'active' : ''}`}
+                    onClick={() => setReportReason('suspect')}
+                  >
+                    Suspect
+                  </button>
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'fraudeur' ? 'active' : ''}`}
+                    onClick={() => setReportReason('fraudeur')}
+                  >
+                    Fraudeur
+                  </button>
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
+                    onClick={() => setReportReason('fondant')}
+                  >
+                    Fondant / Inapproprié
+                  </button>
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}
+                    onClick={() => setReportReason('sexuel')}
+                  >
+                    Contenu sexuel
+                  </button>
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'spam' ? 'active' : ''}`}
+                    onClick={() => setReportReason('spam')}
+                  >
+                    Spam
+                  </button>
+                  <button
+                    className={`conversation-reason-btn ${reportReason === 'autre' ? 'active' : ''}`}
+                    onClick={() => setReportReason('autre')}
+                  >
+                    Autre
+                  </button>
+                </div>
+                {reportReason && (
+                  <button
+                    className="conversation-submit-btn"
+                    onClick={handleReportSubmit}
+                  >
+                    Envoyer le signalement
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {showBlockConfirm && (
+          <div className="conversation-modal-overlay" onClick={() => setShowBlockConfirm(false)}>
+            <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+              <div className="conversation-modal-header">
+                <h2>Bloquer cet utilisateur</h2>
+                <button
+                  className="conversation-modal-close"
+                  onClick={() => setShowBlockConfirm(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="conversation-modal-body">
+                <p className="conversation-modal-question">
+                  Voulez-vous vraiment bloquer cet utilisateur ?
+                </p>
+                <div className="conversation-modal-actions">
+                  <button
+                    className="conversation-cancel-btn"
+                    onClick={() => setShowBlockConfirm(false)}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    className="conversation-danger-btn"
+                    onClick={async () => {
+                      if (!user || !otherUserId) return
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const { error } = await (supabase.from('user_blocks') as any)
+                          .insert({
+                            blocker_id: user.id,
+                            blocked_id: otherUserId
+                          })
+
+                        if (error && error.code !== '23505') {
+                          console.error('Error blocking user:', error)
+                          alert('Erreur lors du blocage de l\'utilisateur')
+                          return
+                        }
+                        setShowBlockConfirm(false)
+                        setSelectedConversation(null)
+                        navigate('/messages')
+                        loadConversations()
+                      } catch (error) {
+                        console.error('Error blocking user:', error)
+                        alert('Erreur lors du blocage de l\'utilisateur')
+                      }
+                    }}
+                  >
+                    Confirmer le blocage
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showDeleteConfirm && (
+          <div className="conversation-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+              <div className="conversation-modal-header">
+                <h2>Supprimer la conversation</h2>
+                <button
+                  className="conversation-modal-close"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="conversation-modal-body">
+                <p className="conversation-modal-question">
+                  Voulez-vous vraiment supprimer cette conversation ?
+                </p>
+                <div className="conversation-modal-actions">
+                  <button
+                    className="conversation-cancel-btn"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    className="conversation-danger-btn"
+                    onClick={async () => {
+                      const currentId = selectedConversation?.id || conversationId
+                      if (!currentId) return
+                      await supabase
+                        .from('conversations')
+                        .update({ deleted_at: new Date().toISOString() } as never)
+                        .eq('id', currentId)
+                      setShowDeleteConfirm(false)
+                      setSelectedConversation(null)
+                      navigate('/messages')
+                      loadConversations()
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="conversation-messages-container">
           {loading ? (
             <div className="loading-container">
@@ -1196,6 +1551,7 @@ const Messages = () => {
             conversationId={selectedConversation?.id || conversationId || ''}
             senderId={user.id}
             openCalendarOnMount={openAppointment}
+            counterpartyId={selectedConversation?.other_user?.id || null}
             onMessageSent={() => {
               if (selectedConversation || conversationId) {
                 loadMessages(selectedConversation?.id || conversationId || '')

@@ -23,6 +23,8 @@ interface FormData {
   maxParticipants: string
   duration_minutes: string
   visibility: string
+  externalLink?: string
+  documentUrl?: string
   [key: string]: any
 }
 
@@ -35,6 +37,7 @@ interface Step5LocationMediaProps {
 export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation }: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
+  const [uploadingDocument, setUploadingDocument] = useState(false)
 
   // Hooks de consentement
   const locationConsent = useConsent('location')
@@ -50,6 +53,13 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
   const handleRejectMedia = () => {
     mediaConsent.handleReject()
     // L'action est simplement annulée, l'utilisateur reste sur la page
+  }
+
+  const getFileNameFromUrl = (url?: string | null) => {
+    if (!url) return 'Document PDF'
+    const cleanUrl = url.split('?')[0]
+    const fileName = cleanUrl.split('/').pop()
+    return fileName ? decodeURIComponent(fileName) : 'Document PDF'
   }
 
   // Gérer le clic sur le bouton de localisation GPS
@@ -142,6 +152,79 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     onUpdateFormData({ images: newImages })
   }
 
+  const performDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!user) {
+      alert('Vous devez être connecté pour télécharger un document')
+      return
+    }
+
+    if (file.size > 52428800) {
+      alert(`Le fichier ${file.name} est trop volumineux (max 50MB)`)
+      return
+    }
+
+    const isPdfType = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    if (!isPdfType) {
+      alert(`Le type de fichier ${file.name} n'est pas supporté. Utilisez un PDF.`)
+      return
+    }
+
+    setUploadingDocument(true)
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'pdf'
+      const fileName = `${user.id}/documents/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Error uploading document:', uploadError)
+        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+          alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
+        } else {
+          alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
+        }
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('posts')
+        .getPublicUrl(fileName)
+
+      if (publicUrl) {
+        onUpdateFormData({ documentUrl: publicUrl })
+      } else {
+        console.error('Impossible de récupérer l\'URL publique du document')
+        alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+      alert(`Erreur lors du téléchargement de ${file.name}: ${errorMessage}`)
+    } finally {
+      setUploadingDocument(false)
+      if (e.target) {
+        e.target.value = ''
+      }
+    }
+  }
+
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    mediaConsent.requireConsent(() => {
+      performDocumentUpload(e)
+    })
+  }
+
+  const removeDocument = () => {
+    onUpdateFormData({ documentUrl: '' })
+  }
+
   const handleLocationSelect = (location: {
     address: string
     lat: number
@@ -224,6 +307,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
         </div>
       </div>
 
+
       <div className="form-group">
         <label className="form-label">Date de besoin *</label>
         <input
@@ -256,6 +340,57 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
           />
           <span>Marquer comme urgent</span>
         </label>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Lien (optionnel)</label>
+        <input
+          type="url"
+          className="form-input"
+          placeholder="https://exemple.com"
+          value={formData.externalLink || ''}
+          onChange={(e) => onUpdateFormData({ externalLink: e.target.value })}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Document PDF (optionnel)</label>
+        {formData.documentUrl ? (
+          <div className="document-upload-card">
+            <a
+              className="document-link"
+              href={formData.documentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {getFileNameFromUrl(formData.documentUrl)}
+            </a>
+            <button className="document-remove-button" onClick={removeDocument}>
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <label className="document-upload-area" style={{ opacity: uploadingDocument ? 0.6 : 1 }}>
+            {uploadingDocument ? (
+              <>
+                <Loader size={24} className="upload-spinner" />
+                <span className="upload-text">Téléchargement...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={24} />
+                <span className="upload-text">Ajouter un PDF</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handleDocumentUpload}
+              disabled={uploadingDocument}
+              style={{ display: 'none' }}
+            />
+          </label>
+        )}
       </div>
 
       {/* Modals de consentement */}

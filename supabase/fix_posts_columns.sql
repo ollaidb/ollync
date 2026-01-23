@@ -237,6 +237,38 @@ BEGIN
       NULL;
   END;
 
+  -- external_link
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+        AND table_name = 'posts' 
+        AND column_name = 'external_link'
+    ) THEN
+      ALTER TABLE posts ADD COLUMN external_link TEXT;
+      RAISE NOTICE 'Colonne external_link ajoutée';
+    END IF;
+  EXCEPTION
+    WHEN duplicate_column THEN
+      NULL;
+  END;
+
+  -- document_url
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+        AND table_name = 'posts' 
+        AND column_name = 'document_url'
+    ) THEN
+      ALTER TABLE posts ADD COLUMN document_url TEXT;
+      RAISE NOTICE 'Colonne document_url ajoutée';
+    END IF;
+  EXCEPTION
+    WHEN duplicate_column THEN
+      NULL;
+  END;
+
   -- status
   BEGIN
     IF NOT EXISTS (

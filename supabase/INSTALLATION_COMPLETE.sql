@@ -107,6 +107,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'media_type') THEN
     ALTER TABLE posts ADD COLUMN media_type VARCHAR(20);
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'external_link') THEN
+    ALTER TABLE posts ADD COLUMN external_link TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'document_url') THEN
+    ALTER TABLE posts ADD COLUMN document_url TEXT;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'status') THEN
     ALTER TABLE posts ADD COLUMN status VARCHAR(20) DEFAULT 'active';
   END IF;

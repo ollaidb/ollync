@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS posts (
   number_of_people INTEGER,
   payment_type VARCHAR(20), -- 'benevole', 'prix'
   media_type VARCHAR(20), -- 'photo', 'video' pour création de contenu
+  external_link TEXT,
+  document_url TEXT,
   status VARCHAR(20) DEFAULT 'active', -- active, sold, archived
   views_count INTEGER DEFAULT 0,
   likes_count INTEGER DEFAULT 0,
@@ -177,6 +179,12 @@ CREATE TABLE IF NOT EXISTS matches (
 
 -- Index pour améliorer les performances
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_email_unique
+  ON profiles (lower(email))
+  WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_phone_unique
+  ON profiles (phone)
+  WHERE phone IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_category_id ON posts(category_id);
 CREATE INDEX IF NOT EXISTS idx_posts_sub_category_id ON posts(sub_category_id);

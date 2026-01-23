@@ -807,6 +807,25 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Document PDF */
+.post-document-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--muted);
+  color: var(--foreground);
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.post-document-link:hover {
+  background: var(--border);
+  transform: translateY(-1px);
+}
+
 /* ============================================
    G. LOCALISATION
    ============================================ */

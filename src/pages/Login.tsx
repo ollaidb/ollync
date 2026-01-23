@@ -11,10 +11,12 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setShowForgotPassword(false)
     setLoading(true)
 
     try {
@@ -45,6 +47,7 @@ const Login = () => {
       }
     } catch (err: unknown) {
       let errorMessage = 'Erreur de connexion'
+      let shouldShowForgot = false
       
       if (err instanceof Error) {
         // Vérifier les erreurs réseau spécifiques
@@ -55,9 +58,15 @@ const Login = () => {
         } else {
           errorMessage = err.message
         }
+
+        const lowerMessage = err.message.toLowerCase()
+        if (lowerMessage.includes('invalid login credentials')) {
+          shouldShowForgot = true
+        }
       }
       
       setError(errorMessage)
+      setShowForgotPassword(shouldShowForgot)
       console.error('Erreur de connexion:', err)
     } finally {
       setLoading(false)
@@ -240,12 +249,26 @@ const Login = () => {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setShowForgotPassword(false)
+              }}
               placeholder="••••••••"
               required
               disabled={loading}
             />
           </div>
+
+          {showForgotPassword && (
+            <div className="auth-helper">
+              <Link
+                to={`/auth/reset-password${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+                className="auth-link"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
+          )}
 
           <button
             type="submit"

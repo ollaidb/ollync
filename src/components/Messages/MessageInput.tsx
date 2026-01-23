@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Calendar, Share2, Loader, Film, X, Megaphone } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import ConsentModal from '../ConsentModal'
@@ -13,11 +14,13 @@ interface MessageInputProps {
   onMessageSent: () => void
   disabled?: boolean
   openCalendarOnMount?: boolean
+  counterpartyId?: string | null
 }
 
 type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share'
 
-const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false }: MessageInputProps) => {
+const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId }: MessageInputProps) => {
+  const navigate = useNavigate()
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
@@ -426,6 +429,21 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
             <Calendar size={22} />
             <span>Rendez-vous</span>
           </button>
+          <button
+            className="message-option-btn"
+            onClick={() => {
+              if (!counterpartyId) {
+                alert('Impossible de créer un contrat pour cet utilisateur.')
+                return
+              }
+              setShowOptions(false)
+              navigate(`/profile/contracts?counterparty=${counterpartyId}`)
+            }}
+            title="Contrat"
+          >
+            <FileText size={22} />
+            <span>Contrat</span>
+          </button>
         </div>
       )}
 
@@ -435,7 +453,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           onClick={() => setShowOptions(!showOptions)}
           title="Options"
         >
-          <Share2 size={20} />
+          <Plus size={20} />
         </button>
         <input
           type="text"

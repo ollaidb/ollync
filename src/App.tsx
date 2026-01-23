@@ -19,6 +19,7 @@ import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetPassword from './pages/ResetPassword'
 import UrgentPosts from './pages/UrgentPosts'
 import RecentPosts from './pages/RecentPosts'
 import { ToastProvider } from './contexts/ToastContext'
@@ -113,6 +114,7 @@ function AppContent() {
       <Route path="/recent" element={<RecentPosts />} />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<Register />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
     </Routes>
   )
 

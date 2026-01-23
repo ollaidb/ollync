@@ -245,14 +245,15 @@ const Notifications = () => {
       return notifications.filter(n => n.type === 'review' || n.type === 'comment')
     } else if (activeFilter === 'match') {
       return notifications.filter(n => 
-        n.type === 'match_request_accepted' || 
-        n.type === 'match_request_received' ||
-        n.type === 'match_request_sent'
+        n.type === 'match_request_accepted'
       )
     } else if (activeFilter === 'appointment') {
       return notifications.filter(n => n.type === 'appointment')
     } else if (activeFilter === 'request') {
       return notifications.filter(n =>
+        n.type === 'match_request_received' ||
+        n.type === 'match_request_sent' ||
+        n.type === 'match_request_declined' ||
         n.type === 'application_received' ||
         n.type === 'application_accepted' ||
         n.type === 'application_declined' ||

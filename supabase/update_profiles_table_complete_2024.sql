@@ -288,7 +288,12 @@ END $$;
 -- ============================================
 
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_email_unique
+  ON profiles (lower(email))
+  WHERE email IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_phone_unique
+  ON profiles (phone)
+  WHERE phone IS NOT NULL;
 
 -- ============================================
 -- ÉTAPE 8 : VÉRIFICATION FINALE

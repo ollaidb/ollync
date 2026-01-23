@@ -157,6 +157,8 @@ const Register = () => {
           errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.'
         } else if (err.message.includes('NetworkError') || err.message.includes('network')) {
           errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.'
+        } else if (err.message.toLowerCase().includes('already registered')) {
+          errorMessage = 'Cet email a déjà un compte'
         } else {
           errorMessage = err.message
         }

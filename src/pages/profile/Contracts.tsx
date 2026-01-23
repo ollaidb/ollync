@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FileText, Users, CheckCircle2, Download, FileSignature, AlertCircle } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
@@ -59,6 +60,8 @@ type SelectedContext =
 
 const Contracts = () => {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
+  const counterpartyParam = searchParams.get('counterparty')
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -81,6 +84,7 @@ const Contracts = () => {
   const [agreementConfirmed, setAgreementConfirmed] = useState(false)
 
   const [contracts, setContracts] = useState<ContractRecord[]>([])
+  const [preferredCounterpartyId, setPreferredCounterpartyId] = useState<string | null>(null)
 
   const selectedContext = useMemo<SelectedContext | null>(() => {
     if (!selectedOption) return null
@@ -300,6 +304,10 @@ const Contracts = () => {
     loadData()
   }, [user])
 
+  useEffect(() => {
+    setPreferredCounterpartyId(counterpartyParam)
+  }, [counterpartyParam])
+
   const loadContracts = async () => {
     if (!user) return
     try {
@@ -360,11 +368,15 @@ const Contracts = () => {
     }
     if (selectedContext.mode === 'owner') {
       const nextSelection: Record<string, boolean> = {}
-      acceptedApplications
-        .filter((app) => app.post_id === selectedContext.post.id)
-        .forEach((app) => {
-          nextSelection[app.id] = true
-        })
+      const matchingApplications = acceptedApplications.filter((app) => app.post_id === selectedContext.post.id)
+      const preferredMatches = preferredCounterpartyId
+        ? matchingApplications.filter((app) => app.applicant_id === preferredCounterpartyId)
+        : []
+
+      const selectionSource = preferredMatches.length > 0 ? preferredMatches : matchingApplications
+      selectionSource.forEach((app) => {
+        nextSelection[app.id] = true
+      })
       setSelectedApplicants(nextSelection)
     } else {
       setSelectedApplicants({})
@@ -372,7 +384,28 @@ const Contracts = () => {
     if (selectedContext.post.price && (!priceValue || Number(priceValue) <= 0)) {
       setPriceValue(String(selectedContext.post.price))
     }
-  }, [acceptedApplications, priceValue, selectedContext])
+  }, [acceptedApplications, preferredCounterpartyId, priceValue, selectedContext])
+
+  useEffect(() => {
+    if (!counterpartyParam || selectedOption) return
+
+    const ownerMatch = acceptedApplications.find((app) => app.applicant_id === counterpartyParam)
+    if (ownerMatch) {
+      setActiveTab('create')
+      setSelectedOption(`owner:${ownerMatch.post_id}`)
+      return
+    }
+
+    const applicantMatch = acceptedAsApplicant.find((app) => {
+      const post = applicantPostMap[app.post_id]
+      return post?.user_id === counterpartyParam
+    })
+
+    if (applicantMatch) {
+      setActiveTab('create')
+      setSelectedOption(`applicant:${applicantMatch.id}`)
+    }
+  }, [acceptedApplications, acceptedAsApplicant, applicantPostMap, counterpartyParam, selectedOption])
 
   const formatUserName = (profile?: ProfileSummary | null) => {
     if (!profile) return 'Utilisateur'

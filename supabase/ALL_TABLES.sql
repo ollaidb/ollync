@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS posts (
   number_of_people INTEGER,
   payment_type VARCHAR(20),
   media_type VARCHAR(20),
+  external_link TEXT,
+  document_url TEXT,
   status VARCHAR(20) DEFAULT 'active',
   views_count INTEGER DEFAULT 0,
   likes_count INTEGER DEFAULT 0,

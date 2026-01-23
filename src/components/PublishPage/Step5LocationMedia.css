@@ -159,6 +159,67 @@
   color: #6366F1;
 }
 
+.document-upload-area {
+  width: 100%;
+  border-radius: 10px;
+  border: 2px dashed #D1D5DB;
+  background-color: #F9FAFB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 8px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.document-upload-area:hover {
+  border-color: #6366F1;
+  background-color: #EEF2FF;
+}
+
+.document-upload-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  background-color: #FFFFFF;
+}
+
+.document-link {
+  color: #4F46E5;
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-word;
+  flex: 1;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+}
+
+.document-remove-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: #111827;
+  color: #FFFFFF;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.document-remove-button:hover {
+  opacity: 0.9;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
