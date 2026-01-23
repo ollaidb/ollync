@@ -403,6 +403,8 @@ RETURNS TRIGGER AS $$
 DECLARE
   post_title VARCHAR(255);
   sender_name VARCHAR(255);
+  request_context TEXT;
+  message_excerpt TEXT;
 BEGIN
   -- Récupérer le nom de l'expéditeur
   SELECT COALESCE(full_name, username, 'Vous')
@@ -415,12 +417,28 @@ BEGIN
     SELECT title INTO post_title FROM posts WHERE id = NEW.related_post_id;
   END IF;
 
+  request_context := COALESCE(
+    post_title,
+    CASE
+      WHEN NEW.related_service_name IS NOT NULL AND length(trim(NEW.related_service_name)) > 0
+        THEN 'Service : ' || NEW.related_service_name
+      ELSE 'pour une annonce'
+    END
+  );
+
+  IF NEW.request_message IS NOT NULL AND length(trim(NEW.request_message)) > 0 THEN
+    message_excerpt := left(trim(NEW.request_message), 140);
+  END IF;
+
   -- Notifier l'expéditeur (confirmation)
   PERFORM create_or_update_notification(
     NEW.from_user_id,
     'match_request_sent',
     'Vous avez envoyé une demande',
-    COALESCE(post_title, 'pour une annonce'),
+    CASE
+      WHEN message_excerpt IS NOT NULL THEN request_context || ' • "' || message_excerpt || '"'
+      ELSE request_context
+    END,
     NEW.related_post_id,
     NULL,
     'match_request_sent_' || NEW.from_user_id::TEXT || '_' || COALESCE(NEW.related_post_id::TEXT, NEW.id::TEXT),
@@ -437,6 +455,8 @@ RETURNS TRIGGER AS $$
 DECLARE
   sender_name VARCHAR(255);
   post_title VARCHAR(255);
+  request_context TEXT;
+  message_excerpt TEXT;
 BEGIN
   -- Récupérer le nom de l'expéditeur
   SELECT COALESCE(full_name, username, 'Quelqu''un')
@@ -449,12 +469,28 @@ BEGIN
     SELECT title INTO post_title FROM posts WHERE id = NEW.related_post_id;
   END IF;
 
+  request_context := COALESCE(
+    post_title,
+    CASE
+      WHEN NEW.related_service_name IS NOT NULL AND length(trim(NEW.related_service_name)) > 0
+        THEN 'Service : ' || NEW.related_service_name
+      ELSE 'pour une annonce'
+    END
+  );
+
+  IF NEW.request_message IS NOT NULL AND length(trim(NEW.request_message)) > 0 THEN
+    message_excerpt := left(trim(NEW.request_message), 140);
+  END IF;
+
   -- Notifier le destinataire
   PERFORM create_or_update_notification(
     NEW.to_user_id,
     'match_request_received',
     sender_name || ' vous a envoyé une demande',
-    COALESCE(post_title, 'pour une annonce'),
+    CASE
+      WHEN message_excerpt IS NOT NULL THEN request_context || ' • "' || message_excerpt || '"'
+      ELSE request_context
+    END,
     NEW.related_post_id,
     NEW.from_user_id, -- sender_id pour regroupement
     'match_request_received_' || NEW.to_user_id::TEXT || '_' || NEW.from_user_id::TEXT, -- group_key: 1 notification par expéditeur
@@ -472,6 +508,7 @@ DECLARE
   acceptor_name VARCHAR(255);
   requester_name VARCHAR(255);
   post_title VARCHAR(255);
+  request_context TEXT;
 BEGIN
   -- Ne notifier que si le statut passe de 'pending' à 'accepted'
   IF NEW.status = 'accepted' AND OLD.status != 'accepted' THEN
@@ -491,15 +528,24 @@ BEGIN
       SELECT title INTO post_title FROM posts WHERE id = NEW.related_post_id;
     END IF;
 
+    request_context := COALESCE(
+      post_title,
+      CASE
+        WHEN NEW.related_service_name IS NOT NULL AND length(trim(NEW.related_service_name)) > 0
+          THEN 'Service : ' || NEW.related_service_name
+        ELSE 'Votre demande a été acceptée'
+      END
+    );
+
     -- Notifier l'expéditeur de la demande (celui qui a envoyé)
     PERFORM create_or_update_notification(
       NEW.from_user_id,
       'match_request_accepted',
       acceptor_name || ' a accepté votre demande',
-      COALESCE(post_title, 'Votre demande a été acceptée'),
+      request_context,
       NEW.related_post_id,
       NEW.to_user_id,
-      'match_request_accepted_' || NEW.from_user_id::TEXT || '_' || NEW.related_post_id::TEXT,
+      'match_request_accepted_' || NEW.from_user_id::TEXT || '_' || COALESCE(NEW.related_post_id::TEXT, NEW.id::TEXT),
       jsonb_build_object('match_request_id', NEW.id, 'conversation_id', NEW.conversation_id)
     );
 
@@ -508,10 +554,10 @@ BEGIN
       NEW.to_user_id,
       'match_request_accepted',
       'Vous avez accepté la demande de ' || requester_name,
-      COALESCE(post_title, 'La demande a été acceptée'),
+      request_context,
       NEW.related_post_id,
       NEW.from_user_id,
-      'match_request_accepted_' || NEW.to_user_id::TEXT || '_' || NEW.related_post_id::TEXT,
+      'match_request_accepted_' || NEW.to_user_id::TEXT || '_' || COALESCE(NEW.related_post_id::TEXT, NEW.id::TEXT),
       jsonb_build_object('match_request_id', NEW.id, 'conversation_id', NEW.conversation_id)
     );
   END IF;
@@ -526,6 +572,7 @@ RETURNS TRIGGER AS $$
 DECLARE
   decliner_name VARCHAR(255);
   post_title VARCHAR(255);
+  request_context TEXT;
 BEGIN
   -- Ne notifier que si le statut passe à 'declined'
   IF NEW.status = 'declined' AND OLD.status != 'declined' THEN
@@ -538,15 +585,24 @@ BEGIN
       SELECT title INTO post_title FROM posts WHERE id = NEW.related_post_id;
     END IF;
 
+    request_context := COALESCE(
+      post_title,
+      CASE
+        WHEN NEW.related_service_name IS NOT NULL AND length(trim(NEW.related_service_name)) > 0
+          THEN 'Service : ' || NEW.related_service_name
+        ELSE 'pour une annonce'
+      END
+    );
+
     -- Notifier l'expéditeur (discret, pas de spam)
     PERFORM create_or_update_notification(
       NEW.from_user_id,
       'match_request_declined',
       'Votre demande n''a pas été acceptée',
-      COALESCE(post_title, 'pour une annonce'),
+      request_context,
       NEW.related_post_id,
       NEW.to_user_id,
-      'match_request_declined_' || NEW.from_user_id::TEXT || '_' || NEW.related_post_id::TEXT,
+      'match_request_declined_' || NEW.from_user_id::TEXT || '_' || COALESCE(NEW.related_post_id::TEXT, NEW.id::TEXT),
       jsonb_build_object('match_request_id', NEW.id)
     );
   END IF;

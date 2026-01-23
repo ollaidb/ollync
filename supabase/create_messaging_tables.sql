@@ -73,6 +73,12 @@ CREATE INDEX IF NOT EXISTS idx_conversations_group_creator_id ON conversations(g
 CREATE INDEX IF NOT EXISTS idx_conversations_is_group ON conversations(is_group);
 CREATE INDEX IF NOT EXISTS idx_conversations_post_id ON conversations(post_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_last_message_at ON conversations(last_message_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS conversations_unique_pair_active
+  ON conversations (LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id))
+  WHERE is_group = false
+    AND deleted_at IS NULL
+    AND user1_id IS NOT NULL
+    AND user2_id IS NOT NULL;
 
 -- ============================================
 -- 2. TABLE DES PARTICIPANTS AUX CONVERSATIONS
@@ -108,6 +114,30 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_conversation_participants_conversation_id ON conversation_participants(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_participants_user_id ON conversation_participants(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_participants_is_active ON conversation_participants(is_active);
+
+-- ============================================
+-- 2.B TABLE DES ÉTATS DE CONVERSATION PAR UTILISATEUR
+-- ============================================
+CREATE TABLE IF NOT EXISTS conversation_user_states (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  is_archived BOOLEAN DEFAULT false,
+  archived_at TIMESTAMP WITH TIME ZONE,
+  is_pinned BOOLEAN DEFAULT false,
+  pinned_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(conversation_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_user_states_user_id ON conversation_user_states(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_user_states_conversation_id ON conversation_user_states(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_user_states_archived ON conversation_user_states(is_archived) WHERE is_archived = true;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_user_states_pin_unique
+  ON conversation_user_states(user_id)
+  WHERE is_pinned = true AND deleted_at IS NULL;
 
 -- Fonction pour vérifier qu'un groupe ne dépasse pas 10 participants
 CREATE OR REPLACE FUNCTION check_group_participants_limit()
@@ -277,6 +307,24 @@ BEGIN
   END IF;
 END $$;
 
+-- Ajouter is_deleted_for_all si elle n'existe pas
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'messages' AND column_name = 'is_deleted_for_all') THEN
+    ALTER TABLE messages ADD COLUMN is_deleted_for_all BOOLEAN DEFAULT false;
+  END IF;
+END $$;
+
+-- Ajouter deleted_for_all_at si elle n'existe pas
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name = 'messages' AND column_name = 'deleted_for_all_at') THEN
+    ALTER TABLE messages ADD COLUMN deleted_for_all_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+END $$;
+
 -- Modifier content pour permettre NULL (car les messages de type post/link peuvent ne pas avoir de content)
 DO $$ 
 BEGIN
@@ -340,6 +388,9 @@ BEGIN
   END IF;
 END $$;
 
+CREATE INDEX IF NOT EXISTS idx_messages_deleted_for_all
+  ON messages(is_deleted_for_all) WHERE is_deleted_for_all = true;
+
 -- ============================================
 -- 4. TABLE DES LECTURES DE MESSAGES (pour les groupes)
 -- ============================================
@@ -363,6 +414,7 @@ CREATE INDEX IF NOT EXISTS idx_message_reads_user_id ON message_reads(user_id);
 -- ============================================
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversation_user_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_reads ENABLE ROW LEVEL SECURITY;
 
@@ -398,6 +450,16 @@ CREATE POLICY "Users can update their conversations" ON conversations
     auth.uid() = user2_id OR 
     auth.uid() = group_creator_id
   );
+
+-- Les utilisateurs peuvent gérer leurs états de conversation
+CREATE POLICY "Users can view their conversation states" ON conversation_user_states
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their conversation states" ON conversation_user_states
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their conversation states" ON conversation_user_states
+  FOR UPDATE USING (auth.uid() = user_id);
 
 -- ============================================
 -- POLICIES POUR LES PARTICIPANTS
@@ -499,6 +561,53 @@ CREATE POLICY "Users can mark messages as read" ON message_reads
 -- ============================================
 -- TRIGGERS ET FONCTIONS
 -- ============================================
+
+-- Mettre à jour updated_at sur conversation_user_states
+CREATE OR REPLACE FUNCTION update_conversation_user_states_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_update_conversation_user_states_updated_at ON conversation_user_states;
+CREATE TRIGGER trigger_update_conversation_user_states_updated_at
+  BEFORE UPDATE ON conversation_user_states
+  FOR EACH ROW
+  EXECUTE FUNCTION update_conversation_user_states_updated_at();
+
+-- RPC pour marquer les messages comme lus dans une conversation
+CREATE OR REPLACE FUNCTION mark_conversation_messages_read(p_conversation_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM conversations c
+    WHERE c.id = p_conversation_id
+      AND (
+        c.user1_id = auth.uid()
+        OR c.user2_id = auth.uid()
+        OR c.group_creator_id = auth.uid()
+        OR EXISTS (
+          SELECT 1
+          FROM conversation_participants cp
+          WHERE cp.conversation_id = c.id
+            AND cp.user_id = auth.uid()
+            AND COALESCE(cp.is_active, true) = true
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'Not allowed';
+  END IF;
+
+  UPDATE messages
+  SET read_at = NOW()
+  WHERE conversation_id = p_conversation_id
+    AND sender_id != auth.uid()
+    AND read_at IS NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Fonction pour mettre à jour last_message_at quand un nouveau message est créé
 CREATE OR REPLACE FUNCTION update_conversation_last_message()

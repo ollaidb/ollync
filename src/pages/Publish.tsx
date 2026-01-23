@@ -8,6 +8,7 @@ import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetw
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
+import { PublishGuideModal } from '../components/PublishPage/PublishGuideModal'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
 import { Step3Option } from '../components/PublishPage/Step3Option'
@@ -60,6 +61,7 @@ export default function Publish() {
     externalLink: '',
     documentUrl: '',
   })
+  const [isGuideOpen, setIsGuideOpen] = useState(false)
 
   const { step, setStep, handleBack, getBreadcrumb } = usePublishNavigation(
     formData,
@@ -162,6 +164,7 @@ export default function Publish() {
             selectedSubSubSubCategory,
           )}
           selectedCategory={selectedCategory || undefined}
+          onOpenGuide={() => setIsGuideOpen(true)}
         />
       </div>
 
@@ -270,6 +273,11 @@ export default function Publish() {
           isValid={validation.isValid}
         />
       )}
+
+      <PublishGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
     </div>
   )
 }

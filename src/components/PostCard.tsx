@@ -37,11 +37,20 @@ interface PostCardProps {
   isLiked?: boolean
   onLike?: () => void
   hideProfile?: boolean
+  hideCategoryBadge?: boolean
   actionMenu?: React.ReactNode
   // onShare?: () => void
 }
 
-const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfile = false, actionMenu }: PostCardProps) => {
+const PostCard = ({
+  post,
+  viewMode = 'grid',
+  isLiked = false,
+  onLike,
+  hideProfile = false,
+  hideCategoryBadge = false,
+  actionMenu
+}: PostCardProps) => {
   const navigate = useNavigate()
   const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
@@ -353,7 +362,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfil
           >
             <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
-          {post.category && (
+          {post.category && !hideCategoryBadge && (
             <div className="post-card-category-badge">{post.category.name}</div>
           )}
         </div>
@@ -438,7 +447,7 @@ const PostCard = ({ post, viewMode = 'grid', isLiked = false, onLike, hideProfil
         {getPaymentDisplay() && (
           <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
         )}
-        {post.category && (
+        {post.category && !hideCategoryBadge && (
           <div className="post-card-category-badge">{post.category.name}</div>
         )}
         {post.is_urgent && (

@@ -109,6 +109,12 @@
   font-weight: 500;
 }
 
+.match-request-detail-post-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
 .match-request-detail-status {
   margin-bottom: 24px;
   text-align: center;
@@ -205,6 +211,15 @@
   color: var(--foreground);
   margin: 0 0 16px 0;
   text-align: center;
+}
+
+.match-request-detail-message-text {
+  font-size: 14px;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .match-request-detail-message-info {

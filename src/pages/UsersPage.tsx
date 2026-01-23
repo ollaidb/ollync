@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Check } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -43,6 +43,7 @@ const UsersPage = () => {
   const [page, setPage] = useState(0)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({})
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const USERS_PER_PAGE = 20
@@ -86,6 +87,36 @@ const UsersPage = () => {
 
     fetchCategories()
   }, [])
+
+  const fetchFollowingStatus = useCallback(async (userIds: string[]) => {
+    if (!user || userIds.length === 0) return
+
+    try {
+      const { data, error } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id)
+        .in('following_id', userIds)
+
+      if (error) {
+        console.error('Error fetching follow status:', error)
+        return
+      }
+
+      setFollowingMap((prev) => {
+        const next = { ...prev }
+        userIds.forEach((id) => {
+          next[id] = false
+        })
+        data?.forEach((row: { following_id: string }) => {
+          next[row.following_id] = true
+        })
+        return next
+      })
+    } catch (error) {
+      console.error('Error fetching follow status:', error)
+    }
+  }, [user])
 
   const fetchUsers = useCallback(async (pageNum: number) => {
     if (pageNum === 0) {
@@ -187,6 +218,7 @@ const UsersPage = () => {
         } else {
           setUsers(prev => [...prev, ...fetchedUsers])
         }
+        fetchFollowingStatus(fetchedUsers.map((item) => item.id))
 
         setHasMore(paginatedUserIds.length === USERS_PER_PAGE && validUserIds.length > end + 1)
       } else {
@@ -244,6 +276,7 @@ const UsersPage = () => {
           } else {
             setUsers(prev => [...prev, ...fetchedUsers])
           }
+          fetchFollowingStatus(fetchedUsers.map((item) => item.id))
 
           setHasMore(paginatedUserIds.length === USERS_PER_PAGE && uniqueUserIds.length > end + 1)
           return
@@ -291,6 +324,7 @@ const UsersPage = () => {
         } else {
           setUsers(prev => [...prev, ...fetchedUsers])
         }
+        fetchFollowingStatus(fetchedUsers.map((item) => item.id))
 
         setHasMore(paginatedUserIds.length === USERS_PER_PAGE && uniqueUserIds.length > end + 1)
       }
@@ -300,13 +334,14 @@ const UsersPage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [selectedCategory, categories, categoryId, user])
+  }, [selectedCategory, categories, categoryId, user, fetchFollowingStatus])
 
   useEffect(() => {
     // Reset when category changes
     setUsers([])
     setPage(0)
     setHasMore(true)
+    setFollowingMap({})
     fetchUsers(0)
   }, [selectedCategory, categoryId, fetchUsers])
 
@@ -348,6 +383,35 @@ const UsersPage = () => {
   const handleProfileClick = (e: React.MouseEvent, userId: string) => {
     e.stopPropagation()
     navigate(`/profile/public/${userId}`)
+  }
+
+  const handleFollowClick = async (e: React.MouseEvent, userId: string) => {
+    e.stopPropagation()
+
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+
+    if (followingMap[userId]) return
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('follows') as any)
+        .insert({
+          follower_id: user.id,
+          following_id: userId
+        })
+
+      if (error) {
+        console.error('Error following user:', error)
+        return
+      }
+
+      setFollowingMap((prev) => ({ ...prev, [userId]: true }))
+    } catch (error) {
+      console.error('Error following user:', error)
+    }
   }
 
   return (
@@ -408,6 +472,7 @@ const UsersPage = () => {
                 <div 
                   key={userItem.id} 
                   className="users-card"
+                  onClick={(e) => handleProfileClick(e, userItem.id)}
                 >
                   {/* Photo de l'utilisateur */}
                   <div className="users-card-avatar-wrapper">
@@ -435,14 +500,27 @@ const UsersPage = () => {
                     <div className="users-card-bio">{userItem.bio}</div>
                   )}
 
-                  {/* Bouton Plus pour voir le profil */}
-                  <button
-                    className="users-card-plus-btn"
-                    onClick={(e) => handleProfileClick(e, userItem.id)}
-                    title="Voir le profil"
-                  >
-                    <Plus size={20} />
-                  </button>
+                  {/* Bouton Plus pour suivre */}
+                  {followingMap[userItem.id] ? (
+                    <button
+                      className="users-card-followed-btn"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Créateur déjà suivi"
+                      aria-label="Créateur déjà suivi"
+                      disabled
+                    >
+                      <Check size={18} />
+                    </button>
+                  ) : (
+                    <button
+                      className="users-card-plus-btn"
+                      onClick={(e) => handleFollowClick(e, userItem.id)}
+                      title="Suivre le créateur"
+                      aria-label="Suivre le créateur"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  )}
                 </div>
               )
             })}

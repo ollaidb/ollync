@@ -149,6 +149,36 @@ const PageSecurite = () => {
             Si vous avez des questions concernant la sécurité de vos données ou de notre plateforme, 
             n'hésitez pas à nous contacter à : security@ollync.com
           </p>
+
+          <h4>10. Sécurité des rencontres et urgences</h4>
+          <p>
+            En cas de situation à risque pendant une rencontre, voici des repères simples et des numéros
+            utiles (France). Adaptez selon votre pays si besoin.
+          </p>
+
+          <h5>Urgence immédiate</h5>
+          <ul>
+            <li>Urgences européennes : 112</li>
+            <li>Police / Gendarmerie : 17</li>
+            <li>Pompiers : 18</li>
+            <li>SAMU : 15</li>
+            <li>Urgence SMS (personnes sourdes/malentendantes) : 114</li>
+          </ul>
+
+          <h5>Agression sexuelle ou violence</h5>
+          <ul>
+            <li>Appelez immédiatement les secours : 112 ou 17</li>
+            <li>Soutien et écoute : 3919 (Violences Femmes Info)</li>
+            <li>Écoute spécialisée : 0 800 05 95 95 (Viols-Femmes-Informations)</li>
+            <li>Conservez les preuves (messages, lieux, photos) et consultez un médecin si possible</li>
+          </ul>
+
+          <h5>Vol de matériel ou suspicion d'arnaque</h5>
+          <ul>
+            <li>Mettez-vous en sécurité et contactez les autorités : 17 ou 112</li>
+            <li>Déposez plainte et conservez tous les échanges et justificatifs</li>
+            <li>Signalez le profil ou la conversation via l'option de signalement dans l'app</li>
+          </ul>
         </div>
       </div>
     </div>

@@ -48,9 +48,6 @@ export const ReviewCard = ({ review }: ReviewCardProps) => {
           ))}
         </div>
       </div>
-      {review.comment && (
-        <p className="review-comment">{review.comment}</p>
-      )}
     </div>
   )
 }

@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2300;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -64,6 +64,55 @@
   color: var(--muted-foreground);
   line-height: 1.5;
   font-size: 14px;
+}
+
+/* Zone de texte optionnelle */
+.confirmation-modal-textarea-container {
+  margin-bottom: 16px;
+}
+
+.confirmation-modal-textarea-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.confirmation-modal-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--foreground);
+  background: var(--background);
+  resize: vertical;
+  min-height: 90px;
+}
+
+.confirmation-modal-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.confirmation-modal-textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.confirmation-modal-textarea-hint {
+  color: var(--muted-foreground);
+}
+
+.confirmation-modal-textarea-count {
+  color: var(--muted-foreground);
 }
 
 /* Lien "En savoir plus" - discret */
@@ -148,6 +197,10 @@
   }
 
   .confirmation-modal-message {
+    font-size: 13px;
+  }
+
+  .confirmation-modal-textarea {
     font-size: 13px;
   }
 

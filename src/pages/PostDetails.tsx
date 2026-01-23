@@ -82,6 +82,7 @@ const PostDetails = () => {
   const [showSendRequestModal, setShowSendRequestModal] = useState(false)
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
+  const [requestMessage, setRequestMessage] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -456,13 +457,15 @@ const PostDetails = () => {
 
     setLoadingRequest(true)
     try {
+      const trimmedMessage = requestMessage.trim()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .insert({
           from_user_id: user.id,
           to_user_id: post.user_id,
           related_post_id: id,
-          status: 'pending'
+          status: 'pending',
+          request_message: trimmedMessage.length > 0 ? trimmedMessage : null
         })
         .select()
         .single()
@@ -477,6 +480,7 @@ const PostDetails = () => {
       if (data) {
         setMatchRequest({ id: data.id, status: data.status })
         setShowSendRequestModal(false)
+        setRequestMessage('')
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -1090,9 +1094,19 @@ const PostDetails = () => {
             title="Envoyer une demande de match"
             message="Vous allez envoyer une demande de match à l'auteur de cette annonce. Si votre demande est acceptée, vous pourrez commencer à échanger avec cette personne."
             onConfirm={handleSendRequest}
-            onCancel={() => setShowSendRequestModal(false)}
+            onCancel={() => {
+              setShowSendRequestModal(false)
+              setRequestMessage('')
+            }}
             confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
             cancelLabel="Annuler"
+            showTextarea={true}
+            textareaLabel="Message (optionnel)"
+            textareaValue={requestMessage}
+            onTextareaChange={setRequestMessage}
+            textareaPlaceholder="Ajouter un message pour votre demande..."
+            textareaMaxLength={280}
+            textareaHint="Ce message sera visible par le destinataire dans la demande."
           />
         )}
 

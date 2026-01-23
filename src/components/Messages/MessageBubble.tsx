@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import CalendarPicker from './CalendarPicker'
+import Logo from '../Logo'
 import './MessageBubble.css'
 
 interface MessageBubbleProps {
@@ -12,6 +13,7 @@ interface MessageBubbleProps {
     content?: string | null
     sender_id: string
     created_at: string
+    edited_at?: string | null
     message_type?: string
     file_url?: string | null
     file_name?: string | null
@@ -26,16 +28,18 @@ interface MessageBubbleProps {
       username?: string | null
       full_name?: string | null
       avatar_url?: string | null
+      email?: string | null
     } | null
   }
   isOwn: boolean
   showAvatar?: boolean
+  systemSenderEmail?: string
   onDelete?: () => void
   onLike?: () => void
   onReport?: () => void
 }
 
-const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }: MessageBubbleProps) => {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false)
   const [sharedPost, setSharedPost] = useState<{
@@ -190,6 +194,40 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
     } finally {
       setUpdatingAppointment(false)
     }
+  }
+
+  const renderTextWithLinks = (text: string) => {
+    const parts: Array<string | { label: string; url: string }> = []
+    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index))
+      }
+      parts.push({ label: match[1], url: match[2] })
+      lastIndex = match.index + match[0].length
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex))
+    }
+
+    return parts.map((part, index) => {
+      if (typeof part === 'string') return <span key={`txt-${index}`}>{part}</span>
+      return (
+        <a
+          key={`lnk-${index}`}
+          href={part.url}
+          className="message-link"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {part.label}
+        </a>
+      )
+    })
   }
 
   const renderMessageContent = () => {
@@ -470,7 +508,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
           </div>
         )
       default:
-        return <p>{message.content || ''}</p>
+        return <p>{message.content ? renderTextWithLinks(message.content) : ''}</p>
     }
   }
 
@@ -479,12 +517,20 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
 
   return (
     <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
-      {!isOwn && showAvatar && message.sender?.avatar_url && !isStandaloneMedia && (
-        <img 
-          src={message.sender.avatar_url} 
-          alt={message.sender.full_name || message.sender.username || ''} 
-          className="message-avatar" 
-        />
+      {!isOwn && showAvatar && !isStandaloneMedia && (
+        (message.sender?.email || '').toLowerCase() === (systemSenderEmail || '').toLowerCase() ? (
+          <div className="message-avatar message-avatar-system">
+            <Logo className="message-avatar-logo" width={32} height={16} />
+          </div>
+        ) : (
+          message.sender?.avatar_url && (
+            <img 
+              src={message.sender.avatar_url} 
+              alt={message.sender.full_name || message.sender.username || ''} 
+              className="message-avatar" 
+            />
+          )
+        )
       )}
       {!isOwn && !showAvatar && !isStandaloneMedia && <div className="message-avatar-spacer"></div>}
       <div className={`message-bubble-content ${isStandaloneMedia ? 'standalone' : ''}`}>
@@ -493,6 +539,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
             {renderMessageContent()}
             <span className="message-time-standalone">
               {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              {message.edited_at && <span className="message-edited-label"> • modifié</span>}
             </span>
           </>
         ) : (
@@ -500,6 +547,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false }: MessageBubbleProp
             {renderMessageContent()}
             <span className="message-time">
               {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              {message.edited_at && <span className="message-edited-label"> • modifié</span>}
             </span>
           </div>
         )}

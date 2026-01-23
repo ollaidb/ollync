@@ -283,20 +283,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
   return (
     <div className="category-page-new">
-      {/* 1. Header & Recherche */}
+      {/* 1. Header fixe (titre + actions) */}
       <div className="category-header-new">
-        <div className="category-search-container">
+        <div className="category-header-row">
           <BackButton className="category-back-button" />
-          <div className="category-search-box">
-            <Search size={20} className="category-search-icon" />
-            <input
-              type="text"
-              placeholder="Search…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="category-search-input"
-            />
-          </div>
+          <h1 className="category-title-new">{categoryName}</h1>
           <div className="category-header-actions">
             <button 
               onClick={() => navigate('/users')}
@@ -309,9 +300,18 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         </div>
       </div>
 
-      {/* 2. Titre de la catégorie */}
-      <div className="category-title-section">
-        <h1 className="category-title-new">{categoryName}</h1>
+      {/* 2. Recherche */}
+      <div className="category-search-section">
+        <div className="category-search-box">
+          <Search size={20} className="category-search-icon" />
+          <input
+            type="text"
+            placeholder="Search…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="category-search-input"
+          />
+        </div>
       </div>
 
       {/* 3. Filtres de sous-catégories (scroll horizontal) */}
@@ -581,7 +581,12 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             <div key={index} className="category-posts-section">
               <div className="category-posts-grid">
                 {sectionPosts.map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    viewMode="grid"
+                    hideCategoryBadge
+                  />
                 ))}
               </div>
             </div>

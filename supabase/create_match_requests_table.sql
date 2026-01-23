@@ -8,6 +8,11 @@ CREATE TABLE IF NOT EXISTS match_requests (
   from_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   to_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   related_post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
+  related_service_name TEXT,
+  related_service_description TEXT,
+  related_service_payment_type VARCHAR(20),
+  related_service_value TEXT,
+  request_message TEXT,
   status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'accepted', 'declined', 'cancelled'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

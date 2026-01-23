@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, Archive, Edit, MoreHorizontal, CheckCircle, RotateCcw } from 'lucide-react'
+import { Trash2, Archive, Edit, MoreHorizontal, CheckCircle, RotateCcw, Star, X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
+import { useToastContext } from '../../contexts/ToastContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import PostCard from '../../components/PostCard'
 import './Annonces.css'
@@ -31,14 +32,28 @@ interface Post {
   } | null
 }
 
+interface ParticipantProfile {
+  id: string
+  username?: string | null
+  full_name?: string | null
+  avatar_url?: string | null
+}
+
 const Annonces = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showSuccess, showError } = useToastContext()
   const [activeTab, setActiveTab] = useState<'online' | 'completed' | 'archived'>('online')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
   const confirmation = useConfirmation()
+  const [ratingPost, setRatingPost] = useState<Post | null>(null)
+  const [ratingParticipants, setRatingParticipants] = useState<ParticipantProfile[]>([])
+  const [ratingsByUser, setRatingsByUser] = useState<Record<string, number>>({})
+  const [ratingsLoading, setRatingsLoading] = useState(false)
+  const [ratingsSaving, setRatingsSaving] = useState(false)
+  const [ratingsError, setRatingsError] = useState<string | null>(null)
 
   // Vérifier si une annonce peut être éditée (moins de 24h après publication)
   const canEditPost = (post: Post): boolean => {
@@ -139,6 +154,7 @@ const Annonces = () => {
 
   // Supprimer une annonce
   const handleDelete = async (postId: string) => {
+    setActionMenuOpen(null)
     confirmation.confirm(
       {
         title: 'Supprimer l\'annonce',
@@ -175,6 +191,7 @@ const Annonces = () => {
   const handleComplete = async (postId: string) => {
     if (!user?.id) return
 
+    setActionMenuOpen(null)
     confirmation.confirm(
       {
         title: 'Marquer comme réalisée',
@@ -193,8 +210,12 @@ const Annonces = () => {
             console.error('Error completing post:', error)
             alert('Erreur lors de la validation de l\'annonce')
           } else {
+            const updatedPost = posts.find(p => p.id === postId)
             setPosts(posts.map(p => p.id === postId ? { ...p, status: 'completed' } : p))
             setActionMenuOpen(null)
+            if (updatedPost) {
+              await openRatingModal(updatedPost)
+            }
           }
         } catch (error) {
           console.error('Error in handleComplete:', error)
@@ -231,6 +252,7 @@ const Annonces = () => {
   const handleReactivate = async (postId: string) => {
     if (!user?.id) return
 
+    setActionMenuOpen(null)
     confirmation.confirm(
       {
         title: 'Remettre en ligne',
@@ -263,6 +285,129 @@ const Annonces = () => {
   // Éditer une annonce (rediriger vers la page de publication avec l'ID)
   const handleEdit = (postId: string) => {
     navigate(`/publish?edit=${postId}`)
+  }
+
+  const formatParticipantName = (profile?: ParticipantProfile | null) => {
+    if (!profile) return 'Utilisateur'
+    return profile.full_name || profile.username || 'Utilisateur'
+  }
+
+  const openRatingModal = async (post: Post) => {
+    if (!user?.id) return
+    setRatingsLoading(true)
+    setRatingsError(null)
+    setRatingPost(post)
+    setRatingParticipants([])
+    setRatingsByUser({})
+    setActionMenuOpen(null)
+
+    try {
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('applicant_id, applicant:profiles!applications_applicant_id_fkey(id, username, full_name, avatar_url)')
+        .eq('post_id', post.id)
+        .eq('status', 'accepted')
+
+      if (applicationsError) {
+        console.error('Error loading participants:', applicationsError)
+        setRatingsError('Impossible de charger les participants.')
+        return
+      }
+
+      const participants = (applicationsData || [])
+        .map((app: { applicant?: ParticipantProfile | null }) => app.applicant)
+        .filter((profile): profile is ParticipantProfile => !!profile)
+        .filter((profile) => profile.id !== user.id)
+
+      setRatingParticipants(participants)
+
+      if (participants.length === 0) {
+        return
+      }
+
+      const { data: existingRatings, error: ratingsLoadError } = await supabase
+        .from('ratings')
+        .select('rated_user_id, rating')
+        .eq('post_id', post.id)
+        .eq('rater_id', user.id)
+
+      if (ratingsLoadError) {
+        console.error('Error loading existing ratings:', ratingsLoadError)
+        return
+      }
+
+      const ratingsMap: Record<string, number> = {}
+      ;(existingRatings || []).forEach((rating: { rated_user_id: string; rating: number }) => {
+        ratingsMap[rating.rated_user_id] = rating.rating
+      })
+      setRatingsByUser(ratingsMap)
+    } finally {
+      setRatingsLoading(false)
+    }
+  }
+
+  const closeRatingModal = () => {
+    setRatingPost(null)
+    setRatingParticipants([])
+    setRatingsByUser({})
+    setRatingsError(null)
+  }
+
+  const handleRatingChange = (userId: string, rating: number) => {
+    setRatingsByUser((prev) => ({
+      ...prev,
+      [userId]: rating
+    }))
+  }
+
+  const handleSaveRatings = async () => {
+    if (!user?.id || !ratingPost) return
+
+    if (ratingParticipants.length === 0) {
+      setRatingsError('Aucun participant à noter pour cette annonce.')
+      return
+    }
+
+    const missingRating = ratingParticipants.find(
+      (participant) => !ratingsByUser[participant.id] || ratingsByUser[participant.id] < 1
+    )
+
+    if (missingRating) {
+      setRatingsError('Donnez une note pour chaque participant.')
+      return
+    }
+
+    setRatingsSaving(true)
+    setRatingsError(null)
+
+    try {
+      const payload = ratingParticipants.map((participant) => ({
+        rater_id: user.id,
+        rated_user_id: participant.id,
+        post_id: ratingPost.id,
+        rating: ratingsByUser[participant.id]
+      }))
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('ratings') as any)
+        .upsert(payload, { onConflict: 'rater_id,rated_user_id,post_id' })
+
+      if (error) {
+        console.error('Error saving ratings:', error)
+        setRatingsError('Impossible d\'enregistrer les avis.')
+        showError('Erreur lors de l\'enregistrement des avis.')
+        return
+      }
+
+      showSuccess('Avis enregistrés.')
+      closeRatingModal()
+    } catch (error) {
+      console.error('Error in handleSaveRatings:', error)
+      setRatingsError('Impossible d\'enregistrer les avis.')
+      showError('Erreur lors de l\'enregistrement des avis.')
+    } finally {
+      setRatingsSaving(false)
+    }
   }
 
 
@@ -396,6 +541,15 @@ const Annonces = () => {
           )}
           {(activePost.status === 'completed' || activePost.status === 'archived') && (
             <>
+              {activePost.status === 'completed' && (
+                <button
+                  className="annonce-item-menu-item"
+                  onClick={() => openRatingModal(activePost)}
+                >
+                  <Star size={14} />
+                  <span>Noter les participants</span>
+                </button>
+              )}
               <button
                 className="annonce-item-menu-item"
                 onClick={() => handleReactivate(activePost.id)}
@@ -435,6 +589,86 @@ const Annonces = () => {
           confirmLabel={confirmation.options.confirmLabel}
           cancelLabel={confirmation.options.cancelLabel}
         />
+      )}
+
+      {ratingPost && (
+        <div className="rating-modal-overlay" onClick={closeRatingModal}>
+          <div className="rating-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="rating-modal-header">
+              <div>
+                <h3>Laisser un avis</h3>
+                <p>Annonce : {ratingPost.title}</p>
+              </div>
+              <button className="rating-modal-close" onClick={closeRatingModal} aria-label="Fermer">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="rating-modal-body">
+              {ratingsLoading ? (
+                <div className="rating-loading">Chargement des participants...</div>
+              ) : ratingParticipants.length === 0 ? (
+                <div className="rating-empty">
+                  Aucun participant accepté pour cette annonce.
+                </div>
+              ) : (
+                <div className="rating-participants">
+                  {ratingParticipants.map((participant) => {
+                    const displayName = formatParticipantName(participant)
+                    const avatarUrl =
+                      participant.avatar_url ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`
+
+                    return (
+                      <div key={participant.id} className="rating-participant-row">
+                        <div className="rating-participant-info">
+                          <img
+                            src={avatarUrl}
+                            alt={displayName}
+                            className="rating-participant-avatar"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`
+                            }}
+                          />
+                          <span className="rating-participant-name">{displayName}</span>
+                        </div>
+                        <div className="rating-stars">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              className={`rating-star-btn ${star <= (ratingsByUser[participant.id] || 0) ? 'active' : ''}`}
+                              onClick={() => handleRatingChange(participant.id, star)}
+                              aria-label={`Noter ${displayName} ${star} étoiles`}
+                            >
+                              <Star size={18} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {ratingsError && <div className="rating-error">{ratingsError}</div>}
+            </div>
+
+            {ratingParticipants.length > 0 && (
+              <div className="rating-modal-actions">
+                <button className="rating-secondary-btn" onClick={closeRatingModal}>
+                  Plus tard
+                </button>
+                <button
+                  className="rating-primary-btn"
+                  onClick={handleSaveRatings}
+                  disabled={ratingsSaving}
+                >
+                  {ratingsSaving ? 'Enregistrement...' : 'Enregistrer les avis'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

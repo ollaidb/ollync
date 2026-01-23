@@ -11,6 +11,13 @@ export interface ConfirmationModalProps {
   cancelLabel?: string
   learnMoreLink?: string
   learnMoreText?: string
+  showTextarea?: boolean
+  textareaLabel?: string
+  textareaValue?: string
+  onTextareaChange?: (value: string) => void
+  textareaPlaceholder?: string
+  textareaMaxLength?: number
+  textareaHint?: string
 }
 
 const ConfirmationModal = ({
@@ -22,7 +29,14 @@ const ConfirmationModal = ({
   confirmLabel = 'Accepter',
   cancelLabel = 'Annuler',
   learnMoreLink,
-  learnMoreText = 'En savoir plus'
+  learnMoreText = 'En savoir plus',
+  showTextarea = false,
+  textareaLabel = 'Message (optionnel)',
+  textareaValue = '',
+  onTextareaChange,
+  textareaPlaceholder = 'Ajouter un message pour votre demande...',
+  textareaMaxLength = 280,
+  textareaHint
 }: ConfirmationModalProps) => {
   // Bloquer le scroll quand le modal est visible
   useEffect(() => {
@@ -52,6 +66,28 @@ const ConfirmationModal = ({
         
         <p className="confirmation-modal-message">{message}</p>
         
+        {showTextarea && (
+          <div className="confirmation-modal-textarea-container">
+            <label className="confirmation-modal-textarea-label">{textareaLabel}</label>
+            <textarea
+              className="confirmation-modal-textarea"
+              value={textareaValue}
+              onChange={(e) => onTextareaChange?.(e.target.value)}
+              placeholder={textareaPlaceholder}
+              maxLength={textareaMaxLength}
+              rows={4}
+            />
+            <div className="confirmation-modal-textarea-footer">
+              {textareaHint && (
+                <span className="confirmation-modal-textarea-hint">{textareaHint}</span>
+              )}
+              <span className="confirmation-modal-textarea-count">
+                {textareaValue.length}/{textareaMaxLength}
+              </span>
+            </div>
+          </div>
+        )}
+
         {learnMoreLink && (
           <a 
             href={learnMoreLink} 

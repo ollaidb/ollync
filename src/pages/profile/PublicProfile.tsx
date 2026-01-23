@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/EmptyState'
 import PostCard from '../../components/PostCard'
 import { useToastContext } from '../../contexts/ToastContext'
 import ServiceDetailModal from '../../components/ServiceDetailModal'
+import ConfirmationModal from '../../components/ConfirmationModal'
 import './PublicProfile.css'
 
 interface Service {
@@ -85,6 +86,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'avis'>('a-propos')
   const [posts, setPosts] = useState<Post[]>([])
+  const [postsLoaded, setPostsLoaded] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
@@ -96,6 +98,14 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState<string>('')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [serviceMatchRequest, setServiceMatchRequest] = useState<{
+    id: string
+    status: 'pending' | 'accepted' | 'declined' | 'cancelled'
+  } | null>(null)
+  const [showServiceSendModal, setShowServiceSendModal] = useState(false)
+  const [showServiceCancelModal, setShowServiceCancelModal] = useState(false)
+  const [serviceRequestLoading, setServiceRequestLoading] = useState(false)
+  const [serviceRequestMessage, setServiceRequestMessage] = useState('')
 
   const profileId = userId || user?.id
 
@@ -401,6 +411,149 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
   }, [profileId, user])
 
+  const fetchServiceRequestStatus = useCallback(async (service: Service | null) => {
+    if (!service || !user || !profileId || profileId === user.id) {
+      setServiceMatchRequest(null)
+      return
+    }
+
+    const serviceName = String(service.name || '').trim()
+    if (!serviceName) {
+      setServiceMatchRequest(null)
+      return
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .select('id, status')
+        .eq('from_user_id', user.id)
+        .eq('to_user_id', profileId)
+        .eq('related_service_name', serviceName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking service request:', error)
+        setServiceMatchRequest(null)
+        return
+      }
+
+      if (data) {
+        setServiceMatchRequest({ id: data.id, status: data.status })
+      } else {
+        setServiceMatchRequest(null)
+      }
+    } catch (error) {
+      console.error('Error checking service request:', error)
+      setServiceMatchRequest(null)
+    }
+  }, [profileId, user])
+
+  const handleServiceRequestClick = () => {
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+
+    if (!selectedService || !profileId) return
+
+    if (serviceMatchRequest?.status === 'accepted') {
+      return
+    }
+
+    if (serviceMatchRequest?.status === 'pending') {
+      setShowServiceCancelModal(true)
+      return
+    }
+
+    setShowServiceSendModal(true)
+  }
+
+  const handleSendServiceRequest = async () => {
+    if (!user || !selectedService || !profileId) return
+
+    setServiceRequestLoading(true)
+    try {
+      const serviceName = String(selectedService.name || '').trim()
+      const serviceDescription = String(selectedService.description || '').trim()
+      const serviceValue = String(selectedService.value || '').trim()
+      const trimmedMessage = serviceRequestMessage.trim()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .insert({
+          from_user_id: user.id,
+          to_user_id: profileId,
+          status: 'pending',
+          request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
+          related_service_name: serviceName,
+          related_service_description: serviceDescription.length > 0 ? serviceDescription : null,
+          related_service_payment_type: selectedService.payment_type,
+          related_service_value: serviceValue.length > 0 ? serviceValue : null
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error sending service request:', error)
+        alert(`Erreur lors de l'envoi de la demande: ${error.message}`)
+        setServiceRequestLoading(false)
+        return
+      }
+
+      if (data) {
+        setServiceMatchRequest({ id: data.id, status: data.status })
+        setShowServiceSendModal(false)
+        setServiceRequestMessage('')
+        showSuccess('Demande envoyée')
+      }
+    } catch (error) {
+      console.error('Error sending service request:', error)
+      alert('Erreur lors de l\'envoi de la demande')
+    } finally {
+      setServiceRequestLoading(false)
+    }
+  }
+
+  const handleCancelServiceRequest = async () => {
+    if (!serviceMatchRequest || !user || !serviceMatchRequest.id) return
+
+    setServiceRequestLoading(true)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('match_requests') as any)
+        .update({ status: 'cancelled' })
+        .eq('id', serviceMatchRequest.id)
+        .eq('from_user_id', user.id)
+
+      if (error) {
+        console.error('Error cancelling service request:', error)
+        alert(`Erreur lors de l'annulation: ${error.message}`)
+        setServiceRequestLoading(false)
+        return
+      }
+
+      setServiceMatchRequest(null)
+      setShowServiceCancelModal(false)
+      setServiceRequestMessage('')
+      showSuccess('Demande annulée')
+    } catch (error) {
+      console.error('Error cancelling service request:', error)
+      alert('Erreur lors de l\'annulation de la demande')
+    } finally {
+      setServiceRequestLoading(false)
+    }
+  }
+
+  const handleCloseServiceModal = () => {
+    setSelectedService(null)
+    setShowServiceSendModal(false)
+    setShowServiceCancelModal(false)
+    setServiceRequestMessage('')
+  }
+
   const fetchFollowersCount = useCallback(async () => {
     if (!profileId) return
 
@@ -448,6 +601,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     })
 
     setPosts(nonCreationContenuPosts)
+    setPostsLoaded(true)
     setPostsLoading(false)
   }, [profileId])
 
@@ -613,14 +767,34 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }, [profileId, user, isOwnProfile])
 
   useEffect(() => {
-    if (profileId && activeTab === 'annonces') {
+    setPosts([])
+    setPostsLoaded(false)
+  }, [profileId])
+
+  useEffect(() => {
+    if (selectedService) {
+      fetchServiceRequestStatus(selectedService)
+    } else {
+      setServiceMatchRequest(null)
+    }
+  }, [selectedService, fetchServiceRequestStatus])
+
+  useEffect(() => {
+    if (profileId && !postsLoaded) {
+      fetchPosts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, postsLoaded])
+
+  useEffect(() => {
+    if (profileId && activeTab === 'annonces' && !postsLoaded) {
       fetchPosts()
     } else if (profileId && activeTab === 'avis') {
       fetchReviews()
     }
     // Pour "à propos", pas besoin de fetch, les données sont déjà dans profile
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, activeTab])
+  }, [profileId, activeTab, postsLoaded])
 
   if (loading) {
     return (
@@ -1107,9 +1281,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                         {new Date(review.created_at).toLocaleDateString('fr-FR')}
                       </div>
                     </div>
-                    {review.comment && (
-                      <p className="review-comment-text">{review.comment}</p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1130,8 +1301,46 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
       <ServiceDetailModal
         service={selectedService}
-        onClose={() => setSelectedService(null)}
+        onClose={handleCloseServiceModal}
+        canRequest={!!selectedService && !!user && !isOwnProfile && profileId !== user?.id}
+        requestStatus={serviceMatchRequest?.status || null}
+        onRequestClick={handleServiceRequestClick}
+        requestLoading={serviceRequestLoading}
       />
+
+      {showServiceSendModal && (
+        <ConfirmationModal
+          visible={showServiceSendModal}
+          title="Envoyer une demande de service"
+          message="Vous allez envoyer une demande pour ce service. Si la demande est acceptée, vous pourrez commencer à échanger avec cette personne."
+          onConfirm={handleSendServiceRequest}
+          onCancel={() => {
+            setShowServiceSendModal(false)
+            setServiceRequestMessage('')
+          }}
+          confirmLabel={serviceRequestLoading ? 'Envoi...' : 'Envoyer'}
+          cancelLabel="Annuler"
+          showTextarea={true}
+          textareaLabel="Message (optionnel)"
+          textareaValue={serviceRequestMessage}
+          onTextareaChange={setServiceRequestMessage}
+          textareaPlaceholder="Ajouter un message pour votre demande..."
+          textareaMaxLength={280}
+          textareaHint="Ce message sera visible par le destinataire dans la demande."
+        />
+      )}
+
+      {showServiceCancelModal && (
+        <ConfirmationModal
+          visible={showServiceCancelModal}
+          title="Annuler cette demande"
+          message="Vous allez annuler la demande de service que vous avez envoyée. Vous pourrez toujours renvoyer une nouvelle demande plus tard."
+          onConfirm={handleCancelServiceRequest}
+          onCancel={() => setShowServiceCancelModal(false)}
+          confirmLabel={serviceRequestLoading ? 'Annulation...' : 'Oui, annuler'}
+          cancelLabel="Non, garder la demande"
+        />
+      )}
 
       {/* Modal de signalement */}
       {showReportModal && (

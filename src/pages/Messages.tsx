@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, MoreVertical } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, MoreVertical, Pin, Trash2, Pencil, Copy, Languages, Send } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
+import Logo from '../components/Logo'
 import CreateGroupModal from '../components/Messages/CreateGroupModal'
 import CreateMessageActionModal from '../components/Messages/CreateMessageActionModal'
 import SelectUsersModal from '../components/Messages/SelectUsersModal'
@@ -12,9 +13,13 @@ import MessageInput from '../components/Messages/MessageInput'
 import MessageBubble from '../components/Messages/MessageBubble'
 import { EmptyState } from '../components/EmptyState'
 import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
+import ConfirmationModal from '../components/ConfirmationModal'
 import './Messages.css'
 
 type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'appointments' | 'archived'
+
+const SYSTEM_SENDER_EMAIL = 'binta22116@gmail.com'
+const SYSTEM_SENDER_NAME = 'Ollync'
 
 interface Conversation {
   id: string
@@ -31,6 +36,7 @@ interface Conversation {
     username?: string | null
     full_name?: string | null
     avatar_url?: string | null
+    email?: string | null
     last_activity_at?: string | null
   } | null
   postTitle?: string | null
@@ -39,6 +45,8 @@ interface Conversation {
   has_messages?: boolean
   is_archived?: boolean
   archived_at?: string | null
+  is_pinned?: boolean
+  pinned_at?: string | null
   deleted_at?: string | null
   type?: string | null
 }
@@ -48,6 +56,11 @@ interface MatchRequest {
   from_user_id: string
   to_user_id: string
   related_post_id?: string | null
+  request_message?: string | null
+  related_service_name?: string | null
+  related_service_description?: string | null
+  related_service_payment_type?: 'price' | 'exchange' | null
+  related_service_value?: string | null
   status: 'pending' | 'accepted' | 'declined' | 'cancelled'
   created_at: string
   updated_at?: string | null
@@ -95,6 +108,7 @@ interface Message {
   sender_id: string
   created_at: string
   read_at?: string | null
+  edited_at?: string | null
   message_type?: string
   file_url?: string | null
   file_name?: string | null
@@ -107,10 +121,13 @@ interface Message {
   shared_profile_id?: string | null
   is_deleted?: boolean | null
   deleted_for_user_id?: string | null
+  is_deleted_for_all?: boolean | null
+  deleted_for_all_at?: string | null
   sender?: {
     username?: string | null
     full_name?: string | null
     avatar_url?: string | null
+    email?: string | null
   } | null
 }
 
@@ -143,6 +160,22 @@ const Messages = () => {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
+  const [showScamPrevention, setShowScamPrevention] = useState(false)
+  const [swipedConversationId, setSwipedConversationId] = useState<string | null>(null)
+  const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null)
+  const [listActionConversation, setListActionConversation] = useState<Conversation | null>(null)
+  const [showListConversationActions, setShowListConversationActions] = useState(false)
+  const [activeMessage, setActiveMessage] = useState<Message | null>(null)
+  const [showMessageActions, setShowMessageActions] = useState(false)
+  const [showEditMessageModal, setShowEditMessageModal] = useState(false)
+  const [editMessageValue, setEditMessageValue] = useState('')
+  const [showDeleteMessageConfirm, setShowDeleteMessageConfirm] = useState(false)
+  const [showForwardMessage, setShowForwardMessage] = useState(false)
+  const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
+
+  const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
+  const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
+  const longPressTimerRef = useRef<number | null>(null)
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -229,6 +262,11 @@ const Messages = () => {
 
     const dayLabel = diffInDays > 1 ? 'jours' : 'jour'
     return `Dernière activité : il y a ${diffInDays} ${dayLabel}`
+  }
+
+  const isWithin24Hours = (dateString: string) => {
+    const createdAt = new Date(dateString).getTime()
+    return Date.now() - createdAt <= 24 * 60 * 60 * 1000
   }
 
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
@@ -371,7 +409,7 @@ const Messages = () => {
       // Récupérer les informations de l'utilisateur
       const { data: otherUser } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, last_activity_at')
+        .select('id, username, full_name, avatar_url, email, last_activity_at')
         .eq('id', otherUserId)
         .single()
 
@@ -433,7 +471,11 @@ const Messages = () => {
       const visibleMessages = (messagesData as Array<Message & { 
         is_deleted?: boolean | null
         deleted_for_user_id?: string | null
+        is_deleted_for_all?: boolean | null
       }>).filter((msg) => {
+        if (msg.is_deleted_for_all === true) {
+          return false
+        }
         // Si le message est marqué comme supprimé pour cet utilisateur, l'exclure
         if (msg.is_deleted === true && msg.deleted_for_user_id === user.id) {
           return false
@@ -445,14 +487,14 @@ const Messages = () => {
       
       const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url')
+        .select('id, username, full_name, avatar_url, email')
         .in('id', senderIds) : { data: [], error: null }
 
       if (sendersError) {
         console.error('Error loading senders:', sendersError)
       }
 
-      const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> || []).map((s) => [s.id, s]))
+      const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null; email?: string | null }> || []).map((s) => [s.id, s]))
 
       const formattedMessages: Message[] = visibleMessages.map((msg) => ({
         ...msg,
@@ -467,11 +509,28 @@ const Messages = () => {
       )
 
       if (unreadMessages.length > 0) {
-        const unreadIds = unreadMessages.map((msg) => msg.id)
-        await supabase
-          .from('messages')
-          .update({ read_at: new Date().toISOString() } as never)
-          .in('id', unreadIds)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: readError } = await (supabase as any)
+          .rpc('mark_conversation_messages_read', { p_conversation_id: convId })
+
+        if (readError) {
+          console.error('Error marking messages as read:', readError)
+        } else {
+          const nowIso = new Date().toISOString()
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.sender_id !== user.id && !msg.read_at
+                ? { ...msg, read_at: nowIso }
+                : msg
+            )
+          )
+        }
+
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === convId ? { ...conv, unread: 0 } : conv
+          )
+        )
       }
     } else {
       setMessages([])
@@ -526,7 +585,7 @@ const Messages = () => {
       // Charger les profils des autres utilisateurs
       const { data: users } = otherUserIds.length > 0 ? await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url')
+        .select('id, username, full_name, avatar_url, email')
         .in('id', [...new Set(otherUserIds)]) : { data: [] }
 
       // Charger les posts liés
@@ -544,6 +603,11 @@ const Messages = () => {
         from_user_id: string
         to_user_id: string
         related_post_id?: string | null
+        request_message?: string | null
+        related_service_name?: string | null
+        related_service_description?: string | null
+        related_service_payment_type?: 'price' | 'exchange' | null
+        related_service_value?: string | null
         status: string
         created_at: string
         updated_at?: string | null
@@ -560,6 +624,11 @@ const Messages = () => {
           from_user_id: req.from_user_id,
           to_user_id: req.to_user_id,
           related_post_id: req.related_post_id,
+          request_message: req.request_message || null,
+          related_service_name: req.related_service_name || null,
+          related_service_description: req.related_service_description || null,
+          related_service_payment_type: req.related_service_payment_type || null,
+          related_service_value: req.related_service_value || null,
           status: req.status as 'pending' | 'accepted' | 'declined' | 'cancelled',
           created_at: req.created_at,
           updated_at: req.updated_at,
@@ -577,9 +646,12 @@ const Messages = () => {
       
       requestsWithData.forEach((request) => {
         // Clé unique : annonce + utilisateur (pour les demandes envoyées) ou annonce + destinataire (pour les demandes reçues)
+        const otherUserKey = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
         const key = request.related_post_id 
-          ? `${request.related_post_id}_${request.from_user_id === user.id ? request.to_user_id : request.from_user_id}`
-          : `${request.from_user_id}_${request.to_user_id}`
+          ? `post_${request.related_post_id}_${otherUserKey}`
+          : request.related_service_name
+            ? `service_${request.related_service_name}_${otherUserKey}`
+            : `user_${otherUserKey}`
         
         const existing = uniqueRequests.get(key)
         
@@ -652,7 +724,7 @@ const Messages = () => {
 
         const usersResponse = otherUserIds.length > 0 ? await supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url')
+          .select('id, username, full_name, avatar_url, email')
           .in('id', otherUserIds) : { data: [] as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }> }
 
         const usersMap = new Map((usersResponse.data || []).map((u) => [u.id, u]))
@@ -695,7 +767,7 @@ const Messages = () => {
 
         const { data: users, error: usersError } = otherUserIds.length > 0 ? await supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url')
+          .select('id, username, full_name, avatar_url, email')
           .in('id', [...new Set(otherUserIds)]) : { data: [], error: null }
 
         if (usersError) {
@@ -758,7 +830,7 @@ const Messages = () => {
 
       const { data: users, error: usersError } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url')
+        .select('id, username, full_name, avatar_url, email')
         .in('id', [...new Set(otherUserIds)])
 
       if (usersError) {
@@ -819,18 +891,11 @@ const Messages = () => {
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}`)
         .is('deleted_at', null) // Exclure les conversations supprimées
 
-      // Appliquer les filtres selon le type
+      // Appliquer les filtres selon le type (l'archivage est géré par utilisateur)
       if (activeFilter === 'posts') {
-        query = query.not('post_id', 'is', null).or('is_archived.is.null,is_archived.eq.false')
+        query = query.not('post_id', 'is', null)
       } else if (activeFilter === 'groups') {
-        query = query.eq('is_group', true).or('is_archived.is.null,is_archived.eq.false')
-      } else if (activeFilter === 'archived') {
-        query = query.eq('is_archived', true)
-      } else if (activeFilter === 'all') {
-        // Pour "Tout", afficher toutes les conversations (même sans messages)
-        // Exclure uniquement les archivées et supprimées
-        // Si is_archived est NULL, considérer comme non archivé
-        query = query.or('is_archived.is.null,is_archived.eq.false')
+        query = query.eq('is_group', true)
       }
 
       // Trier par last_message_at si disponible, sinon par created_at
@@ -859,7 +924,7 @@ const Messages = () => {
         
         const { data: users, error: usersError } = validUserIds.length > 0 ? await supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url')
+          .select('id, username, full_name, avatar_url, email')
           .in('id', validUserIds) : { data: [], error: null }
 
         if (usersError) {
@@ -879,9 +944,32 @@ const Messages = () => {
           return !blockedIds.has(otherUserId)
         })
 
+        const conversationIds = visibleConvs.map((conv) => conv.id)
+        const { data: stateRows } = conversationIds.length > 0 ? await supabase
+          .from('conversation_user_states')
+          .select('conversation_id, is_archived, archived_at, is_pinned, pinned_at, deleted_at')
+          .eq('user_id', user.id)
+          .in('conversation_id', conversationIds) : { data: [] }
+
+        const stateMap = new Map(
+          (stateRows || []).map((row: {
+            conversation_id: string
+            is_archived?: boolean | null
+            archived_at?: string | null
+            is_pinned?: boolean | null
+            pinned_at?: string | null
+            deleted_at?: string | null
+          }) => [row.conversation_id, row])
+        )
+
+        const activeConvs = visibleConvs.filter((conv) => {
+          const state = stateMap.get(conv.id)
+          return !state?.deleted_at
+        })
+
         // Pour chaque conversation, récupérer le dernier message et compter les non-lus
         const convsWithData = await Promise.all(
-          visibleConvs.map(async (conv) => {
+          activeConvs.map(async (conv) => {
             const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
             const otherUser = usersMap.get(otherUserId) || null
             const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
@@ -923,6 +1011,7 @@ const Messages = () => {
               }
             }
 
+            const state = stateMap.get(conv.id)
             return {
               ...conv,
               other_user: otherUser,
@@ -931,6 +1020,10 @@ const Messages = () => {
                 content: (lastMsg as { content: string }).content,
                 created_at: (lastMsg as { created_at: string }).created_at
               } : null,
+              is_archived: state?.is_archived ?? (conv as { is_archived?: boolean }).is_archived ?? false,
+              archived_at: state?.archived_at ?? null,
+              is_pinned: state?.is_pinned ?? false,
+              pinned_at: state?.pinned_at ?? null,
               unread: unreadCount || 0,
               has_messages: hasMessages
             }
@@ -990,8 +1083,11 @@ const Messages = () => {
           return true
         })
         
-        // Trier par date de dernier message (plus récent en premier)
+        // Trier : conversations épinglées d'abord, puis date du dernier message
         filteredConvs.sort((a, b) => {
+          const pinnedA = (a as { is_pinned?: boolean }).is_pinned ? 1 : 0
+          const pinnedB = (b as { is_pinned?: boolean }).is_pinned ? 1 : 0
+          if (pinnedA !== pinnedB) return pinnedB - pinnedA
           const dateA = a.last_message_at || a.lastMessage?.created_at || ''
           const dateB = b.last_message_at || b.lastMessage?.created_at || ''
           if (!dateA && !dateB) return 0
@@ -1042,6 +1138,171 @@ const Messages = () => {
       console.error('Error in handleReportSubmit:', error)
       alert('Erreur lors de l\'envoi du signalement')
     }
+  }
+
+  const upsertConversationState = async (conversationId: string, updates: Record<string, unknown>) => {
+    if (!user) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('conversation_user_states') as any)
+      .upsert({
+        user_id: user.id,
+        conversation_id: conversationId,
+        ...updates
+      }, { onConflict: 'user_id,conversation_id' })
+  }
+
+  const handleArchiveConversation = async (conv: Conversation, shouldArchive: boolean) => {
+    if (!conv.id) return
+    await upsertConversationState(conv.id, {
+      is_archived: shouldArchive,
+      archived_at: shouldArchive ? new Date().toISOString() : null,
+      ...(shouldArchive ? { is_pinned: false, pinned_at: null } : {})
+    })
+    loadConversations()
+  }
+
+  const handlePinConversation = async (conv: Conversation) => {
+    if (!user || !conv.id) return
+
+    if (conv.is_pinned) {
+      await upsertConversationState(conv.id, { is_pinned: false, pinned_at: null })
+      loadConversations()
+      return
+    }
+
+    // Désépingler les autres conversations de l'utilisateur
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('conversation_user_states') as any)
+      .update({ is_pinned: false, pinned_at: null })
+      .eq('user_id', user.id)
+      .eq('is_pinned', true)
+
+    await upsertConversationState(conv.id, { is_pinned: true, pinned_at: new Date().toISOString() })
+    loadConversations()
+  }
+
+  const handleDeleteConversationForUser = async (conversationIdToDelete: string) => {
+    if (!conversationIdToDelete) return
+    await upsertConversationState(conversationIdToDelete, { deleted_at: new Date().toISOString() })
+    setSelectedConversation(null)
+    navigate('/messages')
+    loadConversations()
+  }
+
+  const handleCopyMessage = async (msg?: Message | null) => {
+    if (!msg?.content) return
+    try {
+      await navigator.clipboard.writeText(msg.content)
+    } catch (error) {
+      console.error('Error copying message:', error)
+    }
+  }
+
+  const handleTranslateMessage = (msg?: Message | null) => {
+    if (!msg?.content) return
+    const text = encodeURIComponent(msg.content)
+    window.open(`https://translate.google.com/?sl=auto&tl=fr&text=${text}`, '_blank')
+  }
+
+  const handleUpdateMessage = async () => {
+    if (!activeMessage || !user) return
+    if (activeMessage.sender_id !== user.id) return
+    if (!isWithin24Hours(activeMessage.created_at)) return
+
+    const trimmed = editMessageValue.trim()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('messages') as any)
+      .update({ content: trimmed, edited_at: new Date().toISOString() })
+      .eq('id', activeMessage.id)
+      .eq('sender_id', user.id)
+
+    if (error) {
+      console.error('Error updating message:', error)
+      alert('Erreur lors de la modification du message')
+      return
+    }
+
+    setShowEditMessageModal(false)
+    setShowMessageActions(false)
+    loadMessages(selectedConversation?.id || conversationId || '')
+  }
+
+  const handleDeleteMessage = async (msg: Message, deleteForAll: boolean) => {
+    if (!user) return
+
+    if (deleteForAll) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('messages') as any)
+        .update({
+          is_deleted_for_all: true,
+          deleted_for_all_at: new Date().toISOString()
+        })
+        .eq('id', msg.id)
+        .eq('sender_id', user.id)
+
+      if (error) {
+        console.error('Error deleting message for all:', error)
+        alert('Erreur lors de la suppression')
+        return
+      }
+    } else {
+      // Suppression pour soi uniquement
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('messages') as any)
+        .update({ is_deleted: true, deleted_for_user_id: user.id })
+        .eq('id', msg.id)
+
+      if (error) {
+        console.error('Error deleting message for me:', error)
+        alert('Erreur lors de la suppression')
+        return
+      }
+    }
+
+    setShowDeleteMessageConfirm(false)
+    setShowMessageActions(false)
+    loadMessages(selectedConversation?.id || conversationId || '')
+  }
+
+  const handleForwardMessage = async (targetUser: SelectableUser, msg: Message) => {
+    if (!user || !targetUser?.id) return
+    const conversation = await findOrCreateConversation(targetUser.id)
+    if (!conversation || !(conversation as { id: string }).id) {
+      alert('Erreur lors de l\'ouverture de la conversation')
+      return
+    }
+
+    const convId = (conversation as { id: string }).id
+    const forwardPayload: Record<string, unknown> = {
+      conversation_id: convId,
+      sender_id: user.id,
+      message_type: msg.message_type || 'text'
+    }
+
+    if (msg.message_type === 'text' || !msg.message_type) {
+      forwardPayload.content = msg.content || ''
+    } else {
+      forwardPayload.content = msg.content || null
+      forwardPayload.file_url = msg.file_url || null
+      forwardPayload.file_name = msg.file_name || null
+      forwardPayload.file_type = msg.file_type || null
+      forwardPayload.location_data = msg.location_data || null
+      forwardPayload.price_data = msg.price_data || null
+      forwardPayload.rate_data = msg.rate_data || null
+      forwardPayload.calendar_request_data = msg.calendar_request_data || null
+      forwardPayload.shared_post_id = msg.shared_post_id || null
+      forwardPayload.shared_profile_id = msg.shared_profile_id || null
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('messages') as any).insert(forwardPayload)
+    if (error) {
+      console.error('Error forwarding message:', error)
+      alert('Erreur lors du transfert')
+      return
+    }
+
+    setShowForwardMessage(false)
   }
 
   useEffect(() => {
@@ -1212,6 +1473,16 @@ const Messages = () => {
     const displayName = otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')
     const groupedMessages = groupMessagesByDate(messages)
     const otherUserId = selectedConversation?.other_user?.id
+    const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+    const headerName = isSystemConversation ? SYSTEM_SENDER_NAME : displayName
+    const canEditMessage = !!activeMessage &&
+      activeMessage.sender_id === user?.id &&
+      isWithin24Hours(activeMessage.created_at) &&
+      (!activeMessage.message_type || activeMessage.message_type === 'text')
+    const canDeleteForAll = !!activeMessage &&
+      activeMessage.sender_id === user?.id &&
+      isWithin24Hours(activeMessage.created_at)
+    const canCopyMessage = !!activeMessage?.content
 
     return (
       <div className="messages-page-container conversation-page">
@@ -1224,23 +1495,32 @@ const Messages = () => {
             }}
           />
           <div className="conversation-header-center">
-            <h1 className="conversation-header-name">{displayName}</h1>
-            <p className="conversation-header-status">
-              {formatLastSeen(selectedConversation?.other_user?.last_activity_at)}
-            </p>
+            {isSystemConversation && (
+              <div className="conversation-header-logo">
+                <Logo className="conversation-header-logo-icon" width={40} height={20} />
+              </div>
+            )}
+            <h1 className="conversation-header-name">{headerName}</h1>
+            {!isSystemConversation && (
+              <p className="conversation-header-status">
+                {formatLastSeen(selectedConversation?.other_user?.last_activity_at)}
+              </p>
+            )}
           </div>
-          <div className="conversation-header-actions">
-            <button
-              className="conversation-actions-button"
-              type="button"
-              onClick={() => setShowConversationActions((prev) => !prev)}
-              aria-label="Actions de conversation"
-            >
-              <MoreVertical size={20} />
-            </button>
-          </div>
+          {!isSystemConversation && (
+            <div className="conversation-header-actions">
+              <button
+                className="conversation-actions-button"
+                type="button"
+                onClick={() => setShowConversationActions((prev) => !prev)}
+                aria-label="Actions de conversation"
+              >
+                <MoreVertical size={20} />
+              </button>
+            </div>
+          )}
         </div>
-        {showConversationActions && (
+        {!isSystemConversation && showConversationActions && (
           <div
             className="conversation-actions-overlay"
             onClick={() => setShowConversationActions(false)}
@@ -1276,6 +1556,7 @@ const Messages = () => {
                 type="button"
                 onClick={() => {
                   setShowConversationActions(false)
+                  setListActionConversation(selectedConversation || null)
                   setShowDeleteConfirm(true)
                 }}
               >
@@ -1291,7 +1572,7 @@ const Messages = () => {
             </div>
           </div>
         )}
-        {showReportModal && (
+        {!isSystemConversation && showReportModal && (
           <div
             className="conversation-modal-overlay"
             onClick={() => {
@@ -1447,16 +1728,11 @@ const Messages = () => {
                   <button
                     className="conversation-danger-btn"
                     onClick={async () => {
-                      const currentId = selectedConversation?.id || conversationId
+                      const currentId = listActionConversation?.id || selectedConversation?.id || conversationId
                       if (!currentId) return
-                      await supabase
-                        .from('conversations')
-                        .update({ deleted_at: new Date().toISOString() } as never)
-                        .eq('id', currentId)
+                      await handleDeleteConversationForUser(currentId)
                       setShowDeleteConfirm(false)
-                      setSelectedConversation(null)
-                      navigate('/messages')
-                      loadConversations()
+                      setListActionConversation(null)
                     }}
                   >
                     Supprimer
@@ -1474,6 +1750,107 @@ const Messages = () => {
             </div>
           ) : (
             <div className="conversation-messages-list">
+              {!isSystemConversation && (
+                <div className="conversation-safety-card">
+                <div className="conversation-safety-header">
+                  <div>
+                    <p className="conversation-safety-label">Attention aux arnaques</p>
+                    <p className="conversation-safety-summary">
+                      Protégez-vous : vérifiez l'annonce, le profil et les moyens de paiement.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="conversation-safety-toggle"
+                    onClick={() => setShowScamPrevention((prev) => !prev)}
+                    aria-expanded={showScamPrevention}
+                  >
+                    {showScamPrevention ? 'Réduire' : 'Lire plus'}
+                  </button>
+                </div>
+                {showScamPrevention && (
+                  <div className="conversation-safety-details">
+                    <div className="conversation-safety-section">
+                      <h3>Repérer un comportement suspect</h3>
+                      <ul>
+                        <li>Demande d'argent urgente ou pression pour décider vite.</li>
+                        <li>Refus de fournir des infos claires ou incohérences dans le récit.</li>
+                        <li>Invitation à continuer la discussion hors de la plateforme.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Préparer une rencontre en toute sécurité</h3>
+                      <ul>
+                        <li>Préférez un lieu public et informez un proche.</li>
+                        <li>Clarifiez les attentes, le cadre, le lieu et l'horaire.</li>
+                        <li>Faites un appel téléphonique ou vidéo avant la rencontre.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Vérifications et justificatifs</h3>
+                      <ul>
+                        <li>Vous pouvez demander les informations nécessaires pour mieux vous comprendre.</li>
+                        <li>Demandez des preuves concrètes et cohérentes (détails, contexte).</li>
+                        <li>Pour vous rassurer : appel téléphonique, appel vidéo ou visio.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Contrat et traçabilité</h3>
+                      <ul>
+                        <li>Un contrat peut aider à formaliser l'accord et garder une trace.</li>
+                        <li>Privilégiez les échanges et paiements dans l'application pour garder des preuves.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Moyens de paiement</h3>
+                      <ul>
+                        <li>Évitez les virements instantanés ou moyens non traçables.</li>
+                        <li>Ne cliquez jamais sur des liens de paiement envoyés par message.</li>
+                        <li>Privilégiez les paiements sécurisés et vérifiables.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Documents à ne pas envoyer</h3>
+                      <ul>
+                        <li>Pièce d'identité, RIB, codes ou mots de passe.</li>
+                        <li>Photos de cartes bancaires ou justificatifs confidentiels.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Vérifier une annonce face aux techniques d'IA</h3>
+                      <ul>
+                        <li>Incohérences dans les images, les dates ou les détails.</li>
+                        <li>Descriptions trop vagues, copiées, ou réponses automatiques.</li>
+                        <li>Refus de fournir des preuves supplémentaires ou un échange clair.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Outils de sécurité disponibles</h3>
+                      <ul>
+                        <li>Vous pouvez signaler un profil ou bloquer un utilisateur à tout moment.</li>
+                        <li>En cas de doute, arrêtez la discussion et utilisez les outils de signalement.</li>
+                      </ul>
+                    </div>
+                    <div className="conversation-safety-section">
+                      <h3>Numéros utiles (France)</h3>
+                      <ul>
+                        <li>Urgences : 112 (Europe) ou 17 (Police).</li>
+                        <li>SMS/relai pour personnes sourdes ou malentendantes : 114.</li>
+                        <li>Violences femmes : 3919 (écoute, information).</li>
+                        <li>Aide aux victimes : 116 006.</li>
+                      </ul>
+                    </div>
+                    <button
+                      type="button"
+                      className="conversation-safety-toggle conversation-safety-toggle-bottom"
+                      onClick={() => setShowScamPrevention(false)}
+                    >
+                      Réduire
+                    </button>
+                  </div>
+                )}
+              </div>
+              )}
               {groupedMessages.map((group, groupIndex) => (
                 <div key={groupIndex} className="conversation-messages-group">
                   <div className="conversation-date-separator">
@@ -1484,61 +1861,120 @@ const Messages = () => {
                     const prevMsg = msgIndex > 0 ? group.messages[msgIndex - 1] : null
                     const showAvatar = !isOwn && (!prevMsg || prevMsg.sender_id !== msg.sender_id || 
                       new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000) // 5 minutes
-                    
-                    return (
-                      <MessageBubble
-                        key={msg.id}
-                        message={msg}
-                        isOwn={isOwn}
-                        showAvatar={showAvatar}
-                        onDelete={async () => {
-                          if (user && isOwn) {
-                            // Suppression soft
-                            await supabase
-                              .from('messages')
-                              .update({ is_deleted: true, deleted_for_user_id: user.id } as never)
-                              .eq('id', msg.id)
-                            loadMessages(selectedConversation?.id || conversationId || '')
-                          }
-                        }}
-                        onLike={async () => {
-                          if (user) {
-                            // Toggle like
-                            const { data: existingLike } = await supabase
-                              .from('message_likes')
-                              .select('id')
-                              .eq('message_id', msg.id)
-                              .eq('user_id', user.id)
-                              .maybeSingle()
 
-                            if (existingLike) {
-                              await supabase
-                                .from('message_likes')
-                                .delete()
-                                .eq('id', (existingLike as { id: string }).id)
-                            } else {
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              await (supabase.from('message_likes') as any)
-                                .insert({ message_id: msg.id, user_id: user.id })
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`message-swipe-row ${swipedMessageId === msg.id ? 'swiped' : ''} ${isOwn ? 'own' : 'other'}`}
+                      >
+                        {isOwn && (
+                          <div className="message-swipe-actions">
+                            <button
+                              type="button"
+                              className="message-swipe-delete"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setActiveMessage(msg)
+                                setShowDeleteMessageConfirm(true)
+                                setSwipedMessageId(null)
+                              }}
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                        <div
+                          className="message-swipe-content"
+                          onContextMenu={(event) => {
+                            event.preventDefault()
+                            setActiveMessage(msg)
+                            setShowMessageActions(true)
+                            setEditMessageValue(msg.content || '')
+                          }}
+                          onTouchStart={(event) => {
+                            const touch = event.touches[0]
+                            messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
+                            longPressTimerRef.current = window.setTimeout(() => {
+                              setActiveMessage(msg)
+                              setShowMessageActions(true)
+                              setEditMessageValue(msg.content || '')
+                              setSwipedMessageId(null)
+                            }, 500)
+                          }}
+                          onTouchMove={(event) => {
+                            const touch = event.touches[0]
+                            const start = messageTouchRef.current
+                            if (!start) return
+                            const deltaX = touch.clientX - start.startX
+                            const deltaY = touch.clientY - start.startY
+                            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                              if (longPressTimerRef.current) {
+                                window.clearTimeout(longPressTimerRef.current)
+                                longPressTimerRef.current = null
+                              }
                             }
-                          }
-                        }}
-                        onReport={async () => {
-                          if (user && !isOwn) {
-                            const reason = prompt('Raison du signalement:')
-                            if (reason) {
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              await (supabase.from('message_reports') as any)
-                                .insert({
-                                  message_id: msg.id,
-                                  reporter_id: user.id,
-                                  reason
-                                })
-                              alert('Message signalé. Merci pour votre retour.')
+                            if (isOwn && Math.abs(deltaY) < 30 && deltaX < -60) {
+                              setSwipedMessageId(msg.id)
+                            } else if (Math.abs(deltaY) < 30 && deltaX > 60) {
+                              setSwipedMessageId(null)
                             }
-                          }
-                        }}
-                      />
+                          }}
+                          onTouchEnd={() => {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }}
+                        >
+                          <MessageBubble
+                            message={msg}
+                            isOwn={isOwn}
+                            showAvatar={showAvatar}
+                            systemSenderEmail={SYSTEM_SENDER_EMAIL}
+                            onDelete={async () => {
+                              if (user && isOwn) {
+                                await handleDeleteMessage(msg, false)
+                              }
+                            }}
+                            onLike={async () => {
+                              if (user) {
+                                const { data: existingLike } = await supabase
+                                  .from('message_likes')
+                                  .select('id')
+                                  .eq('message_id', msg.id)
+                                  .eq('user_id', user.id)
+                                  .maybeSingle()
+
+                                if (existingLike) {
+                                  await supabase
+                                    .from('message_likes')
+                                    .delete()
+                                    .eq('id', (existingLike as { id: string }).id)
+                                } else {
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  await (supabase.from('message_likes') as any)
+                                    .insert({ message_id: msg.id, user_id: user.id })
+                                }
+                              }
+                            }}
+                            onReport={async () => {
+                              if (user && !isOwn) {
+                                const reason = prompt('Raison du signalement:')
+                                if (reason) {
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                  await (supabase.from('message_reports') as any)
+                                    .insert({
+                                      message_id: msg.id,
+                                      reporter_id: user.id,
+                                      reason
+                                    })
+                                  alert('Message signalé. Merci pour votre retour.')
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -1546,19 +1982,156 @@ const Messages = () => {
             </div>
           )}
         </div>
-        {user && (selectedConversation || conversationId) && (
-          <MessageInput
-            conversationId={selectedConversation?.id || conversationId || ''}
-            senderId={user.id}
-            openCalendarOnMount={openAppointment}
-            counterpartyId={selectedConversation?.other_user?.id || null}
-            onMessageSent={() => {
-              if (selectedConversation || conversationId) {
-                loadMessages(selectedConversation?.id || conversationId || '')
-                loadConversations()
-              }
-            }}
+        {showMessageActions && activeMessage && (
+          <div
+            className="message-actions-overlay"
+            onClick={() => setShowMessageActions(false)}
+          >
+            <div
+              className="message-actions-menu"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3 className="message-actions-title">Actions</h3>
+              <button
+                className="message-action-item"
+                type="button"
+                onClick={() => {
+                  handleCopyMessage(activeMessage)
+                  setShowMessageActions(false)
+                }}
+                disabled={!canCopyMessage}
+              >
+                <Copy size={18} />
+                Copier
+              </button>
+              <button
+                className="message-action-item"
+                type="button"
+                onClick={() => {
+                  handleTranslateMessage(activeMessage)
+                  setShowMessageActions(false)
+                }}
+                disabled={!activeMessage.content}
+              >
+                <Languages size={18} />
+                Traduire
+              </button>
+              <button
+                className="message-action-item"
+                type="button"
+                onClick={async () => {
+                  setShowMessageActions(false)
+                  setShowForwardMessage(true)
+                  setForwardMessage(activeMessage)
+                  await loadSelectableUsers()
+                }}
+              >
+                <Send size={18} />
+                Transférer
+              </button>
+              {activeMessage.sender_id === user?.id && (
+                <>
+                  <button
+                    className="message-action-item"
+                    type="button"
+                    onClick={() => {
+                      setShowMessageActions(false)
+                      setShowEditMessageModal(true)
+                    }}
+                    disabled={!canEditMessage}
+                  >
+                    <Pencil size={18} />
+                    Modifier
+                  </button>
+                  <button
+                    className="message-action-item danger"
+                    type="button"
+                    onClick={() => {
+                      setShowMessageActions(false)
+                      setShowDeleteMessageConfirm(true)
+                    }}
+                  >
+                    <Trash2 size={18} />
+                    Supprimer
+                  </button>
+                </>
+              )}
+              <button
+                className="message-action-item cancel"
+                type="button"
+                onClick={() => setShowMessageActions(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+        {showEditMessageModal && activeMessage && (
+          <ConfirmationModal
+            visible={showEditMessageModal}
+            title="Modifier le message"
+            message="Vous pouvez modifier votre message (24h)."
+            onConfirm={handleUpdateMessage}
+            onCancel={() => setShowEditMessageModal(false)}
+            confirmLabel="Enregistrer"
+            cancelLabel="Annuler"
+            showTextarea={true}
+            textareaLabel="Message"
+            textareaValue={editMessageValue}
+            onTextareaChange={setEditMessageValue}
+            textareaMaxLength={500}
           />
+        )}
+        {showDeleteMessageConfirm && activeMessage && (
+          <ConfirmationModal
+            visible={showDeleteMessageConfirm}
+            title="Supprimer le message"
+            message={canDeleteForAll ? 'Supprimer pour tout le monde ?' : 'Supprimer pour vous uniquement ?'}
+            onConfirm={() => handleDeleteMessage(activeMessage, canDeleteForAll)}
+            onCancel={() => setShowDeleteMessageConfirm(false)}
+            confirmLabel="Supprimer"
+            cancelLabel="Annuler"
+          />
+        )}
+        <SelectUsersModal
+          visible={showForwardMessage}
+          title="Transférer le message"
+          users={selectableUsers}
+          loading={selectableUsersLoading}
+          emptyText="Aucun utilisateur disponible"
+          onClose={() => {
+            setShowForwardMessage(false)
+            setForwardMessage(null)
+          }}
+          onSelectUser={async (selectedUser) => {
+            if (forwardMessage) {
+              await handleForwardMessage(selectedUser, forwardMessage)
+            }
+            setShowForwardMessage(false)
+            setForwardMessage(null)
+          }}
+        />
+        {user && (selectedConversation || conversationId) && (
+          <div className="conversation-input-container">
+            {isSystemConversation && (
+              <div className="system-conversation-banner">
+                Conversation d&apos;information Ollync. Vous pouvez uniquement lire ces messages.
+              </div>
+            )}
+            <MessageInput
+              conversationId={selectedConversation?.id || conversationId || ''}
+              senderId={user.id}
+              openCalendarOnMount={openAppointment}
+              counterpartyId={selectedConversation?.other_user?.id || null}
+              disabled={isSystemConversation}
+              onMessageSent={() => {
+                if (selectedConversation || conversationId) {
+                  loadMessages(selectedConversation?.id || conversationId || '')
+                  loadConversations()
+                }
+              }}
+            />
+          </div>
         )}
       </div>
     )
@@ -1682,9 +2255,14 @@ const Messages = () => {
                         {request.related_post.title}
                       </p>
                     )}
+                    {!request.related_post && request.related_service_name && (
+                      <p className="conversation-post-title">
+                        Service : {request.related_service_name}
+                      </p>
+                    )}
                     <div className="conversation-footer">
-                      <span className={`conversation-badge ${request.request_type === 'sent' ? 'sent' : 'received'}`}>
-                        {request.request_type === 'sent' ? 'Envoyée' : 'Reçue'}
+                      <span className={`conversation-badge ${request.from_user_id === user?.id ? 'sent' : 'received'}`}>
+                        {request.from_user_id === user?.id ? 'Envoyée' : 'Reçue'}
                       </span>
                       <span className="conversation-status-text">
                         {request.status === 'pending' && 'En attente'}
@@ -1774,6 +2352,11 @@ const Messages = () => {
                         {request.related_post.title}
                       </p>
                     )}
+                    {!request.related_post && request.related_service_name && (
+                      <p className="conversation-post-title">
+                        Service : {request.related_service_name}
+                      </p>
+                    )}
                     <p className="conversation-preview">
                       Match accepté - Cliquez pour démarrer la conversation
                     </p>
@@ -1834,55 +2417,235 @@ const Messages = () => {
           />
         ) : (
           <div className="conversations-list">
-            {filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                className="conversation-item"
-                onClick={() => navigate(`/messages/${conv.id}`)}
-              >
-                <div className="conversation-avatar-wrapper">
-                  <img
-                    src={conv.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`}
-                    alt={conv.other_user?.full_name || conv.other_user?.username || 'User'}
-                    className="conversation-avatar"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`
-                    }}
-                  />
-                  {conv.unread && conv.unread > 0 && (
-                    <div className="conversation-unread-badge">
-                      {conv.unread > 99 ? '99+' : conv.unread}
+            {filteredConversations.map((conv) => {
+              const isSystemConv = (conv.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+              return (
+                <div
+                  key={conv.id}
+                  className={`conversation-swipe-row ${swipedConversationId === conv.id ? 'swiped' : ''}`}
+                >
+                  {!isSystemConv && (
+                    <div className="conversation-swipe-actions">
+                      <button
+                        type="button"
+                        className="conversation-swipe-delete"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setListActionConversation(conv)
+                          setShowDeleteConfirm(true)
+                          setSwipedConversationId(null)
+                        }}
+                      >
+                        Supprimer
+                      </button>
                     </div>
                   )}
-                </div>
+                  <div
+                    className="conversation-swipe-content conversation-item"
+                    onClick={() => {
+                      if (swipedConversationId === conv.id) {
+                        setSwipedConversationId(null)
+                        return
+                      }
+                      navigate(`/messages/${conv.id}`)
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      if (isSystemConv) return
+                      setListActionConversation(conv)
+                      setShowListConversationActions(true)
+                    }}
+                    onTouchStart={(event) => {
+                      if (isSystemConv) return
+                      const touch = event.touches[0]
+                      conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
+                      longPressTimerRef.current = window.setTimeout(() => {
+                        setListActionConversation(conv)
+                        setShowListConversationActions(true)
+                        setSwipedConversationId(null)
+                      }, 500)
+                    }}
+                    onTouchMove={(event) => {
+                      if (isSystemConv) return
+                      const touch = event.touches[0]
+                      const start = conversationTouchRef.current
+                      if (!start) return
+                      const deltaX = touch.clientX - start.startX
+                      const deltaY = touch.clientY - start.startY
+                      if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                        if (longPressTimerRef.current) {
+                          window.clearTimeout(longPressTimerRef.current)
+                          longPressTimerRef.current = null
+                        }
+                      }
+                      if (Math.abs(deltaY) < 30 && deltaX < -60) {
+                        setSwipedConversationId(conv.id)
+                      } else if (Math.abs(deltaY) < 30 && deltaX > 60) {
+                        setSwipedConversationId(null)
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      if (longPressTimerRef.current) {
+                        window.clearTimeout(longPressTimerRef.current)
+                        longPressTimerRef.current = null
+                      }
+                    }}
+                  >
+                    <div className="conversation-avatar-wrapper">
+                      {isSystemConv ? (
+                        <div className="conversation-avatar conversation-avatar-system">
+                          <Logo className="conversation-avatar-logo" width={36} height={18} />
+                        </div>
+                      ) : (
+                        <img
+                          src={conv.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`}
+                          alt={conv.other_user?.full_name || conv.other_user?.username || 'User'}
+                          className="conversation-avatar"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`
+                          }}
+                        />
+                      )}
+                      {conv.unread && conv.unread > 0 && (
+                        <div className="conversation-unread-badge">
+                          {conv.unread > 99 ? '99+' : conv.unread}
+                        </div>
+                      )}
+                    </div>
 
-                <div className="conversation-info">
-                  <div className="conversation-item-header">
-                    <h3 className="conversation-name">
-                      {conv.other_user?.full_name || conv.other_user?.username || 'Utilisateur'}
-                    </h3>
-                    <span className="conversation-time">
-                      {formatTime(conv.lastMessage?.created_at || conv.last_message_at)}
-                    </span>
+                    <div className="conversation-info">
+                      <div className="conversation-item-header">
+                        <h3 className="conversation-name">
+                          {isSystemConv ? SYSTEM_SENDER_NAME : (conv.other_user?.full_name || conv.other_user?.username || 'Utilisateur')}
+                        </h3>
+                        <span className="conversation-time">
+                          {formatTime(conv.lastMessage?.created_at || conv.last_message_at)}
+                        </span>
+                      </div>
+
+                      {conv.postTitle && (
+                        <p className="conversation-post-title">
+                          {conv.postTitle}
+                        </p>
+                      )}
+
+                      {conv.lastMessage && (
+                        <p className={`conversation-preview ${conv.unread && conv.unread > 0 ? 'unread' : ''}`}>
+                          {conv.lastMessage.content}
+                        </p>
+                      )}
+
+                      {conv.is_pinned && (
+                        <div className="conversation-pin-indicator">
+                          <Pin size={14} />
+                          Épinglé
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  {conv.postTitle && (
-                    <p className="conversation-post-title">
-                      {conv.postTitle}
-                    </p>
-                  )}
-
-                  {conv.lastMessage && (
-                    <p className={`conversation-preview ${conv.unread && conv.unread > 0 ? 'unread' : ''}`}>
-                      {conv.lastMessage.content}
-                    </p>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
+      {showListConversationActions && listActionConversation && (
+        <div
+          className="conversation-actions-overlay"
+          onClick={() => {
+            setShowListConversationActions(false)
+            setListActionConversation(null)
+          }}
+        >
+          <div
+            className="conversation-actions-menu"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="conversation-actions-title">Options</h3>
+            <button
+              className="conversation-action-item"
+              type="button"
+              onClick={async () => {
+                await handlePinConversation(listActionConversation)
+                setShowListConversationActions(false)
+                setListActionConversation(null)
+              }}
+            >
+              {listActionConversation.is_pinned ? 'Retirer le pin' : 'Épingler'}
+            </button>
+            <button
+              className="conversation-action-item"
+              type="button"
+              onClick={async () => {
+                const shouldArchive = !listActionConversation.is_archived
+                await handleArchiveConversation(listActionConversation, shouldArchive)
+                setShowListConversationActions(false)
+                setListActionConversation(null)
+              }}
+            >
+              {listActionConversation.is_archived ? 'Désarchiver' : 'Archiver'}
+            </button>
+            <button
+              className="conversation-action-item danger"
+              type="button"
+              onClick={() => {
+                setShowListConversationActions(false)
+                setShowDeleteConfirm(true)
+              }}
+            >
+              Supprimer
+            </button>
+            <button
+              className="conversation-action-item cancel"
+              type="button"
+              onClick={() => {
+                setShowListConversationActions(false)
+                setListActionConversation(null)
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+      {showDeleteConfirm && listActionConversation && (
+        <div className="conversation-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+            <div className="conversation-modal-header">
+              <h2>Supprimer la conversation</h2>
+              <button
+                className="conversation-modal-close"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="conversation-modal-body">
+              <p className="conversation-modal-question">
+                Voulez-vous vraiment supprimer cette conversation ?
+              </p>
+              <div className="conversation-modal-actions">
+                <button
+                  className="conversation-cancel-btn"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  className="conversation-danger-btn"
+                  onClick={async () => {
+                    await handleDeleteConversationForUser(listActionConversation.id)
+                    setShowDeleteConfirm(false)
+                    setListActionConversation(null)
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <CreateGroupModal
         visible={showCreateGroup}
         participants={selectedGroupUsers}

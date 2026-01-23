@@ -84,6 +84,7 @@
   color: var(--primary);
 }
 
+
 @media (max-width: 768px) {
   .help-page {
     padding: 0;
@@ -109,5 +110,6 @@
   .help-menu-text p {
     font-size: 13px;
   }
+
 }
 

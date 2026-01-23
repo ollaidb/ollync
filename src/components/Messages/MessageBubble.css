@@ -31,6 +31,18 @@
   margin-bottom: 4px;
 }
 
+.message-avatar-system {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+}
+
+.message-avatar-logo {
+  height: 16px;
+  width: auto;
+}
+
 .message-avatar-spacer {
   width: 32px;
   flex-shrink: 0;
@@ -275,6 +287,20 @@
   white-space: nowrap;
   flex-shrink: 0;
   line-height: 1.4;
+}
+
+.message-edited-label {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.message-link {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.message-bubble.own .message-link {
+  color: var(--primary-foreground);
 }
 
 .message-bubble.own .message-time {

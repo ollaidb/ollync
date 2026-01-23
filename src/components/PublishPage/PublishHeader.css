@@ -11,6 +11,7 @@
   display: flex;
   align-items: center;
   margin-bottom: 8px;
+  gap: 8px;
 }
 
 .publish-back-button {
@@ -36,12 +37,36 @@
   flex: 1;
 }
 
+.publish-guide-button {
+  display: inline-flex;
+  align-items: center;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  color: #111827;
+  padding: 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.publish-guide-button:hover {
+  background-color: #E5E7EB;
+  opacity: 0.9;
+}
+
+.publish-guide-button:active {
+  transform: scale(0.98);
+}
+
 .publish-title {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   color: #111827;
   margin: 0;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .publish-breadcrumb {
@@ -62,5 +87,27 @@
   background-color: #6366F1;
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .publish-header-container {
+    padding: 10px 14px;
+  }
+
+  .publish-header-content {
+    gap: 6px;
+  }
+
+  .publish-title {
+    font-size: 16px;
+  }
+
+  .publish-guide-button {
+    padding: 5px;
+  }
+
+  .publish-back-button {
+    padding: 5px;
+  }
 }
 

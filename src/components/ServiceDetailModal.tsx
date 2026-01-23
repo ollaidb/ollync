@@ -11,9 +11,20 @@ interface Service {
 interface ServiceDetailModalProps {
   service: Service | null
   onClose: () => void
+  canRequest?: boolean
+  requestStatus?: 'pending' | 'accepted' | 'declined' | 'cancelled' | null
+  onRequestClick?: () => void
+  requestLoading?: boolean
 }
 
-const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
+const ServiceDetailModal = ({ 
+  service, 
+  onClose, 
+  canRequest = false, 
+  requestStatus = null,
+  onRequestClick,
+  requestLoading = false
+}: ServiceDetailModalProps) => {
   if (!service) return null
 
   return (
@@ -53,6 +64,18 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
           <div className="service-detail-exchange-section">
             <h3 className="service-detail-exchange-label">Échange proposé</h3>
             <p className="service-detail-exchange-value">{service.value}</p>
+          </div>
+        )}
+
+        {canRequest && (
+          <div className="service-detail-actions">
+            <button
+              className={`service-detail-request-btn ${requestStatus === 'pending' ? 'service-detail-request-btn-sent' : requestStatus === 'accepted' ? 'service-detail-request-btn-accepted' : ''}`}
+              onClick={onRequestClick}
+              disabled={requestLoading || requestStatus === 'accepted'}
+            >
+              {requestStatus === 'pending' ? 'Demande envoyée' : requestStatus === 'accepted' ? 'Demande acceptée' : 'Faire une demande'}
+            </button>
           </div>
         )}
       </div>

@@ -10,19 +10,22 @@
 
 /* 1. Header & Recherche - Fond bleu clair */
 .category-header-new {
-  background: var(--accent);
+  background: var(--background);
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   padding-left: 20px;
   padding-right: 20px;
-  border-bottom-left-radius: 24px;
-  border-bottom-right-radius: 24px;
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
 }
 
-.category-search-container {
+.category-header-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -32,15 +35,28 @@
   flex-shrink: 0;
 }
 
-.category-search-box {
+.category-title-new {
   flex: 1;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.category-search-section {
+  background: var(--background);
+  padding: 12px 20px 8px 20px;
+}
+
+.category-search-box {
   position: relative;
   display: flex;
   align-items: center;
-  background-color: var(--background);
+  background-color: var(--muted);
   border-radius: 12px;
   padding: 12px 16px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .category-search-icon {
@@ -87,31 +103,16 @@
 }
 
 .category-users-icon {
-  color: var(--accent-foreground);
-  flex-shrink: 0;
-}
-
-
-/* 2. Titre de la catégorie */
-.category-title-section {
-  padding: 0 20px 20px 20px;
-  background: var(--accent);
-}
-
-.category-title-new {
-  font-size: 24px;
-  font-weight: 700;
   color: var(--foreground);
-  margin: 0;
-  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 /* 3. Filtres de sous-catégories (scroll horizontal) */
 .category-filters-section {
-  background: var(--accent);
-  padding: 0 0 20px 0;
+  background: var(--background);
+  padding: 10px 0 20px 0;
   position: sticky;
-  top: calc(env(safe-area-inset-top, 0px) + 80px);
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
   z-index: 20;
   /* Permettre aux menus de dépasser */
   overflow: visible;
@@ -290,7 +291,7 @@
 
 /* Pour N3 avec N4, le chevron droit ne doit pas tourner */
 .category-dropdown-chevron.open {
-  /* Pas de rotation pour le chevron droit */
+  transform: none;
 }
 
 /* Menu déroulant imbriqué (N4) - Colonne verticale à droite */
@@ -352,21 +353,20 @@
   }
 }
   
-  /* Si l'écran est trop petit, ajuster encore plus */
-  @media (max-width: 480px) {
-    .category-dropdown-menu {
-      min-width: 140px;
-      max-width: 180px;
-      padding: 6px;
-    }
-    
-    .category-nested-dropdown-menu {
-      min-width: 130px;
-      max-width: 160px;
-      padding: 6px;
-      /* Sur très petit écran, le menu N4 peut être empilé verticalement */
-      right: calc(100% + 4px);
-    }
+/* Si l'écran est trop petit, ajuster encore plus */
+@media (max-width: 480px) {
+  .category-dropdown-menu {
+    min-width: 140px;
+    max-width: 180px;
+    padding: 6px;
+  }
+  
+  .category-nested-dropdown-menu {
+    min-width: 130px;
+    max-width: 160px;
+    padding: 6px;
+    /* Sur très petit écran, le menu N4 peut être empilé verticalement */
+    right: calc(100% + 4px);
   }
 }
 
@@ -402,8 +402,7 @@
 .category-content-section {
   flex: 1;
   padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 100px) 20px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: visible;
   position: relative;
   z-index: 1; /* En arrière-plan pour que les menus soient visibles */
 }
@@ -471,7 +470,13 @@
     padding-left: 16px;
     padding-right: 16px;
     padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-bottom: 12px;
+    padding-bottom: 10px;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+
+  .category-search-section {
+    padding: 10px 16px 6px 16px;
   }
 
   .category-search-box {
@@ -482,17 +487,13 @@
     font-size: 15px;
   }
 
-  .category-title-section {
-    padding: 0 16px 16px 16px;
-  }
-
   .category-title-new {
     font-size: 22px;
   }
 
   .category-filters-section {
-    top: calc(env(safe-area-inset-top, 0px) + 68px);
-    padding: 0 0 16px 0;
+    top: calc(env(safe-area-inset-top, 0px) + 62px);
+    padding: 8px 0 16px 0;
   }
 
   .category-filters-scroll {

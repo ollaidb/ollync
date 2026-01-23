@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Info } from 'lucide-react'
 import { PublicationType } from '../../constants/publishData'
 import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import './PublishHeader.css'
@@ -9,9 +9,10 @@ interface PublishHeaderProps {
   onBack: () => void
   breadcrumb: string
   selectedCategory?: PublicationType | null
+  onOpenGuide: () => void
 }
 
-export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _selectedCategory }: PublishHeaderProps) => {
+export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _selectedCategory, onOpenGuide }: PublishHeaderProps) => {
   const navigate = useNavigate()
   const { getPreviousPath, markNavigatingBack, canGoBack } = useNavigationHistory()
   const totalSteps = 5
@@ -46,6 +47,14 @@ export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _sel
             <p className="publish-breadcrumb">{breadcrumb}</p>
           )}
         </div>
+        <button
+          className="publish-guide-button"
+          onClick={onOpenGuide}
+          aria-label="Ouvrir le guide de publication"
+          title="Guide de publication"
+        >
+          <Info size={20} />
+        </button>
       </div>
       {step > 0 && (
         <div className="publish-progress-bar">
