@@ -10,6 +10,10 @@
   box-shadow: var(--shadow-md);
 }
 
+.app--web .header {
+  position: static;
+}
+
 /* Section 1: Logo et Notifications */
 .header-section-1 {
   display: flex;

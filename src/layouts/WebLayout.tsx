@@ -6,13 +6,9 @@ type WebLayoutProps = {
 }
 
 const navItems = [
-  { label: 'Accueil', to: '/home' },
-  { label: 'Fil', to: '/feed' },
-  { label: 'Favoris', to: '/favorites' },
-  { label: 'Publier', to: '/publish' },
-  { label: 'Messages', to: '/messages' },
   { label: 'Profil', to: '/profile' },
-  { label: 'Recherche', to: '/search' },
+  { label: 'Messages', to: '/messages' },
+  { label: 'Favoris', to: '/favorites' },
   { label: 'Notifications', to: '/notifications' },
 ]
 

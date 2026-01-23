@@ -65,6 +65,26 @@
   align-items: center;
 }
 
+.home-publish-btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.home-publish-btn:hover {
+  background-color: var(--accent);
+}
+
+.app--mobile .home-publish-btn {
+  display: none;
+}
+
 .home-swipe-btn,
 .home-notification-btn {
   position: relative;
@@ -175,19 +195,12 @@
 .app--web .home-categories-scroll {
   padding-top: 0;
   margin-top: 12px;
+  margin-bottom: 12px;
   margin-left: 0;
   margin-right: 0;
   padding-left: 0;
   padding-right: 0;
   width: 100%;
-}
-
-/* Web: coller les categories au header */
-.app--web .home-categories-scroll {
-  padding-top: 0;
-  margin-top: 0;
-  padding-bottom: 0;
-  margin-bottom: 0;
 }
 
 .home-categories-scroll::-webkit-scrollbar {
@@ -250,8 +263,13 @@
   background-color: var(--background);
 }
 
+.app--web .home-header-fixed {
+  position: static;
+  padding-bottom: 12px;
+}
+
 .app--web .home-scrollable {
-  padding-top: 48px;
+  padding-top: 0;
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 32px;

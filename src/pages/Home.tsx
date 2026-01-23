@@ -598,6 +598,12 @@ const Home = () => {
             </h1>
             <div className="home-header-actions">
               <button
+                className="home-publish-btn"
+                onClick={() => navigate('/publish')}
+              >
+                Publier une annonce
+              </button>
+              <button
                 className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
                 onClick={() => {
                   setSwipeModeActive(!swipeModeActive)
