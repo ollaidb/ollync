@@ -293,3 +293,25 @@
   }
 }
 
+/* Web-only layout adjustments */
+.app--web .feed-page::before,
+.app--web .feed-page::after {
+  display: none;
+}
+
+.app--web .feed-header-fixed {
+  position: static;
+}
+
+.app--web .feed-controls-fixed {
+  position: static;
+}
+
+.app--web .feed-scrollable {
+  padding-top: 16px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 32px;
+  overflow-y: visible;
+}
+

@@ -680,3 +680,25 @@
     font-size: 14px;
   }
 }
+
+/* Web-only layout adjustments */
+.app--web .publish-header-wrapper,
+.app--web .publish-header-not-connected {
+  position: static;
+}
+
+.app--web .publish-content-wrapper {
+  padding-top: 16px;
+  padding-bottom: 32px;
+  overflow-y: visible;
+}
+
+.app--web .publish-content {
+  padding: 0;
+}
+
+.app--web .publish-content-not-connected {
+  position: static;
+  min-height: 60vh;
+  padding: 32px;
+}

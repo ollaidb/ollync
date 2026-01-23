@@ -537,3 +537,20 @@
     font-size: 14px;
   }
 }
+
+/* Web-only layout adjustments */
+.app--web .favorites-page::before {
+  display: none;
+}
+
+.app--web .favorites-header-container {
+  position: static;
+}
+
+.app--web .favorites-content {
+  padding-top: 16px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 32px;
+  overflow-y: visible;
+}

@@ -14,6 +14,17 @@
   min-height: calc(100vh - 200px);
 }
 
+.app--web .page {
+  background: var(--background);
+  padding-bottom: 0;
+}
+
+.app--web .page-content {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
 .page-body {
   padding: 20px 16px;
 }

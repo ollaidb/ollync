@@ -7,6 +7,10 @@
   position: relative;
 }
 
+.app--web .home-page {
+  background-color: var(--background);
+}
+
 /* Dégradés supprimés - Le padding du contenu scrollable suffit à masquer les annonces */
 
 /* ============================================
@@ -168,6 +172,24 @@
   width: calc(100% + 40px);
 }
 
+.app--web .home-categories-scroll {
+  padding-top: 0;
+  margin-top: 12px;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100%;
+}
+
+/* Web: coller les categories au header */
+.app--web .home-categories-scroll {
+  padding-top: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
 .home-categories-scroll::-webkit-scrollbar {
   display: none;
 }
@@ -226,6 +248,13 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
+}
+
+.app--web .home-scrollable {
+  padding-top: 48px;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 32px;
 }
 
 @media (max-width: 768px) {

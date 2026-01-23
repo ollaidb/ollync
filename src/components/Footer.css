@@ -71,6 +71,28 @@
   margin-top: 4px;
 }
 
+.app--web .footer {
+  position: static;
+  width: 100%;
+  max-width: 1200px;
+  margin: 24px auto 0;
+  border-radius: 16px;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.app--web .footer-item {
+  flex-direction: row;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.app--web .footer-label {
+  margin-top: 0;
+  font-size: 12px;
+}
+
 @media (max-width: 768px) {
   .footer {
     bottom: 0;

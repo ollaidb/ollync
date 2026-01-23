@@ -4,6 +4,10 @@
   min-height: 100vh;
 }
 
+.app--web {
+  width: 100%;
+}
+
 .main-content {
   flex: 1;
   padding-bottom: 3px;
@@ -15,6 +19,15 @@
 }
 
 .main-content.without-header {
+  padding-top: 0;
+}
+
+.app--web .main-content {
+  padding: 0;
+  overflow-y: visible;
+}
+
+.app--web .main-content.with-header {
   padding-top: 0;
 }
 
