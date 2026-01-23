@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient'
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined
+const VAPID_PUBLIC_KEY = import.meta.env?.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined
 
 const isPushSupported = () =>
   'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
@@ -75,8 +75,7 @@ export const enablePushForUser = async (userId: string) => {
     updated_at: new Date().toISOString()
   }
 
-  const { error } = await supabase
-    .from('push_subscriptions')
+  const { error } = await (supabase.from('push_subscriptions') as any)
     .upsert(payload, { onConflict: 'endpoint' })
 
   if (error) {
@@ -94,7 +93,10 @@ export const disablePushForUser = async (userId: string) => {
   if (subscription) {
     const endpoint = subscription.endpoint
     await subscription.unsubscribe()
-    await supabase.from('push_subscriptions').delete().eq('user_id', userId).eq('endpoint', endpoint)
+    await (supabase.from('push_subscriptions') as any)
+      .delete()
+      .eq('user_id', userId)
+      .eq('endpoint', endpoint)
   }
 }
 

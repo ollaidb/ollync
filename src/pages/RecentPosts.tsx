@@ -3,34 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { RefreshCw, Tag, Heart } from 'lucide-react'
 import BackButton from '../components/BackButton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import type { MappedPost } from '../utils/postMapper'
 import './SwipePage.css'
 
-interface Post {
-  id: string
-  title: string
-  description: string
-  price?: number | null
-  location?: string | null
-  images?: string[] | null
-  likes_count: number
-  comments_count: number
-  created_at: string
-  needed_date?: string | null
-  number_of_people?: number | null
-  delivery_available: boolean
-  is_urgent?: boolean
-  user_id: string
-  user?: {
-    id?: string
-    username?: string | null
-    full_name?: string | null
-    avatar_url?: string | null
-  } | null
-  category?: {
-    name: string
-    slug: string
-  } | null
-}
+type Post = MappedPost
 
 const RecentPosts = () => {
   const navigate = useNavigate()

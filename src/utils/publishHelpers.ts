@@ -409,9 +409,10 @@ export const handlePublish = async (
   })
 
   try {
+    const postsTable = supabase.from('posts') as any
     const query = existingPostId
-      ? supabase.from('posts').update(postData).eq('id', existingPostId).eq('user_id', user.id)
-      : supabase.from('posts').insert(postData)
+      ? postsTable.update(postData).eq('id', existingPostId).eq('user_id', user.id)
+      : postsTable.insert(postData)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query as any)
