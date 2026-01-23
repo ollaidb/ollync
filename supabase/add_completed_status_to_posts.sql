@@ -35,6 +35,7 @@ ALTER TABLE posts DROP CONSTRAINT IF EXISTS posts_check_status;
 --    - 'active' : Annonce en ligne
 --    - 'archived' : Annonce archivée
 --    - 'completed' : Annonce réalisée
+--    - 'draft' : Brouillon
 --    - 'sold' : Annonce vendue (si déjà utilisé)
 --    - 'pending' : En attente
 DO $$
@@ -57,9 +58,9 @@ BEGIN
   -- Ajouter la nouvelle contrainte
   ALTER TABLE posts 
   ADD CONSTRAINT posts_status_check 
-  CHECK (status IN ('active', 'archived', 'completed', 'sold', 'pending'));
+  CHECK (status IN ('active', 'archived', 'completed', 'draft', 'sold', 'pending'));
   
-  RAISE NOTICE '✅ Contrainte CHECK créée avec les statuts: active, archived, completed, sold, pending';
+  RAISE NOTICE '✅ Contrainte CHECK créée avec les statuts: active, archived, completed, draft, sold, pending';
 EXCEPTION
   WHEN duplicate_object THEN
     RAISE NOTICE 'ℹ️  Contrainte posts_status_check existe déjà, tentative de modification...';
@@ -68,7 +69,7 @@ EXCEPTION
       ALTER TABLE posts DROP CONSTRAINT posts_status_check;
       ALTER TABLE posts 
       ADD CONSTRAINT posts_status_check 
-      CHECK (status IN ('active', 'archived', 'completed', 'sold', 'pending'));
+      CHECK (status IN ('active', 'archived', 'completed', 'draft', 'sold', 'pending'));
       RAISE NOTICE '✅ Contrainte CHECK mise à jour';
     EXCEPTION
       WHEN OTHERS THEN
@@ -107,6 +108,7 @@ BEGIN
   RAISE NOTICE '  - active : Annonce en ligne (visible publiquement)';
   RAISE NOTICE '  - archived : Annonce archivée (visible uniquement par l''utilisateur)';
   RAISE NOTICE '  - completed : Annonce réalisée (visible uniquement par l''utilisateur)';
+  RAISE NOTICE '  - draft : Brouillon';
   RAISE NOTICE '  - sold : Annonce vendue (si applicable)';
   RAISE NOTICE '  - pending : En attente';
   RAISE NOTICE '';

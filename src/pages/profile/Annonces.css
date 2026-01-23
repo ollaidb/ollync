@@ -436,9 +436,17 @@
 
   .annonces-tabs {
     margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .annonces-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .annonces-tab {
+    flex: 0 0 auto;
     padding: 10px 12px;
     font-size: 14px;
   }

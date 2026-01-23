@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Bell, MessageSquare, FileText, Heart, MessageCircle, UserCheck, CheckCircle, Mail, Smartphone } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Bell, MessageSquare, FileText, Heart, MessageCircle, UserCheck, CheckCircle, Mail, Smartphone, Radio } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { disablePushForUser, enablePushForUser, getPushPermission, isPushEnabled } from '../../utils/pushNotifications'
 import PageHeader from '../../components/PageHeader'
 import './Notifications.css'
 
@@ -57,6 +58,54 @@ const Notifications = () => {
   const { user } = useAuth()
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings)
   const [loading, setLoading] = useState(true)
+  const [pushSupported, setPushSupported] = useState(true)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushPermission, setPushPermission] = useState<string>('default')
+  const [pushError, setPushError] = useState<string | null>(null)
+  const [pushLoading, setPushLoading] = useState(false)
+
+  const profilesTable = useMemo(() => {
+    return supabase.from('profiles') as unknown as {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => {
+          single: () => Promise<{
+            data: { notification_preferences?: Partial<NotificationSettings> | null } | null
+            error: { code?: string } | null
+          }>
+        }
+      }
+      update: (values: Record<string, unknown>) => {
+        eq: (column: string, value: string) => Promise<{ error: unknown | null }>
+      }
+    }
+  }, [])
+
+  const fetchSettings = useCallback(async () => {
+    if (!user) return
+
+    setLoading(true)
+    try {
+      // Récupérer les préférences depuis la table profiles ou une table dédiée
+      // Pour l'instant, on utilise un champ JSONB dans profiles
+      const { data, error } = await profilesTable
+        .select('notification_preferences')
+        .eq('id', user.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching notification settings:', error)
+      } else {
+        const row = data as { notification_preferences?: Partial<NotificationSettings> | null } | null
+        if (row?.notification_preferences) {
+          setSettings({ ...defaultSettings, ...row.notification_preferences })
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchSettings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [user, profilesTable])
 
   useEffect(() => {
     if (user) {
@@ -64,32 +113,18 @@ const Notifications = () => {
     } else {
       setLoading(false)
     }
-  }, [user])
+  }, [user, fetchSettings])
 
-  const fetchSettings = async () => {
-    if (!user) return
-
-    setLoading(true)
-    try {
-      // Récupérer les préférences depuis la table profiles ou une table dédiée
-      // Pour l'instant, on utilise un champ JSONB dans profiles
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('notification_preferences')
-        .eq('id', user.id)
-        .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching notification settings:', error)
-      } else if ((data as any)?.notification_preferences) {
-        setSettings({ ...defaultSettings, ...(data as any).notification_preferences })
-      }
-    } catch (error) {
-      console.error('Error in fetchSettings:', error)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    const permission = getPushPermission()
+    setPushPermission(permission)
+    setPushSupported(permission !== 'unsupported')
+    if (user) {
+      isPushEnabled()
+        .then(setPushEnabled)
+        .catch(() => setPushEnabled(false))
     }
-  }
+  }, [user])
 
 
   const updateSetting = async (key: keyof NotificationSettings, value: boolean) => {
@@ -99,17 +134,41 @@ const Notifications = () => {
     // Sauvegarder automatiquement
     if (user) {
       try {
-        await (supabase.from('profiles') as any)
-          .update({ 
+        const { error } = await profilesTable
+          .update({
             notification_preferences: newSettings,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id)
+        if (error) {
+          throw error
+        }
       } catch (error) {
         console.error('Error auto-saving notification settings:', error)
         // Revenir à l'état précédent en cas d'erreur
         setSettings(settings)
       }
+    }
+  }
+
+  const handleTogglePush = async () => {
+    if (!user) return
+    setPushLoading(true)
+    setPushError(null)
+
+    try {
+      if (pushEnabled) {
+        await disablePushForUser(user.id)
+        setPushEnabled(false)
+      } else {
+        await enablePushForUser(user.id)
+        setPushEnabled(true)
+      }
+    } catch (error) {
+      setPushError(error instanceof Error ? error.message : 'Activation impossible.')
+    } finally {
+      setPushPermission(getPushPermission())
+      setPushLoading(false)
     }
   }
 
@@ -176,6 +235,42 @@ const Notifications = () => {
       <PageHeader title="Notifications" />
       <div className="page-content notifications-settings-page">
         <div className="notifications-settings-container">
+          <div className="notifications-section">
+            <h3 className="notifications-section-title">
+              <Radio size={20} />
+              Notifications téléphone
+            </h3>
+            <div className="notifications-list">
+              <div className="notification-item">
+                <div className="notification-item-header">
+                  <Smartphone size={18} />
+                  <span className="notification-item-label">Activer les push sur ce téléphone</span>
+                </div>
+                <div className="notification-item-toggles">
+                  <div className="notification-toggle-group">
+                    <Smartphone size={16} />
+                    <label className="notification-toggle">
+                      <input
+                        type="checkbox"
+                        checked={pushEnabled}
+                        onChange={handleTogglePush}
+                        disabled={!pushSupported || pushLoading}
+                      />
+                      <span className="notification-toggle-slider"></span>
+                    </label>
+                    <span className="notification-toggle-label">Push</span>
+                  </div>
+                </div>
+                {!pushSupported && (
+                  <p className="notification-push-note">Push non supporté sur ce navigateur.</p>
+                )}
+                {pushPermission === 'denied' && (
+                  <p className="notification-push-note">Autorisation refusée dans le navigateur.</p>
+                )}
+                {pushError && <p className="notification-push-error">{pushError}</p>}
+              </div>
+            </div>
+          </div>
           {/* Section A - Messagerie */}
           <div className="notifications-section">
             <h3 className="notifications-section-title">

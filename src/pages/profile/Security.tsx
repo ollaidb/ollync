@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight } from 'lucide-react'
+import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight, UserX } from 'lucide-react'
 import './Security.css'
 
 const Security = () => {
@@ -35,6 +35,12 @@ const Security = () => {
       icon: Smartphone,
       label: 'Appareils connectés',
       path: '/profile/security/devices'
+    },
+    {
+      id: 'blocked-profiles',
+      icon: UserX,
+      label: 'Profils bloqués',
+      path: '/profile/security/blocked-profiles'
     }
   ]
 

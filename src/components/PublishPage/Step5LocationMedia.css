@@ -220,6 +220,10 @@
   opacity: 0.9;
 }
 
+.document-name-field {
+  margin-top: 12px;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);

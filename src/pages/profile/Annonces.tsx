@@ -43,7 +43,7 @@ const Annonces = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showSuccess, showError } = useToastContext()
-  const [activeTab, setActiveTab] = useState<'online' | 'completed' | 'archived'>('online')
+  const [activeTab, setActiveTab] = useState<'online' | 'completed' | 'archived' | 'draft'>('online')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
@@ -77,7 +77,7 @@ const Annonces = () => {
         .from('posts')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['active', 'archived', 'completed'] as any)
+        .in('status', ['active', 'archived', 'completed', 'draft'] as any)
         .order('created_at', { ascending: false })
 
       if (postsError) {
@@ -146,6 +146,8 @@ const Annonces = () => {
       return post.status === 'completed'
     } else if (activeTab === 'archived') {
       return post.status === 'archived'
+    } else if (activeTab === 'draft') {
+      return post.status === 'draft'
     }
     return false
   })
@@ -246,6 +248,69 @@ const Annonces = () => {
       console.error('Error in handleArchive:', error)
       alert('Erreur lors de l\'archivage de l\'annonce')
     }
+  }
+
+  const getDraftMissingFields = (post: Post): string[] => {
+    const missing: string[] = []
+    if (!post.title || post.title.trim().length === 0) missing.push('titre')
+    if (!post.description || post.description.trim().length === 0) missing.push('description')
+    if (!post.location || post.location.trim().length === 0) missing.push('lieu')
+    if (!post.needed_date || post.needed_date.trim().length === 0) missing.push('date de besoin')
+    if (!post.images || post.images.length === 0) missing.push('photo')
+    if (!post.payment_type || post.payment_type.trim().length === 0) missing.push('moyen de paiement')
+    return missing
+  }
+
+  const promptCompleteDraft = (post: Post) => {
+    confirmation.confirm(
+      {
+        title: 'Annonce incomplète',
+        message: 'Cette annonce doit être complétée avant d\'être publiée. Voulez-vous continuer à la remplir ?',
+        confirmLabel: 'Continuer',
+        cancelLabel: 'Annuler'
+      },
+      () => {
+        navigate(`/publish?edit=${post.id}`)
+      }
+    )
+  }
+
+  const handlePublishDraft = async (post: Post) => {
+    if (!user?.id) return
+
+    setActionMenuOpen(null)
+    const missing = getDraftMissingFields(post)
+    if (missing.length > 0) {
+      promptCompleteDraft(post)
+      return
+    }
+
+    confirmation.confirm(
+      {
+        title: 'Publier ce brouillon',
+        message: 'Voulez-vous publier cette annonce maintenant ? Elle sera visible publiquement.',
+        confirmLabel: 'Publier',
+        cancelLabel: 'Annuler'
+      },
+      async () => {
+        try {
+          const { error } = await (supabase.from('posts') as any)
+            .update({ status: 'active' })
+            .eq('id', post.id)
+            .eq('user_id', user.id)
+
+          if (error) {
+            console.error('Error publishing draft:', error)
+            alert('Erreur lors de la publication du brouillon')
+          } else {
+            setPosts(posts.map(p => p.id === post.id ? { ...p, status: 'active' } : p))
+          }
+        } catch (error) {
+          console.error('Error in handlePublishDraft:', error)
+          alert('Erreur lors de la publication du brouillon')
+        }
+      }
+    )
   }
 
   // Remettre en ligne une annonce (depuis archivée ou réalisée)
@@ -448,6 +513,17 @@ const Annonces = () => {
             </span>
           )}
         </button>
+        <button
+          className={`annonces-tab ${activeTab === 'draft' ? 'active' : ''}`}
+          onClick={() => setActiveTab('draft')}
+        >
+          Brouillons
+          {activeTab === 'draft' && (
+            <span className="annonces-tab-count">
+              {posts.filter(p => p.status === 'draft').length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Liste des annonces */}
@@ -461,7 +537,9 @@ const Annonces = () => {
                 ? 'Aucune annonce en ligne'
                 : activeTab === 'completed'
                 ? 'Aucune annonce réalisée'
-                : 'Aucune annonce archivée'}
+                : activeTab === 'archived'
+                ? 'Aucune annonce archivée'
+                : 'Aucun brouillon'}
             </p>
           </div>
         ) : (
@@ -536,6 +614,24 @@ const Annonces = () => {
               >
                 <Archive size={14} />
                 <span>Archiver</span>
+              </button>
+            </>
+          )}
+          {activePost.status === 'draft' && (
+            <>
+              <button
+                className="annonce-item-menu-item"
+                onClick={() => handleEdit(activePost.id)}
+              >
+                <Edit size={14} />
+                <span>Continuer</span>
+              </button>
+              <button
+                className="annonce-item-menu-item"
+                onClick={() => handlePublishDraft(activePost)}
+              >
+                <CheckCircle size={14} />
+                <span>Publier</span>
               </button>
             </>
           )}

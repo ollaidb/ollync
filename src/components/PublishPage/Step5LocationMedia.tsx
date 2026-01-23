@@ -25,6 +25,7 @@ interface FormData {
   visibility: string
   externalLink?: string
   documentUrl?: string
+  documentName?: string
   [key: string]: any
 }
 
@@ -55,11 +56,25 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     // L'action est simplement annulée, l'utilisateur reste sur la page
   }
 
-  const getFileNameFromUrl = (url?: string | null) => {
-    if (!url) return 'Document PDF'
-    const cleanUrl = url.split('?')[0]
+  const getDocumentNameFromUrl = (url?: string | null) => {
+    if (!url) return ''
+    const [baseUrl, hash] = url.split('#')
+    if (hash) {
+      const params = new URLSearchParams(hash)
+      const name = params.get('name')
+      if (name) return name
+    }
+    const cleanUrl = baseUrl.split('?')[0]
     const fileName = cleanUrl.split('/').pop()
-    return fileName ? decodeURIComponent(fileName) : 'Document PDF'
+    return fileName ? decodeURIComponent(fileName) : ''
+  }
+
+  const buildDocumentUrlWithName = (url: string, name?: string) => {
+    const baseUrl = url.split('#')[0]
+    const trimmedName = name?.trim()
+    if (!trimmedName) return baseUrl
+    const params = new URLSearchParams({ name: trimmedName })
+    return `${baseUrl}#${params.toString()}`
   }
 
   // Gérer le clic sur le bouton de localisation GPS
@@ -198,7 +213,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
         .getPublicUrl(fileName)
 
       if (publicUrl) {
-        onUpdateFormData({ documentUrl: publicUrl })
+        const initialName = file.name
+        onUpdateFormData({ documentUrl: publicUrl, documentName: initialName })
       } else {
         console.error('Impossible de récupérer l\'URL publique du document')
         alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
@@ -222,7 +238,18 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
   }
 
   const removeDocument = () => {
-    onUpdateFormData({ documentUrl: '' })
+    onUpdateFormData({ documentUrl: '', documentName: '' })
+  }
+
+  const handleDocumentNameChange = (value: string) => {
+    if (!formData.documentUrl) {
+      onUpdateFormData({ documentName: value })
+      return
+    }
+    onUpdateFormData({
+      documentName: value,
+      documentUrl: buildDocumentUrlWithName(formData.documentUrl, value)
+    })
   }
 
   const handleLocationSelect = (location: {
@@ -363,7 +390,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
               target="_blank"
               rel="noopener noreferrer"
             >
-              {getFileNameFromUrl(formData.documentUrl)}
+              {formData.documentName?.trim() || getDocumentNameFromUrl(formData.documentUrl) || 'Document PDF'}
             </a>
             <button className="document-remove-button" onClick={removeDocument}>
               <X size={16} />
@@ -390,6 +417,18 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
               style={{ display: 'none' }}
             />
           </label>
+        )}
+        {formData.documentUrl && (
+          <div className="document-name-field">
+            <label className="form-label">Nom du document</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.documentName || getDocumentNameFromUrl(formData.documentUrl) || ''}
+              onChange={(e) => handleDocumentNameChange(e.target.value)}
+              placeholder="Ex: Conditions générales"
+            />
+          </div>
         )}
       </div>
 

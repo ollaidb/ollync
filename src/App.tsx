@@ -64,6 +64,7 @@ function AppContent() {
       <Route path="/profile/security/phone" element={<Profile />} />
       <Route path="/profile/security/two-factor" element={<Profile />} />
       <Route path="/profile/security/devices" element={<Profile />} />
+      <Route path="/profile/security/blocked-profiles" element={<Profile />} />
       <Route path="/profile/help" element={<Profile />} />
       <Route path="/profile/contact" element={<Profile />} />
       <Route path="/profile/resources" element={<Profile />} />
@@ -78,6 +79,8 @@ function AppContent() {
       <Route path="/profile/legal/securite" element={<Profile />} />
       <Route path="/profile/annonces" element={<Profile />} />
       <Route path="/profile/contracts" element={<Profile />} />
+      <Route path="/profile/wallet" element={<Profile />} />
+      <Route path="/profile/transactions" element={<Profile />} />
       <Route path="/profile/:id" element={<Profile />} />
       {/* Nouvelles routes - Catégories principales */}
       <Route path="/creation-contenu" element={<CreationContenu />} />

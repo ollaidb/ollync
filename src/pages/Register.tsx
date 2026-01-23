@@ -11,6 +11,7 @@ const Register = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -25,12 +26,19 @@ const Register = () => {
     return emailRegex.test(email)
   }
 
+  const normalizePhone = (value: string): string => value.replace(/\s/g, '')
+
+  const validatePhone = (value: string): boolean => {
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/
+    return phoneRegex.test(value)
+  }
+
   // Fonction pour calculer la force du mot de passe
   const getPasswordStrength = (pwd: string) => {
     const hasMinLength = pwd.length >= 8
     const hasNumber = /\d/.test(pwd)
     const hasUpperCase = /[A-Z]/.test(pwd)
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+    const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd)
 
     const criteriaMet = [hasMinLength, hasNumber, hasUpperCase, hasSpecialChar].filter(Boolean).length
     const strength = (criteriaMet / 4) * 100
@@ -85,6 +93,12 @@ const Register = () => {
       return
     }
 
+    const cleanedPhone = phone.trim() ? normalizePhone(phone.trim()) : ''
+    if (cleanedPhone && !validatePhone(cleanedPhone)) {
+      setError('Veuillez saisir un numéro de téléphone valide (format international)')
+      return
+    }
+
     // Validation du mot de passe
     if (!passwordStrength.isValid) {
       setError('Le mot de passe ne respecte pas tous les critères requis')
@@ -136,13 +150,23 @@ const Register = () => {
           const { error: profileError } = await (supabase.from('profiles') as any).insert({
             id: authData.user.id,
             email: authData.user.email,
-            username: username.trim()
+            username: username.trim(),
+            phone: cleanedPhone || null,
+            phone_verified: false
           })
 
           if (profileError) {
             console.warn('Le profil n\'a pas pu être créé automatiquement:', profileError)
             // On continue quand même, l'utilisateur pourra créer son profil plus tard
           }
+        } else if (cleanedPhone) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('profiles') as any)
+            .update({
+              phone: cleanedPhone,
+              phone_verified: false
+            })
+            .eq('id', authData.user.id)
         }
 
         alert('Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.')
@@ -355,6 +379,22 @@ const Register = () => {
             />
             {email && !validateEmail(email) && (
               <span className="input-error-message">Format d'email invalide</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phone">Numéro de téléphone (optionnel)</label>
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+33 6 12 34 56 78"
+              disabled={loading}
+              className={phone && !validatePhone(normalizePhone(phone)) ? 'input-error' : ''}
+            />
+            {phone && !validatePhone(normalizePhone(phone)) && (
+              <span className="input-error-message">Format international requis</span>
             )}
           </div>
 

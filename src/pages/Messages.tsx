@@ -161,8 +161,6 @@ const Messages = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
   const [showScamPrevention, setShowScamPrevention] = useState(false)
-  const [swipedConversationId, setSwipedConversationId] = useState<string | null>(null)
-  const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null)
   const [listActionConversation, setListActionConversation] = useState<Conversation | null>(null)
   const [showListConversationActions, setShowListConversationActions] = useState(false)
   const [activeMessage, setActiveMessage] = useState<Message | null>(null)
@@ -1865,24 +1863,8 @@ const Messages = () => {
                     return (
                       <div
                         key={msg.id}
-                        className={`message-swipe-row ${swipedMessageId === msg.id ? 'swiped' : ''} ${isOwn ? 'own' : 'other'}`}
+                        className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
                       >
-                        {isOwn && (
-                          <div className="message-swipe-actions">
-                            <button
-                              type="button"
-                              className="message-swipe-delete"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setActiveMessage(msg)
-                                setShowDeleteMessageConfirm(true)
-                                setSwipedMessageId(null)
-                              }}
-                            >
-                              Supprimer
-                            </button>
-                          </div>
-                        )}
                         <div
                           className="message-swipe-content"
                           onContextMenu={(event) => {
@@ -1898,7 +1880,6 @@ const Messages = () => {
                               setActiveMessage(msg)
                               setShowMessageActions(true)
                               setEditMessageValue(msg.content || '')
-                              setSwipedMessageId(null)
                             }, 500)
                           }}
                           onTouchMove={(event) => {
@@ -1913,13 +1894,8 @@ const Messages = () => {
                                 longPressTimerRef.current = null
                               }
                             }
-                            if (isOwn && Math.abs(deltaY) < 30 && deltaX < -60) {
-                              setSwipedMessageId(msg.id)
-                            } else if (Math.abs(deltaY) < 30 && deltaX > 60) {
-                              setSwipedMessageId(null)
-                            }
                           }}
-                          onTouchEnd={() => {
+                      onTouchEnd={() => {
                             if (longPressTimerRef.current) {
                               window.clearTimeout(longPressTimerRef.current)
                               longPressTimerRef.current = null
@@ -2420,33 +2396,10 @@ const Messages = () => {
             {filteredConversations.map((conv) => {
               const isSystemConv = (conv.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
               return (
-                <div
-                  key={conv.id}
-                  className={`conversation-swipe-row ${swipedConversationId === conv.id ? 'swiped' : ''}`}
-                >
-                  {!isSystemConv && (
-                    <div className="conversation-swipe-actions">
-                      <button
-                        type="button"
-                        className="conversation-swipe-delete"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setListActionConversation(conv)
-                          setShowDeleteConfirm(true)
-                          setSwipedConversationId(null)
-                        }}
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  )}
+                <div key={conv.id}>
                   <div
-                    className="conversation-swipe-content conversation-item"
+                    className="conversation-item"
                     onClick={() => {
-                      if (swipedConversationId === conv.id) {
-                        setSwipedConversationId(null)
-                        return
-                      }
                       navigate(`/messages/${conv.id}`)
                     }}
                     onContextMenu={(event) => {
@@ -2460,9 +2413,8 @@ const Messages = () => {
                       const touch = event.touches[0]
                       conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
                       longPressTimerRef.current = window.setTimeout(() => {
-                        setListActionConversation(conv)
-                        setShowListConversationActions(true)
-                        setSwipedConversationId(null)
+                      setListActionConversation(conv)
+                      setShowListConversationActions(true)
                       }, 500)
                     }}
                     onTouchMove={(event) => {
@@ -2477,11 +2429,6 @@ const Messages = () => {
                           window.clearTimeout(longPressTimerRef.current)
                           longPressTimerRef.current = null
                         }
-                      }
-                      if (Math.abs(deltaY) < 30 && deltaX < -60) {
-                        setSwipedConversationId(conv.id)
-                      } else if (Math.abs(deltaY) < 30 && deltaX > 60) {
-                        setSwipedConversationId(null)
                       }
                     }}
                     onTouchEnd={() => {

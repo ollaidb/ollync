@@ -55,7 +55,11 @@ CREATE TABLE IF NOT EXISTS posts (
   media_type VARCHAR(20), -- 'photo', 'video' pour création de contenu
   external_link TEXT,
   document_url TEXT,
-  status VARCHAR(20) DEFAULT 'active', -- active, sold, archived
+  status VARCHAR(20) DEFAULT 'active', -- active, archived, completed, draft, sold, pending
+  moderation_status VARCHAR(20), -- clean, flagged
+  moderation_reason TEXT, -- comma-separated reasons
+  moderation_score INTEGER DEFAULT 0,
+  moderated_at TIMESTAMP WITH TIME ZONE,
   views_count INTEGER DEFAULT 0,
   likes_count INTEGER DEFAULT 0,
   comments_count INTEGER DEFAULT 0,

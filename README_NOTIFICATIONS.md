@@ -84,6 +84,17 @@ La page `/notifications` permet de :
 
 Les notifications sont mises à jour en temps réel grâce à Supabase Realtime. Quand une nouvelle notification est créée, elle apparaît automatiquement dans la liste sans rechargement de la page.
 
+### Notifications téléphone (Push Web)
+
+Pour recevoir des notifications natives (vibration / bannière) sur le téléphone, il faut activer le push web :
+
+1. Exécuter `supabase/create_push_subscriptions.sql` pour créer la table des abonnements.
+2. Ajouter la clé VAPID publique dans l'environnement : `VITE_WEB_PUSH_PUBLIC_KEY`.
+3. Déployer un service d'envoi (Edge Function / backend) qui lit `push_subscriptions` et envoie les push via Web Push.
+4. Dans l'app, aller dans **Profil → Notifications** et activer “Push”.
+
+Note : Sur iOS, les push web nécessitent l’ajout de l’app à l’écran d’accueil (PWA) et iOS 16.4+.
+
 ## Personnalisation
 
 ### Modifier les critères pour les nouvelles annonces

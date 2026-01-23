@@ -1,0 +1,49 @@
+.transactions-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 4px 32px;
+}
+
+.transactions-header h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.transactions-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.transactions-section h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.transactions-list {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.transactions-list.empty {
+  border-style: dashed;
+  background: #fafafa;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transactions-list p {
+  margin: 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+.transactions-list span {
+  font-size: 12px;
+  color: #6b7280;
+}

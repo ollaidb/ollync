@@ -72,6 +72,7 @@ const PostDetails = () => {
   const { showSuccess } = useToastContext()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isRestricted, setIsRestricted] = useState(false)
   const [liked, setLiked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -161,6 +162,13 @@ const PostDetails = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const post = postData as any
 
+      if (post.status !== 'active' && post.user_id !== user?.id) {
+        setPost(null)
+        setIsRestricted(true)
+        setLoading(false)
+        return
+      }
+
       // 2. Récupérer le profil de l'utilisateur
       let userProfile = null
       if (post.user_id) {
@@ -228,6 +236,7 @@ const PostDetails = () => {
       }
 
       // 5. Combiner les données
+      setIsRestricted(false)
       setPost({
         ...post,
         user: userProfile,
@@ -627,7 +636,13 @@ const PostDetails = () => {
 
   const getDocumentName = (url?: string | null) => {
     if (!url) return 'Document PDF'
-    const cleanUrl = url.split('?')[0]
+    const [baseUrl, hash] = url.split('#')
+    if (hash) {
+      const params = new URLSearchParams(hash)
+      const name = params.get('name')
+      if (name) return name
+    }
+    const cleanUrl = baseUrl.split('?')[0]
     const fileName = cleanUrl.split('/').pop()
     return fileName ? decodeURIComponent(fileName) : 'Document PDF'
   }
@@ -652,7 +667,7 @@ const PostDetails = () => {
         <div className="post-details-page">
           <div className="post-details-scrollable">
             <div className="empty-state">
-              <p>Annonce introuvable</p>
+              <p>{isRestricted ? 'Annonce indisponible' : 'Annonce introuvable'}</p>
             </div>
           </div>
         </div>

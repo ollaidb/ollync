@@ -46,3 +46,19 @@
   background-color: #E5E7EB;
 }
 
+@media (max-width: 640px) {
+  .publish-actions {
+    padding: 10px 12px;
+  }
+
+  .publish-actions-content {
+    gap: 8px;
+  }
+
+  .publish-action-button {
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+}
+

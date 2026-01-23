@@ -673,7 +673,7 @@ const Home = () => {
               <h2 className="home-section-title">urgent</h2>
               <div className="home-posts-grid">
                 {urgentPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                 ))}
                 {urgentPosts.length >= maxPostsPerSection && (
                   <button
@@ -693,7 +693,7 @@ const Home = () => {
               <h2 className="home-section-title">recommandations</h2>
               <div className="home-posts-grid">
                 {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                 ))}
                 {recommendedPosts.length >= maxPostsPerSection && (
                   <button
@@ -713,7 +713,7 @@ const Home = () => {
               <h2 className="home-section-title">création de contenu</h2>
               <div className="home-posts-grid">
                 {creationContenuPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                 ))}
                 {creationContenuPosts.length >= maxPostsPerSection && (
                   <button
@@ -733,7 +733,7 @@ const Home = () => {
               <h2 className="home-section-title">casting</h2>
               <div className="home-posts-grid">
                 {castingPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                 ))}
                 {castingPosts.length >= maxPostsPerSection && (
                   <button
@@ -753,7 +753,7 @@ const Home = () => {
               <h2 className="home-section-title">emploi</h2>
               <div className="home-posts-grid">
                 {emploiPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" />
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                 ))}
                 {emploiPosts.length >= maxPostsPerSection && (
                   <button
@@ -781,7 +781,7 @@ const Home = () => {
                 return (
                   <div key={sectionIndex} className="home-posts-grid" style={{ marginBottom: sectionIndex < Math.ceil(recentPosts.length / maxPostsPerSection) - 1 ? '20px' : '0' }}>
                     {sectionPosts.map((post) => (
-                      <PostCard key={post.id} post={post} viewMode="grid" />
+                      <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
                     ))}
                     {/* Bouton "+" après chaque section de 5 annonces */}
                     {sectionPosts.length === maxPostsPerSection && (

@@ -145,6 +145,18 @@
   min-width: 50px;
 }
 
+.notification-push-note {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin: 4px 0 0 0;
+}
+
+.notification-push-error {
+  font-size: 13px;
+  color: var(--destructive);
+  margin: 4px 0 0 0;
+}
+
 
 .loading-state {
   text-align: center;

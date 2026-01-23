@@ -1,0 +1,173 @@
+.blocked-profiles-page {
+  padding: 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.blocked-profiles-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.blocked-profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blocked-profile-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.blocked-profile-item:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.blocked-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.blocked-profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.blocked-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.blocked-profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.blocked-profile-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blocked-profile-username {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.blocked-profile-date {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.blocked-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.blocked-profile-view {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blocked-profile-view:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.blocked-profile-view:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blocked-profile-unblock {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blocked-profile-unblock:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.blocked-profile-unblock:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blocked-profiles-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted-foreground);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.blocked-profiles-empty svg {
+  color: var(--muted-foreground);
+  margin-bottom: 12px;
+}
+
+.blocked-profiles-empty p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 768px) {
+  .blocked-profiles-page {
+    padding: 12px;
+  }
+
+  .blocked-profile-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .blocked-profile-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}

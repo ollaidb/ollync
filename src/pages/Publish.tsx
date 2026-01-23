@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
-import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork } from '../utils/publishHelpers'
+import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork, getPaymentOptionConfig } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
@@ -16,10 +16,42 @@ import { Step3Platform } from '../components/PublishPage/Step3Platform'
 import { Step4Description } from '../components/PublishPage/Step4Description'
 import { Step5LocationMedia } from '../components/PublishPage/Step5LocationMedia'
 import { PublishActions } from '../components/PublishPage/PublishActions'
+import { supabase } from '../lib/supabaseClient'
 import './Publish.css'
 
 export default function Publish() {
+  type DraftPost = {
+    id: string
+    category_id?: string | null
+    sub_category_id?: string | null
+    title?: string | null
+    description?: string | null
+    price?: number | null
+    location?: string | null
+    location_city?: string | null
+    location_lat?: number | null
+    location_lng?: number | null
+    location_address?: string | null
+    location_visible_to_participants_only?: boolean | null
+    payment_type?: string | null
+    exchange_service?: string | null
+    revenue_share_percentage?: number | string | null
+    co_creation_details?: string | null
+    is_urgent?: boolean | null
+    images?: string[] | null
+    video?: string | null
+    needed_date?: string | null
+    number_of_people?: number | null
+    duration_minutes?: string | null
+    visibility?: string | null
+    external_link?: string | null
+    document_url?: string | null
+    media_type?: string | null
+    dateFrom?: string | null
+    dateTo?: string | null
+  }
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const { showSuccess } = useToastContext()
   
@@ -28,7 +60,7 @@ export default function Publish() {
     return getPublicationTypesWithSubSubCategories()
   }, [])
 
-  const [formData, setFormData] = useState({
+  const initialFormData = useMemo(() => ({
     category: null as string | null,
     subcategory: null as string | null,
     subSubCategory: null as string | null, // N3
@@ -60,7 +92,11 @@ export default function Publish() {
     visibility: 'public',
     externalLink: '',
     documentUrl: '',
-  })
+    documentName: '',
+  }), [])
+  const [formData, setFormData] = useState(initialFormData)
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false)
+  const editPostId = searchParams.get('edit')
   const [isGuideOpen, setIsGuideOpen] = useState(false)
 
   const { step, setStep, handleBack, getBreadcrumb } = usePublishNavigation(
@@ -99,6 +135,180 @@ export default function Publish() {
     subSubSubCategorySlug
   )
 
+  const parseDocumentNameFromUrl = (url?: string | null) => {
+    if (!url) return ''
+    const hash = url.split('#')[1]
+    if (!hash) return ''
+    const params = new URLSearchParams(hash)
+    return params.get('name') || ''
+  }
+
+  const getStepFromForm = useCallback((data: typeof formData) => {
+    if (!data.category) return 0
+    if (!data.subcategory) return 1
+
+    const category = enrichedPublicationTypes.find((c) => c.id === data.category)
+    const subcategory = category?.subcategories.find((s) => s.id === data.subcategory)
+
+    if (subcategory?.options && subcategory.options.length > 0 && !data.subSubCategory && !data.option) {
+      return 2
+    }
+
+    const selectedOption = subcategory?.options?.find(
+      (o) => o.id === data.subSubCategory || o.id === data.option
+    )
+
+    if (selectedOption?.platforms && selectedOption.platforms.length > 0 && !data.subSubSubCategory && !data.platform) {
+      return 2.5
+    }
+
+    const showSocialNetwork = shouldShowSocialNetwork(category?.slug, subcategory?.slug)
+    const paymentConfig = getPaymentOptionConfig(data.exchange_type)
+    const requiresPrice = !!paymentConfig?.requiresPrice
+    const requiresExchangeService = !!paymentConfig?.requiresExchangeService
+    const requiresRevenueShare = !!paymentConfig?.requiresPercentage
+
+    const hasStep3Required =
+      data.title.trim().length > 0 &&
+      data.description.trim().length > 0 &&
+      data.exchange_type.trim().length > 0 &&
+      (!requiresPrice || (data.price && parseFloat(data.price) > 0)) &&
+      (!requiresExchangeService || (data.exchange_service && data.exchange_service.trim().length > 0)) &&
+      (!requiresRevenueShare ||
+        (data.revenue_share_percentage &&
+          !Number.isNaN(parseFloat(data.revenue_share_percentage)) &&
+          parseFloat(data.revenue_share_percentage) > 0 &&
+          parseFloat(data.revenue_share_percentage) <= 100)) &&
+      (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0))
+
+    if (!hasStep3Required) return 3
+    return 4
+  }, [enrichedPublicationTypes])
+
+  useEffect(() => {
+    if (!editPostId || !user) return
+    let isMounted = true
+
+    const loadDraft = async () => {
+      setIsLoadingEdit(true)
+      const storedStepRaw = editPostId ? Number(localStorage.getItem(`publishDraftStep:${editPostId}`)) : null
+      const validStoredStep =
+        storedStepRaw !== null && [0, 1, 2, 2.5, 3, 4].includes(storedStepRaw) ? (storedStepRaw as number) : null
+      if (validStoredStep !== null) {
+        setStep(validStoredStep)
+      }
+      const cachedDraftRaw = editPostId ? localStorage.getItem(`publishDraftData:${editPostId}`) : null
+      if (cachedDraftRaw) {
+        try {
+          const cachedDraft = JSON.parse(cachedDraftRaw)
+          if (cachedDraft && typeof cachedDraft === 'object') {
+            setFormData({ ...initialFormData, ...cachedDraft })
+          }
+        } catch {
+          localStorage.removeItem(`publishDraftData:${editPostId}`)
+        }
+      }
+      try {
+        const { data: authUser } = await supabase.auth.getUser()
+        if (!authUser?.user) {
+          return
+        }
+
+        const { data: postDataRaw, error: postError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', editPostId)
+          .eq('user_id', authUser.user.id)
+          .maybeSingle()
+
+        if (postError || !isMounted) {
+          console.error('Error loading post for edit:', postError)
+          return
+        }
+        if (!postDataRaw) {
+          return
+        }
+
+        const postData = postDataRaw as DraftPost
+
+        const [{ data: categoryData }, { data: subCategoryData }] = await Promise.all([
+          postData.category_id
+            ? supabase.from('categories').select('slug').eq('id', postData.category_id).single()
+            : Promise.resolve({ data: null }),
+          postData.sub_category_id
+            ? supabase.from('sub_categories').select('slug').eq('id', postData.sub_category_id).single()
+            : Promise.resolve({ data: null })
+        ])
+
+        const categorySlugValue = (categoryData as { slug?: string } | null)?.slug || null
+        const subcategorySlugValue = (subCategoryData as { slug?: string } | null)?.slug || (categorySlugValue ? 'tout' : null)
+
+        const shouldUseSocialNetwork = shouldShowSocialNetwork(categorySlugValue, subcategorySlugValue)
+        const mediaTypeValue = postData.media_type || ''
+
+        const nextFormData = {
+          category: categorySlugValue,
+          subcategory: subcategorySlugValue,
+          subSubCategory: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
+          subSubSubCategory: null,
+          option: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
+          platform: null,
+          title: postData.title || '',
+          description: postData.description || '',
+          socialNetwork: shouldUseSocialNetwork ? (mediaTypeValue || '') : undefined,
+          price: postData.price ? String(postData.price) : '',
+          location: postData.location || '',
+          location_city: postData.location_city || '',
+          location_lat: postData.location_lat ?? null,
+          location_lng: postData.location_lng ?? null,
+          location_address: postData.location_address || '',
+          location_visible_to_participants_only: postData.location_visible_to_participants_only || false,
+          exchange_type: postData.payment_type || '',
+          exchange_service: postData.exchange_service || '',
+          revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
+          co_creation_details: postData.co_creation_details || '',
+          urgent: postData.is_urgent || false,
+          images: postData.images || [],
+          video: postData.video || null,
+          dateFrom: postData.dateFrom || '',
+          dateTo: postData.dateTo || '',
+          deadline: postData.needed_date || '',
+          maxParticipants: postData.number_of_people ? String(postData.number_of_people) : '1',
+          duration_minutes: postData.duration_minutes || '',
+          visibility: postData.visibility || 'public',
+          externalLink: postData.external_link || '',
+          documentUrl: postData.document_url || '',
+          documentName: parseDocumentNameFromUrl(postData.document_url)
+        }
+
+        if (!isMounted) return
+        setFormData(nextFormData)
+
+        setStep(validStoredStep ?? getStepFromForm(nextFormData))
+      } catch (error) {
+        console.error('Error loading edit data:', error)
+      } finally {
+        if (isMounted) setIsLoadingEdit(false)
+      }
+    }
+
+    loadDraft()
+
+    return () => {
+      isMounted = false
+    }
+  }, [editPostId, user, setStep, getStepFromForm, initialFormData])
+
+  useEffect(() => {
+    if (!editPostId) return
+    localStorage.setItem(`publishDraftStep:${editPostId}`, String(step))
+  }, [editPostId, step])
+
+  useEffect(() => {
+    if (!editPostId) return
+    localStorage.setItem(`publishDraftData:${editPostId}`, JSON.stringify(formData))
+  }, [editPostId, formData])
+
   // Validation des champs obligatoires
   const requireSocialNetwork = shouldShowSocialNetwork(categorySlug, subcategorySlug)
   const validation = useMemo(() => {
@@ -117,7 +327,7 @@ export default function Publish() {
     const showToastMessage = (message: string) => {
       showSuccess(message)
     }
-    handlePublish(formData, navigate, status, showToastMessage)
+    handlePublish(formData, navigate, status, showToastMessage, editPostId)
   }
 
   if (!user) {
@@ -145,6 +355,18 @@ export default function Publish() {
               Se connecter
             </button>
           </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoadingEdit) {
+    return (
+      <div className="publish-page-container">
+        <div className="publish-content-wrapper">
+          <div className="publish-content">
+            <p>Chargement...</p>
+          </div>
         </div>
       </div>
     )

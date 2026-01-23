@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { User, Settings as SettingsIcon, Shield, HelpCircle, LogOut, ChevronRight, LucideIcon, FileEdit, FileText } from 'lucide-react'
+import {
+  User,
+  Settings as SettingsIcon,
+  Shield,
+  HelpCircle,
+  LogOut,
+  ChevronRight,
+  LucideIcon,
+  FileEdit,
+  FileText,
+  Wallet,
+  Receipt
+} from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -29,12 +41,15 @@ import Password from './profile/Password'
 import PhoneNumber from './profile/PhoneNumber'
 import TwoFactorAuth from './profile/TwoFactorAuth'
 import ConnectedDevices from './profile/ConnectedDevices'
+import BlockedProfiles from './profile/BlockedProfiles'
 import Annonces from './profile/Annonces'
 import Mail from './profile/Mail'
 import OnlineStatus from './profile/OnlineStatus'
 import DataManagement from './profile/DataManagement'
 import DeleteAccount from './profile/DeleteAccount'
 import Contracts from './profile/Contracts'
+import WalletPage from './profile/Wallet.tsx'
+import Transactions from './profile/Transactions.tsx'
 import ConfirmationModal from '../components/ConfirmationModal'
 import './Profile.css'
 
@@ -82,8 +97,10 @@ const Profile = () => {
     if (location.pathname === '/profile/resources/declaration-revenus') return 'resources-page'
     if (location.pathname === '/profile/legal') return 'legal'
     if (location.pathname.startsWith('/profile/legal/')) return 'legal-page'
+    if (location.pathname === '/profile/wallet') return 'wallet'
     if (location.pathname === '/profile/annonces') return 'annonces'
     if (location.pathname === '/profile/contracts') return 'contracts'
+    if (location.pathname === '/profile/transactions') return 'transactions'
     return 'menu'
   }
   
@@ -259,12 +276,24 @@ const Profile = () => {
       return <ConnectedDevices />
     }
 
+    if (location.pathname === '/profile/security/blocked-profiles') {
+      return <BlockedProfiles />
+    }
+
     if (location.pathname === '/profile/annonces') {
       return <Annonces />
     }
 
     if (location.pathname === '/profile/contracts') {
       return <Contracts />
+    }
+
+    if (location.pathname === '/profile/wallet') {
+      return <WalletPage />
+    }
+
+    if (location.pathname === '/profile/transactions') {
+      return <Transactions />
     }
 
     // Routes pour les pages légales individuelles
@@ -339,6 +368,8 @@ const Profile = () => {
   const getPageTitle = () => {
     if (location.pathname === '/profile/annonces') return 'Mes annonces'
     if (location.pathname === '/profile/contracts') return 'Contrats'
+    if (location.pathname === '/profile/wallet') return 'Porte-monnaie'
+    if (location.pathname === '/profile/transactions') return 'Transactions'
     if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return 'Aide'
     if (location.pathname === '/profile/contact') return 'Contact'
     if (location.pathname === '/profile/resources') return 'Ressources'
@@ -384,6 +415,14 @@ const Profile = () => {
     // Menu items nécessitant une connexion
     const authMenuItems: MenuItem[] = [
       { 
+        id: 'wallet', 
+        icon: Wallet, 
+        label: 'Porte-monnaie', 
+        path: '/profile/wallet',
+        onClick: () => navigate('/profile/wallet'),
+        requiresAuth: true
+      },
+      { 
         id: 'annonces', 
         icon: FileEdit, 
         label: 'Annonces', 
@@ -397,6 +436,14 @@ const Profile = () => {
         label: 'Contrats', 
         path: '/profile/contracts',
         onClick: () => navigate('/profile/contracts'),
+        requiresAuth: true
+      },
+      { 
+        id: 'transactions', 
+        icon: Receipt, 
+        label: 'Transactions', 
+        path: '/profile/transactions',
+        onClick: () => navigate('/profile/transactions'),
         requiresAuth: true
       },
       { 
@@ -518,7 +565,15 @@ const Profile = () => {
         )}
 
         {/* Zone scrollable */}
-        <div className={`profile-scrollable ${['annonces', 'contracts', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(currentSection) ? 'profile-scrollable-increased-padding' : ''}`}>
+        <div
+          className={`profile-scrollable ${
+            ['wallet', 'annonces', 'contracts', 'transactions', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(
+              currentSection
+            )
+              ? 'profile-scrollable-increased-padding'
+              : ''
+          }`}
+        >
           {(authLoading || loading) && currentSection === 'menu' ? (
             <div className="profile-loading">Chargement...</div>
           ) : (

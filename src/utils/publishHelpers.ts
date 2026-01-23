@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { evaluateTextModeration } from './textModeration'
 
 interface FormData {
   category: string | null
@@ -31,6 +32,7 @@ interface FormData {
   visibility: string
   externalLink?: string
   documentUrl?: string
+  documentName?: string
   [key: string]: any
 }
 
@@ -236,7 +238,8 @@ export const handlePublish = async (
   formData: FormData,
   navigate: (path: string) => void,
   status: 'draft' | 'active',
-  showToast?: (message: string) => void
+  showToast?: (message: string) => void,
+  existingPostId?: string | null
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -270,11 +273,13 @@ export const handlePublish = async (
   // formData.category et formData.subcategory sont déjà des slugs
   const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
 
-  // Validation complète des champs obligatoires
-  const validation = validatePublishForm(formData, requireSocialNetwork)
-  if (!validation.isValid) {
-    alert(validation.errors.join('\n'))
-    return
+  // Validation complète des champs obligatoires uniquement pour une publication
+  if (status === 'active') {
+    const validation = validatePublishForm(formData, requireSocialNetwork)
+    if (!validation.isValid) {
+      alert(validation.errors.join('\n'))
+      return
+    }
   }
 
   // Récupérer les IDs de catégorie et sous-catégorie depuis la base de données
@@ -346,7 +351,22 @@ export const handlePublish = async (
     }
     return `https://${trimmedLink}`
   }
+
+  const buildDocumentUrlWithName = (url?: string, name?: string) => {
+    if (!url) return null
+    const baseUrl = url.split('#')[0]
+    const trimmedName = name?.trim()
+    if (!trimmedName) return baseUrl
+    const params = new URLSearchParams({ name: trimmedName })
+    return `${baseUrl}#${params.toString()}`
+  }
   
+  const moderationText = `${formData.title || ''}\n${descriptionValue || ''}`
+  const moderationResult = status === 'active'
+    ? evaluateTextModeration(moderationText)
+    : { score: 0, reasons: [], shouldBlock: false }
+  const finalStatus = moderationResult.shouldBlock ? 'pending' : status
+
   const postData: any = {
     user_id: user.id,
     category_id: categoryId,
@@ -359,7 +379,7 @@ export const handlePublish = async (
     location: formData.location || null,
     images: formData.images.length > 0 ? formData.images : null,
     is_urgent: formData.urgent || false,
-    status: status,
+    status: finalStatus,
     payment_type: formData.exchange_type || null,
     // Stocker le réseau social dans media_type si disponible, sinon utiliser N3/N4
     // Priorité : socialNetwork > subSubCategory/option
@@ -371,7 +391,11 @@ export const handlePublish = async (
     needed_date: formData.deadline || null,
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
     external_link: normalizeExternalLink(formData.externalLink),
-    document_url: formData.documentUrl?.trim() || null
+    document_url: buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
+    moderation_status: moderationResult.shouldBlock ? 'flagged' : 'clean',
+    moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
+    moderation_score: moderationResult.score || 0,
+    moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null
   }
 
   // Si N4 existe, on peut l'ajouter dans un champ JSON ou texte
@@ -385,9 +409,12 @@ export const handlePublish = async (
   })
 
   try {
-    const { data, error } = await supabase
-      .from('posts')
-      .insert(postData)
+    const query = existingPostId
+      ? supabase.from('posts').update(postData).eq('id', existingPostId).eq('user_id', user.id)
+      : supabase.from('posts').insert(postData)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query as any)
       .select()
       .single()
 
@@ -397,11 +424,19 @@ export const handlePublish = async (
     }
 
     if (data) {
-      const message = status === 'draft' ? 'Enregistré' : 'Annonce publiée'
+      const message = status === 'draft'
+        ? 'Enregistré'
+        : (finalStatus === 'pending' ? 'Annonce en cours de vérification' : 'Annonce publiée')
       if (showToast) {
         showToast(message)
       } else {
-        alert(status === 'draft' ? 'Brouillon enregistré avec succès !' : 'Annonce publiée avec succès !')
+        alert(
+          status === 'draft'
+            ? 'Brouillon enregistré avec succès !'
+            : (finalStatus === 'pending'
+              ? 'Votre annonce est en cours de vérification.'
+              : 'Annonce publiée avec succès !')
+        )
       }
       navigate(`/post/${(data as any).id}`)
     }

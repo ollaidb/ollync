@@ -63,69 +63,19 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'autre': []
   },
   'vente': {
-    'comptes': [
-      { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-      { id: 'instagram', name: 'Instagram', slug: 'instagram' },
-      { id: 'twitter', name: 'Twitter', slug: 'twitter' },
-      { id: 'pinterest', name: 'Pinterest', slug: 'pinterest' },
-      { id: 'facebook', name: 'Facebook', slug: 'facebook' },
-      { id: 'youtube', name: 'YouTube', slug: 'youtube' }
-    ],
+    'comptes': [],
     'noms-utilisateur': [],
     'concepts-niches': [],
     'autre': []
   },
   // Compatibilité avec les anciens slugs (à supprimer progressivement)
   match: {
-    'creation-contenu': [
-      { 
-        id: 'photo', 
-        name: 'Photo', 
-        slug: 'photo' 
-      },
-      { 
-        id: 'video', 
-        name: 'Vidéo', 
-        slug: 'video',
-        subSubSubCategories: [
-          { id: 'trend', name: 'Trend', slug: 'trend' },
-          { id: 'vlog', name: 'Vlog', slug: 'vlog' },
-          { id: 'skits', name: 'Skits', slug: 'skits' }
-        ]
-      }
-    ]
+    'creation-contenu': []
   },
   role: {
-    'figurant': [
-      { 
-        id: 'video', 
-        name: 'Vidéo', 
-        slug: 'video',
-        subSubSubCategories: [
-          { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-          { id: 'youtube', name: 'YouTube', slug: 'youtube' },
-          { id: 'documentaire', name: 'Documentaire', slug: 'documentaire' },
-          { id: 'sondage', name: 'Sondage', slug: 'sondage' }
-        ]
-      }
-    ],
-    'modele': [
-      { id: 'photo', name: 'Photo', slug: 'photo' },
-      { 
-        id: 'video', 
-        name: 'Vidéo', 
-        slug: 'video',
-        subSubSubCategories: [
-          { id: 'pub', name: 'Pub', slug: 'pub' },
-          { id: 'clip', name: 'Clip', slug: 'clip' }
-        ]
-      }
-    ],
-    'live': [
-      { id: 'tiktok', name: 'TikTok', slug: 'tiktok' },
-      { id: 'instagram', name: 'Instagram', slug: 'instagram' },
-      { id: 'facebook', name: 'Facebook', slug: 'facebook' }
-    ]
+    'figurant': [],
+    'modele': [],
+    'live': []
   }
 }
 
