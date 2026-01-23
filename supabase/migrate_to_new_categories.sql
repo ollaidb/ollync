@@ -28,8 +28,8 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Projet', 'projets-equipe', 'Briefcase', '#4facfe'),
   ('Services', 'services', 'Wrench', '#43e97b'),
   ('Vente', 'vente', 'ShoppingBag', '#f093fb')
-ON CONFLICT (slug) DO UPDATE
-SET name = EXCLUDED.name,
+ON CONFLICT (name) DO UPDATE
+SET slug = EXCLUDED.slug,
     icon = EXCLUDED.icon,
     color = EXCLUDED.color,
     updated_at = NOW();

@@ -409,7 +409,11 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Vente', 'vente', 'ShoppingBag', '#f093fb'),
   ('Mission', 'mission', 'Target', '#43e97b'),
   ('Autre', 'autre', 'MoreHorizontal', '#ffa726')
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (name) DO UPDATE
+SET slug = EXCLUDED.slug,
+    icon = EXCLUDED.icon,
+    color = EXCLUDED.color,
+    updated_at = NOW();
 
 -- Insérer les sous-catégories par défaut
 -- Match

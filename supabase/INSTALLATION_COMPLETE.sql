@@ -589,6 +589,103 @@ CREATE TRIGGER trigger_notify_on_message
   FOR EACH ROW
   EXECUTE FUNCTION notify_on_message();
 
+-- Fonction pour notifier sur la création d'un contrat
+CREATE OR REPLACE FUNCTION notify_on_contract_created()
+RETURNS TRIGGER AS $$
+DECLARE
+  creator_name VARCHAR(255);
+  post_title VARCHAR(255);
+BEGIN
+  IF NEW.counterparty_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.counterparty_id = NEW.creator_id THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT COALESCE(full_name, username, 'Quelqu''un')
+  INTO creator_name
+  FROM profiles
+  WHERE id = NEW.creator_id;
+
+  SELECT title INTO post_title FROM posts WHERE id = NEW.post_id;
+  post_title := COALESCE(post_title, 'Une annonce');
+
+  PERFORM create_notification(
+    NEW.counterparty_id,
+    'contract_created',
+    creator_name || ' vous a envoyé un contrat',
+    post_title,
+    NEW.id
+  );
+
+  PERFORM create_notification(
+    NEW.counterparty_id,
+    'contract_signature_required',
+    'Signature requise pour le contrat',
+    post_title,
+    NEW.id
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_notify_on_contract_created ON contracts;
+CREATE TRIGGER trigger_notify_on_contract_created
+  AFTER INSERT ON contracts
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_on_contract_created();
+
+-- Notification quand un contrat est signé
+CREATE OR REPLACE FUNCTION notify_on_contract_signed()
+RETURNS TRIGGER AS $$
+DECLARE
+  signer_name VARCHAR(255);
+  post_title VARCHAR(255);
+BEGIN
+  IF NEW.agreement_confirmed IS NOT TRUE THEN
+    RETURN NEW;
+  END IF;
+
+  IF COALESCE(OLD.agreement_confirmed, false) = true THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.creator_id IS NULL OR NEW.counterparty_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT COALESCE(full_name, username, 'Quelqu''un')
+  INTO signer_name
+  FROM profiles
+  WHERE id = NEW.counterparty_id;
+
+  SELECT title INTO post_title FROM posts WHERE id = NEW.post_id;
+  post_title := COALESCE(post_title, 'Une annonce');
+
+  IF NEW.creator_id != NEW.counterparty_id THEN
+    PERFORM create_notification(
+      NEW.creator_id,
+      'contract_signed',
+      signer_name || ' a signé le contrat',
+      post_title,
+      NEW.id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_notify_on_contract_signed ON contracts;
+CREATE TRIGGER trigger_notify_on_contract_signed
+  AFTER UPDATE ON contracts
+  FOR EACH ROW
+  WHEN (OLD.agreement_confirmed IS DISTINCT FROM NEW.agreement_confirmed)
+  EXECUTE FUNCTION notify_on_contract_signed();
+
 -- Fonction pour mettre à jour last_message_at
 CREATE OR REPLACE FUNCTION update_conversation_last_message()
 RETURNS TRIGGER AS $$
@@ -681,8 +778,8 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Vente', 'vente', 'ShoppingBag', '#f093fb'),
   ('Mission', 'mission', 'Target', '#43e97b'),
   ('Autre', 'autre', 'MoreHorizontal', '#ffa726')
-ON CONFLICT (slug) DO UPDATE
-SET name = EXCLUDED.name,
+ON CONFLICT (name) DO UPDATE
+SET slug = EXCLUDED.slug,
     icon = EXCLUDED.icon,
     color = EXCLUDED.color,
     updated_at = NOW();

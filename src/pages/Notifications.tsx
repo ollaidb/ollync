@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck } from 'lucide-react'
+import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck, Star, Calendar, Inbox, FileSignature } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useSupabase'
 import { EmptyState } from '../components/EmptyState'
 import './Notifications.css'
 
-type FilterType = 'all' | 'like' | 'comment' | 'match' | 'news'
+type FilterType = 'all' | 'like' | 'message' | 'request' | 'match' | 'appointment' | 'review' | 'news'
 
 interface Notification {
   id: string
@@ -100,6 +100,13 @@ const Notifications = () => {
           navigate(`/post/${notification.related_id}`)
         }
         break
+      case 'review':
+        if (notification.related_id) {
+          navigate(`/profile/${notification.related_id}`)
+        } else {
+          navigate('/profile')
+        }
+        break
       case 'message':
         navigate('/messages')
         break
@@ -133,6 +140,14 @@ const Notifications = () => {
           navigate(`/post/${notification.related_id}`)
         }
         break
+      case 'contract_created':
+      case 'contract_signature_required':
+      case 'contract_signed':
+        navigate('/profile/contracts')
+        break
+      case 'appointment':
+        navigate('/messages?filter=appointments')
+        break
       case 'group_added':
         navigate('/messages')
         break
@@ -150,6 +165,8 @@ const Notifications = () => {
         return <Heart size={18} />
       case 'comment':
         return <MessageCircle size={18} />
+      case 'review':
+        return <Star size={18} />
       case 'follow':
         return <UserPlus size={18} />
       case 'message':
@@ -174,6 +191,12 @@ const Notifications = () => {
         return <CheckCircle size={18} />
       case 'application_declined':
         return <XCircle size={18} />
+      case 'contract_created':
+      case 'contract_signature_required':
+      case 'contract_signed':
+        return <FileSignature size={18} />
+      case 'appointment':
+        return <Calendar size={18} />
       case 'group_added':
         return <UserPlus size={18} />
       case 'post_updated':
@@ -216,13 +239,27 @@ const Notifications = () => {
       return notifications
     } else if (activeFilter === 'like') {
       return notifications.filter(n => n.type === 'like')
-    } else if (activeFilter === 'comment') {
-      return notifications.filter(n => n.type === 'comment')
+    } else if (activeFilter === 'message') {
+      return notifications.filter(n => n.type === 'message')
+    } else if (activeFilter === 'review') {
+      return notifications.filter(n => n.type === 'review' || n.type === 'comment')
     } else if (activeFilter === 'match') {
       return notifications.filter(n => 
         n.type === 'match_request_accepted' || 
         n.type === 'match_request_received' ||
         n.type === 'match_request_sent'
+      )
+    } else if (activeFilter === 'appointment') {
+      return notifications.filter(n => n.type === 'appointment')
+    } else if (activeFilter === 'request') {
+      return notifications.filter(n =>
+        n.type === 'application_received' ||
+        n.type === 'application_accepted' ||
+        n.type === 'application_declined' ||
+        n.type === 'application_sent' ||
+        n.type === 'contract_created' ||
+        n.type === 'contract_signature_required' ||
+        n.type === 'contract_signed'
       )
     } else if (activeFilter === 'news') {
       return notifications.filter(n => 
@@ -313,11 +350,18 @@ const Notifications = () => {
               Like
             </button>
             <button
-              className={`notifications-filter-btn ${activeFilter === 'comment' ? 'active' : ''}`}
-              onClick={() => setActiveFilter('comment')}
+              className={`notifications-filter-btn ${activeFilter === 'message' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('message')}
             >
               <MessageCircle size={16} />
-              Commentaire
+              Message
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'request' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('request')}
+            >
+              <Inbox size={16} />
+              Demande
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'match' ? 'active' : ''}`}
@@ -325,6 +369,20 @@ const Notifications = () => {
             >
               <UserCheck size={16} />
               Match
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'appointment' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('appointment')}
+            >
+              <Calendar size={16} />
+              Rendez-vous
+            </button>
+            <button
+              className={`notifications-filter-btn ${activeFilter === 'review' ? 'active' : ''}`}
+              onClick={() => setActiveFilter('review')}
+            >
+              <Star size={16} />
+              Review
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'news' ? 'active' : ''}`}
