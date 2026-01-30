@@ -12,11 +12,12 @@
 }
 
 .legal-detail-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
   flex: 1;
+  text-align: center;
 }
 
 .legal-detail-header-spacer {
@@ -88,6 +89,10 @@
 @media (max-width: 768px) {
   .legal-detail-page {
     padding: 0;
+  }
+
+  .legal-detail-title {
+    font-size: 18px;
   }
 
   .legal-detail-section {

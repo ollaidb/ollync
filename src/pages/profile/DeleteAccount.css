@@ -121,7 +121,7 @@
 .delete-account-actions {
   display: flex;
   gap: 12px;
-  flex-direction: column;
+  flex-direction: row;
 }
 
 .delete-account-cancel-btn {
@@ -214,8 +214,14 @@
 .delete-account-confirmation-actions {
   display: flex;
   gap: 12px;
-  flex-direction: column;
+  flex-direction: row;
   margin-top: 24px;
+}
+
+.delete-account-actions button,
+.delete-account-confirmation-actions button {
+  flex: 1;
+  min-width: 0;
 }
 
 .delete-account-final-btn {

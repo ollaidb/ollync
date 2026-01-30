@@ -125,10 +125,10 @@ export const GooglePlacesAutocomplete = ({
           ref={inputRef}
           type="text"
           className="location-input"
-          placeholder="⚠️ Clé API Google Maps non configurée"
+          placeholder="Clé Google Maps manquante — saisissez l'adresse"
           value={inputValue}
           onChange={handleInputChange}
-          disabled={true}
+          disabled={disabled}
           autoComplete="off"
           formNoValidate
         />
@@ -145,10 +145,10 @@ export const GooglePlacesAutocomplete = ({
           ref={inputRef}
           type="text"
           className="location-input"
-          placeholder="Erreur lors du chargement de Google Maps"
+          placeholder="Google Maps indisponible — saisissez l'adresse"
           value={inputValue}
           onChange={handleInputChange}
-          disabled={true}
+          disabled={disabled}
           autoComplete="off"
           formNoValidate
         />

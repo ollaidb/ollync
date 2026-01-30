@@ -62,6 +62,7 @@
 
 .feed-header-branding {
   flex: 1;
+  text-align: center;
 }
 
 .feed-header-spacer {
@@ -70,11 +71,12 @@
 }
 
 .feed-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--foreground);
   margin: 0;
   line-height: 1.2;
+  text-align: center;
 }
 
 /* Contrôles fixes */
@@ -264,7 +266,7 @@
   }
 
   .feed-title {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .feed-controls-fixed {

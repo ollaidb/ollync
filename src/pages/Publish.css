@@ -55,7 +55,7 @@
 }
 
 .publish-title-centered {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
@@ -187,10 +187,11 @@
 
 .publish-header-text {
   flex: 1;
+  text-align: center;
 }
 
 .publish-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--foreground);
   margin: 0;
@@ -613,11 +614,11 @@
   }
 
   .publish-title {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .publish-title-centered {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .publish-content-wrapper {

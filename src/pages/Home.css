@@ -75,6 +75,9 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .home-publish-btn:hover {
@@ -201,6 +204,7 @@
   padding-left: 0;
   padding-right: 0;
   width: 100%;
+  justify-content: center;
 }
 
 .home-categories-scroll::-webkit-scrollbar {
@@ -371,12 +375,12 @@
   flex-shrink: 0;
 }
 
-/* Version Web - Grille avec 6 annonces visibles + scroll horizontal */
+/* Version Web - Grille avec 5 annonces visibles + scroll horizontal */
 @media (min-width: 769px) {
   .home-posts-grid {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: calc((100% - (5 * 12px)) / 6);
+    grid-auto-columns: calc((100% - (4 * 12px)) / 5);
     gap: 12px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -473,7 +477,7 @@
 
 @media (min-width: 769px) {
   .home-loading-more {
-    min-width: calc((100% - (5 * 12px)) / 6);
+    min-width: calc((100% - (4 * 12px)) / 5);
     width: 100%;
   }
 }
@@ -506,7 +510,7 @@
 
 @media (min-width: 769px) {
   .home-empty-section {
-    min-width: calc((100% - (5 * 12px)) / 6);
+    min-width: calc((100% - (4 * 12px)) / 5);
     width: 100%;
   }
 }

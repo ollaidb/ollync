@@ -12,11 +12,12 @@
 }
 
 .contact-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
   flex: 1;
+  text-align: center;
 }
 
 .contact-header-spacer {
@@ -255,6 +256,10 @@
 @media (max-width: 768px) {
   .contact-page {
     padding: 0;
+  }
+
+  .contact-title {
+    font-size: 18px;
   }
 
   .contact-section {

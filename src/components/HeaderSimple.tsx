@@ -17,12 +17,22 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
     const path = location.pathname
     const pathParts = path.split('/').filter(Boolean)
 
-    // Si on est dans une sous-page de profil, retourner au niveau parent
-    if (path.startsWith('/profile/') && pathParts.length > 2) {
-      const parentPath = '/' + pathParts.slice(0, -1).join('/')
-      markNavigatingBack()
-      navigate(parentPath)
-      return
+    // Si on est dans une sous-page de profil, retourner au bon niveau
+    if (path.startsWith('/profile/')) {
+      // Pour /profile/xxx, retourner vers /profile
+      if (pathParts.length === 2) {
+        markNavigatingBack()
+        navigate('/profile')
+        return
+      }
+
+      // Pour /profile/xxx/yyy, retourner au niveau parent
+      if (pathParts.length > 2) {
+        const parentPath = '/' + pathParts.slice(0, -1).join('/')
+        markNavigatingBack()
+        navigate(parentPath)
+        return
+      }
     }
 
     // Pour les catégories, retourner directement vers /home

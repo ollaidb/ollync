@@ -63,11 +63,13 @@
 }
 
 .favorites-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--foreground);
   margin: 0;
   line-height: 1.2;
+  text-align: center;
+  flex: 1;
 }
 
 .favorites-subtitle {
@@ -351,7 +353,7 @@
 }
 
 .favorites-title-centered {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
@@ -458,11 +460,11 @@
   }
 
   .favorites-title {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .favorites-title-centered {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .favorites-content {

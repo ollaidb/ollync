@@ -13,11 +13,12 @@
 }
 
 .annonces-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
   flex: 1;
+  text-align: center;
 }
 
 .annonces-header-spacer {
@@ -431,7 +432,7 @@
   }
 
   .annonces-title {
-    font-size: 24px;
+    font-size: 18px;
   }
 
   .annonces-tabs {

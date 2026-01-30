@@ -127,7 +127,7 @@
 }
 
 .notifications-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 800;
   color: #111827;
   margin: 0;
@@ -142,7 +142,7 @@
 }
 
 .notifications-header h1 {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: #333;
   margin: 0;
@@ -358,7 +358,7 @@
 }
 
 .notifications-title-centered {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
@@ -471,13 +471,13 @@
   }
 
   .notifications-title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     width: calc(100% - 100px);
   }
 
   .notifications-title-centered {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .notifications-header-not-connected {

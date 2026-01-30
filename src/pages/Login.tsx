@@ -175,8 +175,6 @@ const Login = () => {
               Se connecter avec Google
             </button>
 
-            {/* Bouton Apple temporairement masqué */}
-            {false && (
             <button
               type="button"
               className="auth-button-apple"
@@ -188,7 +186,6 @@ const Login = () => {
               </svg>
               Se connecter avec Apple
             </button>
-            )}
           </div>
 
           <div className="auth-footer">

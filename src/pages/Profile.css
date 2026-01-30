@@ -78,16 +78,17 @@
 
 /* Carte de profil */
 .profile-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 12px;
+  background: var(--ui-block-bg);
+  border-radius: var(--ui-block-radius);
+  padding: var(--ui-block-padding);
+  border: var(--ui-block-border);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-block-gap);
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ui-block-shadow);
 }
 
 .profile-card:hover {
@@ -440,7 +441,7 @@
   }
 
   .profile-card {
-    padding: 10px;
+    padding: var(--ui-block-padding);
     margin-bottom: 10px;
   }
 
@@ -574,7 +575,7 @@
   }
 
   .modal-actions {
-    flex-direction: column-reverse;
+    flex-direction: row;
   }
 
   .btn-cancel,

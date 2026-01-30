@@ -174,6 +174,8 @@ const Messages = () => {
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
+  const messagesListRef = useRef<HTMLDivElement | null>(null)
+  const shouldScrollToBottomRef = useRef(false)
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -203,6 +205,25 @@ const Messages = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, user])
+
+  useEffect(() => {
+    if (conversationId) {
+      shouldScrollToBottomRef.current = true
+    }
+  }, [conversationId])
+
+  useEffect(() => {
+    if (!shouldScrollToBottomRef.current) return
+    if (!messagesListRef.current) return
+
+    const scrollToBottom = () => {
+      if (!messagesListRef.current) return
+      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
+      shouldScrollToBottomRef.current = false
+    }
+
+    requestAnimationFrame(scrollToBottom)
+  }, [messages])
 
   useEffect(() => {
     if (openAppointment && (selectedConversation || conversationId)) {
@@ -1747,7 +1768,7 @@ const Messages = () => {
               <p>Chargement...</p>
             </div>
           ) : (
-            <div className="conversation-messages-list">
+            <div className="conversation-messages-list" ref={messagesListRef}>
               {!isSystemConversation && (
                 <div className="conversation-safety-card">
                 <div className="conversation-safety-header">
@@ -2199,7 +2220,7 @@ const Messages = () => {
           filteredMatchRequests.length === 0 ? (
             <EmptyState type="requests" />
           ) : (
-            <div className="conversations-list">
+            <div className="conversations-list conversations-list--compact">
               {filteredMatchRequests.map((request) => (
                 <div
                   key={request.id}
@@ -2255,7 +2276,7 @@ const Messages = () => {
           filteredMatches.length === 0 ? (
             <EmptyState type="matches" />
           ) : (
-            <div className="conversations-list">
+            <div className="conversations-list conversations-list--compact">
               {filteredMatches.map((request) => (
                 <div
                   key={request.id}

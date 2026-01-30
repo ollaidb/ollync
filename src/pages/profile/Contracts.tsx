@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { MouseEvent, TouchEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FileText, Users, CheckCircle2, Download, FileSignature, AlertCircle } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import type { Database } from '../../types/database'
 import './Contracts.css'
 
 interface ProfileSummary {
@@ -11,6 +13,16 @@ interface ProfileSummary {
   username?: string | null
   full_name?: string | null
   avatar_url?: string | null
+  email?: string | null
+  phone?: string | null
+  contract_full_name?: string | null
+  contract_email?: string | null
+  contract_phone?: string | null
+  contract_city?: string | null
+  contract_country?: string | null
+  contract_siren?: string | null
+  contract_signature?: string | null
+  contract_default_type?: string | null
 }
 
 interface PostSummary {
@@ -58,6 +70,18 @@ type SelectedContext =
   | { mode: 'owner'; post: PostSummary }
   | { mode: 'applicant'; post: PostSummary; application: ApplicationSummary; owner: ProfileSummary }
 
+interface ContractProfileForm {
+  fullName: string
+  email: string
+  phone: string
+  city: string
+  country: string
+  siren: string
+  signature: string
+}
+
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
+
 const Contracts = () => {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
@@ -81,10 +105,28 @@ const Contracts = () => {
   const [revenueShare, setRevenueShare] = useState<string>('')
   const [exchangeService, setExchangeService] = useState<string>('')
   const [customClauses, setCustomClauses] = useState<string>('')
+  const [customArticles, setCustomArticles] = useState<string>('')
   const [agreementConfirmed, setAgreementConfirmed] = useState(false)
 
   const [contracts, setContracts] = useState<ContractRecord[]>([])
   const [preferredCounterpartyId, setPreferredCounterpartyId] = useState<string | null>(null)
+  const [contractProfile, setContractProfile] = useState<ContractProfileForm>({
+    fullName: '',
+    email: '',
+    phone: '',
+    city: '',
+    country: '',
+    siren: '',
+    signature: ''
+  })
+  const [contractProfileSaving, setContractProfileSaving] = useState(false)
+  const [contractProfileSaved, setContractProfileSaved] = useState(false)
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const signaturePointRef = useRef<{ x: number; y: number } | null>(null)
+  const [isDrawingSignature, setIsDrawingSignature] = useState(false)
+  const [signatureHasData, setSignatureHasData] = useState(false)
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false)
+  const [showContractIntro, setShowContractIntro] = useState(false)
 
   const selectedContext = useMemo<SelectedContext | null>(() => {
     if (!selectedOption) return null
@@ -206,13 +248,33 @@ const Contracts = () => {
       setLoading(true)
       setError(null)
       try {
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileDataRaw, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url')
+          .select(
+            'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
+          )
           .eq('id', user.id)
           .single()
+        const profileData = profileDataRaw as ProfileSummary | null
         if (!profileError && profileData) {
           setCurrentUserProfile(profileData)
+          const derivedFullName =
+            profileData.contract_full_name ||
+            profileData.full_name ||
+            user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            ''
+          const derivedEmail = profileData.contract_email || profileData.email || user.email || ''
+          const derivedPhone = profileData.contract_phone || profileData.phone || ''
+          setContractProfile({
+            fullName: derivedFullName,
+            email: derivedEmail,
+            phone: derivedPhone,
+            city: profileData.contract_city || '',
+            country: profileData.contract_country || '',
+            siren: profileData.contract_siren || '',
+            signature: profileData.contract_signature || ''
+          })
         }
 
         const { data: postsData, error: postsError } = await supabase
@@ -239,7 +301,7 @@ const Contracts = () => {
               applicant_id,
               status,
               created_at,
-              applicant:profiles!applications_applicant_id_fkey(id, username, full_name, avatar_url)
+              applicant:profiles!applications_applicant_id_fkey(id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type)
             `
             )
             .eq('status', 'accepted')
@@ -278,7 +340,9 @@ const Contracts = () => {
           if (ownerIds.length > 0) {
             const { data: ownersData } = await supabase
               .from('profiles')
-              .select('id, username, full_name, avatar_url')
+              .select(
+                'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
+              )
               .in('id', ownerIds)
 
             const ownerMap: Record<string, ProfileSummary> = {}
@@ -303,6 +367,58 @@ const Contracts = () => {
 
     loadData()
   }, [user])
+
+  useEffect(() => {
+    if (!isSignatureModalOpen) return
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return
+
+    const setupCanvas = () => {
+      const context = canvas.getContext('2d')
+      if (!context) return
+
+      const { width } = canvas.getBoundingClientRect()
+      const height = 200
+      const devicePixelRatio = window.devicePixelRatio || 1
+
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      canvas.width = Math.floor(width * devicePixelRatio)
+      canvas.height = Math.floor(height * devicePixelRatio)
+
+      context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0)
+      context.lineWidth = 2
+      context.lineCap = 'round'
+      context.strokeStyle = '#111111'
+      context.clearRect(0, 0, width, height)
+
+      if (contractProfile.signature) {
+        const image = new Image()
+        image.onload = () => {
+          context.clearRect(0, 0, width, height)
+          context.drawImage(image, 0, 0, width, height)
+          setSignatureHasData(true)
+        }
+        image.src = contractProfile.signature
+      } else {
+        setSignatureHasData(false)
+      }
+    }
+
+    const frame = window.requestAnimationFrame(setupCanvas)
+    return () => window.cancelAnimationFrame(frame)
+  }, [contractProfile.signature, isSignatureModalOpen])
+
+  useEffect(() => {
+    if (isSignatureModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isSignatureModalOpen])
 
   useEffect(() => {
     setPreferredCounterpartyId(counterpartyParam)
@@ -362,6 +478,18 @@ const Contracts = () => {
   }, [shouldShowExchange, shouldShowPrice, shouldShowRevenueShare])
 
   useEffect(() => {
+    if (contractProfileSaved) {
+      setContractProfileSaved(false)
+    }
+  }, [contractProfile, contractProfileSaved])
+
+  useEffect(() => {
+    if (!currentUserProfile?.contract_default_type) return
+    if (contractType !== 'auto') return
+    setContractType(currentUserProfile.contract_default_type)
+  }, [contractType, currentUserProfile?.contract_default_type])
+
+  useEffect(() => {
     if (!selectedContext) {
       setSelectedApplicants({})
       return
@@ -409,12 +537,121 @@ const Contracts = () => {
 
   const formatUserName = (profile?: ProfileSummary | null) => {
     if (!profile) return 'Utilisateur'
-    return profile.full_name || profile.username || 'Utilisateur'
+    return profile.contract_full_name || profile.full_name || profile.username || 'Utilisateur'
   }
 
   const formatDate = (value?: string | null) => {
     if (!value) return ''
     return new Date(value).toLocaleDateString('fr-FR')
+  }
+
+  const resolveContractValue = (value?: string | null) => value?.trim() || ''
+
+  const resolveContractName = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_full_name || profile?.full_name || profile?.username || 'Utilisateur')
+
+  const resolveContractEmail = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_email || profile?.email || '')
+
+  const resolveContractPhone = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_phone || profile?.phone || '')
+
+  const resolveContractCity = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_city || '')
+
+  const resolveContractCountry = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_country || '')
+
+  const resolveContractSiren = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_siren || '')
+
+  const resolveContractSignature = (profile?: ProfileSummary | null) =>
+    resolveContractValue(profile?.contract_signature || '')
+
+  const getSignaturePoint = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return null
+    const rect = canvas.getBoundingClientRect()
+
+    if ('touches' in event) {
+      const touch = event.touches[0]
+      if (!touch) return null
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      }
+    }
+
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    }
+  }
+
+  const startSignature = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    event.preventDefault()
+    const point = getSignaturePoint(event)
+    const canvas = signatureCanvasRef.current
+    const context = canvas?.getContext('2d')
+    if (!canvas || !context || !point) return
+
+    context.beginPath()
+    context.moveTo(point.x, point.y)
+    signaturePointRef.current = point
+    setIsDrawingSignature(true)
+    setSignatureHasData(true)
+  }
+
+  const drawSignature = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawingSignature) return
+    event.preventDefault()
+    const point = getSignaturePoint(event)
+    const canvas = signatureCanvasRef.current
+    const context = canvas?.getContext('2d')
+    if (!canvas || !context || !point) return
+
+    context.lineTo(point.x, point.y)
+    context.stroke()
+    signaturePointRef.current = point
+  }
+
+  const endSignature = () => {
+    if (!isDrawingSignature) return
+    setIsDrawingSignature(false)
+  }
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return
+    const context = canvas.getContext('2d')
+    if (!context) return
+    const { width, height } = canvas.getBoundingClientRect()
+    context.clearRect(0, 0, width, height)
+    setSignatureHasData(false)
+  }
+
+  const handleSaveSignature = () => {
+    const canvas = signatureCanvasRef.current
+    if (!canvas) return
+    const dataUrl = signatureHasData ? canvas.toDataURL('image/png') : ''
+    setContractProfile((prev) => ({ ...prev, signature: dataUrl }))
+    setIsSignatureModalOpen(false)
+  }
+
+  const buildPartyBlock = (profile: ProfileSummary, roleLabel: string) => {
+    const lines = [`- ${resolveContractName(profile)} (${roleLabel})`]
+    const email = resolveContractEmail(profile)
+    const phone = resolveContractPhone(profile)
+    const city = resolveContractCity(profile)
+    const country = resolveContractCountry(profile)
+    const siren = resolveContractSiren(profile)
+
+    if (email) lines.push(`Email : ${email}`)
+    if (phone) lines.push(`Téléphone : ${phone}`)
+    if (city || country) lines.push(`Ville/Pays : ${[city, country].filter(Boolean).join(', ')}`)
+    if (siren) lines.push(`SIREN : ${siren}`)
+
+    return lines.join('\n')
   }
 
   const buildContractContent = ({
@@ -433,6 +670,7 @@ const Contracts = () => {
     const title = `Contrat ${paymentLabels[contractKind] || 'Collaboration'}`
     const paymentLine = paymentType ? paymentLabels[paymentType] || paymentType : 'Non précisé'
     const today = formatDate(new Date().toISOString())
+    const signatureDateLine = agreementConfirmed ? `Date de signature : ${today}` : null
 
     const remunerationDetails: string[] = []
     if (shouldShowPrice && priceValue) {
@@ -450,6 +688,10 @@ const Contracts = () => {
         ? remunerationDetails.join(' - ')
         : 'Les modalités financières seront précisées entre les parties.'
 
+    const customArticlesText = customArticles.trim()
+      ? `\nArticles additionnels :\n${customArticles.trim()}`
+      : ''
+
     const customClauseText = customClauses.trim()
       ? `\nClauses additionnelles :\n${customClauses.trim()}`
       : ''
@@ -458,13 +700,17 @@ const Contracts = () => {
       .map((article, index) => `Article ${index + 1} : ${article.title}\n${article.content}`)
       .join('\n\n')
 
+    const creatorSignature = resolveContractSignature(creator)
+    const counterpartySignature = resolveContractSignature(counterparty)
+
     return [
       `${title}`,
-      `Date : ${today}`,
+      `Date d'envoi : ${today}`,
+      signatureDateLine,
       '',
       `Parties :`,
-      `- ${formatUserName(creator)} (Créateur du contrat)`,
-      `- ${formatUserName(counterparty)} (Autre partie)`,
+      buildPartyBlock(creator, 'Créateur du contrat'),
+      buildPartyBlock(counterparty, 'Autre partie'),
       '',
       `Annonce : ${post.title}`,
       `Type de paiement : ${paymentLine}`,
@@ -474,11 +720,16 @@ const Contracts = () => {
       remunerationText,
       '',
       `${articleText}`,
+      customArticlesText,
       customClauseText,
+      '',
+      `Signatures :`,
+      `Créateur : ${creatorSignature ? 'Signature enregistrée' : 'À compléter'}`,
+      `Autre partie : ${counterpartySignature ? 'Signature enregistrée' : 'À compléter'}`,
       '',
       `Accord mutuel : ${agreementConfirmed ? 'Confirmé par les parties' : 'En attente de confirmation'}`
     ]
-      .filter((line) => line !== '')
+      .filter((line): line is string => Boolean(line))
       .join('\n\n')
   }
 
@@ -517,8 +768,39 @@ const Contracts = () => {
     setPriceValue('')
     setRevenueShare('')
     setExchangeService('')
+    setCustomArticles('')
     setCustomClauses('')
     setAgreementConfirmed(false)
+  }
+
+  const handleSaveContractProfile = async () => {
+    if (!user) return
+    setContractProfileSaving(true)
+    setContractProfileSaved(false)
+    setError(null)
+
+    const payload: ProfileUpdate = {
+      contract_full_name: resolveContractValue(contractProfile.fullName) || null,
+      contract_email: resolveContractValue(contractProfile.email) || null,
+      contract_phone: resolveContractValue(contractProfile.phone) || null,
+      contract_city: resolveContractValue(contractProfile.city) || null,
+      contract_country: resolveContractValue(contractProfile.country) || null,
+      contract_siren: resolveContractValue(contractProfile.siren) || null,
+      contract_signature: resolveContractValue(contractProfile.signature) || null
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase.from('profiles') as any).update(payload).eq('id', user.id)
+      if (updateError) throw updateError
+      setCurrentUserProfile((prev) => (prev ? { ...prev, ...payload } : prev))
+      setContractProfileSaved(true)
+    } catch (err) {
+      console.error('Error saving contract profile:', err)
+      setError("Impossible d'enregistrer vos informations contractuelles.")
+    } finally {
+      setContractProfileSaving(false)
+    }
   }
 
   const handleGenerateContracts = async () => {
@@ -527,11 +809,31 @@ const Contracts = () => {
     setError(null)
 
     try {
-      const creator = currentUserProfile || {
+      const creator: ProfileSummary = currentUserProfile || {
         id: user.id,
         username: user.user_metadata?.username || null,
         full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        avatar_url: user.user_metadata?.avatar_url || null
+        avatar_url: user.user_metadata?.avatar_url || null,
+        email: user.email || null,
+        phone: null,
+        contract_full_name: null,
+        contract_email: null,
+        contract_phone: null,
+        contract_city: null,
+        contract_country: null,
+        contract_siren: null,
+        contract_signature: null,
+        contract_default_type: null
+      }
+      const creatorWithContractDetails: ProfileSummary = {
+        ...creator,
+        contract_full_name: resolveContractValue(contractProfile.fullName) || creator.contract_full_name || creator.full_name,
+        contract_email: resolveContractValue(contractProfile.email) || creator.contract_email || creator.email,
+        contract_phone: resolveContractValue(contractProfile.phone) || creator.contract_phone || creator.phone,
+        contract_city: resolveContractValue(contractProfile.city) || creator.contract_city,
+        contract_country: resolveContractValue(contractProfile.country) || creator.contract_country,
+        contract_siren: resolveContractValue(contractProfile.siren) || creator.contract_siren,
+        contract_signature: resolveContractValue(contractProfile.signature) || creator.contract_signature
       }
 
       if (selectedContext.mode === 'owner') {
@@ -544,7 +846,7 @@ const Contracts = () => {
         for (const application of selectedApplicantsList) {
           if (!application.applicant) continue
           const contractContent = buildContractContent({
-            creator,
+            creator: creatorWithContractDetails,
             counterparty: application.applicant,
             post: selectedContext.post,
             paymentType: resolvedPaymentType,
@@ -587,7 +889,7 @@ const Contracts = () => {
 
       if (selectedContext.mode === 'applicant') {
         const contractContent = buildContractContent({
-          creator,
+          creator: creatorWithContractDetails,
           counterparty: selectedContext.owner,
           post: selectedContext.post,
           paymentType: resolvedPaymentType,
@@ -750,76 +1052,129 @@ const Contracts = () => {
       {activeTab === 'create' ? (
         <div className="contracts-create">
           <div className="contracts-section">
-            <h3>1. Choisir une annonce</h3>
-            <p>Sélectionnez l’annonce concernée pour associer automatiquement l’autre partie.</p>
-            <select
-              className="contracts-select"
-              value={selectedOption}
-              onChange={(event) => setSelectedOption(event.target.value)}
-            >
-              <option value="">Sélectionner une annonce...</option>
-              {ownerPostsWithAccepted.length > 0 && (
-                <optgroup label="Mes annonces matchées">
-                  {ownerPostsWithAccepted.map((post) => (
-                    <option key={post.id} value={`owner:${post.id}`}>
-                      {post.title}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              {acceptedAsApplicant.length > 0 && (
-                <optgroup label="Annonces où je suis accepté">
-                  {acceptedAsApplicant.map((application) => (
-                    <option key={application.id} value={`applicant:${application.id}`}>
-                      {applicantPostMap[application.post_id]?.title || 'Annonce'}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
+            <h3>Informations contractuelles</h3>
+            <p className="contracts-intro">
+              {showContractIntro
+                ? 'Renseignez vos informations contractuelles. Elles seront réutilisées automatiquement lors de la création d’un contrat.'
+                : 'Renseignez vos informations contractuelles.'}
+              <button
+                type="button"
+                className="contracts-link"
+                onClick={() => setShowContractIntro((prev) => !prev)}
+              >
+                {showContractIntro ? 'Réduire' : 'Lire plus'}
+              </button>
+            </p>
+            <div className="contracts-grid">
+              <label>
+                Nom et prénom
+                <input
+                  type="text"
+                  value={contractProfile.fullName}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, fullName: event.target.value }))}
+                  placeholder="Ex: Alex Martin"
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={contractProfile.email}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="Ex: contact@email.com"
+                />
+              </label>
+              <label>
+                Téléphone
+                <input
+                  type="tel"
+                  value={contractProfile.phone}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, phone: event.target.value }))}
+                  placeholder="Ex: 06 00 00 00 00"
+                />
+              </label>
+              <label>
+                Ville
+                <input
+                  type="text"
+                  value={contractProfile.city}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, city: event.target.value }))}
+                  placeholder="Ex: Paris"
+                />
+              </label>
+              <label>
+                Pays
+                <input
+                  type="text"
+                  value={contractProfile.country}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, country: event.target.value }))}
+                  placeholder="Ex: France"
+                />
+              </label>
+              <label>
+                SIREN (optionnel)
+                <input
+                  type="text"
+                  value={contractProfile.siren}
+                  onChange={(event) => setContractProfile((prev) => ({ ...prev, siren: event.target.value }))}
+                  placeholder="Ex: 123 456 789"
+                />
+              </label>
+              <label>
+                Choisir une annonce
+                <select
+                  className="contracts-select"
+                  value={selectedOption}
+                  onChange={(event) => setSelectedOption(event.target.value)}
+                >
+                  <option value="">Sélectionner une annonce...</option>
+                  {ownerPostsWithAccepted.length > 0 && (
+                    <optgroup label="Mes annonces matchées">
+                      {ownerPostsWithAccepted.map((post) => (
+                        <option key={post.id} value={`owner:${post.id}`}>
+                          {post.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {acceptedAsApplicant.length > 0 && (
+                    <optgroup label="Annonces où je suis accepté">
+                      {acceptedAsApplicant.map((application) => (
+                        <option key={application.id} value={`applicant:${application.id}`}>
+                          {applicantPostMap[application.post_id]?.title || 'Annonce'}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </label>
+              <label>
+                Signature
+                <button
+                  type="button"
+                  className="contracts-signature-toggle"
+                  onClick={() => setIsSignatureModalOpen(true)}
+                >
+                  {contractProfile.signature ? 'Signature enregistrée' : 'Ajouter une signature'}
+                </button>
+              </label>
+            </div>
+            <div className="contracts-actions">
+              <button
+                className="contracts-primary-btn"
+                onClick={handleSaveContractProfile}
+                disabled={contractProfileSaving}
+              >
+                {contractProfileSaving ? 'Enregistrement...' : 'Enregistrer les informations'}
+              </button>
+              {contractProfileSaved && <span className="contracts-save-hint">Enregistré</span>}
+            </div>
           </div>
-
-          {selectedContext && selectedContext.mode === 'owner' && (
-            <div className="contracts-section">
-              <h3>2. Sélectionner les participants</h3>
-              <p>Vous pouvez générer plusieurs contrats pour la même annonce.</p>
-              <div className="contracts-applicants">
-                {acceptedApplications.filter((app) => app.post_id === selectedContext.post.id).length === 0 ? (
-                  <div className="contracts-empty-inline">
-                    Aucune candidature acceptée pour cette annonce.
-                  </div>
-                ) : (
-                  acceptedApplications
-                    .filter((app) => app.post_id === selectedContext.post.id)
-                    .map((application) => (
-                      <label key={application.id} className="contracts-applicant">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedApplicants[application.id]}
-                          onChange={() => handleToggleApplicant(application.id)}
-                        />
-                        <span>{formatUserName(application.applicant)}</span>
-                      </label>
-                    ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {selectedContext && selectedContext.mode === 'applicant' && (
-            <div className="contracts-section">
-              <h3>2. Autre utilisateur</h3>
-              <div className="contracts-opponent">
-                <Users size={18} />
-                <span>{formatUserName(selectedContext.owner)}</span>
-              </div>
-            </div>
-          )}
 
           {selectedContext && (
             <>
               <div className="contracts-section">
-                <h3>3. Type de contrat</h3>
+                <h3>Type de contrat</h3>
                 <p>Le type est proposé automatiquement selon le moyen de paiement.</p>
                 <div className="contracts-row">
                   <select
@@ -840,7 +1195,7 @@ const Contracts = () => {
               </div>
 
               <div className="contracts-section">
-                <h3>4. Informations de paiement</h3>
+                <h3>Informations de paiement</h3>
                 <div className="contracts-grid">
                   {shouldShowPrice && (
                     <label>
@@ -882,7 +1237,7 @@ const Contracts = () => {
               </div>
 
               <div className="contracts-section">
-                <h3>5. Articles automatiques</h3>
+                <h3>Articles automatiques</h3>
                 <div className="contracts-articles">
                   {legalArticles.map((article, index) => (
                     <div key={article.title} className="contracts-article">
@@ -899,7 +1254,17 @@ const Contracts = () => {
               </div>
 
               <div className="contracts-section">
-                <h3>6. Clauses additionnelles</h3>
+                <h3>Ajouter des articles</h3>
+                <textarea
+                  className="contracts-textarea"
+                  value={customArticles}
+                  onChange={(event) => setCustomArticles(event.target.value)}
+                  placeholder="Ajoutez ici des articles supplémentaires (un par ligne)."
+                />
+              </div>
+
+              <div className="contracts-section">
+                <h3>Clauses additionnelles</h3>
                 <textarea
                   className="contracts-textarea"
                   value={customClauses}
@@ -933,9 +1298,80 @@ const Contracts = () => {
               </div>
             </>
           )}
+
+          {selectedContext && selectedContext.mode === 'owner' && (
+            <div className="contracts-section">
+              <h3>Sélectionner les participants</h3>
+              <p>Vous pouvez générer plusieurs contrats pour la même annonce.</p>
+              <div className="contracts-applicants">
+                {acceptedApplications.filter((app) => app.post_id === selectedContext.post.id).length === 0 ? (
+                  <div className="contracts-empty-inline">
+                    Aucune candidature acceptée pour cette annonce.
+                  </div>
+                ) : (
+                  acceptedApplications
+                    .filter((app) => app.post_id === selectedContext.post.id)
+                    .map((application) => (
+                      <label key={application.id} className="contracts-applicant">
+                        <input
+                          type="checkbox"
+                          checked={!!selectedApplicants[application.id]}
+                          onChange={() => handleToggleApplicant(application.id)}
+                        />
+                        <span>{formatUserName(application.applicant)}</span>
+                      </label>
+                    ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {selectedContext && selectedContext.mode === 'applicant' && (
+            <div className="contracts-section">
+              <h3>Autre utilisateur</h3>
+              <div className="contracts-opponent">
+                <Users size={18} />
+                <span>{formatUserName(selectedContext.owner)}</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         renderContractsList()
+      )}
+
+      {isSignatureModalOpen && (
+        <div className="contracts-modal-overlay" onClick={() => setIsSignatureModalOpen(false)}>
+          <div className="contracts-modal" onClick={(event) => event.stopPropagation()}>
+            <h3>Signature</h3>
+            <p>Ajoutez votre signature en noir. Vous pouvez effacer et recommencer.</p>
+            <div className="contracts-signature">
+              <canvas
+                ref={signatureCanvasRef}
+                className="contracts-signature-canvas"
+                onMouseDown={startSignature}
+                onMouseMove={drawSignature}
+                onMouseUp={endSignature}
+                onMouseLeave={endSignature}
+                onTouchStart={startSignature}
+                onTouchMove={drawSignature}
+                onTouchEnd={endSignature}
+              />
+              {!signatureHasData && <span className="contracts-signature-placeholder">Signez ici</span>}
+            </div>
+            <div className="contracts-modal-actions">
+              <button className="contracts-secondary-btn" type="button" onClick={clearSignature}>
+                Effacer
+              </button>
+              <button className="contracts-secondary-btn" type="button" onClick={() => setIsSignatureModalOpen(false)}>
+                Fermer
+              </button>
+              <button className="contracts-primary-btn" type="button" onClick={handleSaveSignature}>
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

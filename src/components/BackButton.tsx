@@ -44,9 +44,16 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
         }
       }
       
-      // Si on est dans une sous-page (plus de 2 parties : /profile/xxx)
-      if (pathParts.length > 2) {
-        // Retourner au niveau parent
+      // Si on est dans une sous-page (ex: /profile/xxx ou /profile/xxx/yyy)
+      if (pathParts.length >= 2) {
+        // Pour /profile/xxx, retourner vers /profile
+        if (pathParts.length === 2) {
+          markNavigatingBack()
+          navigate('/profile')
+          return
+        }
+
+        // Pour /profile/xxx/yyy, retourner au niveau parent
         const parentPath = '/' + pathParts.slice(0, -1).join('/')
         markNavigatingBack()
         navigate(parentPath)

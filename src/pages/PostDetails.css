@@ -478,12 +478,14 @@
 
 .author-card {
   display: flex;
-  gap: 16px;
+  gap: var(--ui-block-gap);
   text-decoration: none;
   color: inherit;
-  padding: 16px;
-  background: var(--background);
-  border-radius: 8px;
+  padding: var(--ui-block-padding);
+  background: var(--ui-block-bg);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  box-shadow: var(--ui-block-shadow);
   transition: transform 0.2s ease;
 }
 
@@ -539,9 +541,11 @@
 /* Section informations supplémentaires */
 .post-additional-info-section {
   margin-bottom: 32px;
-  padding: 24px;
-  background: var(--card);
-  border-radius: 12px;
+  padding: var(--ui-block-padding);
+  background: var(--ui-block-bg);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  box-shadow: var(--ui-block-shadow);
 }
 
 .post-info-item {
@@ -1189,9 +1193,11 @@
 }
 
 .application-card {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
+  background: var(--ui-block-bg);
+  padding: var(--ui-block-padding);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  box-shadow: var(--ui-block-shadow);
   margin-bottom: 12px;
 }
 
@@ -1534,7 +1540,7 @@
   }
 
   .post-additional-info-section {
-    padding: 16px;
+    padding: var(--ui-block-padding);
     margin-bottom: 24px;
   }
 

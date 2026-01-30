@@ -106,14 +106,15 @@
    ============================================ */
 
 .profile-identity-block {
-  background-color: var(--card);
+  background-color: var(--ui-block-bg);
   margin: 0 10px 2px;
-  padding: 4px 5px;
-  border-radius: 16px;
+  padding: var(--ui-block-padding);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  box-shadow: var(--shadow-sm);
+  gap: var(--ui-block-gap);
+  box-shadow: var(--ui-block-shadow);
   position: relative;
 }
 
@@ -288,18 +289,18 @@
    ============================================ */
 
 .profile-bio-block {
-  background-color: var(--primary);
+  background-color: var(--ui-block-bg);
   margin: 12px 5px 0;
-  padding: 12px;
-  border-radius: 20px;
-  box-shadow: var(--shadow-md);
+  padding: var(--ui-block-padding);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  box-shadow: var(--ui-block-shadow);
 }
 
 .bio-label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-foreground);
-  opacity: 0.9;
+  color: var(--muted-foreground);
   margin-bottom: 8px;
   text-transform: lowercase;
 }
@@ -307,7 +308,7 @@
 .bio-text {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--primary-foreground);
+  color: var(--foreground);
   margin: 0;
 }
 
@@ -392,11 +393,11 @@
 }
 
 .service-block {
-  background-color: var(--card);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  background-color: var(--ui-block-bg);
+  border-radius: var(--ui-block-radius);
+  padding: var(--ui-block-padding);
+  box-shadow: var(--ui-block-shadow);
+  border: var(--ui-block-border);
   transition: all 0.2s ease;
   cursor: pointer;
 }
@@ -748,9 +749,11 @@
 }
 
 .review-item {
-  padding: 16px;
-  background-color: var(--card);
-  border-radius: 12px;
+  padding: var(--ui-block-padding);
+  background-color: var(--ui-block-bg);
+  border-radius: var(--ui-block-radius);
+  border: var(--ui-block-border);
+  box-shadow: var(--ui-block-shadow);
 }
 
 .review-header-item {
@@ -900,9 +903,9 @@
 
   .profile-identity-block {
     margin: 0 5px 2px;
-    padding: 4px 5px;
-    gap: 10px;
-    border-radius: 12px;
+    padding: var(--ui-block-padding);
+    gap: var(--ui-block-gap);
+    border-radius: var(--ui-block-radius);
   }
 
   .profile-avatar-small {
@@ -1003,8 +1006,8 @@
 
   .profile-bio-block {
     margin: 8px 5px 0;
-    padding: 12px;
-    border-radius: 12px;
+    padding: var(--ui-block-padding);
+    border-radius: var(--ui-block-radius);
   }
 
   .bio-label {
@@ -1043,8 +1046,8 @@
   }
 
   .service-block {
-    padding: 12px;
-    border-radius: 10px;
+    padding: var(--ui-block-padding);
+    border-radius: var(--ui-block-radius);
   }
 
   .service-block-header {
@@ -1149,7 +1152,7 @@
   }
 
   .review-item {
-    padding: 12px;
+    padding: var(--ui-block-padding);
   }
 
   .review-avatar-img,

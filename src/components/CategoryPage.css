@@ -37,11 +37,12 @@
 
 .category-title-new {
   flex: 1;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
   line-height: 1.2;
+  text-align: center;
 }
 
 .category-search-section {
@@ -488,7 +489,7 @@
   }
 
   .category-title-new {
-    font-size: 22px;
+    font-size: 18px;
   }
 
   .category-filters-section {

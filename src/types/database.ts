@@ -105,6 +105,14 @@ export interface Database {
           bio: string | null
           location: string | null
           birth_date: string | null
+          contract_full_name: string | null
+          contract_email: string | null
+          contract_phone: string | null
+          contract_city: string | null
+          contract_country: string | null
+          contract_siren: string | null
+          contract_signature: string | null
+          contract_default_type: string | null
           created_at: string
           updated_at: string
         }
@@ -118,6 +126,14 @@ export interface Database {
           bio?: string | null
           location?: string | null
           birth_date?: string | null
+          contract_full_name?: string | null
+          contract_email?: string | null
+          contract_phone?: string | null
+          contract_city?: string | null
+          contract_country?: string | null
+          contract_siren?: string | null
+          contract_signature?: string | null
+          contract_default_type?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -131,6 +147,14 @@ export interface Database {
           bio?: string | null
           location?: string | null
           birth_date?: string | null
+          contract_full_name?: string | null
+          contract_email?: string | null
+          contract_phone?: string | null
+          contract_city?: string | null
+          contract_country?: string | null
+          contract_siren?: string | null
+          contract_signature?: string | null
+          contract_default_type?: string | null
           created_at?: string
           updated_at?: string
         }

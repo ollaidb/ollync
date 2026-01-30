@@ -1,0 +1,9 @@
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS contract_full_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS contract_email VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS contract_phone VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS contract_city VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS contract_country VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS contract_siren VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS contract_signature TEXT,
+  ADD COLUMN IF NOT EXISTS contract_default_type VARCHAR(50);

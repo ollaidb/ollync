@@ -8,6 +8,7 @@ import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabaseClient'
 import './Home.css'
 
@@ -40,6 +41,7 @@ const Home = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
   const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
   
@@ -52,8 +54,8 @@ const Home = () => {
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
 
 
-  // Nombre d'annonces par section : maximum 5 avec bouton "+"
-  const maxPostsPerSection = 5
+  // Nombre d'annonces par section : mobile 5, web 4
+  const maxPostsPerSection = isMobile ? 5 : 4
 
   const fetchRecentPosts = async () => {
     const posts = await fetchPostsWithRelations({
@@ -601,6 +603,7 @@ const Home = () => {
                 className="home-publish-btn"
                 onClick={() => navigate('/publish')}
               >
+                <Plus size={16} />
                 Publier une annonce
               </button>
               <button

@@ -312,7 +312,7 @@ const MatchRequestDetail = ({
         {!showMessageInput && (
           <div className="match-request-detail-actions">
             {isReceived && isPending && (
-              <>
+              <div className="match-request-action-row">
                 <button
                   className="match-request-action-btn accept"
                   onClick={() => setShowAcceptConfirm(true)}
@@ -329,11 +329,11 @@ const MatchRequestDetail = ({
                   <XCircle size={20} />
                   Refuser
                 </button>
-              </>
+              </div>
             )}
 
             {isSent && isPending && (
-              <>
+              <div className="match-request-action-row">
                 <button
                   className="match-request-action-btn cancel"
                   onClick={() => setShowCancelConfirm(true)}
@@ -353,7 +353,7 @@ const MatchRequestDetail = ({
                   <MessageCircle size={20} />
                   Modifier le message
                 </button>
-              </>
+              </div>
             )}
 
             {isSent && isAccepted && (

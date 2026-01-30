@@ -150,6 +150,16 @@
   gap: 12px;
 }
 
+.match-request-action-row {
+  display: flex;
+  gap: 12px;
+}
+
+.match-request-action-row .match-request-action-btn {
+  flex: 1;
+  min-width: 0;
+}
+
 .match-request-action-btn {
   display: flex;
   align-items: center;
