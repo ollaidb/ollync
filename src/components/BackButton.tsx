@@ -30,6 +30,17 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
 
     const path = location.pathname
     const pathParts = path.split('/').filter(Boolean)
+    const mainTabRoots = [
+      '/home',
+      '/favorites',
+      '/likes',
+      '/publish',
+      '/publier-annonce',
+      '/messages',
+      '/profile',
+      '/search'
+    ]
+    const isMainTabRoot = mainTabRoots.includes(path)
 
     // Règle 1 : Pour les sous-pages de profil (ex: /profile/settings/personal-info)
     // Retourner au niveau parent (ex: /profile/settings ou /profile)
@@ -65,7 +76,21 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
       return
     }
 
-    // Règle 2 : Pour TOUTES les catégories (tous niveaux), retourner directement vers /home
+    // Règle 2 : Dans une conversation Messages, retour vers Messages
+    if (path.startsWith('/messages/')) {
+      markNavigatingBack()
+      navigate('/messages')
+      return
+    }
+
+    // Règle 3 : Onglets principaux (racine) -> retour par défaut vers Accueil
+    if (isMainTabRoot) {
+      markNavigatingBack()
+      navigate('/home')
+      return
+    }
+
+    // Règle 4 : Pour TOUTES les catégories (tous niveaux), retourner directement vers /home
     const categorySlugs = [
       'creation-contenu', 'montage', 'casting-role', 'projets-equipe', 
       'services', 'vente', 'match', 'service', 'role', 'recrutement', 
@@ -82,32 +107,7 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
       }
     }
 
-    // Règle 3 : Pour les pages du footer, vérifier si on vient d'une catégorie
-    const footerPages = ['/home', '/favorites', '/likes', '/publish', '/publier-annonce', '/messages', '/profile']
-    if (footerPages.includes(path) || footerPages.some(footerPage => path.startsWith(footerPage + '/'))) {
-      // Vérifier si la page précédente est une catégorie
-      const previousPath = getPreviousPath()
-      const previousPathParts = previousPath.split('/').filter(Boolean)
-      const categorySlugs = [
-        'creation-contenu', 'montage', 'casting-role', 'projets-equipe', 
-        'services', 'vente', 'match', 'service', 'role', 'recrutement', 
-        'projet', 'mission', 'autre'
-      ]
-      
-      // Si on vient d'une catégorie, retourner à la catégorie
-      if (previousPathParts.length > 0 && categorySlugs.includes(previousPathParts[0])) {
-        markNavigatingBack()
-        navigate(previousPath)
-        return
-      }
-      
-      // Sinon, retourner vers /home
-      markNavigatingBack()
-      navigate('/home')
-      return
-    }
-
-    // Règle 4 : Pour toutes les autres pages, utiliser l'historique de navigation
+    // Règle 5 : Pour toutes les autres pages, utiliser l'historique de navigation
     // pour retourner à la page précédente (peut être /home ou autre)
     const previousPath = getPreviousPath()
     if (canGoBack() && previousPath && previousPath !== path) {

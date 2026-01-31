@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import './ConfirmationModal.css'
 
 export interface ConfirmationModalProps {
@@ -9,15 +9,7 @@ export interface ConfirmationModalProps {
   onCancel: () => void
   confirmLabel?: string
   cancelLabel?: string
-  learnMoreLink?: string
-  learnMoreText?: string
-  showTextarea?: boolean
-  textareaLabel?: string
-  textareaValue?: string
-  onTextareaChange?: (value: string) => void
-  textareaPlaceholder?: string
-  textareaMaxLength?: number
-  textareaHint?: string
+  isDestructive?: boolean
 }
 
 const ConfirmationModal = ({
@@ -28,16 +20,11 @@ const ConfirmationModal = ({
   onCancel,
   confirmLabel = 'Accepter',
   cancelLabel = 'Annuler',
-  learnMoreLink,
-  learnMoreText = 'En savoir plus',
-  showTextarea = false,
-  textareaLabel = 'Message (optionnel)',
-  textareaValue = '',
-  onTextareaChange,
-  textareaPlaceholder = 'Ajouter un message pour votre demande...',
-  textareaMaxLength = 280,
-  textareaHint
+  isDestructive = false
 }: ConfirmationModalProps) => {
+  const titleId = useId()
+  const messageId = useId()
+
   // Bloquer le scroll quand le modal est visible
   useEffect(() => {
     if (visible) {
@@ -54,60 +41,25 @@ const ConfirmationModal = ({
   if (!visible) return null
 
   return (
-    <div 
-      className="confirmation-modal-overlay" 
-      onClick={onCancel}
-    >
-      <div 
-        className="confirmation-modal-content" 
-        onClick={(e) => e.stopPropagation()}
+    <div className="confirmation-modal-overlay">
+      <div
+        className="confirmation-modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
       >
-        <h3 className="confirmation-modal-title">{title}</h3>
-        
-        <p className="confirmation-modal-message">{message}</p>
-        
-        {showTextarea && (
-          <div className="confirmation-modal-textarea-container">
-            <label className="confirmation-modal-textarea-label">{textareaLabel}</label>
-            <textarea
-              className="confirmation-modal-textarea"
-              value={textareaValue}
-              onChange={(e) => onTextareaChange?.(e.target.value)}
-              placeholder={textareaPlaceholder}
-              maxLength={textareaMaxLength}
-              rows={4}
-            />
-            <div className="confirmation-modal-textarea-footer">
-              {textareaHint && (
-                <span className="confirmation-modal-textarea-hint">{textareaHint}</span>
-              )}
-              <span className="confirmation-modal-textarea-count">
-                {textareaValue.length}/{textareaMaxLength}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {learnMoreLink && (
-          <a 
-            href={learnMoreLink} 
-            className="confirmation-modal-learn-more"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {learnMoreText}
-          </a>
-        )}
-        
+        <h3 id={titleId} className="confirmation-modal-title">{title}</h3>
+        <p id={messageId} className="confirmation-modal-message">{message}</p>
         <div className="confirmation-modal-actions">
-          <button 
-            className="confirmation-modal-button confirmation-modal-button-cancel" 
+          <button
+            className="confirmation-modal-button confirmation-modal-button-cancel"
             onClick={onCancel}
           >
             {cancelLabel}
           </button>
-          <button 
-            className="confirmation-modal-button confirmation-modal-button-confirm" 
+          <button
+            className={`confirmation-modal-button confirmation-modal-button-confirm${isDestructive ? ' confirmation-modal-button-destructive' : ''}`}
             onClick={onConfirm}
           >
             {confirmLabel}

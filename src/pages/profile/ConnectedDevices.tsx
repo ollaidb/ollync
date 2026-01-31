@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Smartphone, Monitor, Tablet, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -22,15 +22,7 @@ const ConnectedDevices = () => {
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const confirmation = useConfirmation()
 
-  useEffect(() => {
-    if (user) {
-      fetchDevices()
-    } else {
-      setLoading(false)
-    }
-  }, [user])
-
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     if (!user) return
 
     setLoading(true)
@@ -47,8 +39,8 @@ const ConnectedDevices = () => {
         const userAgent = navigator.userAgent || 'Appareil inconnu'
         
         const session = sessionData.session
-        // @ts-ignore - Les propriétés de session peuvent varier
-        const created_at = (session as any).created_at ? new Date((session as any).created_at * 1000).toISOString() : undefined
+        const createdAtSeconds = (session as { created_at?: number }).created_at
+        const created_at = createdAtSeconds ? new Date(createdAtSeconds * 1000).toISOString() : undefined
         const last_activity = session.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined
         
         const devicesList: Device[] = [{
@@ -69,7 +61,15 @@ const ConnectedDevices = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchDevices()
+    } else {
+      setLoading(false)
+    }
+  }, [user, fetchDevices])
 
   const parseUserAgent = (userAgent: string) => {
     // Détection basique du type d'appareil
@@ -294,6 +294,7 @@ const ConnectedDevices = () => {
           onCancel={confirmation.handleCancel}
           confirmLabel={confirmation.options.confirmLabel}
           cancelLabel={confirmation.options.cancelLabel}
+          isDestructive={confirmation.options.isDestructive}
         />
       )}
     </div>

@@ -180,16 +180,16 @@
   transform: translate(-50%, -50%);
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   z-index: 2100;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px;
-  min-width: 240px;
-  max-width: 90vw;
+  padding: 18px;
+  width: 85vw;
+  max-width: 480px;
   color: #111111;
 }
 
@@ -469,7 +469,7 @@
   }
 
   .annonce-item-menu {
-    min-width: 220px;
+    width: 85vw;
   }
 }
 

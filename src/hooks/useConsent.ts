@@ -12,39 +12,32 @@ export type ConsentType =
 interface ConsentMessages {
   title: string
   message: string
-  learnMoreLink?: string
 }
 
 const CONSENT_MESSAGES: Record<ConsentType, ConsentMessages> = {
   location: {
     title: 'Utilisation de la localisation',
-    message: 'Votre localisation permet d\'afficher votre profil et vos annonces selon votre zone géographique. Souhaitez-vous autoriser l\'utilisation de votre localisation ?',
-    learnMoreLink: '/profile/legal/politique-confidentialite'
+    message: 'Votre localisation permet d\'afficher votre profil et vos annonces selon votre zone géographique. Souhaitez-vous autoriser l\'utilisation de votre localisation ?'
   },
   media: {
     title: 'Utilisation des médias',
-    message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser l\'utilisation et l\'affichage de vos médias ?',
-    learnMoreLink: '/profile/legal/politique-confidentialite'
+    message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser l\'utilisation et l\'affichage de vos médias ?'
   },
   profile_data: {
     title: 'Utilisation des données personnelles',
-    message: 'Vos informations peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser leur enregistrement et leur affichage ?',
-    learnMoreLink: '/profile/legal/politique-confidentialite'
+    message: 'Vos informations peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Souhaitez-vous autoriser leur enregistrement et leur affichage ?'
   },
   messaging: {
     title: 'Utilisation de la messagerie',
-    message: 'La messagerie permet d\'échanger avec d\'autres utilisateurs. Vos conversations sont privées et sécurisées. Souhaitez-vous activer la messagerie ?',
-    learnMoreLink: '/profile/legal/politique-confidentialite'
+    message: 'La messagerie permet d\'échanger avec d\'autres utilisateurs. Vos conversations sont privées et sécurisées. Souhaitez-vous activer la messagerie ?'
   },
   cookies: {
     title: 'Utilisation des cookies',
-    message: 'Nous utilisons des cookies pour améliorer votre expérience et personnaliser le contenu. Souhaitez-vous accepter l\'utilisation des cookies ?',
-    learnMoreLink: '/profile/legal/politique-cookies'
+    message: 'Nous utilisons des cookies pour améliorer votre expérience et personnaliser le contenu. Souhaitez-vous accepter l\'utilisation des cookies ?'
   },
   behavioral_data: {
     title: 'Analyse de votre comportement',
-    message: 'Nous analysons votre comportement pour vous proposer du contenu personnalisé et adapté à vos préférences. Souhaitez-vous autoriser cette analyse ?',
-    learnMoreLink: '/profile/legal/politique-confidentialite'
+    message: 'Nous analysons votre comportement pour vous proposer du contenu personnalisé et adapté à vos préférences. Souhaitez-vous autoriser cette analyse ?'
   }
 }
 
@@ -119,8 +112,7 @@ export const useConsent = (consentType: ConsentType) => {
     requireConsent,
     handleAccept,
     handleReject,
-    messages: consentMessages,
-    learnMoreLink: consentMessages.learnMoreLink
+    messages: consentMessages
   }
 }
 

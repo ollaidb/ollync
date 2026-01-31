@@ -492,7 +492,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={mediaConsent.handleReject}
-        learnMoreLink={mediaConsent.learnMoreLink}
       />
 
 

@@ -6,7 +6,6 @@ interface ConsentModalProps {
   message: string
   onAccept: () => void
   onReject: () => void
-  learnMoreLink?: string
 }
 
 const ConsentModal = ({ 
@@ -14,8 +13,7 @@ const ConsentModal = ({
   title, 
   message, 
   onAccept, 
-  onReject,
-  learnMoreLink 
+  onReject 
 }: ConsentModalProps) => {
   return (
     <ConfirmationModal
@@ -26,7 +24,6 @@ const ConsentModal = ({
       onCancel={onReject}
       confirmLabel="Accepter"
       cancelLabel="Annuler"
-      learnMoreLink={learnMoreLink}
     />
   )
 }

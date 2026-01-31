@@ -7,10 +7,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
   z-index: 999;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .page-header-back-button {
@@ -20,7 +20,7 @@
 .page-header-title {
   font-size: 20px;
   font-weight: 700;
-  color: #333;
+  color: var(--foreground);
   margin: 0;
   text-align: center;
   flex: 1;
@@ -47,13 +47,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #6366F1;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   transition: all 0.2s;
 }
 
 .page-header-action button:hover:not(:disabled) {
-  background: #4F46E5;
+  background: var(--accent);
 }
 
 .page-header-action button:disabled {

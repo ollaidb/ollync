@@ -16,6 +16,17 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
   const handleBack = () => {
     const path = location.pathname
     const pathParts = path.split('/').filter(Boolean)
+    const mainTabRoots = [
+      '/home',
+      '/favorites',
+      '/likes',
+      '/publish',
+      '/publier-annonce',
+      '/messages',
+      '/profile',
+      '/search'
+    ]
+    const isMainTabRoot = mainTabRoots.includes(path)
 
     // Si on est dans une sous-page de profil, retourner au bon niveau
     if (path.startsWith('/profile/')) {
@@ -35,6 +46,20 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
       }
     }
 
+    // Dans une conversation Messages, retour vers Messages
+    if (path.startsWith('/messages/')) {
+      markNavigatingBack()
+      navigate('/messages')
+      return
+    }
+
+    // Onglets principaux (racine) -> retour par défaut vers Accueil
+    if (isMainTabRoot) {
+      markNavigatingBack()
+      navigate('/home')
+      return
+    }
+
     // Pour les catégories, retourner directement vers /home
     const categorySlugs = [
       'creation-contenu', 'montage', 'casting-role', 'projets-equipe', 
@@ -43,31 +68,6 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
     ]
     
     if (pathParts.length > 0 && categorySlugs.includes(pathParts[0])) {
-      markNavigatingBack()
-      navigate('/home')
-      return
-    }
-
-    // Pour les pages du footer, vérifier si on vient d'une catégorie
-    const footerPages = ['/home', '/favorites', '/likes', '/publish', '/publier-annonce', '/messages', '/profile']
-    if (footerPages.includes(path) || footerPages.some(footerPage => path.startsWith(footerPage + '/'))) {
-      // Vérifier si la page précédente est une catégorie
-      const previousPath = getPreviousPath()
-      const previousPathParts = previousPath.split('/').filter(Boolean)
-      const categorySlugs = [
-        'creation-contenu', 'montage', 'casting-role', 'projets-equipe', 
-        'services', 'vente', 'match', 'service', 'role', 'recrutement', 
-        'projet', 'mission', 'autre'
-      ]
-      
-      // Si on vient d'une catégorie, retourner à la catégorie
-      if (previousPathParts.length > 0 && categorySlugs.includes(previousPathParts[0])) {
-        markNavigatingBack()
-        navigate(previousPath)
-        return
-      }
-      
-      // Sinon, retourner vers /home
       markNavigatingBack()
       navigate('/home')
       return

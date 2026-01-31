@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,14 +25,14 @@
 /* Contenu du modal - compact et centré */
 .confirmation-modal-content {
   background: var(--card);
-  padding: 20px;
-  border-radius: 12px;
-  max-width: 85%;
-  width: 100%;
-  max-width: 340px;
+  padding: 18px;
+  border-radius: 14px;
+  width: 85vw;
+  max-width: 460px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
   animation: slideUp 0.25s ease-out;
+  text-align: center;
 }
 
 @keyframes slideUp {
@@ -48,86 +48,19 @@
 
 /* Titre - 1 ligne maximum */
 .confirmation-modal-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   color: var(--foreground);
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Message - court et lisible */
 .confirmation-modal-message {
-  margin: 0 0 16px 0;
+  margin: 0 0 18px 0;
   color: var(--muted-foreground);
   line-height: 1.5;
-  font-size: 14px;
-}
-
-/* Zone de texte optionnelle */
-.confirmation-modal-textarea-container {
-  margin-bottom: 16px;
-}
-
-.confirmation-modal-textarea-label {
-  display: block;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--foreground);
-  margin-bottom: 8px;
-}
-
-.confirmation-modal-textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--foreground);
-  background: var(--background);
-  resize: vertical;
-  min-height: 90px;
-}
-
-.confirmation-modal-textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
-}
-
-.confirmation-modal-textarea-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.confirmation-modal-textarea-hint {
-  color: var(--muted-foreground);
-}
-
-.confirmation-modal-textarea-count {
-  color: var(--muted-foreground);
-}
-
-/* Lien "En savoir plus" - discret */
-.confirmation-modal-learn-more {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: var(--primary);
-  font-size: 13px;
-  text-decoration: none;
-  transition: opacity 0.2s ease;
-}
-
-.confirmation-modal-learn-more:hover {
-  opacity: 0.8;
-  text-decoration: underline;
 }
 
 /* Zone des actions - 2 boutons sur une ligne */
@@ -135,20 +68,19 @@
   display: flex;
   gap: 10px;
   justify-content: space-between;
-  margin-top: 4px;
 }
 
 /* Boutons - même hauteur et largeur visuelle */
 .confirmation-modal-button {
   flex: 1;
-  padding: 10px 16px;
+  padding: 11px 16px;
   border-radius: 8px;
   border: none;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +107,18 @@
   color: var(--primary-foreground);
 }
 
+.confirmation-modal-button-destructive {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
 .confirmation-modal-button-confirm:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.confirmation-modal-button-destructive:hover {
   opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -188,32 +131,36 @@
 /* Responsive - mobile */
 @media (max-width: 768px) {
   .confirmation-modal-content {
-    max-width: 85%;
+    width: 85vw;
     padding: 18px;
   }
 
   .confirmation-modal-title {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .confirmation-modal-message {
     font-size: 13px;
   }
 
-  .confirmation-modal-textarea {
-    font-size: 13px;
-  }
-
   .confirmation-modal-button {
     font-size: 13px;
-    padding: 10px 14px;
+    padding: 11px 14px;
   }
 }
 
 /* Tablette et desktop - légèrement plus large */
 @media (min-width: 769px) {
   .confirmation-modal-content {
-    max-width: 400px;
+    max-width: 480px;
+  }
+
+  .confirmation-modal-title {
+    font-size: 18px;
+  }
+
+  .confirmation-modal-message {
+    font-size: 14px;
   }
 }
 

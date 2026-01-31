@@ -17,9 +17,23 @@ export const NavigationHistoryProvider = ({ children }: { children: ReactNode })
   const isNavigatingBackRef = useRef(false)
   const isInitializedRef = useRef(false)
   const previousLocationRef = useRef<string>('')
+  const mainTabRoots = [
+    '/home',
+    '/favorites',
+    '/likes',
+    '/publish',
+    '/publier-annonce',
+    '/messages',
+    '/profile',
+    '/search'
+  ]
+
+  const isMainTabRoot = (pathname: string) => mainTabRoots.includes(pathname)
 
   useEffect(() => {
     const currentPath = location.pathname + location.search
+    const currentPathname = location.pathname
+    const previousPathname = previousLocationRef.current.split('?')[0]
 
     // Initialiser l'historique avec la page actuelle au premier chargement
     if (!isInitializedRef.current) {
@@ -42,13 +56,18 @@ export const NavigationHistoryProvider = ({ children }: { children: ReactNode })
     }
 
     // Ne pas ajouter si c'est juste un changement de hash (anchor)
-    const currentPathname = location.pathname
-    const previousPathname = previousLocationRef.current.split('?')[0]
     if (currentPathname === previousPathname && currentPath !== previousLocationRef.current) {
       // C'est juste un changement de query params, on remplace la dernière entrée
       if (historyRef.current.length > 0) {
         historyRef.current[historyRef.current.length - 1] = currentPath
       }
+      previousLocationRef.current = currentPath
+      return
+    }
+
+    // Si on change d'onglet principal, ne pas empiler les onglets entre eux
+    if (isMainTabRoot(currentPathname) && isMainTabRoot(previousPathname) && currentPathname !== previousPathname) {
+      historyRef.current = [currentPath]
       previousLocationRef.current = currentPath
       return
     }

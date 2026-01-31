@@ -5,7 +5,10 @@ import './index.css'
 
 // Initialiser le thème au démarrage de l'application
 const savedTheme = localStorage.getItem('theme') || 'light'
-if (savedTheme === 'dark') {
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+const shouldUseDark = savedTheme === 'dark' || (savedTheme === 'system' && prefersDark)
+
+if (shouldUseDark) {
   document.documentElement.classList.add('dark')
 } else {
   document.documentElement.classList.remove('dark')

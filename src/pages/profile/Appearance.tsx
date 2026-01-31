@@ -1,92 +1,76 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import './Appearance.css'
 
 const Appearance = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme')
-    return (saved as 'light' | 'dark') || 'light'
-  })
-  const [primaryColor, setPrimaryColor] = useState(() => {
-    return localStorage.getItem('primaryColor') || '#667eea'
+    return (saved as 'system' | 'light' | 'dark') || 'system'
   })
 
-  // Initialiser le thème au chargement
   useEffect(() => {
-    // Utiliser la classe .dark pour le mode sombre (cohérent avec index.css)
-    if (theme === 'dark') {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && media.matches)
+      if (isDark) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }, [])
-
-  useEffect(() => {
-    // Utiliser la classe .dark pour le mode sombre (cohérent avec index.css)
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
     }
+
+    applyTheme()
     localStorage.setItem('theme', theme)
+    if (theme === 'system') {
+      media.addEventListener('change', applyTheme)
+      return () => media.removeEventListener('change', applyTheme)
+    }
+    return undefined
   }, [theme])
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--primary-color', primaryColor)
-    localStorage.setItem('primaryColor', primaryColor)
-  }, [primaryColor])
-
-  const colorPresets = [
-    '#667eea', '#4facfe', '#f093fb', '#43e97b', '#ffa726',
-    '#e74c3c', '#9b59b6', '#3498db', '#1abc9c', '#f39c12'
-  ]
 
   return (
     <div className="page">
       <PageHeader title="Apparence" />
       <div className="page-content appearance-page">
         <div className="appearance-container">
-          <div className="appearance-section">
-            <h3 className="appearance-section-title">Thème</h3>
-            <div className="theme-selector">
-              <button
-                className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => setTheme('light')}
-              >
-                <Sun size={24} />
-                <span>Clair</span>
-              </button>
-              <button
-                className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => setTheme('dark')}
-              >
-                <Moon size={24} />
-                <span>Sombre</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="appearance-section">
-            <h3 className="appearance-section-title">Couleur principale</h3>
-            <div className="color-selector">
-              {colorPresets.map((color) => (
-                <button
-                  key={color}
-                  className={`color-option ${primaryColor === color ? 'active' : ''}`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setPrimaryColor(color)}
-                >
-                  {primaryColor === color && <span className="check">✓</span>}
-                </button>
-              ))}
-            </div>
-            <input
-              type="color"
-              value={primaryColor}
-              onChange={(e) => setPrimaryColor(e.target.value)}
-              className="color-picker"
-            />
+          <div className="appearance-options">
+            <button
+              className={`appearance-option ${theme === 'system' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setTheme('system')}
+            >
+              <div className="appearance-option-text">
+                <span className="appearance-option-title">Système</span>
+                <span className="appearance-option-desc">
+                  S&apos;adapte aux réglages d&apos;affichage du téléphone
+                </span>
+              </div>
+              <span className="appearance-option-radio" />
+            </button>
+            <button
+              className={`appearance-option ${theme === 'dark' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setTheme('dark')}
+            >
+              <div className="appearance-option-text">
+                <span className="appearance-option-title">Thème sombre</span>
+                <span className="appearance-option-desc">
+                  Contraste élevé, idéal en faible luminosité
+                </span>
+              </div>
+              <span className="appearance-option-radio" />
+            </button>
+            <button
+              className={`appearance-option ${theme === 'light' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setTheme('light')}
+            >
+              <div className="appearance-option-text">
+                <span className="appearance-option-title">Thème clair</span>
+                <span className="appearance-option-desc">Interface claire et épurée</span>
+              </div>
+              <span className="appearance-option-radio" />
+            </button>
           </div>
         </div>
       </div>

@@ -3,11 +3,11 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #FFFFFF;
-  border-top: 1px solid #F3F4F6;
+  background-color: var(--background);
+  border-top: 1px solid var(--border);
   padding: 16px 20px;
   z-index: 100;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -4px 12px hsl(0 0% 0% / 0.08);
 }
 
 .publish-actions-content {
@@ -29,21 +29,21 @@
 }
 
 .publish-action-button.primary {
-  background-color: #6366F1;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .publish-action-button.primary:hover {
-  background-color: #4F46E5;
+  background-color: var(--accent);
 }
 
 .publish-action-button.secondary {
-  background-color: #F3F4F6;
-  color: #374151;
+  background-color: var(--muted);
+  color: var(--foreground);
 }
 
 .publish-action-button.secondary:hover {
-  background-color: #E5E7EB;
+  background-color: var(--input);
 }
 
 @media (max-width: 640px) {

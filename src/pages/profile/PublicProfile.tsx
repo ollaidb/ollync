@@ -105,7 +105,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [showServiceSendModal, setShowServiceSendModal] = useState(false)
   const [showServiceCancelModal, setShowServiceCancelModal] = useState(false)
   const [serviceRequestLoading, setServiceRequestLoading] = useState(false)
-  const [serviceRequestMessage, setServiceRequestMessage] = useState('')
 
   const profileId = userId || user?.id
 
@@ -479,7 +478,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       const serviceName = String(selectedService.name || '').trim()
       const serviceDescription = String(selectedService.description || '').trim()
       const serviceValue = String(selectedService.value || '').trim()
-      const trimmedMessage = serviceRequestMessage.trim()
+      const trimmedMessage = ''
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
@@ -506,7 +505,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       if (data) {
         setServiceMatchRequest({ id: data.id, status: data.status })
         setShowServiceSendModal(false)
-        setServiceRequestMessage('')
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -537,7 +535,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
       setServiceMatchRequest(null)
       setShowServiceCancelModal(false)
-      setServiceRequestMessage('')
       showSuccess('Demande annulée')
     } catch (error) {
       console.error('Error cancelling service request:', error)
@@ -551,7 +548,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setSelectedService(null)
     setShowServiceSendModal(false)
     setShowServiceCancelModal(false)
-    setServiceRequestMessage('')
   }
 
   const fetchFollowersCount = useCallback(async () => {
@@ -1316,17 +1312,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           onConfirm={handleSendServiceRequest}
           onCancel={() => {
             setShowServiceSendModal(false)
-            setServiceRequestMessage('')
           }}
           confirmLabel={serviceRequestLoading ? 'Envoi...' : 'Envoyer'}
           cancelLabel="Annuler"
-          showTextarea={true}
-          textareaLabel="Message (optionnel)"
-          textareaValue={serviceRequestMessage}
-          onTextareaChange={setServiceRequestMessage}
-          textareaPlaceholder="Ajouter un message pour votre demande..."
-          textareaMaxLength={280}
-          textareaHint="Ce message sera visible par le destinataire dans la demande."
         />
       )}
 

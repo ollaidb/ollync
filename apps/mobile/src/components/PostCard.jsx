@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabaseClient";
 
-export default function PostCard({ post, isLiked = false, onLike }) {
+export default function PostCard({ post, isLiked = false, onLike, titleLines = 2 }) {
   const router = useRouter();
   const [liked, setLiked] = useState(isLiked);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
@@ -98,7 +98,7 @@ export default function PostCard({ post, isLiked = false, onLike }) {
         <Image source={{ uri: mainImage }} style={styles.image} />
       )}
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={titleLines}>
           {post.title}
         </Text>
         {post.price && (

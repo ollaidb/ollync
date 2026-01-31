@@ -83,7 +83,6 @@ const PostDetails = () => {
   const [showSendRequestModal, setShowSendRequestModal] = useState(false)
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
-  const [requestMessage, setRequestMessage] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -466,7 +465,7 @@ const PostDetails = () => {
 
     setLoadingRequest(true)
     try {
-      const trimmedMessage = requestMessage.trim()
+      const trimmedMessage = ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .insert({
@@ -489,7 +488,6 @@ const PostDetails = () => {
       if (data) {
         setMatchRequest({ id: data.id, status: data.status })
         setShowSendRequestModal(false)
-        setRequestMessage('')
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -1111,17 +1109,9 @@ const PostDetails = () => {
             onConfirm={handleSendRequest}
             onCancel={() => {
               setShowSendRequestModal(false)
-              setRequestMessage('')
             }}
             confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
             cancelLabel="Annuler"
-            showTextarea={true}
-            textareaLabel="Message (optionnel)"
-            textareaValue={requestMessage}
-            onTextareaChange={setRequestMessage}
-            textareaPlaceholder="Ajouter un message pour votre demande..."
-            textareaMaxLength={280}
-            textareaHint="Ce message sera visible par le destinataire dans la demande."
           />
         )}
 
@@ -1148,6 +1138,7 @@ const PostDetails = () => {
             onCancel={() => setShowDeleteConfirm(false)}
             confirmLabel="Supprimer"
             cancelLabel="Annuler"
+            isDestructive={true}
           />
         )}
       </div>

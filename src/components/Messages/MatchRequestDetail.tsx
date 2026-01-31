@@ -50,8 +50,8 @@ const MatchRequestDetail = ({
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false)
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showEditMessage, setShowEditMessage] = useState(false)
-  const [editedMessage, setEditedMessage] = useState(request.request_message || '')
+  const [isEditingMessage, setIsEditingMessage] = useState(false)
+  const [draftMessage, setDraftMessage] = useState(request.request_message || '')
 
   const isReceived = request.to_user_id === currentUserId
   const isSent = request.from_user_id === currentUserId
@@ -233,7 +233,7 @@ const MatchRequestDetail = ({
 
     setLoading(true)
     try {
-      const trimmed = editedMessage.trim()
+      const trimmed = draftMessage.trim()
       const { error } = await supabase
         .from('match_requests')
         .update({ request_message: trimmed.length > 0 ? trimmed : null } as never)
@@ -243,7 +243,7 @@ const MatchRequestDetail = ({
       if (error) throw error
 
       onUpdate()
-      setShowEditMessage(false)
+      setIsEditingMessage(false)
     } catch (error) {
       console.error('Error updating request message:', error)
       alert('Erreur lors de la modification du message')
@@ -260,11 +260,6 @@ const MatchRequestDetail = ({
         </button>
 
         <div className="match-request-detail-header">
-          <img
-            src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
-            alt={request.other_user?.full_name || request.other_user?.username || 'User'}
-            className="match-request-detail-avatar"
-          />
           <h2 className="match-request-detail-name">
             {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
           </h2>
@@ -293,10 +288,44 @@ const MatchRequestDetail = ({
           </div>
         )}
 
-        {request.request_message && (
+        {(request.request_message || isEditingMessage) && (
           <div className="match-request-detail-message">
             <p className="match-request-detail-message-label">Message :</p>
-            <p className="match-request-detail-message-text">{request.request_message}</p>
+            {isEditingMessage ? (
+              <>
+                <textarea
+                  className="match-request-detail-message-input"
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                  placeholder="Modifier votre message..."
+                  maxLength={280}
+                  rows={3}
+                />
+                <div className="match-request-detail-message-actions">
+                  <button
+                    className="match-request-detail-message-btn secondary"
+                    type="button"
+                    onClick={() => {
+                      setDraftMessage(request.request_message || '')
+                      setIsEditingMessage(false)
+                    }}
+                    disabled={loading}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    className="match-request-detail-message-btn primary"
+                    type="button"
+                    onClick={handleUpdateMessage}
+                    disabled={loading}
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="match-request-detail-message-text">{request.request_message}</p>
+            )}
           </div>
         )}
 
@@ -340,18 +369,18 @@ const MatchRequestDetail = ({
                   disabled={loading}
                 >
                   <XCircle size={20} />
-                  Annuler la demande
+                  Annuler
                 </button>
                 <button
                   className="match-request-action-btn start"
                   onClick={() => {
-                    setEditedMessage(request.request_message || '')
-                    setShowEditMessage(true)
+                    setDraftMessage(request.request_message || '')
+                    setIsEditingMessage(true)
                   }}
                   disabled={loading}
                 >
                   <MessageCircle size={20} />
-                  Modifier le message
+                  Modifier
                 </button>
               </div>
             )}
@@ -441,21 +470,6 @@ const MatchRequestDetail = ({
           cancelLabel="Non, garder"
         />
 
-        <ConfirmationModal
-          visible={showEditMessage}
-          title="Modifier le message"
-          message="Modifiez le message associé à votre demande."
-          onConfirm={handleUpdateMessage}
-          onCancel={() => setShowEditMessage(false)}
-          confirmLabel={loading ? 'Mise à jour...' : 'Enregistrer'}
-          cancelLabel="Annuler"
-          showTextarea={true}
-          textareaLabel="Message (optionnel)"
-          textareaValue={editedMessage}
-          onTextareaChange={setEditedMessage}
-          textareaPlaceholder="Mettre à jour votre message..."
-          textareaMaxLength={280}
-        />
       </div>
     </div>
   )

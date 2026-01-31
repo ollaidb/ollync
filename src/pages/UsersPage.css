@@ -20,9 +20,9 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #e5e5e5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .users-header-content {
@@ -58,7 +58,7 @@
 .users-title {
   font-size: 20px;
   font-weight: 800;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   line-height: 1.2;
   text-align: center;
@@ -91,13 +91,13 @@
 }
 
 .users-filter-btn {
-  background-color: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #666;
+  color: var(--muted-foreground);
   cursor: pointer;
   white-space: nowrap;
   display: flex;
@@ -108,14 +108,14 @@
 }
 
 .users-filter-btn:hover {
-  background-color: #eeeeee;
-  border-color: #ddd;
+  background-color: var(--input);
+  border-color: var(--border);
 }
 
 .users-filter-btn.active {
-  background-color: #667eea;
-  border-color: #667eea;
-  color: #ffffff;
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 /* ============================================
@@ -135,7 +135,7 @@
   margin: 0 auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: #fafafa;
+  background-color: var(--background);
   overscroll-behavior: contain;
 }
 
@@ -196,7 +196,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .users-card-avatar-placeholder {
@@ -211,7 +211,7 @@
   font-size: 48px;
   font-weight: 600;
   border: 3px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Nom utilisateur */
@@ -248,7 +248,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(10px);
   border: none;
   display: flex;
@@ -256,14 +256,14 @@
   justify-content: center;
   color: var(--primary);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
   z-index: 10;
 }
 
 .users-card-plus-btn:hover {
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
   transform: scale(1.1);
 }
 
@@ -279,14 +279,14 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(22, 163, 74, 0.12);
-  border: 1px solid rgba(22, 163, 74, 0.35);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #16a34a;
+  color: var(--accent);
   cursor: default;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
   z-index: 10;
 }
 

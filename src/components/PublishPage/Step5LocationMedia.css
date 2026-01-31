@@ -6,7 +6,7 @@
 .step-title {
   font-size: 24px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0 0 24px 0;
 }
 
@@ -19,26 +19,26 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--foreground);
   margin-bottom: 8px;
 }
 
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
-  color: #111827;
-  background-color: #FFFFFF;
+  color: var(--foreground);
+  background-color: var(--input);
   transition: border-color 0.2s;
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #6366F1;
+  border-color: var(--primary);
 }
 
 .input-with-icon {
@@ -50,7 +50,7 @@
 .input-icon {
   position: absolute;
   left: 16px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
   pointer-events: none;
 }
 
@@ -61,8 +61,8 @@
 .location-button {
   margin-top: 8px;
   padding: 8px 16px;
-  background-color: #F3F4F6;
-  color: #374151;
+  background-color: var(--muted);
+  color: var(--foreground);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -72,7 +72,7 @@
 }
 
 .location-button:hover {
-  background-color: #E5E7EB;
+  background-color: var(--input);
 }
 
 .images-grid {
@@ -86,7 +86,7 @@
   aspect-ratio: 1;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--border);
 }
 
 .image-preview img {
@@ -102,8 +102,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
+  background-color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  color: var(--background);
   border: none;
   display: flex;
   align-items: center;
@@ -113,14 +113,14 @@
 }
 
 .remove-image-button:hover {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: color-mix(in srgb, var(--foreground) 85%, transparent);
 }
 
 .upload-area {
   aspect-ratio: 1;
   border-radius: 12px;
-  border: 2px dashed #D1D5DB;
-  background-color: #F9FAFB;
+  border: 2px dashed var(--border);
+  background-color: var(--input);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -139,31 +139,31 @@
 }
 
 .upload-area:hover {
-  border-color: #6366F1;
-  background-color: #EEF2FF;
+  border-color: var(--primary);
+  background-color: var(--muted);
 }
 
 .upload-area svg {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .upload-text {
   font-size: 14px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--muted-foreground);
   text-align: center;
 }
 
 .upload-spinner {
   animation: spin 1s linear infinite;
-  color: #6366F1;
+  color: var(--primary);
 }
 
 .document-upload-area {
   width: 100%;
   border-radius: 10px;
-  border: 2px dashed #D1D5DB;
-  background-color: #F9FAFB;
+  border: 2px dashed var(--border);
+  background-color: var(--input);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,8 +175,8 @@
 }
 
 .document-upload-area:hover {
-  border-color: #6366F1;
-  background-color: #EEF2FF;
+  border-color: var(--primary);
+  background-color: var(--muted);
 }
 
 .document-upload-card {
@@ -186,12 +186,12 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #E5E7EB;
-  background-color: #FFFFFF;
+  border: 1px solid var(--border);
+  background-color: var(--card);
 }
 
 .document-link {
-  color: #4F46E5;
+  color: var(--primary);
   font-weight: 600;
   text-decoration: none;
   word-break: break-word;
@@ -207,8 +207,8 @@
   height: 32px;
   border-radius: 50%;
   border: none;
-  background-color: #111827;
-  color: #FFFFFF;
+  background-color: var(--foreground);
+  color: var(--background);
   opacity: 0.7;
   display: flex;
   align-items: center;
@@ -240,7 +240,7 @@
   cursor: pointer;
   font-size: 16px;
   font-weight: 500;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .form-checkbox-label input[type="checkbox"] {
@@ -265,14 +265,14 @@
   gap: 6px;
   margin-top: 8px;
   padding: 8px 12px;
-  background-color: #F3F4F6;
+  background-color: var(--muted);
   border-radius: 6px;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--muted-foreground);
 }
 
 .location-coordinates-info svg {
-  color: #6366F1;
+  color: var(--primary);
   flex-shrink: 0;
 }
 

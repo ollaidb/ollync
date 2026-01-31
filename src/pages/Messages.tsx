@@ -165,8 +165,6 @@ const Messages = () => {
   const [showListConversationActions, setShowListConversationActions] = useState(false)
   const [activeMessage, setActiveMessage] = useState<Message | null>(null)
   const [showMessageActions, setShowMessageActions] = useState(false)
-  const [showEditMessageModal, setShowEditMessageModal] = useState(false)
-  const [editMessageValue, setEditMessageValue] = useState('')
   const [showDeleteMessageConfirm, setShowDeleteMessageConfirm] = useState(false)
   const [showForwardMessage, setShowForwardMessage] = useState(false)
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
@@ -1223,12 +1221,13 @@ const Messages = () => {
     window.open(`https://translate.google.com/?sl=auto&tl=fr&text=${text}`, '_blank')
   }
 
-  const handleUpdateMessage = async () => {
+  const handleUpdateMessage = async (nextMessage: string | null) => {
     if (!activeMessage || !user) return
     if (activeMessage.sender_id !== user.id) return
     if (!isWithin24Hours(activeMessage.created_at)) return
+    if (nextMessage === null) return
 
-    const trimmed = editMessageValue.trim()
+    const trimmed = nextMessage.trim()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('messages') as any)
       .update({ content: trimmed, edited_at: new Date().toISOString() })
@@ -1241,7 +1240,6 @@ const Messages = () => {
       return
     }
 
-    setShowEditMessageModal(false)
     setShowMessageActions(false)
     loadMessages(selectedConversation?.id || conversationId || '')
   }
@@ -1665,101 +1663,57 @@ const Messages = () => {
           </div>
         )}
         {showBlockConfirm && (
-          <div className="conversation-modal-overlay" onClick={() => setShowBlockConfirm(false)}>
-            <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
-              <div className="conversation-modal-header">
-                <h2>Bloquer cet utilisateur</h2>
-                <button
-                  className="conversation-modal-close"
-                  onClick={() => setShowBlockConfirm(false)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="conversation-modal-body">
-                <p className="conversation-modal-question">
-                  Voulez-vous vraiment bloquer cet utilisateur ?
-                </p>
-                <div className="conversation-modal-actions">
-                  <button
-                    className="conversation-cancel-btn"
-                    onClick={() => setShowBlockConfirm(false)}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    className="conversation-danger-btn"
-                    onClick={async () => {
-                      if (!user || !otherUserId) return
-                      try {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const { error } = await (supabase.from('user_blocks') as any)
-                          .insert({
-                            blocker_id: user.id,
-                            blocked_id: otherUserId
-                          })
+          <ConfirmationModal
+            visible={showBlockConfirm}
+            title="Bloquer cet utilisateur"
+            message="Voulez-vous vraiment bloquer cet utilisateur ?"
+            onCancel={() => setShowBlockConfirm(false)}
+            onConfirm={async () => {
+              if (!user || !otherUserId) return
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error } = await (supabase.from('user_blocks') as any)
+                  .insert({
+                    blocker_id: user.id,
+                    blocked_id: otherUserId
+                  })
 
-                        if (error && error.code !== '23505') {
-                          console.error('Error blocking user:', error)
-                          alert('Erreur lors du blocage de l\'utilisateur')
-                          return
-                        }
-                        setShowBlockConfirm(false)
-                        setSelectedConversation(null)
-                        navigate('/messages')
-                        loadConversations()
-                      } catch (error) {
-                        console.error('Error blocking user:', error)
-                        alert('Erreur lors du blocage de l\'utilisateur')
-                      }
-                    }}
-                  >
-                    Confirmer le blocage
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+                if (error && error.code !== '23505') {
+                  console.error('Error blocking user:', error)
+                  alert('Erreur lors du blocage de l\'utilisateur')
+                  return
+                }
+                setShowBlockConfirm(false)
+                setSelectedConversation(null)
+                navigate('/messages')
+                loadConversations()
+              } catch (error) {
+                console.error('Error blocking user:', error)
+                alert('Erreur lors du blocage de l\'utilisateur')
+              }
+            }}
+            confirmLabel="Bloquer"
+            cancelLabel="Annuler"
+            isDestructive={true}
+          />
         )}
-        {showDeleteConfirm && (
-          <div className="conversation-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-            <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
-              <div className="conversation-modal-header">
-                <h2>Supprimer la conversation</h2>
-                <button
-                  className="conversation-modal-close"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="conversation-modal-body">
-                <p className="conversation-modal-question">
-                  Voulez-vous vraiment supprimer cette conversation ?
-                </p>
-                <div className="conversation-modal-actions">
-                  <button
-                    className="conversation-cancel-btn"
-                    onClick={() => setShowDeleteConfirm(false)}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    className="conversation-danger-btn"
-                    onClick={async () => {
-                      const currentId = listActionConversation?.id || selectedConversation?.id || conversationId
-                      if (!currentId) return
-                      await handleDeleteConversationForUser(currentId)
-                      setShowDeleteConfirm(false)
-                      setListActionConversation(null)
-                    }}
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {showDeleteConfirm && !listActionConversation && (
+          <ConfirmationModal
+            visible={showDeleteConfirm}
+            title="Supprimer la conversation"
+            message="Voulez-vous vraiment supprimer cette conversation ?"
+            onCancel={() => setShowDeleteConfirm(false)}
+            onConfirm={async () => {
+              const currentId = selectedConversation?.id || conversationId
+              if (!currentId) return
+              await handleDeleteConversationForUser(currentId)
+              setShowDeleteConfirm(false)
+              setListActionConversation(null)
+            }}
+            confirmLabel="Supprimer"
+            cancelLabel="Annuler"
+            isDestructive={true}
+          />
         )}
         <div className="conversation-messages-container">
           {loading ? (
@@ -1892,7 +1846,6 @@ const Messages = () => {
                             event.preventDefault()
                             setActiveMessage(msg)
                             setShowMessageActions(true)
-                            setEditMessageValue(msg.content || '')
                           } : undefined}
                           onTouchStart={isOwn ? (event) => {
                             const touch = event.touches[0]
@@ -1900,7 +1853,6 @@ const Messages = () => {
                             longPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowMessageActions(true)
-                              setEditMessageValue(msg.content || '')
                             }, 500)
                           } : undefined}
                           onTouchMove={isOwn ? (event) => {
@@ -2032,8 +1984,11 @@ const Messages = () => {
                     className="message-action-item"
                     type="button"
                     onClick={() => {
-                      setShowMessageActions(false)
-                      setShowEditMessageModal(true)
+                      const nextMessage = window.prompt(
+                        'Modifier le message',
+                        activeMessage?.content || ''
+                      )
+                      void handleUpdateMessage(nextMessage)
                     }}
                     disabled={!canEditMessage}
                   >
@@ -2063,22 +2018,6 @@ const Messages = () => {
             </div>
           </div>
         )}
-        {showEditMessageModal && activeMessage && (
-          <ConfirmationModal
-            visible={showEditMessageModal}
-            title="Modifier le message"
-            message="Vous pouvez modifier votre message (24h)."
-            onConfirm={handleUpdateMessage}
-            onCancel={() => setShowEditMessageModal(false)}
-            confirmLabel="Enregistrer"
-            cancelLabel="Annuler"
-            showTextarea={true}
-            textareaLabel="Message"
-            textareaValue={editMessageValue}
-            onTextareaChange={setEditMessageValue}
-            textareaMaxLength={500}
-          />
-        )}
         {showDeleteMessageConfirm && activeMessage && (
           <ConfirmationModal
             visible={showDeleteMessageConfirm}
@@ -2088,6 +2027,7 @@ const Messages = () => {
             onCancel={() => setShowDeleteMessageConfirm(false)}
             confirmLabel="Supprimer"
             cancelLabel="Annuler"
+            isDestructive={true}
           />
         )}
         <SelectUsersModal
@@ -2577,42 +2517,20 @@ const Messages = () => {
         </div>
       )}
       {showDeleteConfirm && listActionConversation && (
-        <div className="conversation-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
-            <div className="conversation-modal-header">
-              <h2>Supprimer la conversation</h2>
-              <button
-                className="conversation-modal-close"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="conversation-modal-body">
-              <p className="conversation-modal-question">
-                Voulez-vous vraiment supprimer cette conversation ?
-              </p>
-              <div className="conversation-modal-actions">
-                <button
-                  className="conversation-cancel-btn"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Annuler
-                </button>
-                <button
-                  className="conversation-danger-btn"
-                  onClick={async () => {
-                    await handleDeleteConversationForUser(listActionConversation.id)
-                    setShowDeleteConfirm(false)
-                    setListActionConversation(null)
-                  }}
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConfirmationModal
+          visible={showDeleteConfirm}
+          title="Supprimer la conversation"
+          message="Voulez-vous vraiment supprimer cette conversation ?"
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={async () => {
+            await handleDeleteConversationForUser(listActionConversation.id)
+            setShowDeleteConfirm(false)
+            setListActionConversation(null)
+          }}
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
+          isDestructive={true}
+        />
       )}
       <CreateGroupModal
         visible={showCreateGroup}

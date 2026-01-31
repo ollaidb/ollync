@@ -184,6 +184,7 @@ const BlockedProfiles = () => {
           onCancel={confirmation.handleCancel}
           confirmLabel={confirmation.options.confirmLabel}
           cancelLabel={confirmation.options.cancelLabel}
+          isDestructive={confirmation.options.isDestructive}
         />
       )}
     </div>

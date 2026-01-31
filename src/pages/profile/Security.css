@@ -1,6 +1,6 @@
 .security-page {
   padding: 0;
-  background: #f5f5f5;
+  background: var(--background);
 }
 
 .security-container {
@@ -10,11 +10,11 @@
 }
 
 .security-section {
-  background: white;
+  background: var(--card);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .security-menu-list {
@@ -24,7 +24,7 @@
 
 .security-menu-item {
   width: 100%;
-  background: white;
+  background: var(--card);
   border: none;
   border-radius: 0;
   padding: 16px;
@@ -34,18 +34,18 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  color: #333;
+  color: var(--foreground);
   font-size: 16px;
   font-weight: 400;
   position: relative;
 }
 
 .security-menu-item:not(:last-child) {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .security-menu-item:hover {
-  background: #f8f9fa;
+  background: var(--muted);
 }
 
 .security-menu-item-icon {
@@ -54,7 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
@@ -64,7 +64,7 @@
 }
 
 .security-menu-item-chevron {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 

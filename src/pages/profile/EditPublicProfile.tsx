@@ -157,7 +157,7 @@ const EditPublicProfile = () => {
         }
         
         // Normaliser les services - s'assurer que tous sont bien formatés
-        const normalized = (parsedData as Array<any>).map((service, index) => {
+        const normalized = (parsedData as Array<unknown>).map((service, index) => {
           // Si le service est une string, la convertir
           if (typeof service === 'string') {
             let serviceName = service
@@ -176,11 +176,12 @@ const EditPublicProfile = () => {
           }
           
           // Si c'est un objet, normaliser
+          const serviceObj: Record<string, unknown> = typeof service === 'object' && service !== null ? service as Record<string, unknown> : {}
           const normalizedService = {
-            name: String(service?.name || '').trim(),
-            description: String(service?.description || '').trim(),
-            payment_type: (service?.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
-            value: String(service?.value || '').trim()
+            name: String(serviceObj.name || '').trim(),
+            description: String(serviceObj.description || '').trim(),
+            payment_type: (serviceObj.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+            value: String(serviceObj.value || '').trim()
           }
           console.log(`  Service ${index}:`, normalizedService)
           return normalizedService
@@ -460,7 +461,8 @@ const EditPublicProfile = () => {
         title: 'Supprimer le service',
         message: 'Êtes-vous sûr de vouloir supprimer ce service ?',
         confirmLabel: 'Supprimer',
-        cancelLabel: 'Annuler'
+        cancelLabel: 'Annuler',
+        isDestructive: true
       },
       async () => {
         if (!user) return
@@ -1148,7 +1150,6 @@ const EditPublicProfile = () => {
         message={profileConsent.messages.message}
         onAccept={profileConsent.handleAccept}
         onReject={handleRejectConsent}
-        learnMoreLink={profileConsent.learnMoreLink}
       />
 
       {/* Modal de confirmation */}
@@ -1161,6 +1162,7 @@ const EditPublicProfile = () => {
           onCancel={confirmation.handleCancel}
           confirmLabel={confirmation.options.confirmLabel}
           cancelLabel={confirmation.options.cancelLabel}
+          isDestructive={confirmation.options.isDestructive}
         />
       )}
     </div>

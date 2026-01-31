@@ -5,8 +5,7 @@ export interface ConfirmationOptions {
   message: string
   confirmLabel?: string
   cancelLabel?: string
-  learnMoreLink?: string
-  learnMoreText?: string
+  isDestructive?: boolean
 }
 
 export const useConfirmation = () => {

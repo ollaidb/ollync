@@ -117,8 +117,8 @@
 .profile-card-avatar-placeholder {
   width: 100%;
   height: 100%;
-  background: #667eea;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,11 +130,11 @@
   flex: 1;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--foreground);
 }
 
 .profile-card-chevron {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
@@ -148,7 +148,7 @@
 
 .profile-menu-item {
   width: 100%;
-  background: white;
+  background: var(--card);
   border: none;
   border-radius: 0;
   padding: 12px;
@@ -158,7 +158,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  color: #333;
+  color: var(--foreground);
   font-size: 16px;
   font-weight: 500;
   position: relative;
@@ -175,20 +175,20 @@
 }
 
 .profile-menu-item:not(:last-of-type) {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .profile-menu-item:hover {
-  background: #f8f9fa;
+  background: var(--muted);
 }
 
 .profile-menu-item.active {
-  background: #f0f4ff;
-  color: #667eea;
+  background: color-mix(in srgb, var(--primary) 15%, var(--background));
+  color: var(--primary);
 }
 
 .profile-menu-item.active .profile-menu-item-icon {
-  color: #667eea;
+  color: var(--primary);
 }
 
 .profile-menu-item-icon {
@@ -197,12 +197,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
 .profile-menu-item.active .profile-menu-item-icon {
-  color: #667eea;
+  color: var(--primary);
 }
 
 .profile-menu-item-label {
@@ -211,17 +211,17 @@
 }
 
 .profile-menu-item-chevron {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
 .profile-menu-item.active .profile-menu-item-chevron {
-  color: #667eea;
+  color: var(--primary);
 }
 
 /* Sous-items (pour Paramètres) */
 .profile-menu-subitems {
-  background: #f8f9fa;
+  background: var(--muted);
   padding: 0;
 }
 
@@ -236,35 +236,35 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  color: #666;
+  color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 400;
 }
 
 .profile-menu-subitem:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .profile-menu-subitem svg {
-  color: #999;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
 /* Bouton de déconnexion */
 .profile-menu-item-logout {
-  color: #e74c3c;
+  color: var(--destructive);
   margin-top: 8px;
   border-radius: 12px;
 }
 
 .profile-menu-item-logout:hover {
-  background: #fee;
-  color: #c0392b;
+  background: color-mix(in srgb, var(--destructive) 15%, var(--background));
+  color: var(--destructive);
 }
 
 .profile-menu-item-logout .profile-menu-item-icon {
-  color: #e74c3c;
+  color: var(--destructive);
 }
 
 .profile-menu-item-logout .profile-menu-item-chevron {
@@ -273,25 +273,25 @@
 
 /* Bouton de connexion */
 .profile-menu-item-login {
-  color: #667eea;
+  color: var(--primary);
   margin-top: 8px;
   border-radius: 12px;
 }
 
 .profile-menu-item-login:hover {
-  background: #f0f4ff;
-  color: #5568d3;
+  background: color-mix(in srgb, var(--primary) 15%, var(--background));
+  color: var(--primary);
 }
 
 .profile-menu-item-login .profile-menu-item-icon {
-  color: #667eea;
+  color: var(--primary);
 }
 
 /* Sidebar (pour les autres pages) */
 .profile-sidebar {
   width: 280px;
-  background: #f8f9fa;
-  border-right: 1px solid #e0e0e0;
+  background: var(--card);
+  border-right: 1px solid var(--border);
   padding: 20px 0;
 }
 
@@ -313,49 +313,49 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  color: #333;
+  color: var(--foreground);
   font-size: 15px;
   font-weight: 500;
   position: relative;
 }
 
 .profile-nav-item:hover {
-  background: #e8e9ea;
+  background: var(--muted);
 }
 
 .profile-nav-item.active {
-  background: #667eea;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .profile-nav-item.active svg {
-  color: white;
+  color: var(--primary-foreground);
 }
 
 .profile-nav-item svg {
-  color: #666;
+  color: var(--muted-foreground);
   flex-shrink: 0;
 }
 
 .profile-nav-item.active .chevron {
   margin-left: auto;
-  color: white;
+  color: var(--primary-foreground);
 }
 
 .profile-nav-item-logout {
   margin-top: 20px;
-  color: #e74c3c;
-  border-top: 1px solid #e0e0e0;
+  color: var(--destructive);
+  border-top: 1px solid var(--border);
   padding-top: 20px;
 }
 
 .profile-nav-item-logout:hover {
-  background: #fee;
-  color: #c0392b;
+  background: color-mix(in srgb, var(--destructive) 15%, var(--background));
+  color: var(--destructive);
 }
 
 .profile-nav-item-logout svg {
-  color: #e74c3c;
+  color: var(--destructive);
 }
 
 .profile-content {
@@ -369,7 +369,7 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  color: #666;
+  color: var(--muted-foreground);
 }
 
 .profile-empty-state {
@@ -383,26 +383,26 @@
 }
 
 .profile-empty-state svg {
-  color: #999;
+  color: var(--muted-foreground);
   margin-bottom: 20px;
 }
 
 .profile-empty-state h2 {
   font-size: 24px;
-  color: #333;
+  color: var(--foreground);
   margin: 0 0 12px 0;
 }
 
 .profile-empty-state p {
   font-size: 16px;
-  color: #666;
+  color: var(--muted-foreground);
   margin: 0 0 24px 0;
 }
 
 .profile-empty-state .btn-primary {
   padding: 12px 24px;
-  background: #667eea;
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -412,7 +412,7 @@
 }
 
 .profile-empty-state .btn-primary:hover {
-  background: #5568d3;
+  background: var(--primary);
 }
 
 @media (max-width: 768px) {

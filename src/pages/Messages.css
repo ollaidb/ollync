@@ -351,7 +351,7 @@
 }
 
 .conversation-action-item.danger {
-  color: #d84b4b;
+  color: var(--destructive);
 }
 
 .conversation-action-item.cancel {
@@ -498,9 +498,9 @@
 }
 
 .conversation-danger-btn {
-  background: #d84b4b;
-  border-color: #d84b4b;
-  color: #fff;
+  background: var(--destructive);
+  border-color: var(--destructive);
+  color: var(--destructive-foreground);
 }
 
 .conversation-cancel-btn:hover {
@@ -957,7 +957,7 @@
 }
 
 .message-action-item.danger {
-  color: #ef4444;
+  color: var(--destructive);
 }
 
 .message-action-item.cancel {

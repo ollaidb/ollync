@@ -72,12 +72,12 @@
 }
 
 .form-group input.input-error {
-  border-color: #ef4444;
+  border-color: var(--destructive);
 }
 
 .input-error-message {
   font-size: 12px;
-  color: #ef4444;
+  color: var(--destructive);
   margin-top: 4px;
   display: block;
 }
@@ -135,7 +135,7 @@
 .password-strength-bar-wrapper {
   width: 100%;
   height: 6px;
-  background: #e5e7eb;
+  background: var(--border);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -166,9 +166,9 @@
 
 .auth-success {
   padding: 12px 16px;
-  background: #16a34a;
+  background: var(--secondary);
   opacity: 0.12;
-  color: #16a34a;
+  color: var(--secondary-foreground);
   border-radius: 8px;
   font-size: 14px;
   text-align: center;
@@ -203,7 +203,7 @@
 }
 
 .auth-button:hover:not(:disabled) {
-  background: #5568d3;
+  background: var(--accent);
 }
 
 .auth-button:disabled {
@@ -215,7 +215,7 @@
   text-align: center;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
 }
 
 .auth-helper {
@@ -230,12 +230,12 @@
 
 .auth-footer p {
   font-size: 14px;
-  color: #666;
+  color: var(--muted-foreground);
   margin: 0;
 }
 
 .auth-link {
-  color: #667eea;
+  color: var(--primary);
   font-weight: 600;
   text-decoration: none;
 }
@@ -270,8 +270,8 @@
   justify-content: center;
   gap: 12px;
   padding: 14px 24px;
-  background: white;
-  color: #3c4043;
+  background: var(--card);
+  color: var(--foreground);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
@@ -284,7 +284,7 @@
 }
 
 .auth-button-google:hover:not(:disabled) {
-  background: #f8f9fa;
+  background: var(--muted);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -303,9 +303,9 @@
   justify-content: center;
   gap: 12px;
   padding: 14px 24px;
-  background: #000000;
-  color: white;
-  border: 1px solid #000000;
+  background: var(--foreground);
+  color: var(--background);
+  border: 1px solid var(--foreground);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -317,7 +317,7 @@
 }
 
 .auth-button-apple:hover:not(:disabled) {
-  background: #1a1a1a;
+  background: color-mix(in srgb, var(--foreground) 85%, var(--background));
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
 }
 
@@ -355,7 +355,7 @@
 }
 
 .auth-method-button:hover:not(:disabled) {
-  background: #5568d3;
+  background: var(--accent);
 }
 
 .auth-method-button:disabled {
@@ -459,7 +459,7 @@
 }
 
 .condition-more-btn:hover {
-  color: #5568d3;
+  color: var(--accent);
 }
 
 .condition-more-btn:disabled {
@@ -666,7 +666,7 @@
 }
 
 .condition-modal-ok-btn:hover {
-  background: #5568d3;
+  background: var(--accent);
 }
 
 @media (max-width: 768px) {

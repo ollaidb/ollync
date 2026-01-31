@@ -22,9 +22,9 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #e5e5e5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .swipe-header-content {
@@ -60,7 +60,7 @@
 .swipe-title {
   font-size: 20px;
   font-weight: 800;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
   line-height: 1.2;
   text-align: center;
@@ -93,13 +93,13 @@
 }
 
 .swipe-filter-btn {
-  background-color: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #666;
+  color: var(--muted-foreground);
   cursor: pointer;
   white-space: nowrap;
   display: flex;
@@ -110,14 +110,14 @@
 }
 
 .swipe-filter-btn:hover {
-  background-color: #eeeeee;
-  border-color: #ddd;
+  background-color: var(--input);
+  border-color: var(--border);
 }
 
 .swipe-filter-btn.active {
-  background-color: #667eea;
-  border-color: #667eea;
-  color: #ffffff;
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 /* ============================================
@@ -138,7 +138,7 @@
   margin: 0 auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  background-color: #fafafa;
+  background-color: var(--background);
   overscroll-behavior: contain;
 }
 
@@ -236,7 +236,7 @@
 
 /* Bordure rouge fine pour annonces urgentes */
 .swipe-card-image-wrapper.swipe-card-urgent {
-  border: 1px solid #ef4444;
+  border: 1px solid var(--destructive);
   box-sizing: border-box;
 }
 
@@ -267,8 +267,8 @@
   left: 8px;
   font-size: 7px;
   font-weight: 600;
-  color: white;
-  background: rgba(0, 0, 0, 0.6);
+  color: var(--primary-foreground);
+  background: color-mix(in srgb, var(--foreground) 65%, transparent);
   backdrop-filter: blur(8px);
   padding: 2px 5px;
   border-radius: 3px;
@@ -286,14 +286,14 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--destructive);
   z-index: 20;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   pointer-events: auto;
 }
 
@@ -319,11 +319,11 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(10px);
   padding: 4px 8px;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
   pointer-events: auto;
   height: 28px; /* Même hauteur que le bouton like */
 }
@@ -334,9 +334,9 @@
   height: 22px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--background);
+  background: var(--card);
   flex-shrink: 0;
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border: 1.5px solid color-mix(in srgb, var(--card) 85%, transparent);
 }
 
 .swipe-card-avatar img {

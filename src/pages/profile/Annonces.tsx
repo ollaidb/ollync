@@ -162,7 +162,8 @@ const Annonces = () => {
         title: 'Supprimer l\'annonce',
         message: 'Cette action est irréversible. Êtes-vous sûr de vouloir supprimer définitivement cette annonce ?',
         confirmLabel: 'Supprimer',
-        cancelLabel: 'Annuler'
+        cancelLabel: 'Annuler',
+        isDestructive: true
       },
       async () => {
         if (!user?.id) return
@@ -684,6 +685,7 @@ const Annonces = () => {
           onCancel={confirmation.handleCancel}
           confirmLabel={confirmation.options.confirmLabel}
           cancelLabel={confirmation.options.cancelLabel}
+          isDestructive={confirmation.options.isDestructive}
         />
       )}
 

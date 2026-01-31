@@ -187,6 +187,7 @@ export default function FavoritesPage() {
               post={post}
               isLiked={true}
               onLike={fetchLikedPosts}
+              titleLines={1}
             />
           ))}
         </ScrollView>

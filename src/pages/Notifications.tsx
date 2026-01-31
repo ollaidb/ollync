@@ -416,11 +416,13 @@ const Notifications = () => {
                       className={`notification-item ${!notification.read ? 'unread' : ''}`}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      <div className="notification-icon">
-                        {getNotificationIcon(notification.type)}
-                      </div>
                       <div className="notification-content">
-                        <div className="notification-title">{notification.title}</div>
+                        <div className="notification-title-row">
+                          <div className="notification-icon">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="notification-title">{notification.title}</div>
+                        </div>
                         {notification.content && (
                           <div className="notification-text">{notification.content}</div>
                         )}
