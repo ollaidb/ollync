@@ -27,6 +27,11 @@ export default function Publish() {
     title?: string | null
     description?: string | null
     price?: number | null
+    contract_type?: string | null
+    work_schedule?: string | null
+    responsibilities?: string | null
+    required_skills?: string | null
+    benefits?: string | null
     location?: string | null
     location_city?: string | null
     location_lat?: number | null
@@ -71,6 +76,11 @@ export default function Publish() {
     description: '',
     socialNetwork: undefined as string | undefined,
     price: '',
+    contract_type: '',
+    work_schedule: '',
+    responsibilities: '',
+    required_skills: '',
+    benefits: '',
     location: '',
     location_city: '',
     location_lat: null as number | null,
@@ -257,6 +267,11 @@ export default function Publish() {
           description: postData.description || '',
           socialNetwork: shouldUseSocialNetwork ? (mediaTypeValue || '') : undefined,
           price: postData.price ? String(postData.price) : '',
+          contract_type: postData.contract_type || '',
+          work_schedule: postData.work_schedule || '',
+          responsibilities: postData.responsibilities || '',
+          required_skills: postData.required_skills || '',
+          benefits: postData.benefits || '',
           location: postData.location || '',
           location_city: postData.location_city || '',
           location_lat: postData.location_lat ?? null,

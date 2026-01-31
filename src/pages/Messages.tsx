@@ -1888,13 +1888,13 @@ const Messages = () => {
                       >
                         <div
                           className="message-swipe-content"
-                          onContextMenu={(event) => {
+                          onContextMenu={isOwn ? (event) => {
                             event.preventDefault()
                             setActiveMessage(msg)
                             setShowMessageActions(true)
                             setEditMessageValue(msg.content || '')
-                          }}
-                          onTouchStart={(event) => {
+                          } : undefined}
+                          onTouchStart={isOwn ? (event) => {
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
                             longPressTimerRef.current = window.setTimeout(() => {
@@ -1902,8 +1902,8 @@ const Messages = () => {
                               setShowMessageActions(true)
                               setEditMessageValue(msg.content || '')
                             }, 500)
-                          }}
-                          onTouchMove={(event) => {
+                          } : undefined}
+                          onTouchMove={isOwn ? (event) => {
                             const touch = event.touches[0]
                             const start = messageTouchRef.current
                             if (!start) return
@@ -1915,13 +1915,13 @@ const Messages = () => {
                                 longPressTimerRef.current = null
                               }
                             }
-                          }}
-                      onTouchEnd={() => {
+                          } : undefined}
+                          onTouchEnd={isOwn ? () => {
                             if (longPressTimerRef.current) {
                               window.clearTimeout(longPressTimerRef.current)
                               longPressTimerRef.current = null
                             }
-                          }}
+                          } : undefined}
                         >
                           <MessageBubble
                             message={msg}

@@ -167,6 +167,11 @@ export interface Database {
           title: string
           description: string
           price: number | null
+          contract_type: string | null
+          work_schedule: string | null
+          responsibilities: string | null
+          required_skills: string | null
+          benefits: string | null
           location: string | null
           images: string[] | null
           delivery_available: boolean
@@ -182,6 +187,11 @@ export interface Database {
           title: string
           description: string
           price?: number | null
+          contract_type?: string | null
+          work_schedule?: string | null
+          responsibilities?: string | null
+          required_skills?: string | null
+          benefits?: string | null
           location?: string | null
           images?: string[] | null
           delivery_available?: boolean
@@ -197,6 +207,11 @@ export interface Database {
           title?: string
           description?: string
           price?: number | null
+          contract_type?: string | null
+          work_schedule?: string | null
+          responsibilities?: string | null
+          required_skills?: string | null
+          benefits?: string | null
           location?: string | null
           images?: string[] | null
           delivery_available?: boolean

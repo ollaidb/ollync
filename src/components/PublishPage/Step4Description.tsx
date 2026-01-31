@@ -9,6 +9,11 @@ interface FormData {
   socialNetwork?: string
   price: string
   exchange_type: string
+  contract_type?: string
+  work_schedule?: string
+  responsibilities?: string
+  required_skills?: string
+  benefits?: string
   exchange_service?: string
   revenue_share_percentage?: string
   co_creation_details?: string
@@ -54,12 +59,16 @@ export const Step4Description = ({
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
+  const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'montage'
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
   const requiresPrice = !!paymentConfig?.requiresPrice
   const requiresExchangeService = !!paymentConfig?.requiresExchangeService
   const requiresRevenueShare = !!paymentConfig?.requiresPercentage
   const showCoCreationDetails = formData.exchange_type === 'co-creation'
+  const descriptionPlaceholder = isJobCategory
+    ? 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.'
+    : 'Décrivez en détail votre annonce...'
   
   // Synchroniser le moyen de paiement avec la catégorie sélectionnée
   useEffect(() => {
@@ -84,6 +93,7 @@ export const Step4Description = ({
   const canContinue = 
     formData.title.trim().length > 0 && 
     formData.description.trim().length > 0 &&
+    (!isJobCategory || (formData.contract_type && formData.contract_type.trim().length > 0)) &&
     formData.exchange_type.trim().length > 0 &&
     (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
     (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
@@ -110,16 +120,27 @@ export const Step4Description = ({
         />
       </div>
 
-      <div className="form-group">
-        <label className="form-label">Description *</label>
-        <textarea
-          className="form-textarea"
-          placeholder="Décrivez en détail votre annonce..."
-          value={formData.description}
-          onChange={(e) => onUpdateFormData({ description: e.target.value })}
-          rows={6}
-        />
-      </div>
+      {isJobCategory && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Type de contrat *</label>
+            <select
+              className="form-select"
+              value={formData.contract_type || ''}
+              onChange={(e) => onUpdateFormData({ contract_type: e.target.value })}
+            >
+              <option value="">Sélectionner un type de contrat...</option>
+              <option value="cdi">CDI</option>
+              <option value="cdd">CDD</option>
+              <option value="freelance">Freelance</option>
+              <option value="stage">Stage</option>
+              <option value="alternance">Alternance</option>
+              <option value="interim">Intérim</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        </>
+      )}
 
       {showSocialNetwork && (
         <div className="form-group">
@@ -139,35 +160,50 @@ export const Step4Description = ({
         </div>
       )}
 
-      <div className="form-group">
-        <label className="form-label">Moyen de paiement *</label>
-        <select
-          className="form-select"
-          value={formData.exchange_type}
-          onChange={(e) => {
-            const newExchangeType = e.target.value
-            onUpdateFormData({ 
-              exchange_type: newExchangeType,
-              price: newExchangeType === 'remuneration' ? formData.price : '',
-              exchange_service: newExchangeType === 'echange' ? formData.exchange_service : '',
-              revenue_share_percentage: newExchangeType === 'partage-revenus' ? formData.revenue_share_percentage : '',
-              co_creation_details: newExchangeType === 'co-creation' ? formData.co_creation_details : ''
-            })
-          }}
-          disabled={paymentOptions.length === 1}
-        >
-          {paymentOptions.length > 1 && <option value="">Sélectionner...</option>}
-          {paymentOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {requiresPrice && (
+      {!isJobCategory && (
         <div className="form-group">
-          <label className="form-label">Prix (€) *</label>
+          <label className="form-label">Description *</label>
+          <textarea
+            className="form-textarea"
+            placeholder={descriptionPlaceholder}
+            value={formData.description}
+            onChange={(e) => onUpdateFormData({ description: e.target.value })}
+            rows={6}
+          />
+        </div>
+      )}
+
+      {!isJobCategory && (
+        <div className="form-group">
+          <label className="form-label">Moyen de paiement *</label>
+          <select
+            className="form-select"
+            value={formData.exchange_type}
+            onChange={(e) => {
+              const newExchangeType = e.target.value
+              onUpdateFormData({ 
+                exchange_type: newExchangeType,
+                price: newExchangeType === 'remuneration' ? formData.price : '',
+                exchange_service: newExchangeType === 'echange' ? formData.exchange_service : '',
+                revenue_share_percentage: newExchangeType === 'partage-revenus' ? formData.revenue_share_percentage : '',
+                co_creation_details: newExchangeType === 'co-creation' ? formData.co_creation_details : ''
+              })
+            }}
+            disabled={paymentOptions.length === 1}
+          >
+            {paymentOptions.length > 1 && <option value="">Sélectionner...</option>}
+            {paymentOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {(isJobCategory || requiresPrice) && (
+        <div className="form-group">
+          <label className="form-label">{isJobCategory ? 'Salaire (€) *' : 'Prix (€) *'}</label>
           <input
             type="number"
             className="form-input"
@@ -178,6 +214,67 @@ export const Step4Description = ({
             step="0.01"
           />
         </div>
+      )}
+
+      {isJobCategory && (
+        <div className="form-group">
+          <label className="form-label">Description du poste *</label>
+          <textarea
+            className="form-textarea"
+            placeholder={descriptionPlaceholder}
+            value={formData.description}
+            onChange={(e) => onUpdateFormData({ description: e.target.value })}
+            rows={6}
+          />
+        </div>
+      )}
+
+      {isJobCategory && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Horaires / temps de travail</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Ex: 35h/semaine, lundi-vendredi, 9h-17h"
+              value={formData.work_schedule || ''}
+              onChange={(e) => onUpdateFormData({ work_schedule: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Missions / responsabilités</label>
+            <textarea
+              className="form-textarea"
+              placeholder="Décrivez les missions principales du poste."
+              value={formData.responsibilities || ''}
+              onChange={(e) => onUpdateFormData({ responsibilities: e.target.value })}
+              rows={4}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Compétences requises</label>
+            <textarea
+              className="form-textarea"
+              placeholder="Listez les compétences attendues (ex: montage, rédaction, outils...)."
+              value={formData.required_skills || ''}
+              onChange={(e) => onUpdateFormData({ required_skills: e.target.value })}
+              rows={4}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Avantages</label>
+            <textarea
+              className="form-textarea"
+              placeholder="Ex: télétravail, horaires flexibles, tickets resto..."
+              value={formData.benefits || ''}
+              onChange={(e) => onUpdateFormData({ benefits: e.target.value })}
+              rows={3}
+            />
+          </div>
+        </>
       )}
 
       {requiresExchangeService && (

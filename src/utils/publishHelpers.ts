@@ -11,6 +11,11 @@ interface FormData {
   shortDescription?: string
   socialNetwork?: string
   price: string
+  contract_type?: string
+  work_schedule?: string
+  responsibilities?: string
+  required_skills?: string
+  benefits?: string
   location: string
   location_city: string
   location_lat: number | null
@@ -98,6 +103,7 @@ export const validatePublishForm = (
   requireSocialNetwork: boolean = false
 ): ValidationResult => {
   const errors: string[] = []
+  const isJobCategory = formData.category === 'montage'
 
   // Catégorie et sous-catégorie
   if (!formData.category) {
@@ -115,6 +121,10 @@ export const validatePublishForm = (
   // Description
   if (!formData.description || formData.description.trim().length === 0) {
     errors.push('La description est obligatoire')
+  }
+
+  if (isJobCategory && (!formData.contract_type || formData.contract_type.trim().length === 0)) {
+    errors.push('Le type de contrat est obligatoire pour un emploi')
   }
 
   // Lieu
@@ -376,6 +386,11 @@ export const handlePublish = async (
     // Si la base de données a aussi une colonne content, utiliser la même valeur
     content: descriptionValue,
     price: formData.price ? parseFloat(formData.price) : null,
+    contract_type: formData.contract_type?.trim() || null,
+    work_schedule: formData.work_schedule?.trim() || null,
+    responsibilities: formData.responsibilities?.trim() || null,
+    required_skills: formData.required_skills?.trim() || null,
+    benefits: formData.benefits?.trim() || null,
     location: formData.location || null,
     images: formData.images.length > 0 ? formData.images : null,
     is_urgent: formData.urgent || false,

@@ -239,6 +239,116 @@
   text-align: center;
 }
 
+/* Version Web - bloc plus compact */
+.app--web .match-request-detail-overlay {
+  padding: 16px;
+}
+
+.app--web .match-request-detail-content {
+  max-width: 420px;
+  padding: 18px;
+  max-height: 80vh;
+}
+
+.app--web .match-request-detail-avatar {
+  width: 64px;
+  height: 64px;
+}
+
+.app--web .match-request-detail-name {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.app--web .match-request-detail-post {
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.app--web .match-request-detail-status {
+  margin-bottom: 18px;
+}
+
+.app--web .match-request-action-btn {
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.app--web .match-request-detail-message {
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+/* Version Mobile - bloc plus compact + textes réduits */
+@media (max-width: 768px) {
+  .match-request-detail-overlay {
+    padding: 12px;
+  }
+
+  .match-request-detail-content {
+    padding: 16px;
+    max-width: 100%;
+    max-height: 85vh;
+  }
+
+  .match-request-detail-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .match-request-detail-name {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .match-request-detail-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
+  .match-request-detail-post {
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+
+  .match-request-detail-post-label {
+    font-size: 11px;
+  }
+
+  .match-request-detail-post-title {
+    font-size: 14px;
+  }
+
+  .match-request-detail-post-subtitle {
+    font-size: 12px;
+  }
+
+  .status-badge {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .match-request-action-btn {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  .match-request-detail-message {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .match-request-detail-message-label {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .match-request-detail-message-text,
+  .match-request-detail-message-info {
+    font-size: 13px;
+  }
+}
+
 @media (max-width: 768px) {
   .match-request-detail-content {
     padding: 20px;

@@ -253,8 +253,8 @@ const MatchRequestDetail = ({
   }
 
   return (
-    <div className="match-request-detail-overlay" onClick={onClose}>
-      <div className="match-request-detail-content" onClick={(e) => e.stopPropagation()}>
+    <div className="match-request-detail-overlay">
+      <div className="match-request-detail-content">
         <button className="match-request-detail-close" onClick={onClose}>
           <X size={24} />
         </button>

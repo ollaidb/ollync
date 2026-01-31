@@ -17,7 +17,9 @@ const WebLayout = ({ children }: WebLayoutProps) => {
     <div className="web-layout">
       <aside className="web-sidebar">
         <div className="web-sidebar-header">
-          <span className="web-logo">ollync</span>
+          <NavLink to="/home" className="web-logo">
+            ollync
+          </NavLink>
         </div>
         <nav className="web-nav">
           {navItems.map((item) => (

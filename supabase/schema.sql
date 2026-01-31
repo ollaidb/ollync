@@ -45,6 +45,11 @@ CREATE TABLE IF NOT EXISTS posts (
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2),
+  contract_type TEXT,
+  work_schedule TEXT,
+  responsibilities TEXT,
+  required_skills TEXT,
+  benefits TEXT,
   location VARCHAR(255),
   images TEXT[], -- Tableau d'URLs d'images
   delivery_available BOOLEAN DEFAULT false,
