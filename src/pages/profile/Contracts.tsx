@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import type { MouseEvent, TouchEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FileText, Users, CheckCircle2, Download, FileSignature, AlertCircle } from 'lucide-react'
+import { FileText, Users, CheckCircle2, Download, AlertCircle } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -242,131 +242,7 @@ const Contracts = () => {
     return baseArticles
   }, [resolvedContractType])
 
-  useEffect(() => {
-    if (!user) return
-    const loadData = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const { data: profileDataRaw, error: profileError } = await supabase
-          .from('profiles')
-          .select(
-            'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
-          )
-          .eq('id', user.id)
-          .single()
-        const profileData = profileDataRaw as ProfileSummary | null
-        if (!profileError && profileData) {
-          setCurrentUserProfile(profileData)
-          const derivedFullName =
-            profileData.contract_full_name ||
-            profileData.full_name ||
-            user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
-            ''
-          const derivedEmail = profileData.contract_email || profileData.email || user.email || ''
-          const derivedPhone = profileData.contract_phone || profileData.phone || ''
-          setContractProfile({
-            fullName: derivedFullName,
-            email: derivedEmail,
-            phone: derivedPhone,
-            city: profileData.contract_city || '',
-            country: profileData.contract_country || '',
-            siren: profileData.contract_siren || '',
-            signature: profileData.contract_signature || ''
-          })
-        }
-
-        const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select('id, title, description, payment_type, price, number_of_people, user_id, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-
-        if (postsError) {
-          setError('Impossible de charger vos annonces.')
-        }
-
-        const ownedPostsData = (postsData || []) as PostSummary[]
-        setOwnedPosts(ownedPostsData)
-
-        if (ownedPostsData.length > 0) {
-          const postIds = ownedPostsData.map((post) => post.id)
-          const { data: applicationsData } = await supabase
-            .from('applications')
-            .select(
-              `
-              id,
-              post_id,
-              applicant_id,
-              status,
-              created_at,
-              applicant:profiles!applications_applicant_id_fkey(id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type)
-            `
-            )
-            .eq('status', 'accepted')
-            .in('post_id', postIds)
-
-          setAcceptedApplications((applicationsData || []) as ApplicationSummary[])
-        } else {
-          setAcceptedApplications([])
-        }
-
-        const { data: applicantApplications } = await supabase
-          .from('applications')
-          .select('id, post_id, applicant_id, status, created_at')
-          .eq('applicant_id', user.id)
-          .eq('status', 'accepted')
-
-        const acceptedApplicationsData = (applicantApplications || []) as ApplicationSummary[]
-        setAcceptedAsApplicant(acceptedApplicationsData)
-
-        if (acceptedApplicationsData.length > 0) {
-          const applicantPostIds = acceptedApplicationsData.map((app) => app.post_id)
-          const { data: postsForApplicant } = await supabase
-            .from('posts')
-            .select('id, title, description, payment_type, price, number_of_people, user_id, created_at')
-            .in('id', applicantPostIds)
-
-          const postsMap: Record<string, PostSummary> = {}
-          ;(postsForApplicant || []).forEach((post) => {
-            postsMap[(post as PostSummary).id] = post as PostSummary
-          })
-          setApplicantPostMap(postsMap)
-
-          const ownerIds = Array.from(
-            new Set((postsForApplicant || []).map((post) => (post as PostSummary).user_id))
-          )
-          if (ownerIds.length > 0) {
-            const { data: ownersData } = await supabase
-              .from('profiles')
-              .select(
-                'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
-              )
-              .in('id', ownerIds)
-
-            const ownerMap: Record<string, ProfileSummary> = {}
-            ;(ownersData || []).forEach((profile) => {
-              ownerMap[(profile as ProfileSummary).id] = profile as ProfileSummary
-            })
-            setOwnerProfileMap(ownerMap)
-          }
-        } else {
-          setApplicantPostMap({})
-          setOwnerProfileMap({})
-        }
-
-        await loadContracts()
-      } catch (err) {
-        console.error('Error loading contracts data:', err)
-        setError('Une erreur est survenue lors du chargement des contrats.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadData()
-  }, [user])
+  // loadData useEffect moved below loadContracts
 
   useEffect(() => {
     if (!isSignatureModalOpen) return
@@ -424,7 +300,7 @@ const Contracts = () => {
     setPreferredCounterpartyId(counterpartyParam)
   }, [counterpartyParam])
 
-  const loadContracts = async () => {
+  const loadContracts = useCallback(async () => {
     if (!user) return
     try {
       const { data, error: contractsError } = await supabase
@@ -465,7 +341,137 @@ const Contracts = () => {
       console.error('Error loading contracts:', err)
       setContracts([])
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        if (user) {
+          const { data: profileDataRaw } = await supabase
+            .from('profiles')
+            .select(
+              'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
+            )
+            .eq('id', user.id)
+            .single()
+
+          const profileData = profileDataRaw as ProfileSummary | null
+          if (profileData) {
+            setCurrentUserProfile(profileData)
+            const derivedFullName =
+              profileData.contract_full_name ||
+              profileData.full_name ||
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              ''
+            const derivedEmail = profileData.contract_email || profileData.email || user.email || ''
+            const derivedPhone = profileData.contract_phone || profileData.phone || ''
+            setContractProfile({
+              fullName: derivedFullName,
+              email: derivedEmail,
+              phone: derivedPhone,
+              city: profileData.contract_city || '',
+              country: profileData.contract_country || '',
+              siren: profileData.contract_siren || '',
+              signature: profileData.contract_signature || ''
+            })
+          }
+
+          const { data: postsData, error: postsError } = await supabase
+            .from('posts')
+            .select('id, title, description, payment_type, price, number_of_people, user_id, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+
+          if (postsError) {
+            setError('Impossible de charger vos annonces.')
+          }
+
+          const ownedPostsData = (postsData || []) as PostSummary[]
+          setOwnedPosts(ownedPostsData)
+
+          if (ownedPostsData.length > 0) {
+            const postIds = ownedPostsData.map((post) => post.id)
+            const { data: applicationsData } = await supabase
+              .from('applications')
+              .select(
+                `
+                id,
+                post_id,
+                applicant_id,
+                status,
+                created_at,
+                applicant:profiles!applications_applicant_id_fkey(id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type)
+              `
+              )
+              .eq('status', 'accepted')
+              .in('post_id', postIds)
+
+            setAcceptedApplications((applicationsData || []) as ApplicationSummary[])
+          } else {
+            setAcceptedApplications([])
+          }
+
+          const { data: applicantApplications } = await supabase
+            .from('applications')
+            .select('id, post_id, applicant_id, status, created_at')
+            .eq('applicant_id', user.id)
+            .eq('status', 'accepted')
+
+          const acceptedApplicationsData = (applicantApplications || []) as ApplicationSummary[]
+          setAcceptedAsApplicant(acceptedApplicationsData)
+
+          if (acceptedApplicationsData.length > 0) {
+            const applicantPostIds = acceptedApplicationsData.map((app) => app.post_id)
+            const { data: postsForApplicant } = await supabase
+              .from('posts')
+              .select('id, title, description, payment_type, price, number_of_people, user_id, created_at')
+              .in('id', applicantPostIds)
+
+            const postsMap: Record<string, PostSummary> = {}
+            ;(postsForApplicant || []).forEach((post) => {
+              postsMap[(post as PostSummary).id] = post as PostSummary
+            })
+            setApplicantPostMap(postsMap)
+
+            const ownerIds = Array.from(
+              new Set((postsForApplicant || []).map((post) => (post as PostSummary).user_id))
+            )
+            if (ownerIds.length > 0) {
+              const { data: ownersData } = await supabase
+                .from('profiles')
+                .select(
+                  'id, username, full_name, avatar_url, email, phone, contract_full_name, contract_email, contract_phone, contract_city, contract_country, contract_siren, contract_signature, contract_default_type'
+                )
+                .in('id', ownerIds)
+
+              const ownerMap: Record<string, ProfileSummary> = {}
+              ;(ownersData || []).forEach((profile) => {
+                ownerMap[(profile as ProfileSummary).id] = profile as ProfileSummary
+              })
+              setOwnerProfileMap(ownerMap)
+            }
+          } else {
+            setApplicantPostMap({})
+            setOwnerProfileMap({})
+          }
+        } else {
+          setApplicantPostMap({})
+          setOwnerProfileMap({})
+        }
+
+        await loadContracts()
+      } catch (err) {
+        console.error('Error loading contracts data:', err)
+        setError('Une erreur est survenue lors du chargement des contrats.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [user, loadContracts])
 
   useEffect(() => {
     setSelectedApplicants({})

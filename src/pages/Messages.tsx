@@ -1064,11 +1064,15 @@ const Messages = () => {
               .order('created_at', { ascending: false })
               .limit(1)
 
-            let lastMsg = null
-            if (!lastMsgError && lastMsgData && lastMsgData.length > 0) {
-              lastMsg = lastMsgData[0]
-            }
-            const rawContent = (lastMsg as { content?: string | null })?.content || ''
+            const lastMsgRow = !lastMsgError
+              ? (lastMsgData as Array<{
+                  content?: string | null
+                  created_at: string
+                  sender_id?: string | null
+                  message_type?: string | null
+                }> | null)?.[0] ?? null
+              : null
+            const rawContent = lastMsgRow?.content || ''
             const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
 
             // Compter les messages non lus (seulement si otherUserId existe)
@@ -1091,11 +1095,11 @@ const Messages = () => {
               ...conv,
               other_user: otherUser,
               postTitle,
-              lastMessage: lastMsg ? {
+              lastMessage: lastMsgRow ? {
                 content: sanitizedContent,
-                created_at: (lastMsg as { created_at: string }).created_at,
-                sender_id: (lastMsg as { sender_id?: string | null }).sender_id || null,
-                message_type: (lastMsg as { message_type?: string | null }).message_type || null
+                created_at: lastMsgRow.created_at,
+                sender_id: lastMsgRow.sender_id || null,
+                message_type: lastMsgRow.message_type || null
               } : null,
               is_archived: state?.is_archived ?? (conv as { is_archived?: boolean }).is_archived ?? false,
               archived_at: state?.archived_at ?? null,
@@ -2475,11 +2479,14 @@ const Messages = () => {
                           }}
                         />
                       )}
-                      {(conv.unread ?? 0) > 0 && (
+                      {(() => {
+                        const unreadCount = conv.unread ?? 0
+                        return unreadCount > 0 ? (
                         <div className="conversation-unread-badge">
-                          {conv.unread > 99 ? '99+' : conv.unread}
+                          {unreadCount > 99 ? '99+' : unreadCount}
                         </div>
-                      )}
+                        ) : null
+                      })()}
                     </div>
 
                     <div className="conversation-info">
@@ -2493,7 +2500,7 @@ const Messages = () => {
                       </div>
 
                       {preview && (
-                        <p className={`conversation-preview ${conv.unread && conv.unread > 0 ? 'unread' : ''}`}>
+                        <p className={`conversation-preview ${(conv.unread ?? 0) > 0 ? 'unread' : ''}`}>
                           {preview}
                         </p>
                       )}
