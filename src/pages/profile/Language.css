@@ -11,33 +11,6 @@
   padding-bottom: 24px;
 }
 
-.language-search {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: var(--input);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.language-search svg {
-  color: var(--muted-foreground);
-  flex-shrink: 0;
-}
-
-.language-search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 15px;
-  color: var(--foreground);
-  outline: none;
-}
-
-.language-search-input::placeholder {
-  color: var(--muted-foreground);
-}
 
 .language-section {
   display: flex;
@@ -113,15 +86,6 @@
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
-}
-
-.language-empty-state {
-  padding: 14px 12px;
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-  color: var(--muted-foreground);
-  text-align: center;
-  font-size: 14px;
 }
 
 @media (max-width: 768px) {

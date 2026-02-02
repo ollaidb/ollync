@@ -142,15 +142,15 @@
 .profile-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   margin-bottom: 12px;
 }
 
 .profile-menu-item {
   width: 100%;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: var(--background);
+  border: none;
+  border-radius: 0;
   padding: 12px;
   display: flex;
   align-items: center;
@@ -164,19 +164,12 @@
   position: relative;
 }
 
-/* Items séparés avec un petit espace */
+.profile-menu-item:not(:last-of-type) {
+  border-bottom: 1px solid var(--border);
+}
 
 .profile-menu-item:hover {
   background: var(--muted);
-}
-
-.profile-menu-item.active {
-  background: color-mix(in srgb, var(--primary) 15%, var(--background));
-  color: var(--primary);
-}
-
-.profile-menu-item.active .profile-menu-item-icon {
-  color: var(--primary);
 }
 
 .profile-menu-item-icon {
@@ -189,10 +182,6 @@
   flex-shrink: 0;
 }
 
-.profile-menu-item.active .profile-menu-item-icon {
-  color: var(--primary);
-}
-
 .profile-menu-item-label {
   flex: 1;
   text-align: left;
@@ -203,9 +192,6 @@
   flex-shrink: 0;
 }
 
-.profile-menu-item.active .profile-menu-item-chevron {
-  color: var(--primary);
-}
 
 /* Sous-items (pour Paramètres) */
 .profile-menu-subitems {

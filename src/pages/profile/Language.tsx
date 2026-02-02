@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Check, Search } from 'lucide-react'
+import { useState } from 'react'
+import { Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../components/PageHeader'
 import './Language.css'
@@ -12,21 +12,11 @@ type LanguageOption = {
 
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'fr', label: 'Français (France)', nativeLabel: 'Français' },
-  { code: 'en', label: 'Anglais (États-Unis)', nativeLabel: 'English' },
-  { code: 'es', label: 'Espagnol (Espagne)', nativeLabel: 'Español' },
-  { code: 'de', label: 'Allemand (Allemagne)', nativeLabel: 'Deutsch' },
-  { code: 'it', label: 'Italien (Italie)', nativeLabel: 'Italiano' },
-  { code: 'pt', label: 'Portugais (Portugal)', nativeLabel: 'Português' },
-  { code: 'ar', label: 'Arabe', nativeLabel: 'العربية' },
-  { code: 'tr', label: 'Turc', nativeLabel: 'Türkçe' },
-  { code: 'nl', label: 'Néerlandais', nativeLabel: 'Nederlands' },
-  { code: 'ja', label: 'Japonais', nativeLabel: '日本語' },
-  { code: 'ko', label: 'Coréen', nativeLabel: '한국어' }
+  { code: 'en', label: 'Anglais (États-Unis)', nativeLabel: 'English' }
 ]
 
 const Language = () => {
   const { t, i18n } = useTranslation(['common', 'settings'])
-  const [query, setQuery] = useState('')
   const [currentLanguage, setCurrentLanguage] = useState(() => {
     return i18n.language || localStorage.getItem('app_language') || 'fr'
   })
@@ -43,18 +33,7 @@ const Language = () => {
   const activeLanguage =
     LANGUAGE_OPTIONS.find((language) => language.code === currentLanguage) || LANGUAGE_OPTIONS[0]
 
-  const filteredLanguages = useMemo(() => {
-    const normalized = query.trim().toLowerCase()
-    return LANGUAGE_OPTIONS.filter((language) => {
-      if (language.code === currentLanguage) return false
-      if (!normalized) return true
-      return (
-        language.label.toLowerCase().includes(normalized) ||
-        language.nativeLabel.toLowerCase().includes(normalized) ||
-        language.code.toLowerCase().includes(normalized)
-      )
-    })
-  }, [query, currentLanguage])
+  const otherLanguages = LANGUAGE_OPTIONS.filter((language) => language.code !== currentLanguage)
 
   const handleSelect = (code: string) => {
     setCurrentLanguage(code)
@@ -68,17 +47,6 @@ const Language = () => {
       <PageHeader title="Langue" />
       <div className="page-content language-page">
         <div className="language-container">
-          <div className="language-search">
-            <Search size={18} />
-            <input
-              className="language-search-input"
-              type="text"
-              placeholder={t('searchLanguagePlaceholder')}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-
           <div className="language-section">
             <h3 className="language-section-title">{t('currentLanguage')}</h3>
             <button className="language-option active" type="button">
@@ -102,31 +70,27 @@ const Language = () => {
           <div className="language-section">
             <h3 className="language-section-title">{t('otherLanguages')}</h3>
             <div className="language-options-list">
-              {filteredLanguages.length === 0 ? (
-                <div className="language-empty-state">{t('noLanguageFound')}</div>
-              ) : (
-                filteredLanguages.map((language) => (
-                  <button
-                    key={language.code}
-                    className="language-option"
-                    type="button"
-                    onClick={() => handleSelect(language.code)}
-                  >
-                    <div className="language-option-text">
-                      <span className="language-option-label">
-                        {getDisplayName(language.code, i18n.language)}
+              {otherLanguages.map((language) => (
+                <button
+                  key={language.code}
+                  className="language-option"
+                  type="button"
+                  onClick={() => handleSelect(language.code)}
+                >
+                  <div className="language-option-text">
+                    <span className="language-option-label">
+                      {getDisplayName(language.code, i18n.language)}
+                    </span>
+                    {getDisplayName(language.code, language.code) !==
+                      getDisplayName(language.code, i18n.language) && (
+                      <span className="language-option-native">
+                        {getDisplayName(language.code, language.code)}
                       </span>
-                      {getDisplayName(language.code, language.code) !==
-                        getDisplayName(language.code, i18n.language) && (
-                        <span className="language-option-native">
-                          {getDisplayName(language.code, language.code)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="language-option-indicator" />
-                  </button>
-                ))
-              )}
+                    )}
+                  </div>
+                  <div className="language-option-indicator" />
+                </button>
+              ))}
             </div>
           </div>
         </div>

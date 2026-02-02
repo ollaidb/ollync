@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, ImageOff } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
-import { formatRelativeDate } from '../utils/profileHelpers'
 import { GoogleMapComponent } from '../components/Maps/GoogleMap'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
@@ -69,6 +69,7 @@ const PostDetails = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { showSuccess } = useToastContext()
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,6 +110,8 @@ const PostDetails = () => {
       slug: string
     } | null
   }>>([])
+  const [authorPostCount, setAuthorPostCount] = useState<number | null>(null)
+  const maxPostsPerSection = isMobile ? 5 : 4
 
   useEffect(() => {
     if (id) {
@@ -243,6 +246,10 @@ const PostDetails = () => {
         sub_category: subCategoryData
       } as Post)
 
+      if (post.user_id) {
+        await fetchAuthorPostCount(post.user_id)
+      }
+
       // 6. Incrémenter les vues
       const currentViews = post.views_count || 0
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -251,6 +258,20 @@ const PostDetails = () => {
       console.error('Error in fetchPost:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchAuthorPostCount = async (authorId: string) => {
+    try {
+      const { count } = await supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', authorId)
+        .eq('status', 'active')
+      setAuthorPostCount(count ?? 0)
+    } catch (error) {
+      console.error('Error fetching author post count:', error)
+      setAuthorPostCount(null)
     }
   }
 
@@ -603,26 +624,26 @@ const PostDetails = () => {
         const related = await fetchPostsWithRelations({
           categoryId: postCategoryId,
           status: 'active',
-          limit: 7,
+          limit: maxPostsPerSection * 2,
           orderBy: 'created_at',
           orderDirection: 'desc'
         })
         // Filtrer pour exclure le post actuel
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filtered = related.filter((p: any) => p.id !== post.id)
-        setRelatedPosts(filtered.slice(0, 6))
+        setRelatedPosts(filtered.slice(0, maxPostsPerSection * 2))
       } else {
         // Si pas de catégorie, récupérer les dernières annonces
         const related = await fetchPostsWithRelations({
           status: 'active',
-          limit: 7,
+          limit: maxPostsPerSection * 2,
           orderBy: 'created_at',
           orderDirection: 'desc'
         })
         // Filtrer pour exclure le post actuel
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filtered = related.filter((p: any) => p.id !== post.id)
-        setRelatedPosts(filtered.slice(0, 6))
+        setRelatedPosts(filtered.slice(0, maxPostsPerSection * 2))
       }
     } catch (error) {
       console.error('Error fetching related posts:', error)
@@ -674,32 +695,6 @@ const PostDetails = () => {
   }
 
   const hasAddress = post.location_address || (post.location_lat && post.location_lng)
-
-  const formatPaymentType = (paymentType?: string | null) => {
-    if (!paymentType) return null
-    switch (paymentType) {
-      case 'prix':
-        return 'Prix'
-      case 'echange':
-        return 'Échange de service'
-      case 'co-creation':
-        return 'Co-création'
-      case 'participation':
-        return 'Participation'
-      case 'association':
-        return 'Association'
-      case 'partage-revenus':
-        return 'Partage de revenus'
-      case 'remuneration':
-        return 'Rémunération'
-      case 'benevole':
-        return 'Bénévole'
-      case 'pourcentage':
-        return 'Pourcentage'
-      default:
-        return paymentType
-    }
-  }
 
   // Fonctions pour le swipe des images
   const minSwipeDistance = 50
@@ -818,14 +813,6 @@ const PostDetails = () => {
                   <MapPin size={16} /> {post.location}
                 </span>
               )}
-              {post.payment_type && (
-                <span className="post-title-meta-item">
-                  {formatPaymentType(post.payment_type)}
-                </span>
-              )}
-              <span className="post-title-meta-item">
-                Publié {formatRelativeDate(post.created_at)}
-              </span>
               {post.needed_date && (
                 <span className="post-title-meta-item">
                   Pour le {new Date(post.needed_date).toLocaleDateString('fr-FR', {
@@ -844,9 +831,13 @@ const PostDetails = () => {
 
             {/* Informations secondaires */}
             <div className="post-meta-info">
-                <span className="post-meta-item">
-                {formatRelativeDate(post.created_at)}
-                </span>
+              <span className="post-meta-item post-meta-item-date">
+                {new Date(post.created_at).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </span>
             </div>
 
             {/* Profil de l'auteur */}
@@ -856,14 +847,17 @@ const PostDetails = () => {
                   {post.user.avatar_url && (
                     <img src={post.user.avatar_url} alt={post.user.full_name || ''} />
                   )}
-                  <div>
+                  <div className="author-info">
                     <div className="author-name">
                       {post.user.full_name || post.user.username || 'Utilisateur'}
                     </div>
-                    {post.user.bio && (
-                      <div className="author-bio">{post.user.bio}</div>
+                    {authorPostCount !== null && (
+                      <div className="author-meta">
+                        {authorPostCount} annonce{authorPostCount > 1 ? 's' : ''}
+                      </div>
                     )}
                   </div>
+                  <ChevronRight className="author-chevron" size={20} />
                 </Link>
               </div>
             )}
@@ -874,12 +868,13 @@ const PostDetails = () => {
               <p className="post-description-text">{post.description}</p>
             </div>
 
-            {/* Toutes les autres informations */}
+            {/* Autres informations nécessaires */}
             <div className="post-additional-info-section">
+              <h3 className="post-additional-title">Autre informations nécessaire</h3>
               {/* Catégorie et sous-catégorie */}
               {(post.category || post.sub_category) && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Catégorie :</span>
+                  <span className="post-info-label">Catégorie</span>
                   <span className="post-info-value">
                     {post.category?.name}
                     {post.sub_category && ` > ${post.sub_category.name}`}
@@ -890,61 +885,17 @@ const PostDetails = () => {
               {/* Réseau social */}
               {post.media_type && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Réseau :</span>
+                  <span className="post-info-label">Réseau</span>
                   <span className="post-info-value">{post.media_type}</span>
                 </div>
               )}
 
-              {/* Moyen de paiement */}
-              {post.payment_type && (
-                <div className="post-info-item">
-                  <span className="post-info-label">Moyen de paiement :</span>
-                  <span className="post-info-value">
-                    {formatPaymentType(post.payment_type)}
-                  </span>
-                </div>
-              )}
-
-              {/* Localisation */}
-              {post.location && (
-                <div className="post-info-item">
-                  <span className="post-info-label">Localisation :</span>
-                  <span className="post-info-value">
-                    <MapPin size={16} /> {post.location}
-                  </span>
-                </div>
-              )}
-
-              {/* Adresse complète */}
-            {hasAddress && (
-                <div className="post-info-item">
-                  <span className="post-info-label">Adresse :</span>
-                  <div className="post-info-value">
-                  {post.location_address && (
-                    <div className="post-address-text">
-                        <MapPin size={16} />
-                      <span>{post.location_address}</span>
-                    </div>
-                  )}
-                  {post.location_lat && post.location_lng && (
-                    <div className="post-address-coords">
-                      {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
-                    </div>
-                  )}
-                {post.location_lat && post.location_lng && (
-                      <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
-                        <Navigation size={18} />
-                        Itinéraire
-                  </button>
-                )}
-                  </div>
-              </div>
-            )}
+              {/* Moyen de paiement et localisation retirés (déjà affichés en haut) */}
 
               {/* Lien externe */}
               {post.external_link && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Lien :</span>
+                  <span className="post-info-label">Lien</span>
                   <span className="post-info-value">
                     <a
                       className="post-external-link"
@@ -961,7 +912,7 @@ const PostDetails = () => {
               {/* Document PDF */}
               {post.document_url && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Document :</span>
+                  <span className="post-info-label">Document</span>
                   <span className="post-info-value">
                     <a
                       className="post-document-link"
@@ -975,40 +926,11 @@ const PostDetails = () => {
                 </div>
               )}
 
-              {/* Carte Google Maps */}
-              {post.location_lat && post.location_lng && (
-                <div className="post-map-section">
-                  <GoogleMapComponent
-                    lat={post.location_lat}
-                    lng={post.location_lng}
-                    address={post.location_address || post.location || undefined}
-                    height="400px"
-                    zoom={15}
-                    markerTitle={post.location_address || post.location || post.title}
-                    onMarkerClick={handleOpenNavigation}
-                  />
-                </div>
-              )}
-
-              {/* Date nécessaire */}
-              {post.needed_date && (
-                <div className="post-info-item">
-                  <span className="post-info-label">Date nécessaire :</span>
-                  <span className="post-info-value">
-                    {new Date(post.needed_date).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-              )}
-
               {/* Nombre de personnes */}
               {post.number_of_people && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Nombre de personnes :</span>
-                  <span className="post-info-value">{post.number_of_people} personne{post.number_of_people > 1 ? 's' : ''}</span>
+                  <span className="post-info-label">Nombre de personnes</span>
+                  <span className="post-info-value post-info-value-right">{post.number_of_people}</span>
                 </div>
               )}
 
@@ -1020,6 +942,57 @@ const PostDetails = () => {
                 </div>
               )}
             </div>
+
+            {/* Localisation */}
+            {(post.location || hasAddress) && (
+              <div className="post-location-details-section">
+                <h3 className="post-additional-title">Localisation</h3>
+                <div className="post-info-item">
+                  <span className="post-info-label">Lieu</span>
+                  <div className="post-info-value">
+                    <div className="post-address-text">
+                      <MapPin size={16} />
+                      <span>{post.location || post.location_address || 'Non renseigné'}</span>
+                    </div>
+                  </div>
+                </div>
+                {post.location_address && post.location_address !== post.location && (
+                  <div className="post-info-item">
+                    <span className="post-info-label">Adresse</span>
+                    <div className="post-info-value">
+                      <div className="post-address-text">
+                        <MapPin size={16} />
+                        <span>{post.location_address}</span>
+                      </div>
+                      {post.location_lat && post.location_lng && (
+                        <div className="post-address-coords">
+                          {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
+                        </div>
+                      )}
+                      {post.location_lat && post.location_lng && (
+                        <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
+                          <Navigation size={18} />
+                          Itinéraire
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {post.location_lat && post.location_lng && (
+                  <div className="post-map-section">
+                    <GoogleMapComponent
+                      lat={post.location_lat}
+                      lng={post.location_lng}
+                      address={post.location_address || post.location || undefined}
+                      height="400px"
+                      zoom={15}
+                      markerTitle={post.location_address || post.location || post.title}
+                      onMarkerClick={handleOpenNavigation}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Section candidatures pour les matchs (propriétaire uniquement) */}
             {isOwner && applications.length > 0 && (
@@ -1070,11 +1043,25 @@ const PostDetails = () => {
             {/* Autres annonces */}
             {relatedPosts.length > 0 && (
               <div className="other-posts-section">
-                <h3>Autres annonces</h3>
+                <h3>Annonces qui pourront vous intéresser</h3>
                 <div className="other-posts-grid">
-                  {relatedPosts.map((relatedPost) => (
-                    <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" />
+                  {relatedPosts.slice(0, maxPostsPerSection).map((relatedPost) => (
+                    <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" hideCategoryBadge />
                   ))}
+                  {relatedPosts.length >= maxPostsPerSection && (
+                    <button
+                      className="other-posts-plus-btn"
+                      onClick={() => {
+                        const slug = post?.category?.slug
+                        if (slug === 'creation-contenu') return navigate('/creation-contenu')
+                        if (slug === 'casting-role') return navigate('/casting-role')
+                        if (slug === 'montage') return navigate('/montage')
+                        return navigate('/search')
+                      }}
+                    >
+                      <Plus size={32} />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
