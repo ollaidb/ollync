@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react'
+import { useEffect, useId, type ReactNode } from 'react'
 import './ConfirmationModal.css'
 
 export interface ConfirmationModalProps {
@@ -10,6 +10,7 @@ export interface ConfirmationModalProps {
   confirmLabel?: string
   cancelLabel?: string
   isDestructive?: boolean
+  children?: ReactNode
 }
 
 const ConfirmationModal = ({
@@ -20,7 +21,8 @@ const ConfirmationModal = ({
   onCancel,
   confirmLabel = 'Accepter',
   cancelLabel = 'Annuler',
-  isDestructive = false
+  isDestructive = false,
+  children
 }: ConfirmationModalProps) => {
   const titleId = useId()
   const messageId = useId()
@@ -51,6 +53,7 @@ const ConfirmationModal = ({
       >
         <h3 id={titleId} className="confirmation-modal-title">{title}</h3>
         <p id={messageId} className="confirmation-modal-message">{message}</p>
+        {children}
         <div className="confirmation-modal-actions">
           <button
             className="confirmation-modal-button confirmation-modal-button-cancel"

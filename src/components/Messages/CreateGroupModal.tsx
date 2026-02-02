@@ -148,12 +148,16 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
 
       // Ajouter le créateur comme participant
       if (conversation) {
-        await (supabase.from('conversation_participants') as any)
+        const { error: creatorParticipantError } = await (supabase.from('conversation_participants') as any)
           .insert({
             conversation_id: conversation.id,
             user_id: user.id,
             is_active: true
           })
+
+        if (creatorParticipantError) {
+          throw creatorParticipantError
+        }
 
         const participantRows = participants
           .filter((participant) => participant.id !== user.id)
@@ -164,7 +168,11 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
           }))
 
         if (participantRows.length > 0) {
-          await (supabase.from('conversation_participants') as any).insert(participantRows)
+          const { error: participantsError } = await (supabase.from('conversation_participants') as any)
+            .insert(participantRows)
+          if (participantsError) {
+            throw participantsError
+          }
         }
       }
 

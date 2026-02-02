@@ -348,23 +348,23 @@
 }
 
 .appointment-inline-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 12px;
   padding: 10px;
   margin: 0 auto 8px auto;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   max-width: 240px;
   width: 100%;
 }
 
 .appointment-inline-panel:focus-within,
 .appointment-inline-panel:hover {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--card) 97%, transparent);
+  box-shadow: var(--shadow-xl);
   transform: scale(1.02);
 }
 
@@ -374,7 +374,7 @@
   justify-content: space-between;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--border);
 }
 
 .appointment-inline-header h4 {
@@ -399,7 +399,7 @@
 }
 
 .appointment-inline-close:hover {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--muted);
   opacity: 1;
 }
 
@@ -414,7 +414,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 6px;
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--muted);
   border-radius: 6px;
 }
 

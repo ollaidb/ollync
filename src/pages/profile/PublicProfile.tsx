@@ -105,6 +105,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [showServiceSendModal, setShowServiceSendModal] = useState(false)
   const [showServiceCancelModal, setShowServiceCancelModal] = useState(false)
   const [serviceRequestLoading, setServiceRequestLoading] = useState(false)
+  const [serviceRequestMessage, setServiceRequestMessage] = useState('')
 
   const profileId = userId || user?.id
 
@@ -467,6 +468,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       return
     }
 
+    setServiceRequestMessage('')
     setShowServiceSendModal(true)
   }
 
@@ -478,7 +480,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       const serviceName = String(selectedService.name || '').trim()
       const serviceDescription = String(selectedService.description || '').trim()
       const serviceValue = String(selectedService.value || '').trim()
-      const trimmedMessage = ''
+      const trimmedMessage = serviceRequestMessage.trim()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
@@ -1307,15 +1309,32 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       {showServiceSendModal && (
         <ConfirmationModal
           visible={showServiceSendModal}
-          title="Envoyer une demande de service"
-          message="Vous allez envoyer une demande pour ce service. Si la demande est acceptée, vous pourrez commencer à échanger avec cette personne."
+          title="Message personnalisé"
+          message="Ajoutez un message pour votre demande."
           onConfirm={handleSendServiceRequest}
           onCancel={() => {
             setShowServiceSendModal(false)
+            setServiceRequestMessage('')
           }}
           confirmLabel={serviceRequestLoading ? 'Envoi...' : 'Envoyer'}
           cancelLabel="Annuler"
-        />
+        >
+          <div className="confirmation-modal-field">
+            <label className="confirmation-modal-label" htmlFor="service-request-message">
+              Votre message
+            </label>
+            <textarea
+              id="service-request-message"
+              className="confirmation-modal-textarea"
+              placeholder="Écrivez votre message ici."
+              value={serviceRequestMessage}
+              maxLength={500}
+              onChange={(event) => setServiceRequestMessage(event.target.value)}
+              autoFocus
+            />
+            <div className="confirmation-modal-hint">{serviceRequestMessage.length}/500</div>
+          </div>
+        </ConfirmationModal>
       )}
 
       {showServiceCancelModal && (

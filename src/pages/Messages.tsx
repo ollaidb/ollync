@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, MoreVertical, Pin, Trash2, Pencil, Copy, Languages, Send } from 'lucide-react'
+import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Pencil, Copy, Languages, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -21,12 +21,19 @@ type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'a
 
 const SYSTEM_SENDER_EMAIL = 'binta22116@gmail.com'
 const SYSTEM_SENDER_NAME = 'Ollync'
+const isSystemUserEmail = (email?: string | null) =>
+  (email || '').trim().toLowerCase() === SYSTEM_SENDER_EMAIL
 
 interface Conversation {
   id: string
   user1_id: string
   user2_id: string
   post_id?: string | null
+  group_name?: string | null
+  group_photo_url?: string | null
+  group_description?: string | null
+  group_creator_id?: string | null
+  name?: string | null
   last_message_at?: string | null
   lastMessage?: {
     content: string
@@ -103,6 +110,19 @@ interface SelectableUser {
   username?: string | null
   full_name?: string | null
   avatar_url?: string | null
+  email?: string | null
+}
+
+interface ConversationParticipant {
+  user_id: string
+  is_active?: boolean | null
+  role?: string | null
+  profile?: {
+    id: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+  } | null
 }
 
 interface Message {
@@ -137,6 +157,7 @@ interface Message {
 const Messages = () => {
   const { t } = useTranslation(['messages'])
   const navigate = useNavigate()
+  const location = useLocation()
   const { id: conversationId } = useParams<{ id?: string }>()
   const [searchParams] = useSearchParams()
   const postId = searchParams.get('post')
@@ -158,7 +179,6 @@ const Messages = () => {
   const [selectableUsers, setSelectableUsers] = useState<SelectableUser[]>([])
   const [selectableUsersLoading, setSelectableUsersLoading] = useState(false)
   const [selectedGroupUsers, setSelectedGroupUsers] = useState<SelectableUser[]>([])
-  const [showConversationActions, setShowConversationActions] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
@@ -172,6 +192,20 @@ const Messages = () => {
   const [showDeleteMessageConfirm, setShowDeleteMessageConfirm] = useState(false)
   const [showForwardMessage, setShowForwardMessage] = useState(false)
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
+  const [conversationAliases, setConversationAliases] = useState<Record<string, string>>({})
+  const [infoLoading, setInfoLoading] = useState(false)
+  const [infoParticipants, setInfoParticipants] = useState<ConversationParticipant[]>([])
+  const [groupNameDraft, setGroupNameDraft] = useState('')
+  const [groupDescriptionDraft, setGroupDescriptionDraft] = useState('')
+  const [groupPhotoDraft, setGroupPhotoDraft] = useState<string | null>(null)
+  const [groupPhotoFile, setGroupPhotoFile] = useState<File | null>(null)
+  const [savingGroup, setSavingGroup] = useState(false)
+  const [aliasDraft, setAliasDraft] = useState('')
+  const [mediaTab, setMediaTab] = useState<'media' | 'links' | 'documents'>('media')
+  const [showAddParticipants, setShowAddParticipants] = useState(false)
+  const [selectedParticipant, setSelectedParticipant] = useState<ConversationParticipant | null>(null)
+  const [showMediaActions, setShowMediaActions] = useState(false)
+  const [selectedMediaMessage, setSelectedMediaMessage] = useState<Message | null>(null)
 
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
@@ -180,6 +214,10 @@ const Messages = () => {
   const shouldScrollToBottomRef = useRef(false)
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
+  const isInfoView = location.pathname.endsWith('/info')
+  const isMediaView = location.pathname.endsWith('/media')
+  const isAppointmentsView = location.pathname.endsWith('/appointments')
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -254,6 +292,18 @@ const Messages = () => {
       }
     }
   }, [openAppointment, selectedConversation, conversationId, navigate])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('messages_aliases')
+      if (stored) {
+        const parsed = JSON.parse(stored) as Record<string, string>
+        setConversationAliases(parsed || {})
+      }
+    } catch (error) {
+      console.error('Error reading message aliases:', error)
+    }
+  }, [])
 
   const formatTime = (dateString: string | null | undefined): string => {
     if (!dateString) return ''
@@ -338,6 +388,61 @@ const Messages = () => {
   const isWithin24Hours = (dateString: string) => {
     const createdAt = new Date(dateString).getTime()
     return Date.now() - createdAt <= 24 * 60 * 60 * 1000
+  }
+
+  const hasLinkContent = (text?: string | null) => {
+    if (!text) return false
+    return /https?:\/\/\S+/i.test(text)
+  }
+
+  const extractFirstLink = (text?: string | null) => {
+    if (!text) return ''
+    const match = text.match(/https?:\/\/\S+/i)
+    return match ? match[0] : ''
+  }
+
+  const handleSaveMedia = async (msg: Message) => {
+    if (!msg.file_url) return
+    try {
+      const response = await fetch(msg.file_url)
+      if (!response.ok) throw new Error('download_failed')
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = msg.file_name || 'media'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      // Fallback: ouvrir si le téléchargement est bloqué par CORS
+      window.open(msg.file_url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const handleShareMedia = async (msg: Message, type: 'link' | 'media') => {
+    try {
+      if (type === 'link') {
+        const link = extractFirstLink(msg.content)
+        if (!link) return
+        if (navigator.share) {
+          await navigator.share({ url: link })
+        } else {
+          window.open(link, '_blank', 'noopener,noreferrer')
+        }
+        return
+      }
+
+      if (!msg.file_url) return
+      if (navigator.share) {
+        await navigator.share({ url: msg.file_url })
+      } else {
+        window.open(msg.file_url, '_blank', 'noopener,noreferrer')
+      }
+    } catch (error) {
+      console.error('Error sharing media:', error)
+    }
   }
 
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
@@ -467,22 +572,34 @@ const Messages = () => {
         return
       }
 
-      const convData = conv as { id: string; user1_id: string; user2_id: string; post_id?: string | null }
+      const convData = conv as {
+        id: string
+        user1_id: string
+        user2_id: string
+        post_id?: string | null
+        is_group?: boolean
+        group_name?: string | null
+        group_photo_url?: string | null
+        group_description?: string | null
+        group_creator_id?: string | null
+        name?: string | null
+      }
+      const isGroupConversation = !!convData.is_group
       const otherUserId = convData.user1_id === user.id ? convData.user2_id : convData.user1_id
       const blockedIdsSet = new Set(blockedIds)
 
-      if (blockedIdsSet.has(otherUserId)) {
+      if (!isGroupConversation && blockedIdsSet.has(otherUserId)) {
         setLoading(false)
         navigate('/messages')
         return
       }
 
       // Récupérer les informations de l'utilisateur
-      const { data: otherUser } = await supabase
+      const { data: otherUser } = !isGroupConversation && otherUserId ? await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, email, last_activity_at')
         .eq('id', otherUserId)
-        .single()
+        .single() : { data: null }
 
       // Récupérer le titre du post si post_id existe
       let postTitle: string | null = null
@@ -607,6 +724,71 @@ const Messages = () => {
       setMessages([])
     }
   }
+
+  useEffect(() => {
+    if (!isInfoView || !selectedConversation || !user) return
+
+    const isGroupConversation = !!selectedConversation.is_group
+    const groupDisplayName = (selectedConversation.group_name || selectedConversation.name || '').trim()
+
+    if (isGroupConversation) {
+      setGroupNameDraft(groupDisplayName)
+      setGroupDescriptionDraft(selectedConversation.group_description || '')
+      setGroupPhotoDraft(selectedConversation.group_photo_url || null)
+    } else {
+      setAliasDraft(selectedConversation.id ? (conversationAliases[selectedConversation.id] || '') : '')
+    }
+
+    const loadParticipants = async () => {
+      if (!isGroupConversation) {
+        setInfoParticipants([])
+        return
+      }
+
+      setInfoLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('conversation_participants')
+          .select('user_id, is_active, role, profiles:user_id (id, username, full_name, avatar_url)')
+          .eq('conversation_id', selectedConversation.id)
+          .order('joined_at', { ascending: true })
+
+        if (error) throw error
+
+        const normalized = (data || []).filter((row) => {
+          const typedRow = row as { is_active?: boolean | null }
+          return typedRow.is_active !== false
+        }).map((row) => {
+          const typedRow = row as {
+            user_id: string
+            is_active?: boolean | null
+            role?: string | null
+            profiles?: {
+              id: string
+              username?: string | null
+              full_name?: string | null
+              avatar_url?: string | null
+            } | null
+          }
+          return {
+            user_id: typedRow.user_id,
+            is_active: typedRow.is_active ?? true,
+            role: typedRow.role ?? null,
+            profile: typedRow.profiles ?? null
+          }
+        })
+
+        setInfoParticipants(normalized)
+      } catch (error) {
+        console.error('Error loading participants:', error)
+        setInfoParticipants([])
+      } finally {
+        setInfoLoading(false)
+      }
+    }
+
+    loadParticipants()
+  }, [isInfoView, selectedConversation, user, conversationAliases])
 
   // Charger les match_requests (demandes envoyées et reçues pour l'affichage dans Messages)
   // 
@@ -910,11 +1092,13 @@ const Messages = () => {
         return []
       }
 
-      const normalizedUsers = (users as SelectableUser[] || []).sort((a, b) => {
-        const nameA = (a.full_name || a.username || '').toLowerCase()
-        const nameB = (b.full_name || b.username || '').toLowerCase()
-        return nameA.localeCompare(nameB)
-      })
+      const normalizedUsers = (users as SelectableUser[] || [])
+        .filter((selectableUser) => !isSystemUserEmail(selectableUser.email))
+        .sort((a, b) => {
+          const nameA = (a.full_name || a.username || '').toLowerCase()
+          const nameB = (b.full_name || b.username || '').toLowerCase()
+          return nameA.localeCompare(nameB)
+        })
 
       setSelectableUsers(normalizedUsers)
       return normalizedUsers
@@ -932,6 +1116,24 @@ const Messages = () => {
 
     setLoading(true)
     try {
+      const { data: participantRows, error: participantsError } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+
+      if (participantsError) {
+        console.error('Error loading conversation participants:', participantsError)
+      }
+
+      const participantIds = (participantRows || [])
+        .map((row) => (row as { conversation_id: string }).conversation_id)
+        .filter(Boolean)
+
+      const participantFilter = participantIds.length > 0
+        ? `,id.in.(${participantIds.join(',')})`
+        : ''
+
       const { data: blocksData, error: blocksError } = await supabase
         .from('user_blocks')
         .select('blocked_id')
@@ -959,7 +1161,7 @@ const Messages = () => {
       let query = supabase
         .from('conversations')
         .select('*')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}`)
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}${participantFilter}`)
         .is('deleted_at', null) // Exclure les conversations supprimées
 
       // Appliquer les filtres selon le type (l'archivage est géré par utilisateur)
@@ -1221,6 +1423,31 @@ const Messages = () => {
     }
   }
 
+  const handleBlockUser = async () => {
+    if (!user || !selectedConversation?.other_user?.id) return
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('user_blocks') as any)
+        .upsert({
+          blocker_id: user.id,
+          blocked_id: selectedConversation.other_user.id
+        }, { onConflict: 'blocker_id,blocked_id' })
+
+      if (error) {
+        console.error('Error blocking user:', error)
+        alert('Erreur lors du blocage')
+        return
+      }
+
+      setBlockedUserIds((prev) => [...new Set([...prev, selectedConversation.other_user?.id || ''])].filter(Boolean))
+      setSelectedConversation(null)
+      navigate('/messages')
+    } catch (error) {
+      console.error('Error blocking user:', error)
+      alert('Erreur lors du blocage')
+    }
+  }
+
   const upsertConversationState = async (conversationId: string, updates: Record<string, unknown>) => {
     if (!user) return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1347,6 +1574,10 @@ const Messages = () => {
 
   const handleForwardMessage = async (targetUser: SelectableUser, msg: Message) => {
     if (!user || !targetUser?.id) return
+    if (isSystemUserEmail(targetUser.email)) {
+      alert('Vous ne pouvez pas transférer de message vers le compte Ollync.')
+      return
+    }
     const conversation = await findOrCreateConversation(targetUser.id)
     if (!conversation || !(conversation as { id: string }).id) {
       alert('Erreur lors de l\'ouverture de la conversation')
@@ -1426,7 +1657,11 @@ const Messages = () => {
     // Filtre par recherche textuelle
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      const name = (conv.other_user?.full_name || conv.other_user?.username || '').toLowerCase()
+      const alias = (conversationAliases[conv.id] || '').toLowerCase()
+      const groupName = (conv.group_name || conv.name || '').toLowerCase()
+      const name = conv.is_group
+        ? (groupName || '')
+        : (alias || (conv.other_user?.full_name || conv.other_user?.username || '').toLowerCase())
       const postTitle = (conv.postTitle || '').toLowerCase()
       const lastMessage = (conv.lastMessage?.content || '').toLowerCase()
       if (!name.includes(query) && !postTitle.includes(query) && !lastMessage.includes(query)) {
@@ -1549,9 +1784,16 @@ const Messages = () => {
 
   // Si une conversation est sélectionnée, afficher la vue de conversation
   if (selectedConversation || conversationId) {
+    const isGroupConversation = !!selectedConversation?.is_group
+    const groupDisplayName = (selectedConversation?.group_name || selectedConversation?.name || '').trim()
+    const currentAlias = selectedConversation?.id ? conversationAliases[selectedConversation.id] : ''
     const otherUserName = selectedConversation?.other_user?.full_name || selectedConversation?.other_user?.username || 'Utilisateur'
     const otherUserUsername = selectedConversation?.other_user?.username
-    const displayName = otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')
+    const displayName = isGroupConversation
+      ? (groupDisplayName || 'Groupe')
+      : ((currentAlias || '').trim()
+        ? (currentAlias || '').trim()
+        : (otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')))
     const groupedMessages = groupMessagesByDate(messages)
     const otherUserId = selectedConversation?.other_user?.id
     const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
@@ -1565,6 +1807,895 @@ const Messages = () => {
       isWithin24Hours(activeMessage.created_at)
     const canCopyMessage = !!activeMessage?.content
 
+    if (isInfoView) {
+      const isGroupOwner = !!user && selectedConversation?.group_creator_id === user.id
+      const groupPhoto = groupPhotoDraft || selectedConversation?.group_photo_url || ''
+      const groupName = groupNameDraft || groupDisplayName || 'Groupe'
+      const appointmentMessages = messages.filter((msg) =>
+        msg.message_type === 'calendar_request' && msg.calendar_request_data
+      )
+
+      return (
+        <div className="messages-page-container conversation-page conversation-info-page">
+          <div className="conversation-header">
+            <BackButton
+              className="conversation-back-button"
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}`)
+                } else {
+                  navigate('/messages')
+                }
+              }}
+            />
+            <div className="conversation-header-center">
+              <h1 className="conversation-header-name">
+                {isGroupConversation ? 'Infos du groupe' : 'Infos du contact'}
+              </h1>
+            </div>
+          </div>
+          <div className="conversation-info-content">
+            <div className="conversation-info-card">
+              <div className="conversation-info-avatar">
+                <img
+                  src={
+                    isGroupConversation
+                      ? (groupPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(groupName)}`)
+                      : (selectedConversation?.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`)
+                  }
+                  alt={isGroupConversation ? groupName : displayName}
+                  onError={(e) => {
+                    const fallback = isGroupConversation
+                      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(groupName)}`
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`
+                    ;(e.target as HTMLImageElement).src = fallback
+                  }}
+                />
+                {isGroupConversation && isGroupOwner && (
+                  <button
+                    type="button"
+                    className="conversation-info-photo-btn"
+                    onClick={() => groupPhotoInputRef.current?.click()}
+                  >
+                    <Camera size={16} />
+                    Changer la photo
+                  </button>
+                )}
+                {isGroupConversation && (
+                  <input
+                    ref={groupPhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file) return
+                      setGroupPhotoFile(file)
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        setGroupPhotoDraft(reader.result as string)
+                      }
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                )}
+              </div>
+
+              {isGroupConversation ? (
+                <>
+                  <div className="conversation-info-field">
+                    <label>Nom du groupe</label>
+                    <input
+                      type="text"
+                      value={groupNameDraft}
+                      onChange={(event) => setGroupNameDraft(event.target.value)}
+                      placeholder="Nom du groupe"
+                      disabled={!isGroupOwner || savingGroup}
+                    />
+                  </div>
+                  <div className="conversation-info-field">
+                    <label>Description</label>
+                    <textarea
+                      value={groupDescriptionDraft}
+                      onChange={(event) => setGroupDescriptionDraft(event.target.value)}
+                      placeholder="Décrivez votre groupe"
+                      disabled={!isGroupOwner || savingGroup}
+                      rows={3}
+                    />
+                  </div>
+                  {isGroupOwner && (
+                    <button
+                      type="button"
+                      className="conversation-info-save"
+                      onClick={async () => {
+                        if (!selectedConversation?.id) return
+                        setSavingGroup(true)
+                        try {
+                          let photoUrl = selectedConversation.group_photo_url || null
+                          if (groupPhotoFile) {
+                            const fileExt = groupPhotoFile.name.split('.').pop()
+                            const fileName = `${user?.id || 'group'}/${Date.now()}.${fileExt}`
+                            const { error: uploadError } = await supabase.storage
+                              .from('group-photos')
+                              .upload(fileName, groupPhotoFile, { cacheControl: '3600', upsert: false })
+                            if (uploadError) {
+                              const { error: fallbackError } = await supabase.storage
+                                .from('posts')
+                                .upload(fileName, groupPhotoFile, { cacheControl: '3600', upsert: false })
+                              if (fallbackError) throw fallbackError
+                              const { data: fallbackData } = supabase.storage
+                                .from('posts')
+                                .getPublicUrl(fileName)
+                              photoUrl = fallbackData.publicUrl
+                            } else {
+                              const { data } = supabase.storage
+                                .from('group-photos')
+                                .getPublicUrl(fileName)
+                              photoUrl = data.publicUrl
+                            }
+                          }
+
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const { error } = await (supabase.from('conversations') as any)
+                            .update({
+                              group_name: groupNameDraft.trim(),
+                              group_description: groupDescriptionDraft.trim() || null,
+                              group_photo_url: photoUrl
+                            })
+                            .eq('id', selectedConversation.id)
+
+                          if (error) throw error
+
+                          setSelectedConversation((prev) => prev ? ({
+                            ...prev,
+                            group_name: groupNameDraft.trim(),
+                            group_description: groupDescriptionDraft.trim() || null,
+                            group_photo_url: photoUrl || prev.group_photo_url
+                          }) : prev)
+                        } catch (error) {
+                          console.error('Error saving group:', error)
+                          alert('Erreur lors de la mise à jour du groupe')
+                        } finally {
+                          setSavingGroup(false)
+                          setGroupPhotoFile(null)
+                        }
+                      }}
+                    >
+                      Enregistrer
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="conversation-info-field">
+                    <label>Nom personnalisé</label>
+                    <input
+                      type="text"
+                      value={aliasDraft}
+                      onChange={(event) => setAliasDraft(event.target.value)}
+                      placeholder={displayName}
+                    />
+                    <p className="conversation-info-helper">
+                      Ce nom est visible uniquement par vous.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="conversation-info-save"
+                    onClick={() => {
+                      if (!selectedConversation?.id) return
+                      const trimmed = aliasDraft.trim()
+                      const next = { ...conversationAliases, [selectedConversation.id]: trimmed }
+                      setConversationAliases(next)
+                      localStorage.setItem('messages_aliases', JSON.stringify(next))
+                    }}
+                  >
+                    Enregistrer
+                  </button>
+                </>
+              )}
+            </div>
+
+            {isGroupConversation && (
+              <div className="conversation-info-card">
+                <div className="conversation-info-header-row">
+                  <button
+                    type="button"
+                    className="conversation-info-add"
+                    onClick={async () => {
+                      if (!isGroupOwner) return
+                      setShowAddParticipants(true)
+                      await loadSelectableUsers()
+                    }}
+                    disabled={!isGroupOwner}
+                  >
+                    <Plus size={16} />
+                    Ajouter un membre
+                  </button>
+                </div>
+                {infoLoading ? (
+                  <p className="conversation-info-muted">Chargement...</p>
+                ) : (
+                  <div className="conversation-info-list">
+                    {infoParticipants.map((participant) => {
+                      const display = participant.profile?.full_name || participant.profile?.username || 'Utilisateur'
+                      const isModerator = participant.role === 'moderator'
+                      const isCreator = participant.user_id === selectedConversation.group_creator_id
+                      return (
+                        <button
+                          key={participant.user_id}
+                          type="button"
+                          className="conversation-info-row conversation-info-row-button"
+                          onClick={() => setSelectedParticipant(participant)}
+                        >
+                          <div className="conversation-info-row-left">
+                            <img
+                              src={participant.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(display)}`}
+                              alt={display}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(display)}`
+                              }}
+                            />
+                            <span>{display}</span>
+                          </div>
+                          <div className="conversation-info-row-actions">
+                            {isCreator && (
+                              <span className="conversation-info-role">Créateur</span>
+                            )}
+                            {!isCreator && isModerator && (
+                              <span className="conversation-info-role">Admin</span>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div
+              className="conversation-info-card conversation-info-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/media`)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  const currentId = selectedConversation?.id || conversationId
+                  if (currentId) {
+                    navigate(`/messages/${currentId}/media`)
+                  }
+                }
+              }}
+            >
+              <div className="conversation-info-header-row">
+                <h3>Média, Lien et Documents</h3>
+                <ChevronRight size={18} className="conversation-info-arrow" />
+              </div>
+              {null}
+            </div>
+
+            <div
+              className="conversation-info-card conversation-info-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/appointments`)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  const currentId = selectedConversation?.id || conversationId
+                  if (currentId) {
+                    navigate(`/messages/${currentId}/appointments`)
+                  }
+                }
+              }}
+            >
+              <div className="conversation-info-header-row">
+                <h3>Rendez-vous</h3>
+                <ChevronRight size={18} className="conversation-info-arrow" />
+              </div>
+              {appointmentMessages.length === 0 ? null : (
+                <div className="conversation-info-list">
+                  {appointmentMessages.slice(0, 6).map((msg) => (
+                    <div key={msg.id} className="conversation-info-row">
+                      <div className="conversation-info-row-left">
+                        <span>{(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}</span>
+                      </div>
+                      <span className="conversation-info-role">
+                        {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
+                          ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
+                          : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!isSystemConversation && (
+              <div className="conversation-info-card">
+                <div className="conversation-info-actions">
+                  <button
+                    type="button"
+                    className="conversation-action-item"
+                    onClick={() => {
+                      setReportReason('')
+                      setShowReportModal(true)
+                    }}
+                  >
+                    {isGroupConversation ? 'Signaler le groupe' : 'Signaler l\'utilisateur'}
+                  </button>
+                  {!isGroupConversation && (
+                    <button
+                      type="button"
+                      className="conversation-action-item"
+                      onClick={() => setShowBlockConfirm(true)}
+                    >
+                      Bloquer l'utilisateur
+                    </button>
+                  )}
+                  {isGroupConversation && (
+                    <button
+                      type="button"
+                      className="conversation-action-item danger"
+                      onClick={async () => {
+                        if (!selectedConversation?.id || !user) return
+                        try {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const { error } = await (supabase.from('conversation_participants') as any)
+                            .update({ is_active: false })
+                            .eq('conversation_id', selectedConversation.id)
+                            .eq('user_id', user.id)
+                          if (error) throw error
+                          navigate('/messages')
+                        } catch (error) {
+                          console.error('Error leaving group:', error)
+                          alert('Impossible de quitter le groupe')
+                        }
+                      }}
+                    >
+                      Quitter ce groupe
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="conversation-action-item danger"
+                    onClick={() => {
+                      setListActionConversation(null)
+                      setShowDeleteConfirm(true)
+                    }}
+                  >
+                    Supprimer la conversation
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!isSystemConversation && showReportModal && (
+            <div
+              className="conversation-modal-overlay"
+              onClick={() => {
+                setShowReportModal(false)
+                setReportReason('')
+              }}
+            >
+              <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+                <div className="conversation-modal-header">
+                  <h2>Signaler</h2>
+                  <button
+                    className="conversation-modal-close"
+                    onClick={() => {
+                      setShowReportModal(false)
+                      setReportReason('')
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="conversation-modal-body">
+                  <p>Pourquoi souhaitez-vous signaler ?</p>
+                  <div className="conversation-report-options">
+                    {['Spam', 'Harcèlement', 'Contenu inapproprié', 'Autre'].map((reason) => (
+                      <button
+                        key={reason}
+                        className={`conversation-report-option ${reportReason === reason ? 'active' : ''}`}
+                        onClick={() => setReportReason(reason)}
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="conversation-modal-footer">
+                  <button onClick={() => setShowReportModal(false)} className="conversation-modal-cancel">
+                    Annuler
+                  </button>
+                  <button onClick={handleReportSubmit} className="conversation-modal-submit" disabled={!reportReason}>
+                    Envoyer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {showBlockConfirm && (
+            <ConfirmationModal
+              visible={showBlockConfirm}
+              title="Bloquer l'utilisateur"
+              message="Voulez-vous vraiment bloquer cet utilisateur ?"
+              onCancel={() => setShowBlockConfirm(false)}
+              onConfirm={async () => {
+                await handleBlockUser()
+                setShowBlockConfirm(false)
+              }}
+              confirmLabel="Bloquer"
+              cancelLabel="Annuler"
+              isDestructive={true}
+            />
+          )}
+          {showDeleteConfirm && (
+            <ConfirmationModal
+              visible={showDeleteConfirm}
+              title="Supprimer la conversation"
+              message="Voulez-vous vraiment supprimer cette conversation ?"
+              onCancel={() => setShowDeleteConfirm(false)}
+              onConfirm={async () => {
+                const currentId = selectedConversation?.id || conversationId
+                if (!currentId) return
+                await handleDeleteConversationForUser(currentId)
+                setShowDeleteConfirm(false)
+                setListActionConversation(null)
+                navigate('/messages')
+              }}
+              confirmLabel="Supprimer"
+              cancelLabel="Annuler"
+              isDestructive={true}
+            />
+          )}
+          <SelectUsersModal
+            visible={showAddParticipants}
+            title="Ajouter des participants"
+            users={selectableUsers.filter((candidate) => !infoParticipants.find((p) => p.user_id === candidate.id))}
+            loading={selectableUsersLoading}
+            multiple
+            confirmLabel="Ajouter"
+            emptyText="Aucun utilisateur disponible"
+            onClose={() => setShowAddParticipants(false)}
+            onConfirm={async (usersToAdd) => {
+              if (!selectedConversation?.id) return
+              try {
+                const rows = usersToAdd.map((participant) => ({
+                  conversation_id: selectedConversation.id,
+                  user_id: participant.id,
+                  is_active: true,
+                  role: 'member'
+                }))
+                if (rows.length > 0) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error } = await (supabase.from('conversation_participants') as any).insert(rows)
+                  if (error) throw error
+                }
+                setInfoParticipants((prev) => [
+                  ...prev,
+                  ...usersToAdd.map((participant) => ({
+                    user_id: participant.id,
+                    is_active: true,
+                    role: 'member',
+                    profile: {
+                      id: participant.id,
+                      username: participant.username,
+                      full_name: participant.full_name,
+                      avatar_url: participant.avatar_url
+                    }
+                  }))
+                ])
+                setShowAddParticipants(false)
+              } catch (error) {
+                console.error('Error adding participants:', error)
+                alert('Impossible d\'ajouter les participants')
+              }
+            }}
+          />
+          {selectedParticipant && (
+            <div
+              className="conversation-modal-overlay"
+              onClick={() => setSelectedParticipant(null)}
+            >
+              <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
+                <div className="conversation-modal-header">
+                  <h2>Participant</h2>
+                  <button
+                    className="conversation-modal-close"
+                    onClick={() => setSelectedParticipant(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="conversation-modal-body">
+                  <div className="conversation-participant-detail">
+                    <img
+                      src={selectedParticipant.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`}
+                      alt={selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`
+                      }}
+                    />
+                    <div>
+                      <p className="conversation-participant-name">
+                        {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
+                      </p>
+                      <p className="conversation-participant-role">
+                        {selectedParticipant.user_id === selectedConversation?.group_creator_id
+                          ? 'Créateur'
+                          : selectedParticipant.role === 'moderator'
+                            ? 'Admin'
+                            : 'Membre'}
+                      </p>
+                    </div>
+                  </div>
+                  {isGroupOwner && selectedParticipant.user_id !== user?.id && (
+                    <div className="conversation-participant-actions">
+                      <button
+                        type="button"
+                        className="conversation-action-item"
+                        onClick={async () => {
+                          if (!selectedConversation?.id) return
+                          try {
+                            const nextRole = selectedParticipant.role === 'moderator' ? 'member' : 'moderator'
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('conversation_participants') as any)
+                              .update({ role: nextRole })
+                              .eq('conversation_id', selectedConversation.id)
+                              .eq('user_id', selectedParticipant.user_id)
+                            setInfoParticipants((prev) => prev.map((p) => p.user_id === selectedParticipant.user_id ? {
+                              ...p,
+                              role: nextRole
+                            } : p))
+                            setSelectedParticipant((prev) => prev ? { ...prev, role: nextRole } : prev)
+                          } catch (error) {
+                            console.error('Error updating role:', error)
+                            alert('Impossible de mettre à jour le rôle')
+                          }
+                        }}
+                      >
+                        {selectedParticipant.role === 'moderator' ? 'Retirer admin' : 'Définir admin'}
+                      </button>
+                      <button
+                        type="button"
+                        className="conversation-action-item danger"
+                        onClick={async () => {
+                          if (!selectedConversation?.id) return
+                          try {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('conversation_participants') as any)
+                              .update({ is_active: false })
+                              .eq('conversation_id', selectedConversation.id)
+                              .eq('user_id', selectedParticipant.user_id)
+                            setInfoParticipants((prev) => prev.filter((p) => p.user_id !== selectedParticipant.user_id))
+                            setSelectedParticipant(null)
+                          } catch (error) {
+                            console.error('Error removing participant:', error)
+                            alert('Impossible de retirer ce participant')
+                          }
+                        }}
+                      >
+                        Retirer du groupe
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (isMediaView) {
+      const mediaItems = messages.filter((msg) => {
+        if (!msg.file_url) return false
+        if (msg.message_type === 'document') return false
+        if (msg.message_type === 'photo' || msg.message_type === 'video') return true
+        return !msg.message_type
+      })
+      const documentItems = messages.filter((msg) => msg.message_type === 'document' && msg.file_url)
+      const linkItems = messages.filter((msg) => msg.message_type === 'link' || hasLinkContent(msg.content))
+
+      const items = mediaTab === 'media'
+        ? mediaItems
+        : mediaTab === 'documents'
+          ? documentItems
+          : linkItems
+
+      return (
+        <div className="messages-page-container conversation-page conversation-media-page">
+          <div className="conversation-header">
+            <BackButton
+              className="conversation-back-button"
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/info`)
+                } else {
+                  navigate('/messages')
+                }
+              }}
+            />
+            <div className="conversation-header-center">
+              <h1 className="conversation-header-name">Médias</h1>
+            </div>
+          </div>
+
+          <div className="conversation-media-content">
+            <div className="conversation-media-tabs">
+              <button
+                className={`conversation-media-tab ${mediaTab === 'media' ? 'active' : ''}`}
+                onClick={() => setMediaTab('media')}
+              >
+                Média
+              </button>
+              <button
+                className={`conversation-media-tab ${mediaTab === 'links' ? 'active' : ''}`}
+                onClick={() => setMediaTab('links')}
+              >
+                Lien
+              </button>
+              <button
+                className={`conversation-media-tab ${mediaTab === 'documents' ? 'active' : ''}`}
+                onClick={() => setMediaTab('documents')}
+              >
+                Documents
+              </button>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="conversation-media-empty">
+                {mediaTab === 'media' ? 'Aucun média' : mediaTab === 'links' ? 'Aucun lien' : 'Aucun document'}
+              </div>
+            ) : mediaTab === 'media' ? (
+              <div className="conversation-media-grid">
+                {items.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-media-item"
+                    onClick={() => {
+                      setSelectedMediaMessage(msg)
+                      setShowMediaActions(true)
+                    }}
+                  >
+                    {msg.message_type === 'video' ? (
+                      <div className="conversation-media-video">
+                        <Film size={18} />
+                        <span>Vidéo</span>
+                      </div>
+                    ) : (
+                      <img src={msg.file_url || ''} alt={msg.file_name || 'media'} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : mediaTab === 'documents' ? (
+              <div className="conversation-media-list">
+                {items.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-media-row"
+                    onClick={() => {
+                      setSelectedMediaMessage(msg)
+                      setShowMediaActions(true)
+                    }}
+                  >
+                    <span>{msg.file_name || 'Document'}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="conversation-media-list">
+                {items.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-media-row"
+                    onClick={() => {
+                      setSelectedMediaMessage(msg)
+                      setShowMediaActions(true)
+                    }}
+                  >
+                    <span>{(msg.content || '').trim()}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {showMediaActions && selectedMediaMessage && (
+            <div
+              className="conversation-media-actions-overlay"
+              onClick={() => setShowMediaActions(false)}
+            >
+              <div
+                className="conversation-media-actions-sheet"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {mediaTab === 'links' && (
+                  <button
+                    type="button"
+                    className="conversation-media-action"
+                    onClick={() => {
+                      const link = extractFirstLink(selectedMediaMessage.content)
+                      if (link) window.open(link, '_blank', 'noopener,noreferrer')
+                      setShowMediaActions(false)
+                    }}
+                  >
+                    Ouvrir le lien
+                  </button>
+                )}
+                {mediaTab !== 'links' && (
+                  <button
+                    type="button"
+                    className="conversation-media-action"
+                    onClick={() => {
+                      if (selectedMediaMessage.file_url) {
+                        window.open(selectedMediaMessage.file_url, '_blank', 'noopener,noreferrer')
+                      }
+                      setShowMediaActions(false)
+                    }}
+                  >
+                    {mediaTab === 'documents' ? 'Voir ce document' : 'Voir ce média'}
+                  </button>
+                )}
+                {mediaTab !== 'links' && (
+                  <button
+                    type="button"
+                    className="conversation-media-action"
+                    onClick={() => {
+                      handleSaveMedia(selectedMediaMessage)
+                      setShowMediaActions(false)
+                    }}
+                  >
+                    <Download size={18} />
+                    Enregistrer
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="conversation-media-action"
+                  onClick={async () => {
+                    await handleShareMedia(selectedMediaMessage, mediaTab === 'links' ? 'link' : 'media')
+                    setShowMediaActions(false)
+                  }}
+                >
+                  <Share2 size={18} />
+                  Partager
+                </button>
+                <button
+                  type="button"
+                  className="conversation-media-action"
+                  onClick={async () => {
+                    setShowMediaActions(false)
+                    setShowForwardMessage(true)
+                    setForwardMessage(selectedMediaMessage)
+                    await loadSelectableUsers()
+                  }}
+                >
+                  <Send size={18} />
+                  Transférer
+                </button>
+                <button
+                  type="button"
+                  className="conversation-media-action danger"
+                  onClick={async () => {
+                    setShowMediaActions(false)
+                    await handleDeleteMessage(
+                      selectedMediaMessage,
+                      selectedMediaMessage.sender_id === user?.id
+                    )
+                  }}
+                >
+                  <Trash2 size={18} />
+                  Supprimer
+                </button>
+                <button
+                  type="button"
+                  className="conversation-media-action cancel"
+                  onClick={() => setShowMediaActions(false)}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+          <SelectUsersModal
+            visible={showForwardMessage}
+            title="Transférer le message"
+            users={selectableUsers}
+            loading={selectableUsersLoading}
+            emptyText="Aucun utilisateur disponible"
+            onClose={() => {
+              setShowForwardMessage(false)
+              setForwardMessage(null)
+            }}
+            onSelectUser={async (selectedUser) => {
+              const selectedUserEmail = (selectedUser as { email?: string | null }).email
+              if (isSystemUserEmail(selectedUserEmail)) {
+                alert('Vous ne pouvez pas transférer de message vers le compte Ollync.')
+                return
+              }
+              if (forwardMessage) {
+                await handleForwardMessage(selectedUser, forwardMessage)
+              }
+              setShowForwardMessage(false)
+              setForwardMessage(null)
+            }}
+          />
+        </div>
+      )
+    }
+
+    if (isAppointmentsView) {
+      const appointmentItems = messages.filter((msg) =>
+        msg.message_type === 'calendar_request' && msg.calendar_request_data
+      )
+
+      return (
+        <div className="messages-page-container conversation-page conversation-media-page">
+          <div className="conversation-header">
+            <BackButton
+              className="conversation-back-button"
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/info`)
+                } else {
+                  navigate('/messages')
+                }
+              }}
+            />
+            <div className="conversation-header-center">
+              <h1 className="conversation-header-name">Rendez-vous</h1>
+            </div>
+          </div>
+
+          <div className="conversation-media-content">
+            {appointmentItems.length === 0 ? (
+              <div className="conversation-media-empty">
+                Aucun rendez-vous
+              </div>
+            ) : (
+              <div className="conversation-media-list">
+                {appointmentItems.map((msg) => (
+                  <div key={msg.id} className="conversation-media-row">
+                    <span>
+                      {(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}
+                    </span>
+                    <span className="conversation-info-role">
+                      {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
+                        ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
+                        : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="messages-page-container conversation-page">
         <div className="conversation-header">
@@ -1575,84 +2706,46 @@ const Messages = () => {
               navigate('/messages')
             }}
           />
-          <div className="conversation-header-center">
+          <div
+            className={`conversation-header-center ${!isSystemConversation ? 'clickable' : ''}`}
+            role={!isSystemConversation ? 'button' : undefined}
+            tabIndex={!isSystemConversation ? 0 : undefined}
+            onClick={() => {
+              if (isSystemConversation) return
+              const currentId = selectedConversation?.id || conversationId
+              if (currentId) {
+                navigate(`/messages/${currentId}/info`)
+              }
+            }}
+            onKeyDown={(event) => {
+              if (!isSystemConversation && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault()
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/info`)
+                }
+              }
+            }}
+          >
             {isSystemConversation && (
               <div className="conversation-header-logo">
                 <Logo className="conversation-header-logo-icon" width={40} height={20} />
               </div>
             )}
-            <h1 className="conversation-header-name">{headerName}</h1>
-            {!isSystemConversation && (
-              <p className="conversation-header-status">
-                {formatLastSeen(selectedConversation?.other_user?.last_activity_at)}
-              </p>
-            )}
-          </div>
-          {!isSystemConversation && (
-            <div className="conversation-header-actions">
-              <button
-                className="conversation-actions-button"
-                type="button"
-                onClick={() => setShowConversationActions((prev) => !prev)}
-                aria-label="Actions de conversation"
-              >
-                <MoreVertical size={20} />
-              </button>
+            <div className="conversation-header-text">
+              <h1 className="conversation-header-name">{headerName}</h1>
+              {!isSystemConversation && (
+                <p className="conversation-header-status">
+                  {formatLastSeen(
+                    isGroupConversation
+                      ? (selectedConversation?.last_message_at || null)
+                      : (selectedConversation?.other_user?.last_activity_at || null)
+                  )}
+                </p>
+              )}
             </div>
-          )}
+          </div>
         </div>
-        {!isSystemConversation && showConversationActions && (
-          <div
-            className="conversation-actions-overlay"
-            onClick={() => setShowConversationActions(false)}
-          >
-            <div
-              className="conversation-actions-menu"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <h3 className="conversation-actions-title">Actions</h3>
-              <button
-                className="conversation-action-item"
-                type="button"
-                onClick={() => {
-                  setShowConversationActions(false)
-                  setReportReason('')
-                  setShowReportModal(true)
-                }}
-              >
-                Signaler l'utilisateur
-              </button>
-              <button
-                className="conversation-action-item"
-                type="button"
-                onClick={() => {
-                  setShowConversationActions(false)
-                  setShowBlockConfirm(true)
-                }}
-              >
-                Bloquer l'utilisateur
-              </button>
-              <button
-                className="conversation-action-item danger"
-                type="button"
-                onClick={() => {
-                  setShowConversationActions(false)
-                  setListActionConversation(selectedConversation || null)
-                  setShowDeleteConfirm(true)
-                }}
-              >
-                Supprimer la conversation
-              </button>
-              <button
-                className="conversation-action-item cancel"
-                type="button"
-                onClick={() => setShowConversationActions(false)}
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        )}
         {!isSystemConversation && showReportModal && (
           <div
             className="conversation-modal-overlay"
@@ -2105,6 +3198,11 @@ const Messages = () => {
             setForwardMessage(null)
           }}
           onSelectUser={async (selectedUser) => {
+            const selectedUserEmail = (selectedUser as { email?: string | null }).email
+            if (isSystemUserEmail(selectedUserEmail)) {
+              alert('Vous ne pouvez pas transférer de message vers le compte Ollync.')
+              return
+            }
             if (forwardMessage) {
               await handleForwardMessage(selectedUser, forwardMessage)
             }
@@ -2123,7 +3221,7 @@ const Messages = () => {
               conversationId={selectedConversation?.id || conversationId || ''}
               senderId={user.id}
               openCalendarOnMount={openAppointment}
-              counterpartyId={selectedConversation?.other_user?.id || null}
+              counterpartyId={!isGroupConversation ? (selectedConversation?.other_user?.id || null) : null}
               disabled={isSystemConversation}
               onMessageSent={() => {
                 if (selectedConversation || conversationId) {
@@ -2420,6 +3518,18 @@ const Messages = () => {
           <div className="conversations-list">
             {filteredConversations.map((conv) => {
               const isSystemConv = (conv.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+              const isGroupConv = !!conv.is_group
+              const groupName = (conv.group_name || conv.name || '').trim()
+              const alias = (conversationAliases[conv.id] || '').trim()
+              const displayName = isGroupConv
+                ? (groupName || 'Groupe')
+                : (alias || (conv.other_user?.full_name || conv.other_user?.username || 'Utilisateur'))
+              const avatarUrl = isGroupConv
+                ? (conv.group_photo_url || '')
+                : (conv.other_user?.avatar_url || '')
+              const avatarFallback = isGroupConv
+                ? (groupName || 'Groupe')
+                : (conv.other_user?.full_name || conv.other_user?.username || 'User')
               const preview = conv.has_messages ? getConversationPreview(conv) : ''
               return (
                 <div key={conv.id}>
@@ -2471,11 +3581,11 @@ const Messages = () => {
                         </div>
                       ) : (
                         <img
-                          src={conv.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`}
-                          alt={conv.other_user?.full_name || conv.other_user?.username || 'User'}
+                          src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(avatarFallback)}`}
+                          alt={avatarFallback}
                           className="conversation-avatar"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.other_user?.full_name || conv.other_user?.username || 'User')}`
+                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(avatarFallback)}`
                           }}
                         />
                       )}
@@ -2492,7 +3602,7 @@ const Messages = () => {
                     <div className="conversation-info">
                       <div className="conversation-item-header">
                         <h3 className="conversation-name">
-                          {isSystemConv ? SYSTEM_SENDER_NAME : (conv.other_user?.full_name || conv.other_user?.username || 'Utilisateur')}
+                          {isSystemConv ? SYSTEM_SENDER_NAME : displayName}
                         </h3>
                         <span className="conversation-time">
                           {formatTime(conv.lastMessage?.created_at || conv.last_message_at)}
@@ -2630,7 +3740,14 @@ const Messages = () => {
         emptyText="Aucun utilisateur disponible pour un groupe"
         onClose={() => setShowSelectGroupUsers(false)}
         onConfirm={(users) => {
-          setSelectedGroupUsers(users)
+          const filteredUsers = users.filter((selectedUser) =>
+            !isSystemUserEmail((selectedUser as { email?: string | null }).email)
+          )
+          if (filteredUsers.length === 0) {
+            alert('Le compte Ollync ne peut pas être ajouté à un groupe.')
+            return
+          }
+          setSelectedGroupUsers(filteredUsers)
           setShowSelectGroupUsers(false)
           setShowCreateGroup(true)
         }}
@@ -2644,6 +3761,11 @@ const Messages = () => {
         onClose={() => setShowSelectAppointmentUser(false)}
         onSelectUser={async (selectedUser) => {
           if (!user) return
+          const selectedUserEmail = (selectedUser as { email?: string | null }).email
+          if (isSystemUserEmail(selectedUserEmail)) {
+            alert('Le compte Ollync ne peut pas être sélectionné pour un rendez-vous.')
+            return
+          }
           setShowSelectAppointmentUser(false)
           try {
             const conversation = await findOrCreateConversation(selectedUser.id)

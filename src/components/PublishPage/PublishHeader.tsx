@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Info } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { PublicationType } from '../../constants/publishData'
 import { useNavigationHistory } from '../../hooks/useNavigationHistory'
+import BackButton from '../BackButton'
 import './PublishHeader.css'
 
 interface PublishHeaderProps {
@@ -40,9 +41,7 @@ export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _sel
   return (
     <div className="publish-header-container">
       <div className="publish-header-content">
-        <button className="publish-back-button" onClick={handleBack}>
-          <ArrowLeft size={24} />
-        </button>
+        <BackButton className="publish-back-button" onClick={handleBack} />
         <div className="publish-header-text">
           <h1 className="publish-title">{t('publish:title')}</h1>
           {breadcrumb && (

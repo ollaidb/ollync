@@ -13,7 +13,7 @@
 }
 
 .create-group-modal-content {
-  background: white;
+  background: var(--card);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
@@ -28,20 +28,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border);
 }
 
 .create-group-modal-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--foreground);
   margin: 0;
 }
 
 .create-group-modal-close {
   background: none;
   border: none;
-  color: #6B7280;
+  color: var(--muted-foreground);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -52,7 +52,7 @@
 }
 
 .create-group-modal-close:hover:not(:disabled) {
-  background-color: #F3F4F6;
+  background-color: var(--muted);
 }
 
 .create-group-modal-close:disabled {
@@ -79,11 +79,11 @@
   height: 120px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #F9FAFB;
+  background-color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #E5E7EB;
+  border: 2px solid var(--border);
 }
 
 .create-group-photo-preview img {
@@ -98,33 +98,33 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .create-group-photo-placeholder svg {
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .create-group-photo-placeholder span {
   font-size: 14px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .create-group-photo-btn {
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--foreground);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .create-group-photo-btn:hover:not(:disabled) {
-  background-color: #F3F4F6;
-  border-color: #D1D5DB;
+  background-color: var(--input);
+  border-color: var(--border);
 }
 
 .create-group-photo-btn:disabled {
@@ -141,26 +141,87 @@
 .create-group-field label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .create-group-field input {
   padding: 12px 16px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 16px;
-  color: #111827;
-  background-color: white;
+  color: var(--foreground);
+  background-color: var(--input);
   transition: border-color 0.2s;
+}
+
+@media (max-width: 768px) {
+  .create-group-modal-header {
+    padding: 16px 18px;
+  }
+
+  .create-group-modal-header h2 {
+    font-size: 16px;
+  }
+
+  .create-group-modal-body {
+    padding: 18px;
+    gap: 18px;
+  }
+
+  .create-group-photo-preview {
+    width: 88px;
+    height: 88px;
+  }
+
+  .create-group-photo-placeholder svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .create-group-photo-placeholder span {
+    font-size: 12px;
+  }
+
+  .create-group-photo-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .create-group-field label {
+    font-size: 13px;
+  }
+
+  .create-group-field input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .create-group-participants-label {
+    font-size: 13px;
+  }
+
+  .create-group-participant {
+    font-size: 12px;
+  }
+
+  .create-group-modal-footer {
+    padding: 16px 18px;
+  }
+
+  .create-group-btn-cancel,
+  .create-group-btn-create {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
 }
 
 .create-group-field input:focus {
   outline: none;
-  border-color: #6366F1;
+  border-color: var(--primary);
 }
 
 .create-group-field input:disabled {
-  background-color: #F9FAFB;
+  background-color: var(--muted);
   cursor: not-allowed;
 }
 
@@ -173,12 +234,12 @@
 .create-group-participants-label {
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .create-group-participants-empty {
   font-size: 14px;
-  color: #9CA3AF;
+  color: var(--muted-foreground);
 }
 
 .create-group-participants-list {
@@ -192,11 +253,11 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 13px;
-  color: #374151;
+  color: var(--foreground);
 }
 
 .create-group-participant img {
@@ -204,15 +265,15 @@
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
-  background-color: #E5E7EB;
+  background-color: var(--border);
 }
 
 .create-group-error {
   padding: 12px 16px;
-  background-color: #FEF2F2;
-  border: 1px solid #FECACA;
+  background-color: color-mix(in srgb, var(--destructive) 15%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--destructive) 35%, var(--background));
   border-radius: 8px;
-  color: #DC2626;
+  color: var(--destructive);
   font-size: 14px;
 }
 
@@ -220,7 +281,7 @@
   display: flex;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--border);
   justify-content: flex-end;
 }
 
@@ -239,21 +300,21 @@
 }
 
 .create-group-btn-cancel {
-  background-color: #F9FAFB;
-  color: #374151;
+  background-color: var(--muted);
+  color: var(--foreground);
 }
 
 .create-group-btn-cancel:hover:not(:disabled) {
-  background-color: #F3F4F6;
+  background-color: var(--input);
 }
 
 .create-group-btn-create {
-  background-color: #6366F1;
-  color: white;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .create-group-btn-create:hover:not(:disabled) {
-  background-color: #4F46E5;
+  background-color: var(--accent);
 }
 
 .create-group-btn-cancel:disabled,

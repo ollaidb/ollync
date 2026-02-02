@@ -84,6 +84,7 @@ const PostDetails = () => {
   const [showSendRequestModal, setShowSendRequestModal] = useState(false)
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
+  const [requestMessage, setRequestMessage] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -478,6 +479,7 @@ const PostDetails = () => {
     }
 
     // Sinon, afficher la modal d'envoi de demande
+    setRequestMessage('')
     setShowSendRequestModal(true)
   }
 
@@ -486,7 +488,7 @@ const PostDetails = () => {
 
     setLoadingRequest(true)
     try {
-      const trimmedMessage = ''
+      const trimmedMessage = requestMessage.trim()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .insert({
@@ -1091,15 +1093,32 @@ const PostDetails = () => {
         {showSendRequestModal && (
           <ConfirmationModal
             visible={showSendRequestModal}
-            title="Envoyer une demande de match"
-            message="Vous allez envoyer une demande de match à l'auteur de cette annonce. Si votre demande est acceptée, vous pourrez commencer à échanger avec cette personne."
+            title="Message personnalisé"
+            message="Ajoutez un message pour votre demande."
             onConfirm={handleSendRequest}
             onCancel={() => {
               setShowSendRequestModal(false)
+              setRequestMessage('')
             }}
             confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
             cancelLabel="Annuler"
-          />
+          >
+            <div className="confirmation-modal-field">
+              <label className="confirmation-modal-label" htmlFor="match-request-message">
+                Votre message
+              </label>
+              <textarea
+                id="match-request-message"
+                className="confirmation-modal-textarea"
+                placeholder="Écrivez votre message ici."
+                value={requestMessage}
+                maxLength={500}
+                onChange={(event) => setRequestMessage(event.target.value)}
+                autoFocus
+              />
+              <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
+            </div>
+          </ConfirmationModal>
         )}
 
         {/* Modal de confirmation d'annulation de demande */}

@@ -52,6 +52,7 @@ const MatchRequestDetail = ({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [isEditingMessage, setIsEditingMessage] = useState(false)
   const [draftMessage, setDraftMessage] = useState(request.request_message || '')
+  const isConfirmVisible = showAcceptConfirm || showDeclineConfirm || showCancelConfirm
 
   const isReceived = request.to_user_id === currentUserId
   const isSent = request.from_user_id === currentUserId
@@ -254,223 +255,224 @@ const MatchRequestDetail = ({
 
   return (
     <div className="match-request-detail-overlay">
-      <div className="match-request-detail-content">
-        <button className="match-request-detail-close" onClick={onClose}>
-          <X size={24} />
-        </button>
+      {!isConfirmVisible && (
+        <div className="match-request-detail-content">
+          <button className="match-request-detail-close" onClick={onClose}>
+            <X size={24} />
+          </button>
 
-        <div className="match-request-detail-header">
-          <h2 className="match-request-detail-name">
-            {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
-          </h2>
-          <div className={`match-request-detail-badge ${isReceived ? 'received' : 'sent'}`}>
-            {isReceived ? 'Reçue' : 'Envoyée'}
+          <div className="match-request-detail-header">
+            <h2 className="match-request-detail-name">
+              {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+            </h2>
+            <div className={`match-request-detail-badge ${isReceived ? 'received' : 'sent'}`}>
+              {isReceived ? 'Reçue' : 'Envoyée'}
+            </div>
           </div>
-        </div>
 
-        {request.related_post && (
-          <div className="match-request-detail-post">
-            <p className="match-request-detail-post-label">Annonce concernée :</p>
-            <p className="match-request-detail-post-title">{request.related_post.title}</p>
+          {request.related_post && (
+            <div className="match-request-detail-post">
+              <p className="match-request-detail-post-label">Annonce concernée :</p>
+              <p className="match-request-detail-post-title">{request.related_post.title}</p>
+            </div>
+          )}
+
+          {!request.related_post && request.related_service_name && (
+            <div className="match-request-detail-post">
+              <p className="match-request-detail-post-label">Service demandé :</p>
+              <p className="match-request-detail-post-title">{request.related_service_name}</p>
+              {request.related_service_payment_type === 'price' && request.related_service_value && (
+                <p className="match-request-detail-post-subtitle">Prix : {request.related_service_value}</p>
+              )}
+              {request.related_service_payment_type === 'exchange' && request.related_service_value && (
+                <p className="match-request-detail-post-subtitle">Échange : {request.related_service_value}</p>
+              )}
+            </div>
+          )}
+
+          {(request.request_message || isEditingMessage) && (
+            <div className="match-request-detail-message">
+              <p className="match-request-detail-message-label">Message :</p>
+              {isEditingMessage ? (
+                <>
+                  <textarea
+                    className="match-request-detail-message-input"
+                    value={draftMessage}
+                    onChange={(event) => setDraftMessage(event.target.value)}
+                    placeholder="Modifier votre message..."
+                    maxLength={280}
+                    rows={3}
+                  />
+                  <div className="match-request-detail-message-actions">
+                    <button
+                      className="match-request-detail-message-btn secondary"
+                      type="button"
+                      onClick={() => {
+                        setDraftMessage(request.request_message || '')
+                        setIsEditingMessage(false)
+                      }}
+                      disabled={loading}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      className="match-request-detail-message-btn primary"
+                      type="button"
+                      onClick={handleUpdateMessage}
+                      disabled={loading}
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="match-request-detail-message-text">{request.request_message}</p>
+              )}
+            </div>
+          )}
+
+          <div className="match-request-detail-status">
+            <span className={`status-badge status-${request.status}`}>
+              {request.status === 'pending' && 'En attente'}
+              {request.status === 'accepted' && 'Acceptée'}
+              {request.status === 'declined' && 'Refusée'}
+              {request.status === 'cancelled' && 'Annulée'}
+            </span>
           </div>
-        )}
 
-        {!request.related_post && request.related_service_name && (
-          <div className="match-request-detail-post">
-            <p className="match-request-detail-post-label">Service demandé :</p>
-            <p className="match-request-detail-post-title">{request.related_service_name}</p>
-            {request.related_service_payment_type === 'price' && request.related_service_value && (
-              <p className="match-request-detail-post-subtitle">Prix : {request.related_service_value}</p>
-            )}
-            {request.related_service_payment_type === 'exchange' && request.related_service_value && (
-              <p className="match-request-detail-post-subtitle">Échange : {request.related_service_value}</p>
-            )}
-          </div>
-        )}
-
-        {(request.request_message || isEditingMessage) && (
-          <div className="match-request-detail-message">
-            <p className="match-request-detail-message-label">Message :</p>
-            {isEditingMessage ? (
-              <>
-                <textarea
-                  className="match-request-detail-message-input"
-                  value={draftMessage}
-                  onChange={(event) => setDraftMessage(event.target.value)}
-                  placeholder="Modifier votre message..."
-                  maxLength={280}
-                  rows={3}
-                />
-                <div className="match-request-detail-message-actions">
+          {!showMessageInput && (
+            <div className="match-request-detail-actions">
+              {isReceived && isPending && (
+                <div className="match-request-action-row">
                   <button
-                    className="match-request-detail-message-btn secondary"
-                    type="button"
-                    onClick={() => {
-                      setDraftMessage(request.request_message || '')
-                      setIsEditingMessage(false)
-                    }}
+                    className="match-request-action-btn decline"
+                    onClick={() => setShowDeclineConfirm(true)}
                     disabled={loading}
                   >
+                    <XCircle size={20} />
+                    Refuser
+                  </button>
+                  <button
+                    className="match-request-action-btn accept"
+                    onClick={() => setShowAcceptConfirm(true)}
+                    disabled={loading}
+                  >
+                    <Check size={20} />
+                    Accepter
+                  </button>
+                </div>
+              )}
+
+              {isSent && isPending && (
+                <div className="match-request-action-row">
+                  <button
+                    className="match-request-action-btn cancel"
+                    onClick={() => setShowCancelConfirm(true)}
+                    disabled={loading}
+                  >
+                    <XCircle size={20} />
                     Annuler
                   </button>
                   <button
-                    className="match-request-detail-message-btn primary"
-                    type="button"
-                    onClick={handleUpdateMessage}
+                    className="match-request-action-btn start"
+                    onClick={() => {
+                      setDraftMessage(request.request_message || '')
+                      setIsEditingMessage(true)
+                    }}
                     disabled={loading}
                   >
-                    Enregistrer
+                    <MessageCircle size={20} />
+                    Modifier
                   </button>
                 </div>
-              </>
-            ) : (
-              <p className="match-request-detail-message-text">{request.request_message}</p>
-            )}
-          </div>
-        )}
+              )}
 
-        <div className="match-request-detail-status">
-          <span className={`status-badge status-${request.status}`}>
-            {request.status === 'pending' && 'En attente'}
-            {request.status === 'accepted' && 'Acceptée'}
-            {request.status === 'declined' && 'Refusée'}
-            {request.status === 'cancelled' && 'Annulée'}
-          </span>
-        </div>
-
-        {!showMessageInput && (
-          <div className="match-request-detail-actions">
-            {isReceived && isPending && (
-              <div className="match-request-action-row">
-                <button
-                  className="match-request-action-btn accept"
-                  onClick={() => setShowAcceptConfirm(true)}
-                  disabled={loading}
-                >
-                  <Check size={20} />
-                  Accepter
-                </button>
-                <button
-                  className="match-request-action-btn decline"
-                  onClick={() => setShowDeclineConfirm(true)}
-                  disabled={loading}
-                >
-                  <XCircle size={20} />
-                  Refuser
-                </button>
-              </div>
-            )}
-
-            {isSent && isPending && (
-              <div className="match-request-action-row">
-                <button
-                  className="match-request-action-btn cancel"
-                  onClick={() => setShowCancelConfirm(true)}
-                  disabled={loading}
-                >
-                  <XCircle size={20} />
-                  Annuler
-                </button>
+              {isSent && isAccepted && (
                 <button
                   className="match-request-action-btn start"
-                  onClick={() => {
-                    setDraftMessage(request.request_message || '')
-                    setIsEditingMessage(true)
-                  }}
+                  onClick={handleStartConversation}
                   disabled={loading}
                 >
                   <MessageCircle size={20} />
-                  Modifier
+                  Démarrer la conversation
                 </button>
-              </div>
-            )}
+              )}
 
-            {isSent && isAccepted && (
+              {isReceived && isAccepted && !request.conversation_id && (
+                <button
+                  className="match-request-action-btn start"
+                  onClick={handleStartConversation}
+                  disabled={loading}
+                >
+                  <MessageCircle size={20} />
+                  Démarrer la conversation
+                </button>
+              )}
+            </div>
+          )}
+
+          {showMessageInput && conversationId && (
+            <div className="match-request-detail-message">
+              <p className="match-request-detail-message-label">
+                {isReceived ? 'Envoyer un premier message' : 'Démarrer la conversation'}
+              </p>
+              <MessageInput
+                conversationId={conversationId}
+                senderId={currentUserId}
+                onMessageSent={handleFirstMessageSent}
+              />
+            </div>
+          )}
+
+          {showMessageInput && isReceived && isAccepted && !conversationId && (
+            <div className="match-request-detail-message">
+              <p className="match-request-detail-message-label">
+                Envoyer un premier message
+              </p>
+              <p className="match-request-detail-message-info">
+                La conversation sera créée automatiquement lors de l'envoi du message.
+              </p>
               <button
                 className="match-request-action-btn start"
                 onClick={handleStartConversation}
                 disabled={loading}
               >
-                <MessageCircle size={20} />
-                Démarrer la conversation
+                Créer la conversation
               </button>
-            )}
+            </div>
+          )}
+        </div>
+      )}
 
-            {isReceived && isAccepted && !request.conversation_id && (
-              <button
-                className="match-request-action-btn start"
-                onClick={handleStartConversation}
-                disabled={loading}
-              >
-                <MessageCircle size={20} />
-                Démarrer la conversation
-              </button>
-            )}
-          </div>
-        )}
+      <ConfirmationModal
+        visible={showAcceptConfirm}
+        title="Accepter la demande"
+        message="Voulez-vous accepter cette demande ?"
+        onConfirm={handleAccept}
+        onCancel={() => setShowAcceptConfirm(false)}
+        confirmLabel={loading ? 'Acceptation...' : 'Accepter'}
+        cancelLabel="Annuler"
+      />
 
-        {showMessageInput && conversationId && (
-          <div className="match-request-detail-message">
-            <p className="match-request-detail-message-label">
-              {isReceived ? 'Envoyer un premier message' : 'Démarrer la conversation'}
-            </p>
-            <MessageInput
-              conversationId={conversationId}
-              senderId={currentUserId}
-              onMessageSent={handleFirstMessageSent}
-            />
-          </div>
-        )}
+      <ConfirmationModal
+        visible={showDeclineConfirm}
+        title="Refuser la demande"
+        message="Voulez-vous refuser cette demande ?"
+        onConfirm={handleDecline}
+        onCancel={() => setShowDeclineConfirm(false)}
+        confirmLabel={loading ? 'Refus...' : 'Refuser'}
+        cancelLabel="Annuler"
+      />
 
-        {showMessageInput && isReceived && isAccepted && !conversationId && (
-          <div className="match-request-detail-message">
-            <p className="match-request-detail-message-label">
-              Envoyer un premier message
-            </p>
-            <p className="match-request-detail-message-info">
-              La conversation sera créée automatiquement lors de l'envoi du message.
-            </p>
-            <button
-              className="match-request-action-btn start"
-              onClick={handleStartConversation}
-              disabled={loading}
-            >
-              Créer la conversation
-            </button>
-          </div>
-        )}
-
-        <ConfirmationModal
-          visible={showAcceptConfirm}
-          title="Accepter la demande"
-          message="Voulez-vous accepter cette demande ?"
-          onConfirm={handleAccept}
-          onCancel={() => setShowAcceptConfirm(false)}
-          confirmLabel={loading ? 'Acceptation...' : 'Accepter'}
-          cancelLabel="Annuler"
-        />
-
-        <ConfirmationModal
-          visible={showDeclineConfirm}
-          title="Refuser la demande"
-          message="Voulez-vous refuser cette demande ?"
-          onConfirm={handleDecline}
-          onCancel={() => setShowDeclineConfirm(false)}
-          confirmLabel={loading ? 'Refus...' : 'Refuser'}
-          cancelLabel="Annuler"
-        />
-
-        <ConfirmationModal
-          visible={showCancelConfirm}
-          title="Annuler la demande"
-          message="Voulez-vous annuler cette demande envoyée ?"
-          onConfirm={handleCancel}
-          onCancel={() => setShowCancelConfirm(false)}
-          confirmLabel={loading ? 'Annulation...' : 'Oui, annuler'}
-          cancelLabel="Non, garder"
-        />
-
-      </div>
+      <ConfirmationModal
+        visible={showCancelConfirm}
+        title="Annuler la demande"
+        message="Voulez-vous annuler cette demande envoyée ?"
+        onConfirm={handleCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+        confirmLabel={loading ? 'Annulation...' : 'Oui, annuler'}
+        cancelLabel="Non, garder"
+      />
     </div>
   )
 }

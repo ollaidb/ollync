@@ -20,7 +20,7 @@
 .categories-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .category-card {
@@ -94,7 +94,7 @@
   }
   
   .categories-list {
-    gap: 5px;
+    gap: 10px;
   }
   
   .category-card {
