@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Phone, CheckCircle, XCircle, Send, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './PhoneNumber.css'
 
 const PhoneNumber = () => {
@@ -183,7 +182,6 @@ const PhoneNumber = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Numéro de téléphone" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -193,7 +191,6 @@ const PhoneNumber = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Numéro de téléphone" />
       <div className="page-content phone-number-page">
         <div className="phone-number-container">
           {/* Statut actuel */}

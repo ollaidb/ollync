@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { KeyRound, Phone, Mail, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './TwoFactorAuth.css'
 
 const TwoFactorAuth = () => {
@@ -94,7 +93,6 @@ const TwoFactorAuth = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Connexion à deux étapes" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -107,7 +105,6 @@ const TwoFactorAuth = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Connexion à deux étapes" />
       <div className="page-content two-factor-page">
         <div className="two-factor-container">
           <div className="two-factor-section">

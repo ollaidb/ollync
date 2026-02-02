@@ -1,10 +1,8 @@
-import PageHeader from '../../components/PageHeader'
 import './PaymentMethods.css'
 
 const PaymentMethods = () => {
   return (
     <div className="page">
-      <PageHeader title="Moyens de paiement" />
       <div className="page-content payment-methods-page">
         <div className="payment-methods-container">
           <div className="empty-state">

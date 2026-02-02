@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import BackButton from '../../components/BackButton'
 import './LegalPage.css'
 
 const MentionsLegales = () => {
@@ -91,12 +90,6 @@ const MentionsLegales = () => {
 
   return (
     <div className="legal-detail-page">
-      <div className="legal-detail-header">
-        <BackButton />
-        <h2 className="legal-detail-title">{content.title}</h2>
-        <div className="legal-detail-header-spacer"></div>
-      </div>
-
       <div className="legal-detail-section">
         <div className="legal-detail-content">
           <div className="legal-detail-update">

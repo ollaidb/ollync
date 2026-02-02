@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Wifi, WifiOff } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './OnlineStatus.css'
 
 const OnlineStatus = () => {
@@ -71,7 +70,6 @@ const OnlineStatus = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Statut en ligne" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -81,7 +79,6 @@ const OnlineStatus = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Statut en ligne" />
       <div className="page-content online-status-page">
         <div className="online-status-container">
           <div className="online-status-section">

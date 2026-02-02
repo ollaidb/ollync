@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Shield, Lock, Scale, ShoppingBag, Cookie, ChevronRight } from 'lucide-react'
-import BackButton from '../../components/BackButton'
 import './Legal.css'
 
 const Legal = () => {
@@ -116,12 +115,6 @@ const Legal = () => {
 
   return (
     <div className="legal-page">
-      <div className="legal-page-header">
-        <BackButton />
-        <h2 className="legal-title">{labels.title}</h2>
-        <div className="legal-header-spacer"></div>
-      </div>
-
       <div className="legal-section">
         <div className="legal-menu-list">
           {legalPages.map((page) => {

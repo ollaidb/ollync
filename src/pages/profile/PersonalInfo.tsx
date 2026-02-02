@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { User, Mail, Phone, MapPin, Save, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './PersonalInfo.css'
 
 const PersonalInfo = () => {
@@ -126,7 +125,6 @@ const PersonalInfo = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Informations personnelles" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -137,7 +135,6 @@ const PersonalInfo = () => {
   if (!user) {
     return (
       <div className="page">
-        <PageHeader title="Informations personnelles" />
         <div className="page-content personal-info-page">
           <div className="personal-info-container">
             <div className="empty-state">
@@ -153,7 +150,6 @@ const PersonalInfo = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Informations personnelles" />
       <div className="page-content personal-info-page">
         <div className="personal-info-container">
           <div className="form-section">

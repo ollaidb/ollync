@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './DataManagement.css'
 
 const DataManagement = () => {
@@ -72,7 +71,6 @@ const DataManagement = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Gestion de mes données" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -82,7 +80,6 @@ const DataManagement = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Gestion de mes données" />
       <div className="page-content data-management-page">
         <div className="data-management-container">
           {/* Bloc principal de consentement */}

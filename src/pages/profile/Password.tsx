@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './Password.css'
 
 const Password = () => {
@@ -109,7 +108,6 @@ const Password = () => {
   if (!user) {
     return (
       <div className="page">
-        <PageHeader title="Mot de passe" />
         <div className="page-content password-page">
           <div className="password-container">
             <div className="empty-state">
@@ -125,7 +123,6 @@ const Password = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Mot de passe" />
       <div className="page-content password-page">
         <div className="password-container">
           <div className="password-form-section">

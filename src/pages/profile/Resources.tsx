@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, Rocket, Building2, Receipt, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react'
-import BackButton from '../../components/BackButton'
 import './Resources.css'
 
 const Resources = () => {
@@ -139,12 +138,6 @@ const Resources = () => {
 
   return (
     <div className="resources-page">
-      <div className="resources-header">
-        <BackButton />
-        <h2 className="resources-title">{labels.title}</h2>
-        <div className="resources-header-spacer"></div>
-      </div>
-
       <div className="resources-intro">
         <div className="resources-intro-icon">
           <BookOpen size={26} />

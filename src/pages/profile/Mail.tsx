@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Mail as MailIcon, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './Mail.css'
 
 const Mail = () => {
@@ -84,7 +83,6 @@ const Mail = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Mail" />
       <div className="page-content mail-page">
         <div className="mail-container">
           <div className="mail-section">

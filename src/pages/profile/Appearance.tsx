@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import PageHeader from '../../components/PageHeader'
 import './Appearance.css'
 
 const Appearance = () => {
@@ -45,7 +44,6 @@ const Appearance = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Apparence" />
       <div className="page-content appearance-page">
         <div className="appearance-container">
           <div className="appearance-options">

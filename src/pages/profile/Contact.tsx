@@ -8,6 +8,7 @@ const Contact = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const { i18n } = useTranslation()
   const isEnglish = i18n.language.startsWith('en')
+  const [expandedFaq, setExpandedFaq] = useState<Set<string>>(new Set())
 
   const labels = isEnglish
     ? {
@@ -18,25 +19,23 @@ const Contact = () => {
         emailTitle: 'Email',
         emailDescription: 'For any question, support request, or complaint',
         responseTime: 'Response within 24-48 hours',
-        liveChat: 'Live chat available (Monday - Friday, 9am - 6pm)',
-        forLabel: 'For:',
-        forDetails: 'General questions, technical support, complaints, urgent issues',
         faqTitle: 'Frequently asked questions',
+        readMore: 'Read more',
+        readLess: 'Show less',
         searchPlaceholder: 'Search a question',
         emptySearch: 'No results for this search.'
       }
     : {
         title: 'Nous contacter',
         intro:
-          "Nous sommes là pour vous aider ! Que vous ayez une question, une suggestion ou besoin d'assistance, notre équipe est à votre écoute. Choisissez le moyen de contact qui vous convient le mieux.",
+          "L'équipe Ollync est là pour vous assister pour toute question. Vous pouvez nous envoyer un mail ou consulter les questions fréquentes pour vous renseigner rapidement.",
         contactSectionTitle: 'Moyens de contact',
         emailTitle: 'Email',
         emailDescription: "Pour toute question, demande d'assistance ou réclamation",
         responseTime: 'Réponse garantie sous 24-48h',
-        liveChat: 'Chat en direct disponible (Lundi - Vendredi, 9h - 18h)',
-        forLabel: 'Pour :',
-        forDetails: 'Questions générales, support technique, réclamations, urgences',
         faqTitle: 'Questions fréquentes',
+        readMore: 'Lire plus',
+        readLess: 'Réduire',
         searchPlaceholder: 'Rechercher une question',
         emptySearch: 'Aucun résultat pour cette recherche.'
       }
@@ -128,12 +127,6 @@ const Contact = () => {
 
   return (
     <div className="contact-page">
-      <div className="contact-header">
-        <BackButton />
-        <h2 className="contact-title">{labels.title}</h2>
-        <div className="contact-header-spacer"></div>
-      </div>
-
       <div className="contact-intro">
         <p>
           {labels.intro}
@@ -151,12 +144,6 @@ const Contact = () => {
             <p className="contact-detail">support@ollync.com</p>
             <p className="contact-description">{labels.emailDescription}</p>
             <p className="contact-note">{labels.responseTime}</p>
-            <p className="contact-note">{labels.liveChat}</p>
-            <div className="contact-info">
-              <p>
-                <strong>{labels.forLabel}</strong> {labels.forDetails}
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -179,12 +166,34 @@ const Contact = () => {
           {filteredFaq.length === 0 && (
             <p className="contact-faq-empty">{labels.emptySearch}</p>
           )}
-          {filteredFaq.map((item) => (
+          {filteredFaq.map((item) => {
+            const isExpanded = expandedFaq.has(item.question)
+            return (
             <div key={item.question} className="contact-faq-item">
               <h4>{item.question}</h4>
-              <p>{item.answer}</p>
+              <p className={`contact-faq-answer ${isExpanded ? 'expanded' : 'clamped'}`}>
+                {item.answer}
+              </p>
+              <button
+                type="button"
+                className="contact-faq-more"
+                onClick={() => {
+                  setExpandedFaq((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(item.question)) {
+                      next.delete(item.question)
+                    } else {
+                      next.add(item.question)
+                    }
+                    return next
+                  })
+                }}
+              >
+                {isExpanded ? labels.readLess : labels.readMore}
+              </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

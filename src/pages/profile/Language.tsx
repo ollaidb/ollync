@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import PageHeader from '../../components/PageHeader'
 import './Language.css'
 
 type LanguageOption = {
@@ -44,7 +43,6 @@ const Language = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Langue" />
       <div className="page-content language-page">
         <div className="language-container">
           <div className="language-section">

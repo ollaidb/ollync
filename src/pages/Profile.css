@@ -28,6 +28,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  position: relative;
 }
 
 .profile-header-spacer {
@@ -41,6 +42,12 @@
   color: var(--foreground);
   margin: 0;
   line-height: 1.2;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 120px);
+  pointer-events: none;
 }
 
 /* Zone scrollable */

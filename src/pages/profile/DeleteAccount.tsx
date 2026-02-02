@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Trash2, AlertTriangle, X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './DeleteAccount.css'
 
 const DeleteAccount = () => {
@@ -63,7 +62,6 @@ const DeleteAccount = () => {
   if (!isConfirming) {
     return (
       <div className="page">
-        <PageHeader title="Suppression de compte" />
         <div className="page-content delete-account-page">
           <div className="delete-account-container">
             <div className="delete-account-warning">
@@ -149,7 +147,6 @@ const DeleteAccount = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Confirmation de suppression" />
       <div className="page-content delete-account-page">
         <div className="delete-account-container">
           <div className="delete-account-confirmation">

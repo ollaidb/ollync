@@ -3,7 +3,6 @@ import { Smartphone, Monitor, Tablet, LogOut } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
-import PageHeader from '../../components/PageHeader'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import './ConnectedDevices.css'
 
@@ -193,7 +192,6 @@ const ConnectedDevices = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Appareils connectés" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -203,7 +201,6 @@ const ConnectedDevices = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Appareils connectés" />
       <div className="page-content connected-devices-page">
         <div className="connected-devices-container">
           {devices.length === 0 ? (

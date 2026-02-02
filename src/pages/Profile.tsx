@@ -574,7 +574,7 @@ const Profile = () => {
         {/* Zone scrollable */}
         <div
           className={`profile-scrollable ${
-            ['wallet', 'annonces', 'contracts', 'transactions', 'settings', 'security', 'help', 'resources', 'resources-page'].includes(
+            ['wallet', 'annonces', 'contracts', 'transactions', 'settings', 'security', 'help', 'contact', 'resources', 'resources-page', 'legal', 'legal-page'].includes(
               currentSection
             )
               ? 'profile-scrollable-increased-padding'

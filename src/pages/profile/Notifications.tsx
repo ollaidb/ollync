@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { disablePushForUser, enablePushForUser, getPushPermission, isPushEnabled } from '../../utils/pushNotifications'
-import PageHeader from '../../components/PageHeader'
 import './Notifications.css'
 
 interface NotificationSettings {
@@ -212,7 +211,6 @@ const Notifications = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Notifications" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -222,7 +220,6 @@ const Notifications = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Notifications" />
       <div className="page-content notifications-settings-page">
         <div className="notifications-settings-container">
           <div className="notifications-group">

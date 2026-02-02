@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import BackButton from '../../components/BackButton'
 import './Resources.css'
 
 const ResourcesBusiness = () => {
@@ -40,12 +39,6 @@ const ResourcesBusiness = () => {
 
   return (
     <div className="resources-detail-page">
-      <div className="resources-header">
-        <BackButton />
-        <h2 className="resources-title">{content.title}</h2>
-        <div className="resources-header-spacer"></div>
-      </div>
-
       <div className="resources-detail-section">
         <p>{content.paragraphs[0]}</p>
         <p>

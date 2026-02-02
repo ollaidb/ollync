@@ -240,11 +240,23 @@
   color: var(--foreground);
 }
 
-.contact-faq-item p {
+.contact-faq-answer {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
   color: var(--muted-foreground);
+}
+
+.contact-faq-more {
+  display: none;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
 }
 
 .contact-faq-empty {
@@ -291,6 +303,18 @@
 
   .contact-faq-item {
     padding: 16px;
+  }
+
+  .contact-faq-answer.clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .contact-faq-more {
+    display: inline-flex;
   }
 }
 

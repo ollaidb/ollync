@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Lock, Phone, KeyRound, Smartphone, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import PageHeader from '../../components/PageHeader'
 import './AccountSecurity.css'
 
 const AccountSecurity = () => {
@@ -80,7 +79,6 @@ const AccountSecurity = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Sécurité du compte" />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -125,7 +123,6 @@ const AccountSecurity = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Sécurité du compte" />
       <div className="page-content account-security-page">
         <div className="account-security-container">
           <div className="account-security-intro">

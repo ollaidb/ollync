@@ -4,7 +4,6 @@ import { UserX } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
-import PageHeader from '../../components/PageHeader'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import './BlockedProfiles.css'
 
@@ -112,7 +111,6 @@ const BlockedProfiles = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Profils bloqués" />
       <div className="page-content blocked-profiles-page">
         <div className="blocked-profiles-container">
           {loading ? (
