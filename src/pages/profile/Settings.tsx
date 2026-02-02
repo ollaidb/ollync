@@ -1,57 +1,65 @@
 import { useNavigate } from 'react-router-dom'
-import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2 } from 'lucide-react'
+import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import './Settings.css'
 
 const Settings = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation(['settings'])
 
   const menuItems = [
     {
       id: 'personal-info',
       icon: User,
-      label: 'Informations personnelles',
+      label: t('settings:personalInfo'),
       path: '/profile/settings/personal-info'
     },
     {
       id: 'mail',
       icon: Mail,
-      label: 'Mail',
+      label: t('settings:mail'),
       path: '/profile/settings/mail'
     },
     {
       id: 'online-status',
       icon: Wifi,
-      label: 'Statut en ligne',
+      label: t('settings:onlineStatus'),
       path: '/profile/settings/online-status'
     },
     {
       id: 'payment',
       icon: CreditCard,
-      label: 'Moyens de paiement',
+      label: t('settings:payment'),
       path: '/profile/settings/payment'
     },
     {
       id: 'appearance',
       icon: Palette,
-      label: 'Apparence',
+      label: t('settings:appearance'),
       path: '/profile/settings/appearance'
     },
     {
       id: 'notifications',
       icon: Bell,
-      label: 'Notifications',
+      label: t('settings:notifications'),
       path: '/profile/settings/notifications'
+    },
+    {
+      id: 'language',
+      icon: Globe,
+      label: t('settings:language'),
+      path: '/profile/settings/language'
     },
     {
       id: 'data-management',
       icon: Database,
-      label: 'Gestion de mes données',
+      label: t('settings:dataManagement'),
       path: '/profile/settings/data-management'
     },
     {
       id: 'delete-account',
       icon: Trash2,
-      label: 'Suppression de compte',
+      label: t('settings:deleteAccount'),
       path: '/profile/settings/delete-account'
     }
   ]

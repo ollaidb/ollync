@@ -1,9 +1,30 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Mail, FileText, BookOpen, ChevronRight } from 'lucide-react'
 import './Help.css'
 
 const Help = () => {
   const navigate = useNavigate()
+  const { i18n } = useTranslation()
+  const isEnglish = i18n.language.startsWith('en')
+
+  const labels = isEnglish
+    ? {
+        contactTitle: 'Contact',
+        contactDescription: 'How to reach us',
+        legalTitle: 'Legal information',
+        legalDescription: 'Legal notice, terms of use and more',
+        resourcesTitle: 'Resources',
+        resourcesDescription: 'Practical guides to use the app well'
+      }
+    : {
+        contactTitle: 'Contact',
+        contactDescription: 'Nos moyens de contact',
+        legalTitle: 'Informations légales',
+        legalDescription: 'Mentions légales, CGU, CGV et plus',
+        resourcesTitle: 'Ressources',
+        resourcesDescription: "Guides pratiques pour bien utiliser l'application"
+      }
 
   return (
     <div className="help-page">
@@ -18,8 +39,8 @@ const Help = () => {
               <Mail size={24} />
             </div>
               <div className="help-menu-text">
-                <h3>Contact</h3>
-                <p>Nos moyens de contact</p>
+                <h3>{labels.contactTitle}</h3>
+                <p>{labels.contactDescription}</p>
           </div>
             </div>
             <ChevronRight size={20} className="help-menu-arrow" />
@@ -34,8 +55,8 @@ const Help = () => {
                 <FileText size={24} />
           </div>
               <div className="help-menu-text">
-                <h3>Informations légales</h3>
-                <p>Mentions légales, CGU, CGV et plus</p>
+                <h3>{labels.legalTitle}</h3>
+                <p>{labels.legalDescription}</p>
         </div>
       </div>
             <ChevronRight size={20} className="help-menu-arrow" />
@@ -50,8 +71,8 @@ const Help = () => {
                 <BookOpen size={24} />
               </div>
               <div className="help-menu-text">
-                <h3>Ressources</h3>
-                <p>Guides pratiques pour bien utiliser l'application</p>
+                <h3>{labels.resourcesTitle}</h3>
+                <p>{labels.resourcesDescription}</p>
               </div>
             </div>
             <ChevronRight size={20} className="help-menu-arrow" />

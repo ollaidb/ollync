@@ -13,6 +13,7 @@ import {
   Wallet,
   Receipt
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -36,6 +37,7 @@ import PersonalInfo from './profile/PersonalInfo'
 import PaymentMethods from './profile/PaymentMethods'
 import Appearance from './profile/Appearance'
 import Notifications from './profile/Notifications'
+import Language from './profile/Language'
 import AccountSecurity from './profile/AccountSecurity'
 import Password from './profile/Password'
 import PhoneNumber from './profile/PhoneNumber'
@@ -75,6 +77,7 @@ const Profile = () => {
   const location = useLocation()
   const { id } = useParams<{ id?: string }>()
   const { user, signOut, loading: authLoading } = useAuth()
+  const { t } = useTranslation(['profile', 'settings'])
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showSignOutModal, setShowSignOutModal] = useState(false)
@@ -248,6 +251,10 @@ const Profile = () => {
       return <Notifications />
     }
 
+    if (location.pathname === '/profile/settings/language') {
+      return <Language />
+    }
+
     if (location.pathname === '/profile/settings/data-management') {
       return <DataManagement />
     }
@@ -324,13 +331,13 @@ const Profile = () => {
           return (
             <div className="profile-empty-state">
               <User size={64} />
-              <h2>Connexion requise</h2>
-              <p>Connectez-vous pour accéder à votre profil</p>
+              <h2>{t('profile:loginRequiredTitle')}</h2>
+              <p>{t('profile:loginRequiredText')}</p>
               <button 
                 className="btn-primary" 
                 onClick={() => navigate('/auth/login')}
               >
-                Se connecter
+                {t('profile:loginButton')}
               </button>
             </div>
           )
@@ -366,19 +373,19 @@ const Profile = () => {
   }
 
   const getPageTitle = () => {
-    if (location.pathname === '/profile/annonces') return 'Mes annonces'
-    if (location.pathname === '/profile/contracts') return 'Contrats'
-    if (location.pathname === '/profile/wallet') return 'Porte-monnaie'
-    if (location.pathname === '/profile/transactions') return 'Transactions'
-    if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return 'Aide'
-    if (location.pathname === '/profile/contact') return 'Contact'
-    if (location.pathname === '/profile/resources') return 'Ressources'
-    if (location.pathname === '/profile/resources/creation-entreprise') return 'Créer son entreprise'
-    if (location.pathname === '/profile/resources/declaration-revenus') return 'Déclarer ses revenus'
-    if (location.pathname.startsWith('/profile/settings')) return 'Paramètres'
-    if (location.pathname.startsWith('/profile/security')) return 'Connexion et sécurité'
-    if (location.pathname === '/profile/legal' || location.pathname.startsWith('/profile/legal/')) return 'Informations légales'
-    return 'Mon compte'
+    if (location.pathname === '/profile/annonces') return t('profile:annoncesTitle')
+    if (location.pathname === '/profile/contracts') return t('profile:contractsTitle')
+    if (location.pathname === '/profile/wallet') return t('profile:walletTitle')
+    if (location.pathname === '/profile/transactions') return t('profile:transactionsTitle')
+    if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return t('profile:helpTitle')
+    if (location.pathname === '/profile/contact') return t('profile:contactTitle')
+    if (location.pathname === '/profile/resources') return t('profile:resourcesTitle')
+    if (location.pathname === '/profile/resources/creation-entreprise') return t('profile:resourcesBusinessTitle')
+    if (location.pathname === '/profile/resources/declaration-revenus') return t('profile:resourcesIncomeTitle')
+    if (location.pathname.startsWith('/profile/settings')) return t('settings:title')
+    if (location.pathname.startsWith('/profile/security')) return t('profile:security')
+    if (location.pathname === '/profile/legal' || location.pathname.startsWith('/profile/legal/')) return t('profile:legalTitle')
+    return t('profile:accountTitle')
   }
 
   const renderMenu = () => {
@@ -387,21 +394,21 @@ const Profile = () => {
       return (
         <div className="profile-content-not-connected">
           <User className="profile-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="profile-not-connected-title">Vous n'êtes pas connecté</h2>
-          <p className="profile-not-connected-text">Connectez-vous pour accéder à votre profil</p>
+          <h2 className="profile-not-connected-title">{t('profile:notConnectedTitle')}</h2>
+          <p className="profile-not-connected-text">{t('profile:notConnectedText')}</p>
           <button 
             className="profile-not-connected-button" 
             onClick={() => navigate('/auth/register')}
           >
-            S'inscrire
+            {t('profile:registerButton')}
           </button>
           <p className="profile-not-connected-login-link">
-            Déjà un compte ?{' '}
+            {t('profile:alreadyAccount')}{' '}
             <button 
               className="profile-not-connected-link" 
               onClick={() => navigate('/auth/login')}
             >
-              Se connecter
+              {t('profile:signInLink')}
             </button>
           </p>
         </div>
@@ -410,14 +417,14 @@ const Profile = () => {
 
     // Utiliser uniquement les données de profiles (synchronisées depuis auth.users)
     // Ne pas utiliser de fallback avec l'email pour éviter les noms automatiques
-    const displayName = profile?.full_name || profile?.username || 'Utilisateur'
+    const displayName = profile?.full_name || profile?.username || t('profile:userFallback')
 
     // Menu items nécessitant une connexion
     const authMenuItems: MenuItem[] = [
       { 
         id: 'wallet', 
         icon: Wallet, 
-        label: 'Porte-monnaie', 
+        label: t('profile:wallet'), 
         path: '/profile/wallet',
         onClick: () => navigate('/profile/wallet'),
         requiresAuth: true
@@ -425,7 +432,7 @@ const Profile = () => {
       { 
         id: 'annonces', 
         icon: FileEdit, 
-        label: 'Annonces', 
+        label: t('profile:annonces'), 
         path: '/profile/annonces',
         onClick: () => navigate('/profile/annonces'),
         requiresAuth: true
@@ -433,7 +440,7 @@ const Profile = () => {
       { 
         id: 'contracts', 
         icon: FileText, 
-        label: 'Contrats', 
+        label: t('profile:contracts'), 
         path: '/profile/contracts',
         onClick: () => navigate('/profile/contracts'),
         requiresAuth: true
@@ -441,7 +448,7 @@ const Profile = () => {
       { 
         id: 'transactions', 
         icon: Receipt, 
-        label: 'Transactions', 
+        label: t('profile:transactions'), 
         path: '/profile/transactions',
         onClick: () => navigate('/profile/transactions'),
         requiresAuth: true
@@ -449,7 +456,7 @@ const Profile = () => {
       { 
         id: 'settings', 
         icon: SettingsIcon, 
-        label: 'Paramètres', 
+        label: t('settings:title'), 
         path: '/profile/settings',
         onClick: () => navigate('/profile/settings'),
         requiresAuth: true
@@ -457,7 +464,7 @@ const Profile = () => {
       { 
         id: 'security', 
         icon: Shield, 
-        label: 'Connexion et sécurité', 
+        label: t('profile:security'), 
         path: '/profile/security',
         onClick: () => navigate('/profile/security'),
         requiresAuth: true
@@ -465,7 +472,7 @@ const Profile = () => {
       { 
         id: 'help', 
         icon: HelpCircle, 
-        label: 'Aide', 
+        label: t('profile:help'), 
         path: '/profile/help',
         onClick: () => navigate('/profile/help'),
         requiresAuth: false
@@ -542,7 +549,7 @@ const Profile = () => {
           <div className="profile-menu-item-icon">
             <LogOut size={20} />
           </div>
-          <span className="profile-menu-item-label">Déconnexion</span>
+          <span className="profile-menu-item-label">{t('profile:logout')}</span>
         </button>
       </div>
     )
@@ -585,15 +592,15 @@ const Profile = () => {
         {showSignOutModal && (
           <ConfirmationModal
             visible={showSignOutModal}
-            title="Déconnexion"
-            message="Voulez-vous vraiment vous déconnecter ?"
+            title={t('profile:logoutTitle')}
+            message={t('profile:logoutMessage')}
             onConfirm={() => {
               setShowSignOutModal(false)
               handleSignOut()
             }}
             onCancel={() => setShowSignOutModal(false)}
-            confirmLabel="Déconnexion"
-            cancelLabel="Annuler"
+            confirmLabel={t('profile:logoutConfirm')}
+            cancelLabel={t('profile:cancel')}
           />
         )}
       </div>

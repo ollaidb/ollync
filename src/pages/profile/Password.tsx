@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Lock, Eye, EyeOff, Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import PageHeader from '../../components/PageHeader'
@@ -16,8 +16,38 @@ const Password = () => {
     new: '',
     confirm: ''
   })
+  const [signOutEverywhere, setSignOutEverywhere] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [confirmPlaceholder, setConfirmPlaceholder] = useState(
+    'Confirmation du nouveau mot de passe'
+  )
+  const passwordRules = [
+    {
+      id: 'length',
+      label: '8 à 20 caractères',
+      test: (value: string) => value.length >= 8 && value.length <= 20
+    },
+    {
+      id: 'complexity',
+      label: 'Lettres, chiffres et caractères spéciaux',
+      test: (value: string) =>
+        /[A-Za-z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value)
+    }
+  ]
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)')
+    const updatePlaceholder = () => {
+      setConfirmPlaceholder(
+        media.matches ? 'Confirmation du nouveau…' : 'Confirmation du nouveau mot de passe'
+      )
+    }
+
+    updatePlaceholder()
+    media.addEventListener('change', updatePlaceholder)
+    return () => media.removeEventListener('change', updatePlaceholder)
+  }, [])
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,6 +96,11 @@ const Password = () => {
     } else {
       setSuccess('Mot de passe mis à jour avec succès')
       setPasswords({ current: '', new: '', confirm: '' })
+      if (signOutEverywhere) {
+        await supabase.auth.signOut({ scope: 'global' })
+        window.location.href = '/auth/login'
+        return
+      }
     }
 
     setLoading(false)
@@ -98,10 +133,18 @@ const Password = () => {
               {error && <div className="alert alert-error">{error}</div>}
               {success && <div className="alert alert-success">{success}</div>}
 
+              <div className="password-info">
+                <div className="password-info-icon">
+                  <ShieldCheck size={28} />
+                </div>
+                <p className="password-info-text">
+                  Pour votre sécurité, choisissez un mot de passe fiable que vous n’utilisez pas ailleurs.
+                </p>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="current-password">
-                  <Lock size={16} />
-                  Mot de passe actuel
+                  Mot de passe actuel *
                 </label>
                 <div className="password-input-wrapper">
                   <input
@@ -109,7 +152,7 @@ const Password = () => {
                     id="current-password"
                     value={passwords.current}
                     onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
-                    placeholder="Entrez votre mot de passe actuel"
+                    placeholder="Mot de passe actuel"
                     required
                   />
                   <button
@@ -124,8 +167,7 @@ const Password = () => {
 
               <div className="form-group">
                 <label htmlFor="new-password">
-                  <Lock size={16} />
-                  Nouveau mot de passe
+                  Nouveau mot de passe *
                 </label>
                 <div className="password-input-wrapper">
                   <input
@@ -133,7 +175,7 @@ const Password = () => {
                     id="new-password"
                     value={passwords.new}
                     onChange={(e) => setPasswords(prev => ({ ...prev, new: e.target.value }))}
-                    placeholder="Entrez votre nouveau mot de passe"
+                    placeholder="Nouveau mot de passe"
                     required
                     minLength={6}
                   />
@@ -145,13 +187,11 @@ const Password = () => {
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <small className="form-hint">Au moins 6 caractères</small>
               </div>
 
               <div className="form-group">
                 <label htmlFor="confirm-password">
-                  <Lock size={16} />
-                  Confirmer le nouveau mot de passe
+                  Confirmation du nouveau mot de passe *
                 </label>
                 <div className="password-input-wrapper">
                   <input
@@ -159,7 +199,7 @@ const Password = () => {
                     id="confirm-password"
                     value={passwords.confirm}
                     onChange={(e) => setPasswords(prev => ({ ...prev, confirm: e.target.value }))}
-                    placeholder="Confirmez votre nouveau mot de passe"
+                    placeholder={confirmPlaceholder}
                     required
                     minLength={6}
                   />
@@ -172,6 +212,36 @@ const Password = () => {
                   </button>
                 </div>
               </div>
+              <div className="password-rules">
+                <span className="password-rules-title">
+                  Votre mot de passe doit contenir :
+                </span>
+                <ul className="password-rules-list">
+                  {passwordRules.map((rule) => {
+                    const isMet = rule.test(passwords.new)
+                    return (
+                      <li
+                        key={rule.id}
+                        className={`password-rule ${isMet ? 'met' : ''}`}
+                      >
+                        <span className="password-rule-dot" />
+                        {rule.label}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+              <div className="password-signout-option">
+                <span>Déconnecter partout où je suis connecté avec mon ancien mot de passe</span>
+                <label className="password-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={signOutEverywhere}
+                    onChange={(e) => setSignOutEverywhere(e.target.checked)}
+                  />
+                  <span className="password-checkbox-box"></span>
+                </label>
+              </div>
 
               <button
                 type="submit"
@@ -179,7 +249,7 @@ const Password = () => {
                 disabled={loading}
               >
                 <Save size={18} />
-                {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+                {loading ? 'Mise à jour...' : 'Modifier mon mot de passe'}
               </button>
             </form>
           </div>

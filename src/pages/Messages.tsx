@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, MoreVertical, Pin, Trash2, Pencil, Copy, Languages, Send } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -30,6 +31,8 @@ interface Conversation {
   lastMessage?: {
     content: string
     created_at: string
+    sender_id?: string | null
+    message_type?: string | null
   } | null
   other_user?: {
     id: string
@@ -132,6 +135,7 @@ interface Message {
 }
 
 const Messages = () => {
+  const { t } = useTranslation(['messages'])
   const navigate = useNavigate()
   const { id: conversationId } = useParams<{ id?: string }>()
   const [searchParams] = useSearchParams()
@@ -174,6 +178,8 @@ const Messages = () => {
   const longPressTimerRef = useRef<number | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const shouldScrollToBottomRef = useRef(false)
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -182,6 +188,23 @@ const Messages = () => {
       setActiveFilter(filterParam as FilterType)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!headerRef.current || !containerRef.current) return
+    const updateOffset = () => {
+      const height = headerRef.current?.offsetHeight || 0
+      containerRef.current?.style.setProperty('--messages-header-offset', `${height}px`)
+    }
+    updateOffset()
+    const observer =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null
+    observer?.observe(headerRef.current)
+    window.addEventListener('resize', updateOffset)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateOffset)
+    }
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -248,6 +271,37 @@ const Messages = () => {
       return `${diffInDays}j`
     } else {
       return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    }
+  }
+
+  const getConversationPreview = (conv: Conversation) => {
+    const lastMessage = conv.lastMessage
+    if (!lastMessage) return ''
+    const isSentByUser = lastMessage.sender_id === user?.id
+    const directionLabel = isSentByUser ? 'envoyée' : 'reçue'
+
+    switch (lastMessage.message_type) {
+      case 'photo':
+        return `Image ${directionLabel}`
+      case 'video':
+        return `Vidéo ${directionLabel}`
+      case 'document':
+        return `Document ${directionLabel}`
+      case 'location':
+        return `Localisation ${directionLabel}`
+      case 'price':
+        return `Prix proposé ${directionLabel}`
+      case 'rate':
+        return `Tarif ${directionLabel}`
+      case 'calendar_request':
+        return `Rendez-vous ${directionLabel}`
+      case 'post_share':
+        return `Annonce ${directionLabel}`
+      default: {
+        const text = (lastMessage.content || '').trim()
+        if (!text || text === '0') return ''
+        return text
+      }
     }
   }
 
@@ -989,7 +1043,9 @@ const Messages = () => {
           activeConvs.map(async (conv) => {
             const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
             const otherUser = usersMap.get(otherUserId) || null
-            const postTitle = conv.post_id ? postsMap.get(conv.post_id) || null : null
+            const postTitleRaw = conv.post_id ? postsMap.get(conv.post_id) || null : null
+            const postTitleTrimmed = postTitleRaw?.trim() || ''
+            const postTitle = postTitleTrimmed && postTitleTrimmed !== '0' ? postTitleTrimmed : null
 
             // Vérifier si la conversation a des messages
             // Note: On garde cette information mais on n'exclut plus les conversations sans messages
@@ -1003,7 +1059,7 @@ const Messages = () => {
             // Récupérer le dernier message (sans utiliser .single() pour éviter les erreurs)
             const { data: lastMsgData, error: lastMsgError } = await supabase
               .from('messages')
-              .select('content, created_at')
+              .select('content, created_at, sender_id, message_type')
               .eq('conversation_id', conv.id)
               .order('created_at', { ascending: false })
               .limit(1)
@@ -1012,6 +1068,8 @@ const Messages = () => {
             if (!lastMsgError && lastMsgData && lastMsgData.length > 0) {
               lastMsg = lastMsgData[0]
             }
+            const rawContent = (lastMsg as { content?: string | null })?.content || ''
+            const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
 
             // Compter les messages non lus (seulement si otherUserId existe)
             let unreadCount = 0
@@ -1034,8 +1092,10 @@ const Messages = () => {
               other_user: otherUser,
               postTitle,
               lastMessage: lastMsg ? {
-                content: (lastMsg as { content: string }).content,
-                created_at: (lastMsg as { created_at: string }).created_at
+                content: sanitizedContent,
+                created_at: (lastMsg as { created_at: string }).created_at,
+                sender_id: (lastMsg as { sender_id?: string | null }).sender_id || null,
+                message_type: (lastMsg as { message_type?: string | null }).message_type || null
               } : null,
               is_archived: state?.is_archived ?? (conv as { is_archived?: boolean }).is_archived ?? false,
               archived_at: state?.archived_at ?? null,
@@ -1409,7 +1469,7 @@ const Messages = () => {
     return (
       <div className="messages-page-container">
         <div className="messages-header-not-connected">
-          <h1 className="messages-title-centered">Messages</h1>
+          <h1 className="messages-title-centered">{t('messages:title')}</h1>
         </div>
         <div className="messages-content-not-connected">
           <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
@@ -2076,12 +2136,12 @@ const Messages = () => {
 
   // Vue liste des conversations
   return (
-    <div className="messages-page-container">
+    <div className="messages-page-container" ref={containerRef}>
       {/* Header */}
-      <div className="messages-header">
+      <div className="messages-header" ref={headerRef}>
         <div className="messages-header-title-row">
           <BackButton />
-          <h1 className="messages-title">Messages</h1>
+          <h1 className="messages-title">{t('messages:title')}</h1>
           <div className="messages-header-actions">
             <button
               className="messages-create-group-btn"
@@ -2098,7 +2158,7 @@ const Messages = () => {
           <Search size={20} />
           <input
             type="text"
-            placeholder="Rechercher une conversation"
+            placeholder={t('messages:searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="messages-search-input"
@@ -2356,6 +2416,7 @@ const Messages = () => {
           <div className="conversations-list">
             {filteredConversations.map((conv) => {
               const isSystemConv = (conv.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+              const preview = conv.has_messages ? getConversationPreview(conv) : ''
               return (
                 <div key={conv.id}>
                   <div
@@ -2414,7 +2475,7 @@ const Messages = () => {
                           }}
                         />
                       )}
-                      {conv.unread && conv.unread > 0 && (
+                      {(conv.unread ?? 0) > 0 && (
                         <div className="conversation-unread-badge">
                           {conv.unread > 99 ? '99+' : conv.unread}
                         </div>
@@ -2431,15 +2492,9 @@ const Messages = () => {
                         </span>
                       </div>
 
-                      {conv.postTitle && (
-                        <p className="conversation-post-title">
-                          {conv.postTitle}
-                        </p>
-                      )}
-
-                      {conv.lastMessage && (
+                      {preview && (
                         <p className={`conversation-preview ${conv.unread && conv.unread > 0 ? 'unread' : ''}`}>
-                          {conv.lastMessage.content}
+                          {preview}
                         </p>
                       )}
 

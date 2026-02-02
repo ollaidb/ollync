@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import i18n from '../i18n'
 
 const VAPID_PUBLIC_KEY = import.meta.env?.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined
 
@@ -44,16 +45,16 @@ export const getExistingSubscription = async () => {
 
 export const enablePushForUser = async (userId: string) => {
   if (!isPushSupported()) {
-    throw new Error('Push non supporté sur ce navigateur.')
+    throw new Error(i18n.t('errors:pushUnsupported'))
   }
 
   if (!VAPID_PUBLIC_KEY) {
-    throw new Error('Clé VAPID manquante. Ajoute VITE_WEB_PUSH_PUBLIC_KEY dans .env.')
+    throw new Error(i18n.t('errors:pushMissingKey'))
   }
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') {
-    throw new Error('Permission refusée pour les notifications.')
+    throw new Error(i18n.t('errors:pushPermissionDenied'))
   }
 
   const registration = await getRegistration()

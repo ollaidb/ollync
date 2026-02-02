@@ -1,18 +1,19 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import './WebLayout.css'
 
 type WebLayoutProps = {
   children: React.ReactNode
 }
 
-const navItems = [
-  { label: 'Profil', to: '/profile' },
-  { label: 'Messages', to: '/messages' },
-  { label: 'Favoris', to: '/favorites' },
-  { label: 'Notifications', to: '/notifications' },
-]
-
 const WebLayout = ({ children }: WebLayoutProps) => {
+  const { t } = useTranslation()
+  const navItems = [
+    { label: t('nav.profile'), to: '/profile' },
+    { label: t('nav.messages'), to: '/messages' },
+    { label: t('nav.favorites'), to: '/favorites' },
+    { label: t('nav.notifications'), to: '/notifications' },
+  ]
   return (
     <div className="web-layout">
       <aside className="web-sidebar">

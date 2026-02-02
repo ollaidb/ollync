@@ -267,8 +267,8 @@
   left: 8px;
   font-size: 7px;
   font-weight: 600;
-  color: var(--primary-foreground);
-  background: color-mix(in srgb, var(--foreground) 65%, transparent);
+  color: var(--foreground);
+  background: var(--muted);
   backdrop-filter: blur(8px);
   padding: 2px 5px;
   border-radius: 3px;

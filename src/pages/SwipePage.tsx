@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Tag, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -46,6 +47,7 @@ interface Category {
 }
 
 const SwipePage = () => {
+  const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
@@ -64,19 +66,21 @@ const SwipePage = () => {
   const POSTS_PER_PAGE = 20
 
   // Ordre des catégories (même que dans Search.tsx)
-  const categoryOrder = [
+  const categoryOrder = useMemo(() => [
     'creation-contenu',
     'casting-role',
     'montage',
     'projets-equipe',
     'services',
     'vente'
-  ]
+  ], [])
 
   // Générer les filtres dynamiquement depuis les catégories
   const filters = useMemo(() => {
+    const translateCategory = (category: Category) =>
+      t(`categories:titles.${category.slug}`, { defaultValue: category.name })
     return [
-      { id: 'all', label: 'Tout' },
+      { id: 'all', label: t('categories:submenus.tout') },
       ...categories
         .filter(cat => categoryOrder.includes(cat.slug))
         .sort((a, b) => {
@@ -86,10 +90,10 @@ const SwipePage = () => {
         })
         .map(cat => ({
           id: cat.slug,
-          label: cat.name
+          label: translateCategory(cat)
         }))
     ]
-  }, [categories])
+  }, [categories, categoryOrder, t])
 
   // Récupérer les catégories
   useEffect(() => {
@@ -167,12 +171,19 @@ const SwipePage = () => {
       let ignoredIds: string[] = []
 
       try {
-        const matchRequestsResult = await (supabase.from('match_requests') as any)
+        const matchRequestsResult = (await supabase
+          .from('match_requests')
           .select('related_post_id')
-          .eq('from_user_id', user.id)
+          .eq('from_user_id', user.id)) as {
+          data?: Array<{ related_post_id?: string | null }>
+          error?: unknown
+        }
         
         if (!matchRequestsResult.error) {
-          matchRequestIds = matchRequestsResult.data?.map((mr: any) => mr.related_post_id).filter(Boolean) || []
+          matchRequestIds =
+            matchRequestsResult.data
+              ?.map((mr) => mr.related_post_id)
+              .filter((id): id is string => Boolean(id)) || []
         }
       } catch (error) {
         // Table n'existe peut-être pas encore, ignorer l'erreur
@@ -180,12 +191,18 @@ const SwipePage = () => {
       }
 
       try {
-        const interestsResult = await (supabase.from('interests') as any)
+        const interestsResult = (await supabase
+          .from('interests')
           .select('post_id')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id)) as {
+          data?: Array<{ post_id?: string | null }>
+          error?: unknown
+        }
         
         if (!interestsResult.error) {
-          interestIds = interestsResult.data?.map((i: any) => i.post_id) || []
+          interestIds = interestsResult.data
+            ?.map((item) => item.post_id)
+            .filter((id): id is string => Boolean(id)) || []
         }
       } catch (error) {
         // Table n'existe peut-être pas encore, ignorer l'erreur
@@ -193,12 +210,18 @@ const SwipePage = () => {
       }
 
       try {
-        const ignoredResult = await (supabase.from('ignored_posts') as any)
+        const ignoredResult = (await supabase
+          .from('ignored_posts')
           .select('post_id')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id)) as {
+          data?: Array<{ post_id?: string | null }>
+          error?: unknown
+        }
         
         if (!ignoredResult.error) {
-          ignoredIds = ignoredResult.data?.map((i: any) => i.post_id) || []
+          ignoredIds = ignoredResult.data
+            ?.map((item) => item.post_id)
+            .filter((id): id is string => Boolean(id)) || []
         }
       } catch (error) {
         // Table n'existe peut-être pas encore, ignorer l'erreur

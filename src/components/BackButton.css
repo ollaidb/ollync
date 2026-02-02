@@ -9,7 +9,8 @@
   border-radius: 50%;
   background: transparent;
   border: none;
-  color: #333;
+  color: var(--foreground);
+  opacity: 0.85;
   cursor: pointer;
   transition: background 0.2s ease;
   flex-shrink: 0;
@@ -19,11 +20,12 @@
 }
 
 .back-button:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--muted);
+  opacity: 1;
 }
 
 .back-button:active {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--input);
 }
 
 @media (hover: none) {

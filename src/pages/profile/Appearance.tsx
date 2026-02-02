@@ -17,6 +17,21 @@ const Appearance = () => {
     } else {
       document.documentElement.classList.remove('dark')
     }
+      const sample = document.createElement('div')
+      sample.style.backgroundColor = 'var(--background)'
+      sample.style.position = 'absolute'
+      sample.style.left = '-9999px'
+      document.body.appendChild(sample)
+      const resolved = getComputedStyle(sample).backgroundColor
+      sample.remove()
+
+      let meta = document.querySelector('meta[name="theme-color"]')
+      if (!meta) {
+        meta = document.createElement('meta')
+        meta.setAttribute('name', 'theme-color')
+        document.head.appendChild(meta)
+      }
+      meta.setAttribute('content', resolved)
     }
 
     applyTheme()

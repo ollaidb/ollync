@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft } from 'lucide-react'
 import { useNavigationHistory } from '../hooks/useNavigationHistory'
 import './BackButton.css'
@@ -14,6 +15,7 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
   const navigate = useNavigate()
   const location = useLocation()
   const { getPreviousPath, markNavigatingBack, canGoBack } = useNavigationHistory()
+  const { t } = useTranslation()
 
   const handleClick = () => {
     if (onClick) {
@@ -129,7 +131,7 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
     <button 
       className={`back-button ${className}`}
       onClick={handleClick}
-      aria-label="Retour"
+      aria-label={t('back')}
     >
       <ChevronLeft size={24} />
     </button>

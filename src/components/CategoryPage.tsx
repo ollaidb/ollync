@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Search, Users, ChevronDown, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
 import { PostCardSkeleton } from './PostCardSkeleton'
@@ -47,6 +48,7 @@ interface CategoryPageProps {
 }
 
 const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
+  const { t } = useTranslation(['categories'])
   const { submenu, subSubMenu, subSubSubMenu } = useParams<{ 
     submenu?: string
     subSubMenu?: string
@@ -64,6 +66,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
   const [nestedDropdownPosition, setNestedDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const nestedDropdownRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  const getSubMenuLabel = (slug: string, fallback: string) => {
+    return t(`categories:submenus.${slug}`, { defaultValue: fallback })
+  }
 
   useEffect(() => {
     fetchSubMenus()
@@ -292,7 +298,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             <button 
               onClick={() => navigate('/users')}
               className="category-users-button"
-              title="Voir les utilisateurs"
+              title={t('categories:ui.viewUsers')}
             >
               <Users size={24} className="category-users-icon" />
             </button>
@@ -306,7 +312,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
           <Search size={20} className="category-search-icon" />
           <input
             type="text"
-            placeholder="Search…"
+            placeholder={t('categories:ui.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="category-search-input"
@@ -319,7 +325,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         <div className="category-filters-scroll">
           {subMenus.length === 0 && !loading && (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-              Aucune sous-catégorie disponible
+              {t('categories:ui.noSubcategories')}
             </div>
           )}
           {subMenus.map((subMenu) => {
@@ -329,10 +335,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             const hasSubSub = hasSubSubCategories(categorySlug, subMenu.slug)
             const isDropdownOpen = openDropdown === subMenu.slug
             const subSubCategories = getSubSubCategories(categorySlug, subMenu.slug)
+            const subMenuLabel = getSubMenuLabel(subMenu.slug, subMenu.name)
             
             // Log pour déboguer - toujours afficher pour diagnostiquer
             if (subMenu.slug !== 'tout') {
-              console.log(`[CategoryPage] Rendu bouton ${subMenu.slug} (${subMenu.name}):`, {
+              console.log(`[CategoryPage] Rendu bouton ${subMenu.slug} (${subMenuLabel}):`, {
                 categorySlug,
                 subMenuSlug: subMenu.slug,
                 hasSubSub,
@@ -356,7 +363,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 <button
                   className={`category-filter-button ${isActive ? 'active' : ''} ${hasSubSub ? 'has-dropdown' : ''}`}
                   onClick={() => {
-                    console.log(`[CategoryPage] Clic sur N2: ${subMenu.name}, hasSubSub: ${hasSubSub}, isDropdownOpen: ${isDropdownOpen}`)
+                    console.log(`[CategoryPage] Clic sur N2: ${subMenuLabel}, hasSubSub: ${hasSubSub}, isDropdownOpen: ${isDropdownOpen}`)
                     if (hasSubSub) {
                       // Si le bouton a des enfants N3, ouvrir/fermer le menu
                       if (isDropdownOpen && openDropdown === subMenu.slug) {
@@ -411,7 +418,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                     }
                   }}
                 >
-                  {subMenu.name}
+                  {subMenuLabel}
                   {hasSubSub && (
                     <ChevronDown 
                       size={16} 
@@ -448,6 +455,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                       const hasNested = hasSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
                       const isNestedOpen = openNestedDropdown === subSub.slug
                       const nestedCategories = getSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
+                      const subSubLabel = getSubMenuLabel(subSub.slug, subSub.name)
                       
                       return (
                         <div
@@ -519,7 +527,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                               }
                             }}
                           >
-                            {subSub.name}
+                            {subSubLabel}
                             {hasNested && (
                               <ChevronRight 
                                 size={14} 
@@ -540,13 +548,14 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                             >
                               {nestedCategories.map((subSubSub) => {
                                 const isSubSubSubActive = subSubSubMenu === subSubSub.slug
+                                const subSubSubLabel = getSubMenuLabel(subSubSub.slug, subSubSub.name)
                                 return (
                                   <button
                                     key={subSubSub.id}
                                     className={`category-nested-dropdown-item ${isSubSubSubActive ? 'active' : ''}`}
                                     onClick={() => handleSubSubSubCategoryClick(subSubSub.slug)}
                                   >
-                                    {subSubSub.name}
+                                    {subSubSubLabel}
                                   </button>
                                 )
                               })}
@@ -574,7 +583,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         ) : postsSections.length === 0 ? (
           <EmptyState 
             type="category"
-            customTitle={searchQuery ? `Aucun résultat pour "${searchQuery}"` : undefined}
+            customTitle={
+              searchQuery
+                ? t('categories:ui.searchResults', { query: searchQuery })
+                : undefined
+            }
           />
         ) : (
           postsSections.map((sectionPosts, index) => (

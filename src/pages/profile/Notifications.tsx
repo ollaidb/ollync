@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Bell, MessageSquare, FileText, Heart, MessageCircle, UserCheck, CheckCircle, Mail, Smartphone, Radio } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { disablePushForUser, enablePushForUser, getPushPermission, isPushEnabled } from '../../utils/pushNotifications'
@@ -172,48 +171,39 @@ const Notifications = () => {
     }
   }
 
-  const NotificationToggle = ({ 
+  const NotificationToggle = ({
     label, 
     mobileKey, 
-    emailKey, 
-    icon: Icon 
-  }: { 
+    emailKey
+  }: {
     label: string
     mobileKey: keyof NotificationSettings
     emailKey: keyof NotificationSettings
-    icon: typeof Bell
   }) => {
     return (
-      <div className="notification-item">
-        <div className="notification-item-header">
-          <Icon size={18} />
-          <span className="notification-item-label">{label}</span>
+      <div className="notifications-item">
+        <div className="notifications-item-title">{label}</div>
+        <div className="notifications-item-row">
+          <span>Recevoir une notification push</span>
+          <label className="notification-switch">
+            <input
+              type="checkbox"
+              checked={settings[mobileKey] as boolean}
+              onChange={(e) => updateSetting(mobileKey, e.target.checked)}
+            />
+            <span className="notification-switch-slider"></span>
+          </label>
         </div>
-        <div className="notification-item-toggles">
-          <div className="notification-toggle-group">
-            <Smartphone size={16} />
-            <label className="notification-toggle">
-              <input
-                type="checkbox"
-                checked={settings[mobileKey] as boolean}
-                onChange={(e) => updateSetting(mobileKey, e.target.checked)}
-              />
-              <span className="notification-toggle-slider"></span>
-            </label>
-            <span className="notification-toggle-label">Mobile</span>
-          </div>
-          <div className="notification-toggle-group">
-            <Mail size={16} />
-            <label className="notification-toggle">
-              <input
-                type="checkbox"
-                checked={settings[emailKey] as boolean}
-                onChange={(e) => updateSetting(emailKey, e.target.checked)}
-              />
-              <span className="notification-toggle-slider"></span>
-            </label>
-            <span className="notification-toggle-label">E-mail</span>
-          </div>
+        <div className="notifications-item-row">
+          <span>Recevoir un email</span>
+          <label className="notification-switch">
+            <input
+              type="checkbox"
+              checked={settings[emailKey] as boolean}
+              onChange={(e) => updateSetting(emailKey, e.target.checked)}
+            />
+            <span className="notification-switch-slider"></span>
+          </label>
         </div>
       </div>
     )
@@ -235,120 +225,92 @@ const Notifications = () => {
       <PageHeader title="Notifications" />
       <div className="page-content notifications-settings-page">
         <div className="notifications-settings-container">
-          <div className="notifications-section">
-            <h3 className="notifications-section-title">
-              <Radio size={20} />
-              Notifications téléphone
-            </h3>
-            <div className="notifications-list">
-              <div className="notification-item">
-                <div className="notification-item-header">
-                  <Smartphone size={18} />
-                  <span className="notification-item-label">Activer les push sur ce téléphone</span>
-                </div>
-                <div className="notification-item-toggles">
-                  <div className="notification-toggle-group">
-                    <Smartphone size={16} />
-                    <label className="notification-toggle">
-                      <input
-                        type="checkbox"
-                        checked={pushEnabled}
-                        onChange={handleTogglePush}
-                        disabled={!pushSupported || pushLoading}
-                      />
-                      <span className="notification-toggle-slider"></span>
-                    </label>
-                    <span className="notification-toggle-label">Push</span>
-                  </div>
-                </div>
-                {!pushSupported && (
-                  <p className="notification-push-note">Push non supporté sur ce navigateur.</p>
-                )}
-                {pushPermission === 'denied' && (
-                  <p className="notification-push-note">Autorisation refusée dans le navigateur.</p>
-                )}
-                {pushError && <p className="notification-push-error">{pushError}</p>}
+          <div className="notifications-group">
+            <div className="notifications-group-header">
+              <h3>Notifications téléphone</h3>
+            </div>
+            <div className="notifications-item">
+              <div className="notifications-item-row">
+                <span>Recevoir une notification push</span>
+                <label className="notification-switch">
+                  <input
+                    type="checkbox"
+                    checked={pushEnabled}
+                    onChange={handleTogglePush}
+                    disabled={!pushSupported || pushLoading}
+                  />
+                  <span className="notification-switch-slider"></span>
+                </label>
               </div>
+              {!pushSupported && (
+                <p className="notification-push-note">Push non supporté sur ce navigateur.</p>
+              )}
+              {pushPermission === 'denied' && (
+                <p className="notification-push-note">Autorisation refusée dans le navigateur.</p>
+              )}
+              {pushError && <p className="notification-push-error">{pushError}</p>}
             </div>
           </div>
           {/* Section A - Messagerie */}
-          <div className="notifications-section">
-            <h3 className="notifications-section-title">
-              <MessageSquare size={20} />
-              Messagerie
-            </h3>
-            <div className="notifications-list">
-              <NotificationToggle
-                label="Nouveau message"
-                mobileKey="message_mobile"
-                emailKey="message_email"
-                icon={MessageSquare}
-              />
+          <div className="notifications-group">
+            <div className="notifications-group-header">
+              <h3>Messagerie</h3>
             </div>
+            <NotificationToggle
+              label="Nouveau message"
+              mobileKey="message_mobile"
+              emailKey="message_email"
+            />
           </div>
 
           {/* Section B - Annonces */}
-          <div className="notifications-section">
-            <h3 className="notifications-section-title">
-              <FileText size={20} />
-              Annonces
-            </h3>
-            <div className="notifications-list">
-              <NotificationToggle
-                label="Like sur une annonce"
-                mobileKey="like_mobile"
-                emailKey="like_email"
-                icon={Heart}
-              />
-              <NotificationToggle
-                label="Demande reçue (match / demande de collaboration)"
-                mobileKey="request_received_mobile"
-                emailKey="request_received_email"
-                icon={UserCheck}
-              />
-              <NotificationToggle
-                label="Demande acceptée"
-                mobileKey="request_accepted_mobile"
-                emailKey="request_accepted_email"
-                icon={CheckCircle}
-              />
-              <NotificationToggle
-                label="Commentaire sur mon profil"
-                mobileKey="profile_comment_mobile"
-                emailKey="profile_comment_email"
-                icon={MessageCircle}
-              />
+          <div className="notifications-group">
+            <div className="notifications-group-header">
+              <h3>Annonces</h3>
             </div>
+            <NotificationToggle
+              label="Like sur une annonce"
+              mobileKey="like_mobile"
+              emailKey="like_email"
+            />
+            <NotificationToggle
+              label="Demande reçue (match / demande de collaboration)"
+              mobileKey="request_received_mobile"
+              emailKey="request_received_email"
+            />
+            <NotificationToggle
+              label="Demande acceptée"
+              mobileKey="request_accepted_mobile"
+              emailKey="request_accepted_email"
+            />
+            <NotificationToggle
+              label="Commentaire sur mon profil"
+              mobileKey="profile_comment_mobile"
+              emailKey="profile_comment_email"
+            />
           </div>
 
           {/* Section C - Offres, actualités et conseils */}
-          <div className="notifications-section">
-            <h3 className="notifications-section-title">
-              <Bell size={20} />
-              Offres, actualités et conseils
-            </h3>
-            <div className="notifications-list">
-              <NotificationToggle
-                label="Offres / promotions"
-                mobileKey="offers_mobile"
-                emailKey="offers_email"
-                icon={Bell}
-              />
-              <NotificationToggle
-                label="Actualités de l'application"
-                mobileKey="news_mobile"
-                emailKey="news_email"
-                icon={FileText}
-              />
-              <NotificationToggle
-                label="Conseils / recommandations"
-                mobileKey="tips_mobile"
-                emailKey="tips_email"
-                icon={Bell}
-              />
+          <div className="notifications-group">
+            <div className="notifications-group-header">
+              <h3>Offres, actualités et conseils</h3>
             </div>
+            <NotificationToggle
+              label="Offres / promotions"
+              mobileKey="offers_mobile"
+              emailKey="offers_email"
+            />
+            <NotificationToggle
+              label="Actualités de l'application"
+              mobileKey="news_mobile"
+              emailKey="news_email"
+            />
+            <NotificationToggle
+              label="Conseils / recommandations"
+              mobileKey="tips_mobile"
+              emailKey="tips_email"
+            />
           </div>
-
         </div>
       </div>
     </div>

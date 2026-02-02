@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import './HeroSection.css'
 
 const HeroSection = () => {
+  const { t } = useTranslation(['home', 'common'])
   return (
     <div className="hero-section">
       <div className="hero-content">
-        <h1 className="hero-title">Bienvenue sur Ollync</h1>
-        <p className="hero-subtitle">La plateforme de mise en relation pour créateurs de contenu</p>
+        <h1 className="hero-title">{t('home:heroTitle')}</h1>
+        <p className="hero-subtitle">{t('home:heroSubtitle')}</p>
         <div className="hero-actions">
-          <button className="hero-button primary">Découvrir</button>
-          <button className="hero-button secondary">Publier une annonce</button>
+          <button className="hero-button primary">{t('home:discover')}</button>
+          <button className="hero-button secondary">{t('common:actions.publishListing')}</button>
         </div>
       </div>
     </div>

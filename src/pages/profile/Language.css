@@ -1,0 +1,131 @@
+.language-page {
+  padding: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.language-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+.language-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.language-search svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.language-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--foreground);
+  outline: none;
+}
+
+.language-search-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.language-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.language-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.language-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 12px 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.language-option:hover {
+  border-color: var(--primary);
+}
+
+.language-option.active {
+  border-color: var(--primary);
+}
+
+.language-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.language-option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.language-option-native {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.language-option-indicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.language-option-indicator.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.language-empty-state {
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  color: var(--muted-foreground);
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .language-page {
+    padding: 12px;
+  }
+}

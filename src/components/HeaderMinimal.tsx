@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Bell, Search } from 'lucide-react'
 import { useState } from 'react'
 import './HeaderMinimal.css'
@@ -10,6 +11,7 @@ interface HeaderMinimalProps {
 
 const HeaderMinimal = ({ showSearch = false, showNotifications = true }: HeaderMinimalProps) => {
   const navigate = useNavigate()
+  const { t } = useTranslation(['search', 'common'])
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleSearch = (e: React.FormEvent) => {
@@ -27,7 +29,7 @@ const HeaderMinimal = ({ showSearch = false, showNotifications = true }: HeaderM
             <Search size={20} />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder={t('search:inputPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -37,6 +39,7 @@ const HeaderMinimal = ({ showSearch = false, showNotifications = true }: HeaderM
           <button
             className="header-minimal-notification"
             onClick={() => navigate('/notifications')}
+            aria-label={t('nav.notifications')}
           >
             <Bell size={24} />
             <span className="header-minimal-badge">17</span>

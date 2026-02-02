@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Heart, Loader, Search, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -45,6 +46,7 @@ interface FollowedProfile {
 }
 
 const Favorites = () => {
+  const { t } = useTranslation(['favorites'])
   const navigate = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'posts' | 'profiles'>('posts')
@@ -52,6 +54,8 @@ const Favorites = () => {
   const [followedProfiles, setFollowedProfiles] = useState<FollowedProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [networkError, setNetworkError] = useState(false)
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const fetchLikedPosts = useCallback(async () => {
     if (!user) return
@@ -258,6 +262,23 @@ const Favorites = () => {
     }
   }, [user, loadFavorites])
 
+  useEffect(() => {
+    if (!headerRef.current || !containerRef.current) return
+    const updateOffset = () => {
+      const height = headerRef.current?.offsetHeight || 0
+      containerRef.current?.style.setProperty('--favorites-header-offset', `${height}px`)
+    }
+    updateOffset()
+    const observer =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null
+    observer?.observe(headerRef.current)
+    window.addEventListener('resize', updateOffset)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateOffset)
+    }
+  }, [])
+
   // Écouter les changements de likes depuis d'autres pages
   useEffect(() => {
     const handleLikeChange = () => {
@@ -298,25 +319,25 @@ const Favorites = () => {
     return (
       <div className="favorites-page-container">
         <div className="favorites-header-not-connected">
-          <h1 className="favorites-title-centered">Favoris</h1>
+          <h1 className="favorites-title-centered">{t('favorites:title')}</h1>
         </div>
         <div className="favorites-content-not-connected">
           <Heart className="favorites-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="favorites-not-connected-title">Vous n'êtes pas connecté</h2>
-          <p className="favorites-not-connected-text">Connectez-vous pour accéder à vos favoris</p>
+          <h2 className="favorites-not-connected-title">{t('favorites:notConnectedTitle')}</h2>
+          <p className="favorites-not-connected-text">{t('favorites:notConnectedText')}</p>
           <button 
             className="favorites-not-connected-button" 
             onClick={() => navigate('/auth/register')}
           >
-            S'inscrire
+            {t('favorites:register')}
           </button>
           <p className="favorites-not-connected-login-link">
-            Déjà un compte ?{' '}
+            {t('favorites:alreadyAccount')}{' '}
             <button 
               className="favorites-not-connected-link" 
               onClick={() => navigate('/auth/login')}
             >
-              Se connecter
+              {t('favorites:signIn')}
             </button>
           </p>
         </div>
@@ -326,19 +347,19 @@ const Favorites = () => {
   }
 
   return (
-    <div className="favorites-page">
+    <div className="favorites-page" ref={containerRef}>
       {/* Header */}
       <div className="favorites-header-container">
-        <div className="favorites-header">
+        <div className="favorites-header" ref={headerRef}>
           <div className="favorites-header-content">
             <BackButton />
             <div>
-              <h1 className="favorites-title">Favoris</h1>
+              <h1 className="favorites-title">{t('favorites:title')}</h1>
             </div>
             <button
               className="search-button"
               onClick={() => navigate('/search')}
-              aria-label="Rechercher"
+              aria-label={t('favorites:searchAria')}
             >
               <Search size={20} />
             </button>
@@ -350,13 +371,13 @@ const Favorites = () => {
               className={`favorites-tab ${activeTab === 'posts' ? 'active' : ''}`}
               onClick={() => setActiveTab('posts')}
             >
-              Publications {favoritePosts.length > 0 && `(${favoritePosts.length})`}
+              {t('favorites:tabPosts')} {favoritePosts.length > 0 && `(${favoritePosts.length})`}
             </button>
             <button
               className={`favorites-tab ${activeTab === 'profiles' ? 'active' : ''}`}
               onClick={() => setActiveTab('profiles')}
             >
-              Profils suivis {followedProfiles.length > 0 && `(${followedProfiles.length})`}
+              {t('favorites:tabProfiles')} {followedProfiles.length > 0 && `(${followedProfiles.length})`}
             </button>
           </div>
         </div>
@@ -433,14 +454,6 @@ const Favorites = () => {
                           {profile.bio && (
                             <p className="profile-bio">{profile.bio}</p>
                           )}
-                          <div className="profile-stats">
-                            <span className="profile-stat">
-                              {profile.postsCount || 0} annonces
-                            </span>
-                            <span className="profile-stat">
-                              {profile.followers || 0} abonnés
-                            </span>
-                          </div>
                         </div>
                         <button
                           className="unfollow-button"

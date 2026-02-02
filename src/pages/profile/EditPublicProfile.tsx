@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Save, X, Camera, Instagram, Linkedin, Globe, Plus } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
@@ -15,6 +16,7 @@ import { publicationTypes } from '../../constants/publishData'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
+  const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -294,27 +296,28 @@ const EditPublicProfile = () => {
     const options: string[] = []
     
     publicationTypes.forEach(category => {
+      const categoryLabel = t(`categories:titles.${category.slug}`, { defaultValue: category.name })
       if (category.slug === 'creation-contenu') {
         // Pour "Création de contenu", ajouter la catégorie principale
-        options.push('Création de contenu')
+        options.push(categoryLabel)
         // Ajouter aussi les sous-catégories
         category.subcategories.forEach(sub => {
           if (sub.slug !== 'tout') {
-            options.push(sub.name)
+            options.push(t(`categories:submenus.${sub.slug}`, { defaultValue: sub.name }))
           }
         })
       } else {
         // Pour les autres catégories (Casting, Emploi, etc.), ajouter uniquement les sous-catégories
         category.subcategories.forEach(sub => {
           if (sub.slug !== 'tout') {
-            options.push(sub.name)
+            options.push(t(`categories:submenus.${sub.slug}`, { defaultValue: sub.name }))
           }
         })
       }
     })
     
     return options.sort()
-  }, [])
+  }, [t])
 
   // Filtrer les options selon la recherche
   const filteredInterestOptions = useCallback(() => {

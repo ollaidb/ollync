@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { fetchPostsWithRelations } from '../../utils/fetchPostsWithRelations'
@@ -25,6 +26,7 @@ interface PostSelectorProps {
 }
 
 const PostSelector = ({ onPostSelect, onClose }: PostSelectorProps) => {
+  const { t } = useTranslation(['home', 'search'])
   const [searchQuery, setSearchQuery] = useState('')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
@@ -142,7 +144,7 @@ const PostSelector = ({ onPostSelect, onClose }: PostSelectorProps) => {
           <Search size={20} className="post-selector-search-icon" />
           <input
             type="text"
-            placeholder="Rechercher une annonce..."
+            placeholder={t('home:searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="post-selector-search-input"

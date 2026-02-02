@@ -360,7 +360,7 @@
   font-weight: 600;
   color: var(--foreground);
   margin: 0 0 12px 0;
-  text-transform: lowercase;
+  text-transform: none;
 }
 
 .home-posts-grid {

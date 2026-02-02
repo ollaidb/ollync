@@ -111,20 +111,26 @@
 @media (max-width: 768px) {
   .toast-container {
     bottom: 16px;
-    left: 16px;
-    right: 16px;
-    transform: none;
-    max-width: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 66%;
+    max-width: 66vw;
   }
 
   .toast {
     min-width: auto;
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .toast-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .toast-message {
-    font-size: 12px;
+    font-size: 11px;
   }
 }
 

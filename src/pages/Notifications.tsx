@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck, Star, Calendar, Inbox, FileSignature } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -27,6 +28,7 @@ interface Notification {
 const Notifications = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t, i18n } = useTranslation(['notifications'])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
@@ -211,7 +213,7 @@ const Notifications = () => {
   }
 
   // Formater la date pour l'affichage (Aujourd'hui, Hier, ou date complète)
-  const formatDateHeader = (dateString: string): string => {
+  const formatDateHeader = useCallback((dateString: string): string => {
     const date = new Date(dateString)
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -220,17 +222,17 @@ const Notifications = () => {
     const notificationDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
     if (notificationDate.getTime() === today.getTime()) {
-      return "Aujourd'hui"
+      return t('notifications:today')
     } else if (notificationDate.getTime() === yesterday.getTime()) {
-      return "Hier"
-    } else {
-      // Format: "3 avril" ou "27 mars"
-      const months = [
-        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-      ]
-      return `${date.getDate()} ${months[date.getMonth()]}`
+      return t('notifications:yesterday')
     }
+    return new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'long' }).format(date)
+  }, [i18n.language, t])
+
+  const getNotificationTitle = (notification: Notification) => {
+    return t(`notifications:types.${notification.type}`, {
+      defaultValue: notification.title || ''
+    })
   }
 
   // Filtrer les notifications selon le filtre actif
@@ -291,31 +293,31 @@ const Notifications = () => {
       const dateB = new Date(b[1][0].created_at).getTime()
       return dateB - dateA
     })
-  }, [filteredNotifications])
+  }, [filteredNotifications, formatDateHeader])
 
   if (!user) {
     return (
       <div className="notifications-page-container">
         <div className="notifications-header-not-connected">
-          <h1 className="notifications-title-centered">Notifications</h1>
+          <h1 className="notifications-title-centered">{t('notifications:title')}</h1>
         </div>
         <div className="notifications-content-not-connected">
           <Bell className="notifications-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="notifications-not-connected-title">Vous n'êtes pas connecté</h2>
-          <p className="notifications-not-connected-text">Connectez-vous pour accéder à vos notifications</p>
+          <h2 className="notifications-not-connected-title">{t('notifications:notConnectedTitle')}</h2>
+          <p className="notifications-not-connected-text">{t('notifications:notConnectedText')}</p>
           <button 
             className="notifications-not-connected-button" 
             onClick={() => navigate('/auth/register')}
           >
-            S'inscrire
+            {t('notifications:register')}
           </button>
           <p className="notifications-not-connected-login-link">
-            Déjà un compte ?{' '}
+            {t('notifications:alreadyAccount')}{' '}
             <button 
               className="notifications-not-connected-link" 
               onClick={() => navigate('/auth/login')}
             >
-              Se connecter
+              {t('notifications:signIn')}
             </button>
           </p>
         </div>
@@ -331,7 +333,7 @@ const Notifications = () => {
         <div className="notifications-header-fixed">
           <div className="notifications-header-content">
             <BackButton />
-            <h1 className="notifications-title">Notifications</h1>
+            <h1 className="notifications-title">{t('notifications:title')}</h1>
             <div className="notifications-header-spacer"></div>
           </div>
           
@@ -341,56 +343,56 @@ const Notifications = () => {
               className={`notifications-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
               onClick={() => setActiveFilter('all')}
             >
-              Tout
+              {t('notifications:filters.all')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'like' ? 'active' : ''}`}
               onClick={() => setActiveFilter('like')}
             >
               <Heart size={16} />
-              Like
+              {t('notifications:filters.like')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'message' ? 'active' : ''}`}
               onClick={() => setActiveFilter('message')}
             >
               <MessageCircle size={16} />
-              Message
+              {t('notifications:filters.message')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'request' ? 'active' : ''}`}
               onClick={() => setActiveFilter('request')}
             >
               <Inbox size={16} />
-              Demande
+              {t('notifications:filters.request')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'match' ? 'active' : ''}`}
               onClick={() => setActiveFilter('match')}
             >
               <UserCheck size={16} />
-              Match
+              {t('notifications:filters.match')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'appointment' ? 'active' : ''}`}
               onClick={() => setActiveFilter('appointment')}
             >
               <Calendar size={16} />
-              Rendez-vous
+              {t('notifications:filters.appointment')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'review' ? 'active' : ''}`}
               onClick={() => setActiveFilter('review')}
             >
               <Star size={16} />
-              Review
+              {t('notifications:filters.review')}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'news' ? 'active' : ''}`}
               onClick={() => setActiveFilter('news')}
             >
               <FileText size={16} />
-              Actualité
+              {t('notifications:filters.news')}
             </button>
           </div>
         </div>
@@ -401,7 +403,7 @@ const Notifications = () => {
           {loading ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
-              <p>Chargement...</p>
+              <p>{t('notifications:loading')}</p>
             </div>
           ) : filteredNotifications.length === 0 ? (
             <EmptyState type="notifications" />
@@ -421,7 +423,7 @@ const Notifications = () => {
                           <div className="notification-icon">
                             {getNotificationIcon(notification.type)}
                           </div>
-                          <div className="notification-title">{notification.title}</div>
+                          <div className="notification-title">{getNotificationTitle(notification)}</div>
                         </div>
                         {notification.content && (
                           <div className="notification-text">{notification.content}</div>

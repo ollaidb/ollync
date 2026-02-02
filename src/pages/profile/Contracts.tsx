@@ -1025,7 +1025,6 @@ const Contracts = () => {
     <div className="contracts-page">
       <div className="contracts-header">
         <div>
-          <h2>Contrats</h2>
           <p>Générez automatiquement des contrats pour vos collaborations.</p>
         </div>
       </div>
@@ -1035,14 +1034,12 @@ const Contracts = () => {
           className={`contracts-tab ${activeTab === 'create' ? 'active' : ''}`}
           onClick={() => setActiveTab('create')}
         >
-          <FileSignature size={18} />
           Créer un contrat
         </button>
         <button
           className={`contracts-tab ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
-          <FileText size={18} />
           Mes contrats
         </button>
       </div>

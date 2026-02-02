@@ -3,10 +3,13 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data ? event.data.json() : {}
   } catch (error) {
-    payload = { title: 'Nouvelle notification', body: event.data ? event.data.text() : '' }
+    payload = { title: undefined, body: event.data ? event.data.text() : '' }
   }
 
-  const title = payload.title || 'Nouvelle notification'
+  const locale = (payload.lang || self.navigator.language || 'fr').toLowerCase()
+  const isEnglish = locale.startsWith('en')
+  const defaultTitle = isEnglish ? 'New notification' : 'Nouvelle notification'
+  const title = payload.title || defaultTitle
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/vite.svg',

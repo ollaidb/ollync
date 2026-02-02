@@ -142,15 +142,15 @@
 .profile-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
   margin-bottom: 12px;
 }
 
 .profile-menu-item {
   width: 100%;
   background: var(--card);
-  border: none;
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   padding: 12px;
   display: flex;
   align-items: center;
@@ -164,19 +164,7 @@
   position: relative;
 }
 
-.profile-menu-item:first-of-type {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-}
-
-.profile-menu-item:last-of-type {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-
-.profile-menu-item:not(:last-of-type) {
-  border-bottom: 1px solid var(--border);
-}
+/* Items séparés avec un petit espace */
 
 .profile-menu-item:hover {
   background: var(--muted);

@@ -1,5 +1,6 @@
 import { Heart, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
 import { useState, useEffect, memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
@@ -51,6 +52,7 @@ const PostCard = ({
   hideCategoryBadge = false,
   actionMenu
 }: PostCardProps) => {
+  const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
   const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
@@ -309,7 +311,7 @@ const PostCard = ({
     }
   }
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = (e: React.SyntheticEvent<HTMLElement>) => {
     // Ne pas naviguer si on clique sur un bouton d'action ou dans la zone d'actions
     const target = e.target as HTMLElement
     if (target.closest('.post-card-actions') || 
@@ -333,6 +335,9 @@ const PostCard = ({
   }
 
   const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
+  const categoryLabel = post.category
+    ? t(`categories:titles.${post.category.slug}`, { defaultValue: post.category.name })
+    : null
 
   if (viewMode === 'list') {
     return (
@@ -362,8 +367,8 @@ const PostCard = ({
           >
             <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
-          {post.category && !hideCategoryBadge && (
-            <div className="post-card-category-badge">{post.category.name}</div>
+          {categoryLabel && !hideCategoryBadge && (
+            <div className="post-card-category-badge">{categoryLabel}</div>
           )}
         </div>
         <div className="post-card-content">
@@ -415,7 +420,7 @@ const PostCard = ({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          handleCardClick(e as any)
+          handleCardClick(e as React.SyntheticEvent<HTMLElement>)
         }
       }}
     >
@@ -447,8 +452,8 @@ const PostCard = ({
         {getPaymentDisplay() && (
           <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
         )}
-        {post.category && !hideCategoryBadge && (
-          <div className="post-card-category-badge">{post.category.name}</div>
+        {categoryLabel && !hideCategoryBadge && (
+          <div className="post-card-category-badge">{categoryLabel}</div>
         )}
         {post.is_urgent && (
           <div className="post-card-urgent-badge">URGENT</div>

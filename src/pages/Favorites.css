@@ -138,7 +138,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 240px);
+  padding-top: calc(var(--favorites-header-offset, 100px) + 12px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   padding-left: 20px;
   padding-right: 20px;
@@ -238,15 +238,6 @@
   margin: 0 0 8px 0;
 }
 
-.profile-stats {
-  display: flex;
-  gap: 16px;
-}
-
-.profile-stat {
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
 
 .unfollow-button {
   padding: 8px 16px;
@@ -493,7 +484,7 @@
   }
 
   .favorites-content {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
+    padding-top: calc(var(--favorites-header-offset, 100px) + 12px);
     padding-left: 16px;
     padding-right: 16px;
   }

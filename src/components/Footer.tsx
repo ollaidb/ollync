@@ -1,17 +1,19 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
 import './Footer.css'
 
 const Footer = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
 
   const navItems = [
-    { path: '/home', icon: Home, label: 'Accueil' },
-    { path: '/favorites', icon: Heart, label: 'Favoris' },
-    { path: '/publish', icon: PlusCircle, label: 'Publier' },
-    { path: '/messages', icon: MessageCircle, label: 'Messages' },
-    { path: '/profile', icon: User, label: 'Profil' }
+    { path: '/home', icon: Home, label: t('nav.home') },
+    { path: '/favorites', icon: Heart, label: t('nav.favorites') },
+    { path: '/publish', icon: PlusCircle, label: t('nav.publish') },
+    { path: '/messages', icon: MessageCircle, label: t('nav.messages') },
+    { path: '/profile', icon: User, label: t('nav.profile') }
   ]
 
   const isActive = (path: string) => {

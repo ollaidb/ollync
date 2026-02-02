@@ -56,6 +56,7 @@ function AppContent() {
       <Route path="/profile/settings/payment" element={<Profile />} />
       <Route path="/profile/settings/appearance" element={<Profile />} />
       <Route path="/profile/settings/notifications" element={<Profile />} />
+      <Route path="/profile/settings/language" element={<Profile />} />
       <Route path="/profile/settings/data-management" element={<Profile />} />
       <Route path="/profile/settings/delete-account" element={<Profile />} />
       <Route path="/profile/security" element={<Profile />} />

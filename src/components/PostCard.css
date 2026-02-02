@@ -86,16 +86,16 @@
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: color-mix(in srgb, var(--foreground) 65%, transparent);
+  background: var(--muted);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: var(--primary-foreground);
+  color: var(--foreground);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 600;
   z-index: 2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 
@@ -177,10 +177,10 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  background: color-mix(in srgb, var(--foreground) 65%, transparent);
+  background: var(--muted);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: var(--primary-foreground);
+  color: var(--foreground);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 10px;
@@ -380,7 +380,10 @@
 .post-card-list .post-card-payment-display {
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--foreground);
+  background: var(--muted);
+  padding: 3px 8px;
+  border-radius: 999px;
   white-space: nowrap;
   flex-shrink: 0;
 }

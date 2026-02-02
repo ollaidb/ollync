@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
@@ -16,47 +17,52 @@ interface MenuCategory {
 const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t, i18n } = useTranslation(['categories', 'common', 'home'])
+  const translateCategoryLabel = (id: string, fallback: string) =>
+    t(`categories:titles.${id}`, { defaultValue: fallback })
+  const translateSubMenuLabel = (slug: string, fallback: string) =>
+    t(`categories:submenus.${slug}`, { defaultValue: fallback })
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([
     { 
       id: 'creation-contenu', 
       icon: Camera, 
-      label: 'Création de contenu', 
+      label: translateCategoryLabel('creation-contenu', 'Création de contenu'), 
       path: '/creation-contenu',
       subMenus: []
     },
     { 
       id: 'casting-role', 
       icon: Users, 
-      label: 'Casting', 
+      label: translateCategoryLabel('casting-role', 'Casting'), 
       path: '/casting-role',
       subMenus: []
     },
     { 
       id: 'montage', 
       icon: Scissors, 
-      label: 'Emploi', 
+      label: translateCategoryLabel('montage', 'Emploi'), 
       path: '/montage',
       subMenus: []
     },
     { 
       id: 'projets-equipe', 
       icon: Briefcase, 
-      label: 'Projet', 
+      label: translateCategoryLabel('projets-equipe', 'Projet'), 
       path: '/projets-equipe',
       subMenus: []
     },
     { 
       id: 'services', 
       icon: Wrench, 
-      label: 'Services', 
+      label: translateCategoryLabel('services', 'Services'), 
       path: '/services',
       subMenus: []
     },
     { 
       id: 'vente', 
       icon: ShoppingBag, 
-      label: 'Vente', 
+      label: translateCategoryLabel('vente', 'Vente'), 
       path: '/vente',
       subMenus: []
     }
@@ -66,12 +72,12 @@ const Header = () => {
   useEffect(() => {
     const loadSubMenus = async () => {
       const categoriesConfig = [
-        { id: 'creation-contenu', icon: Camera, label: 'Création de contenu', path: '/creation-contenu' },
-        { id: 'casting-role', icon: Users, label: 'Casting', path: '/casting-role' },
-        { id: 'montage', icon: Scissors, label: 'Emploi', path: '/montage' },
-        { id: 'projets-equipe', icon: Briefcase, label: 'Projet', path: '/projets-equipe' },
-        { id: 'services', icon: Wrench, label: 'Services', path: '/services' },
-        { id: 'vente', icon: ShoppingBag, label: 'Vente', path: '/vente' }
+        { id: 'creation-contenu', icon: Camera, label: translateCategoryLabel('creation-contenu', 'Création de contenu'), path: '/creation-contenu' },
+        { id: 'casting-role', icon: Users, label: translateCategoryLabel('casting-role', 'Casting'), path: '/casting-role' },
+        { id: 'montage', icon: Scissors, label: translateCategoryLabel('montage', 'Emploi'), path: '/montage' },
+        { id: 'projets-equipe', icon: Briefcase, label: translateCategoryLabel('projets-equipe', 'Projet'), path: '/projets-equipe' },
+        { id: 'services', icon: Wrench, label: translateCategoryLabel('services', 'Services'), path: '/services' },
+        { id: 'vente', icon: ShoppingBag, label: translateCategoryLabel('vente', 'Vente'), path: '/vente' }
       ]
 
       const updatedCategories = await Promise.all(
@@ -87,7 +93,7 @@ const Header = () => {
     }
 
     loadSubMenus()
-  }, [])
+  }, [i18n.language])
 
   const isHomePage = location.pathname === '/' || location.pathname === '/home'
 
@@ -104,7 +110,7 @@ const Header = () => {
         <button
           className="notification-btn"
           onClick={() => navigate('/notifications')}
-          aria-label="Notifications"
+          aria-label={t('nav.notifications')}
         >
           <Bell size={24} />
           <span className="notification-badge">17</span>
@@ -121,7 +127,7 @@ const Header = () => {
           <Search className="search-icon" size={20} />
           <input
             type="text"
-            placeholder="Rechercher sur Ollync"
+            placeholder={t('home:searchPlaceholder')}
             className="search-input"
             readOnly
             onClick={(e) => {
@@ -131,7 +137,7 @@ const Header = () => {
           />
           <button 
             className="camera-btn" 
-            aria-label="Scanner"
+            aria-label={t('common:actions.scan')}
             onClick={(e) => {
               e.stopPropagation()
               // Fonctionnalité du scanner à implémenter plus tard
@@ -174,7 +180,7 @@ const Header = () => {
                             className="submenu-dropdown-item"
                             onClick={() => navigate(`${category.path}/${subMenu.slug}`)}
                           >
-                            <span>{subMenu.name}</span>
+                            <span>{translateSubMenuLabel(subMenu.slug, subMenu.name)}</span>
                             <ChevronRight size={16} />
                           </button>
                         ))}
@@ -182,7 +188,7 @@ const Header = () => {
                           className="submenu-dropdown-item submenu-dropdown-item-all"
                           onClick={() => navigate(category.path)}
                         >
-                          <span>Voir tout</span>
+                          <span>{t('categories:ui.viewAll')}</span>
                           <ChevronRight size={16} />
                         </button>
                       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -34,6 +35,7 @@ const UsersPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const { t } = useTranslation(['categories'])
   const categoryId = searchParams.get('category')
 
   const [users, setUsers] = useState<User[]>([])
@@ -50,8 +52,10 @@ const UsersPage = () => {
 
   // Générer les filtres dynamiquement depuis les catégories
   const filters = useMemo(() => {
+    const translateCategory = (category: Category) =>
+      t(`categories:titles.${category.slug}`, { defaultValue: category.name })
     return [
-      { id: 'all', label: 'Tout' },
+      { id: 'all', label: t('categories:submenus.tout') },
       ...categories
         .filter(cat => categoryOrder.includes(cat.slug))
         .sort((a, b) => {
@@ -61,10 +65,10 @@ const UsersPage = () => {
         })
         .map(cat => ({
           id: cat.slug,
-          label: cat.name
+          label: translateCategory(cat)
         }))
     ]
-  }, [categories])
+  }, [categories, t])
 
   // Récupérer les catégories
   useEffect(() => {

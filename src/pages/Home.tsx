@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, Search, Sparkles, Plus } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import PostCard from '../components/PostCard'
@@ -41,8 +42,15 @@ const Home = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { t } = useTranslation(['categories', 'home', 'common'])
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
+  const labels = {
+    loading: t('home:loading'),
+    urgent: t('home:urgent'),
+    recommendations: t('home:recommendations'),
+    recent: t('home:recent')
+  }
   const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
   
   // Sections d'annonces
@@ -513,14 +521,14 @@ const Home = () => {
                     setSwipeModeActive(!swipeModeActive)
                     navigate('/swipe')
                   }}
-                  aria-label="Mode Swipe"
+                  aria-label={t('common:actions.swipeMode')}
                 >
                   <Sparkles size={20} />
                 </button>
                 <button
                   className="home-notification-btn"
                   onClick={() => navigate('/notifications')}
-                  aria-label="Notifications"
+                  aria-label={t('nav.notifications')}
                 >
                   <Bell size={20} />
                   <span className="home-notification-badge"></span>
@@ -534,7 +542,7 @@ const Home = () => {
                 className="home-search-bar"
                 onClick={() => navigate('/search')}
               >
-                <span className="home-search-placeholder">Rechercher une annonce...</span>
+                <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
                 <Search size={20} />
               </div>
             </div>
@@ -555,7 +563,9 @@ const Home = () => {
                     <div className="home-category-icon">
                       <Icon size={24} />
                     </div>
-                    <span className="home-category-name">{category.name}</span>
+                    <span className="home-category-name">
+                      {t(`categories:titles.${category.slug}`, { defaultValue: category.name })}
+                    </span>
                   </div>
                 )
               })}
@@ -564,15 +574,15 @@ const Home = () => {
             <div className="home-hero-section">
               <div className="home-hero-block">
                 <div className="home-hero-text">
-                  <span className="home-hero-title">BIENVENUE</span>
-                  <span className="home-hero-subtitle">sur Ollyc</span>
+                  <span className="home-hero-title">{t('home:welcome')}</span>
+                  <span className="home-hero-subtitle">{t('home:welcomeSuffix')}</span>
                 </div>
               </div>
             </div>
 
             {/* Skeletons pour les sections de posts */}
             <div className="home-posts-section">
-              <h2 className="home-section-title">chargement...</h2>
+              <h2 className="home-section-title">{labels.loading}</h2>
               <div className="home-posts-grid">
                 <PostCardSkeleton viewMode="grid" count={6} />
               </div>
@@ -604,7 +614,7 @@ const Home = () => {
                 onClick={() => navigate('/publish')}
               >
                 <Plus size={16} />
-                Publier une annonce
+                {t('common:actions.publishListing')}
               </button>
               <button
                 className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
@@ -612,14 +622,14 @@ const Home = () => {
                   setSwipeModeActive(!swipeModeActive)
                   navigate('/swipe')
                 }}
-                aria-label="Mode Swipe"
+                aria-label={t('common:actions.swipeMode')}
               >
                 <Sparkles size={20} />
               </button>
               <button
                 className="home-notification-btn"
                 onClick={() => navigate('/notifications')}
-                aria-label="Notifications"
+                aria-label={t('nav.notifications')}
               >
                 <Bell size={20} />
                 <span className="home-notification-badge"></span>
@@ -633,7 +643,7 @@ const Home = () => {
               className="home-search-bar"
               onClick={() => navigate('/search')}
             >
-              <span className="home-search-placeholder">Rechercher une annonce...</span>
+              <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
               <Search size={20} />
             </div>
           </div>
@@ -655,7 +665,9 @@ const Home = () => {
                   <div className="home-category-icon">
                     <Icon size={24} />
                   </div>
-                  <span className="home-category-name">{category.name}</span>
+                  <span className="home-category-name">
+                    {t(`categories:titles.${category.slug}`, { defaultValue: category.name })}
+                  </span>
                 </div>
               )
             })}
@@ -664,8 +676,8 @@ const Home = () => {
           <div className="home-hero-section">
             <div className="home-hero-block">
               <div className="home-hero-text">
-                <span className="home-hero-title">BIENVENUE</span>
-                <span className="home-hero-subtitle">sur Ollyc</span>
+                <span className="home-hero-title">{t('home:welcome')}</span>
+                <span className="home-hero-subtitle">{t('home:welcomeSuffix')}</span>
               </div>
             </div>
           </div>
@@ -673,7 +685,7 @@ const Home = () => {
           {/* Section Annonces urgentes - EN PREMIER */}
           {urgentPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">urgent</h2>
+              <h2 className="home-section-title">{labels.urgent}</h2>
               <div className="home-posts-grid">
                 {urgentPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -693,7 +705,7 @@ const Home = () => {
           {/* Section Recommandations - JUSTE APRÈS URGENT - Seulement si connecté ET s'il y a des recommandations */}
           {user && recommendedPosts.length > 0 && !loading && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">recommandations</h2>
+              <h2 className="home-section-title">{labels.recommendations}</h2>
               <div className="home-posts-grid">
                 {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -713,7 +725,7 @@ const Home = () => {
           {/* Section Création de contenu */}
           {creationContenuPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">création de contenu</h2>
+              <h2 className="home-section-title">{t('categories:titles.creation-contenu')}</h2>
               <div className="home-posts-grid">
                 {creationContenuPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -733,7 +745,7 @@ const Home = () => {
           {/* Section Casting */}
           {castingPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">casting</h2>
+              <h2 className="home-section-title">{t('categories:titles.casting-role')}</h2>
               <div className="home-posts-grid">
                 {castingPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -753,7 +765,7 @@ const Home = () => {
           {/* Section Emploi */}
           {emploiPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">emploi</h2>
+              <h2 className="home-section-title">{t('categories:titles.montage')}</h2>
               <div className="home-posts-grid">
                 {emploiPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -773,7 +785,7 @@ const Home = () => {
           {/* Section Annonces récentes - EN DERNIER - Plusieurs sections de 5 annonces */}
           {recentPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">annonce recente</h2>
+              <h2 className="home-section-title">{labels.recent}</h2>
               {/* Créer plusieurs sections de 5 annonces */}
               {Array.from({ length: Math.ceil(recentPosts.length / maxPostsPerSection) }).map((_, sectionIndex) => {
                 const sectionPosts = recentPosts.slice(

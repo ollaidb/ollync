@@ -1,4 +1,5 @@
 import { publicationTypes } from '../../constants/publishData'
+import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import './Step1Category.css'
 
@@ -7,13 +8,18 @@ interface Step1CategoryProps {
 }
 
 export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
+  const { t } = useTranslation(['publish', 'categories'])
   return (
     <div className="step1-category">
-      <h2 className="step-question">Quel type d'annonce souhaitez-vous publier?</h2>
-      <p className="step-instruction">Sélectionnez la catégorie qui correspond à votre besoin</p>
+      <h2 className="step-question">{t('publish:step1Title')}</h2>
+      <p className="step-instruction">{t('publish:step1Instruction')}</p>
       <div className="categories-list">
         {publicationTypes.map((category) => {
           const Icon = category.icon
+          const categoryLabel = t(`categories:titles.${category.slug}`, { defaultValue: category.name })
+          const categoryDescription = t(`categories:descriptions.${category.slug}`, {
+            defaultValue: category.description
+          })
           return (
             <button
               key={category.id}
@@ -25,8 +31,8 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
                 <Icon size={20} />
               </div>
               <div className="category-content">
-              <span className="category-name">{category.name}</span>
-                <span className="category-description">{category.description}</span>
+              <span className="category-name">{categoryLabel}</span>
+                <span className="category-description">{categoryDescription}</span>
               </div>
               <ChevronRight size={18} className="category-arrow" />
             </button>

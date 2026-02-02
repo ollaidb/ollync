@@ -3,6 +3,8 @@
  * vers le format attendu par les composants
  */
 
+import i18n from '../i18n'
+
 export interface SupabasePost {
   id: string
   user_id?: string
@@ -27,7 +29,7 @@ export interface SupabasePost {
     name: string
     slug: string
   } | null
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface MappedPost {
@@ -60,11 +62,20 @@ export interface MappedPost {
  * Mappe un post Supabase vers le format attendu
  */
 export function mapPost(post: SupabasePost): MappedPost {
+  const translatedCategory = post.categories
+    ? {
+        ...post.categories,
+        name: i18n.t(`categories:titles.${post.categories.slug}`, {
+          defaultValue: post.categories.name
+        })
+      }
+    : null
+
   return {
     ...post,
     is_urgent: post.is_urgent ?? false,
     user: post.profiles || null,
-    category: post.categories || null
+    category: translatedCategory
   }
 }
 

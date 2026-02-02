@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon, SlidersHorizontal, X, MapPin } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
@@ -47,6 +48,7 @@ const Search = () => {
   const [locationFilter, setLocationFilter] = useState('')
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [showLocationFilter, setShowLocationFilter] = useState(false)
+  const { t } = useTranslation(['categories'])
 
   // Ordre des nouvelles catégories (déplacé en constante pour éviter les re-créations)
   const categoryOrder = useMemo(() => [
@@ -60,8 +62,10 @@ const Search = () => {
 
   // Générer les filtres dynamiquement depuis les catégories
   const filters = useMemo(() => {
+    const translateCategory = (category: Category) =>
+      t(`categories:titles.${category.slug}`, { defaultValue: category.name })
     return [
-      { id: 'all', label: 'Tout' },
+      { id: 'all', label: t('categories:submenus.tout') },
       ...categories
         .filter(cat => categoryOrder.includes(cat.slug))
         .sort((a, b) => {
@@ -71,10 +75,10 @@ const Search = () => {
         })
         .map(cat => ({
           id: cat.slug,
-          label: cat.name
+          label: translateCategory(cat)
         }))
     ]
-  }, [categories, categoryOrder])
+  }, [categories, categoryOrder, t])
 
   useEffect(() => {
     fetchCategories()
@@ -265,7 +269,7 @@ const Search = () => {
             avatar_url: profile.avatar_url
           } : null,
           category: category ? {
-            name: category.name,
+            name: t(`categories:titles.${category.slug}`, { defaultValue: category.name }),
             slug: category.slug
           } : null
         }
@@ -312,7 +316,7 @@ const Search = () => {
             <input
               type="text"
               className="search-input"
-              placeholder="Rechercher..."
+              placeholder={t('search:inputPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
@@ -358,7 +362,7 @@ const Search = () => {
                 value={locationFilter}
                 onChange={setLocationFilter}
                 onLocationSelect={handleLocationSelect}
-                placeholder="Rechercher un lieu (ex: Paris, Lyon...)"
+                placeholder={t('search:locationPlaceholder')}
               />
             </div>
           )}
@@ -382,7 +386,7 @@ const Search = () => {
       <div className="search-content">
         {loading ? (
           <div className="search-loading">
-            <p>Recherche en cours...</p>
+            <p>{t('search:searching')}</p>
           </div>
         ) : searchQuery.length > 0 ? (
           <>
@@ -414,7 +418,7 @@ const Search = () => {
             <div className="search-empty-icon">
               <SearchIcon size={36} />
             </div>
-            <h2 className="search-empty-title">Rechercher une annonce</h2>
+            <h2 className="search-empty-title">{t('search:emptyTitle')}</h2>
             <p className="search-empty-text">Tapez un mot-clé pour commencer</p>
           </div>
         )}
