@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Mail, HelpCircle, Search } from 'lucide-react'
-import BackButton from '../../components/BackButton'
 import './Contact.css'
 
 const Contact = () => {
