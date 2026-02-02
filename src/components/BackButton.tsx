@@ -56,6 +56,16 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
           return
         }
       }
+
+      const helpRoots = ['/profile/contact', '/profile/legal', '/profile/resources']
+      if (helpRoots.some((root) => path.startsWith(root))) {
+        // Pour /profile/contact|legal|resources -> retour vers /profile/help
+        if (pathParts.length === 2) {
+          markNavigatingBack()
+          navigate('/profile/help')
+          return
+        }
+      }
       
       // Si on est dans une sous-page (ex: /profile/xxx ou /profile/xxx/yyy)
       if (pathParts.length >= 2) {

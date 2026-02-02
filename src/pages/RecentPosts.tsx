@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, Tag, Heart } from 'lucide-react'
+import { RefreshCw, Tag, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
@@ -13,6 +13,12 @@ const RecentPosts = () => {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -46,6 +52,43 @@ const RecentPosts = () => {
     fetchPosts()
   }, [])
 
+  const filteredPosts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const now = Date.now()
+    const dateLimitMs = dateFilter === '1d'
+      ? 24 * 60 * 60 * 1000
+      : dateFilter === '2d'
+        ? 2 * 24 * 60 * 60 * 1000
+      : dateFilter === '7d'
+          ? 7 * 24 * 60 * 60 * 1000
+          : dateFilter === '2w'
+            ? 14 * 24 * 60 * 60 * 1000
+            : dateFilter === '3w'
+              ? 21 * 24 * 60 * 60 * 1000
+              : dateFilter === '1m'
+                ? 30 * 24 * 60 * 60 * 1000
+                : dateFilter === '2m'
+                  ? 60 * 24 * 60 * 60 * 1000
+                  : null
+
+    const filtered = posts.filter((post) => {
+      const matchesQuery = normalizedQuery.length === 0
+        || post.title.toLowerCase().includes(normalizedQuery)
+        || post.description.toLowerCase().includes(normalizedQuery)
+
+      const createdAt = new Date(post.created_at).getTime()
+      const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
+
+      return matchesQuery && matchesDate
+    })
+
+    return filtered.sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime()
+      const bTime = new Date(b.created_at).getTime()
+      return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
+    })
+  }, [posts, searchQuery, dateFilter, sortOrder])
+
   const handlePostClick = (post: Post) => {
     navigate(`/post/${post.id}`)
   }
@@ -66,6 +109,30 @@ const RecentPosts = () => {
           <h1 className="swipe-title">Annonces récentes</h1>
           <div className="swipe-header-spacer"></div>
         </div>
+        <div className="swipe-search-row">
+          <div className="swipe-search-bar">
+            <Search size={18} />
+            <input
+              className="swipe-search-input"
+              type="text"
+              placeholder="Rechercher une annonce"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button
+              type="button"
+              className="swipe-filter-toggle"
+              onClick={() => {
+                setPendingSortOrder(sortOrder)
+                setPendingDateFilter(dateFilter)
+                setIsFilterOpen(true)
+              }}
+              aria-label="Filtrer"
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Zone scrollable */}
@@ -82,7 +149,7 @@ const RecentPosts = () => {
               Réessayer
             </button>
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <div className="swipe-empty">
             <p>Aucune annonce récente disponible</p>
             <button onClick={() => navigate('/home')} className="swipe-btn-primary">
@@ -91,7 +158,7 @@ const RecentPosts = () => {
           </div>
         ) : (
           <div className="swipe-masonry">
-            {posts.map((post) => {
+            {filteredPosts.map((post) => {
               const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
               const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
 
@@ -159,6 +226,118 @@ const RecentPosts = () => {
           </div>
         )}
       </div>
+
+      {isFilterOpen && (
+        <div
+          className="swipe-filter-modal-overlay"
+          onClick={() => setIsFilterOpen(false)}
+        >
+          <div className="swipe-filter-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="swipe-filter-modal-header">
+              <h2>Filtrer</h2>
+              <button
+                type="button"
+                className="swipe-filter-close"
+                onClick={() => setIsFilterOpen(false)}
+                aria-label="Fermer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Trier par date</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingSortOrder === 'desc' ? 'active' : ''}`}
+                  onClick={() => setPendingSortOrder('desc')}
+                >
+                  Plus récentes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingSortOrder === 'asc' ? 'active' : ''}`}
+                  onClick={() => setPendingSortOrder('asc')}
+                >
+                  Plus anciennes
+                </button>
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Période</p>
+              <div className="swipe-filter-options swipe-filter-options-scroll">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '1d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('1d')}
+                >
+                  1 jour
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2d')}
+                >
+                  2 jours
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '7d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('7d')}
+                >
+                  7 jours
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2w' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2w')}
+                >
+                  2 semaines
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '3w' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('3w')}
+                >
+                  3 semaines
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '1m' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('1m')}
+                >
+                  1 mois
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2m' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2m')}
+                >
+                  2 mois
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="swipe-filter-apply"
+              onClick={() => {
+                setSortOrder(pendingSortOrder)
+                setDateFilter(pendingDateFilter)
+                setIsFilterOpen(false)
+              }}
+            >
+              Appliquer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
