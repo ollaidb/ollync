@@ -230,7 +230,8 @@ i18n.use(initReactI18next).init({
         notifications: 'Notifications',
         language: 'Langue',
         dataManagement: 'Gestion de mes données',
-        deleteAccount: 'Suppression de compte'
+        deleteAccount: 'Suppression de compte',
+        moderation: 'Modération'
       },
       profile: {
         accountTitle: 'Mon compte',
@@ -496,7 +497,8 @@ i18n.use(initReactI18next).init({
         notifications: 'Notifications',
         language: 'Language',
         dataManagement: 'Data management',
-        deleteAccount: 'Delete account'
+        deleteAccount: 'Delete account',
+        moderation: 'Moderation'
       },
       profile: {
         accountTitle: 'My account',

@@ -50,6 +50,7 @@ import OnlineStatus from './profile/OnlineStatus'
 import DataManagement from './profile/DataManagement'
 import DeleteAccount from './profile/DeleteAccount'
 import Contracts from './profile/Contracts'
+import Moderation from './Moderation'
 import WalletPage from './profile/Wallet.tsx'
 import Transactions from './profile/Transactions.tsx'
 import ConfirmationModal from '../components/ConfirmationModal'
@@ -261,6 +262,10 @@ const Profile = () => {
 
     if (location.pathname === '/profile/settings/delete-account') {
       return <DeleteAccount />
+    }
+
+    if (location.pathname === '/profile/settings/moderation') {
+      return <Moderation />
     }
 
     if (location.pathname === '/profile/security/account-security') {

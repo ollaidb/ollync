@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe } from 'lucide-react'
+import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import './Settings.css'
 
@@ -61,6 +61,12 @@ const Settings = () => {
       icon: Trash2,
       label: t('settings:deleteAccount'),
       path: '/profile/settings/delete-account'
+    },
+    {
+      id: 'moderation',
+      icon: Shield,
+      label: t('settings:moderation'),
+      path: '/profile/settings/moderation'
     }
   ]
 
