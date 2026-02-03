@@ -322,6 +322,105 @@
   opacity: 0.5;
 }
 
+/* ============================================
+   B.1. VIEWER MÉDIA (plein écran)
+   ============================================ */
+
+.post-media-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.post-media-viewer-content {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-media-viewer-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.post-media-viewer-image,
+.post-media-viewer-video {
+  max-width: 100%;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.post-media-viewer-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.post-media-viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.post-media-viewer-nav-left {
+  left: -12px;
+}
+
+.post-media-viewer-nav-right {
+  right: -12px;
+}
+
+.post-media-viewer-counter {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Ajustement du padding quand il y a une image hero */
 .post-details-page.has-hero-image .post-details-scrollable {
   padding-top: 0;
@@ -1545,6 +1644,31 @@
   .post-media-gallery.swipe-mode {
     height: 100vh;
     margin-top: 0;
+  }
+
+  .post-media-viewer-overlay {
+    padding: 12px;
+  }
+
+  .post-media-viewer-content {
+    max-height: 85vh;
+  }
+
+  .post-media-viewer-nav {
+    width: 40px;
+    height: 40px;
+  }
+
+  .post-media-viewer-nav-left {
+    left: 0;
+  }
+
+  .post-media-viewer-nav-right {
+    right: 0;
+  }
+
+  .post-media-viewer-counter {
+    bottom: -32px;
   }
 
   .post-details-scrollable {

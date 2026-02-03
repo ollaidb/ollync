@@ -103,6 +103,13 @@
   opacity: 0.8;
 }
 
+@media (hover: none) {
+  .category-users-button:hover {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 .category-users-icon {
   color: var(--foreground);
   flex-shrink: 0;
@@ -163,10 +170,22 @@
   color: var(--foreground);
 }
 
+.category-filter-button:active {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
 .category-filter-button.active {
   background-color: var(--primary);
   color: var(--primary-foreground);
   box-shadow: var(--shadow-md);
+}
+
+@media (hover: none) {
+  .category-filter-button:hover {
+    background-color: var(--background);
+    color: var(--muted-foreground);
+  }
 }
 
 .category-filter-button.active .category-filter-chevron {

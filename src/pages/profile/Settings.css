@@ -48,6 +48,34 @@
   background: var(--muted);
 }
 
+.settings-menu-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.settings-menu-item.active .settings-menu-item-icon,
+.settings-menu-item.active .settings-menu-item-chevron {
+  color: var(--primary-foreground);
+}
+
+.settings-menu-item:active {
+  background: var(--muted);
+}
+
+@media (hover: none) {
+  .settings-menu-item:hover {
+    background: var(--card);
+  }
+
+  .settings-menu-item:active {
+    background: var(--muted);
+  }
+
+  .settings-menu-item.active:active {
+    background: var(--primary);
+  }
+}
+
 .settings-menu-item-icon {
   width: 24px;
   height: 24px;

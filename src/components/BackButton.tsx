@@ -48,6 +48,31 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
     // Retourner au niveau parent (ex: /profile/settings ou /profile)
     if (path.startsWith('/profile/')) {
       const previousPath = getPreviousPath()
+      const profileSubRoutes = [
+        'settings',
+        'security',
+        'help',
+        'contact',
+        'resources',
+        'legal',
+        'annonces',
+        'contracts',
+        'wallet',
+        'transactions',
+        'edit',
+        'public'
+      ]
+      const isProfileIdRoute =
+        pathParts.length === 2 && pathParts[0] === 'profile' && !profileSubRoutes.includes(pathParts[1])
+      const isPublicProfileRoute = path.startsWith('/profile/public/')
+
+      // Cas spécial : profils publics (issus d'une annonce, favoris, etc.)
+      // Retourner vers la page précédente, pas vers /profile
+      if ((isPublicProfileRoute || isProfileIdRoute) && previousPath && previousPath !== path) {
+        markNavigatingBack()
+        navigate(previousPath)
+        return
+      }
 
       // Cas spécial : retour depuis un contrat ouvert depuis une conversation
       if (path === '/profile/contracts' && previousPath.startsWith('/messages')) {

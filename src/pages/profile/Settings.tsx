@@ -1,11 +1,15 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../hooks/useSupabase'
 import './Settings.css'
 
 const Settings = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
   const { t } = useTranslation(['settings'])
+  const isModerator = (user?.email || '').trim().toLowerCase() === 'binta22116@gmail.com'
 
   const menuItems = [
     {
@@ -61,14 +65,17 @@ const Settings = () => {
       icon: Trash2,
       label: t('settings:deleteAccount'),
       path: '/profile/settings/delete-account'
-    },
-    {
+    }
+  ]
+
+  if (isModerator) {
+    menuItems.push({
       id: 'moderation',
       icon: Shield,
       label: t('settings:moderation'),
       path: '/profile/settings/moderation'
-    }
-  ]
+    })
+  }
 
   return (
     <div className="settings-page">
@@ -78,10 +85,11 @@ const Settings = () => {
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isDestructive = item.id === 'delete-account'
+                const isActive = location.pathname === item.path
                 return (
                   <button
                     key={item.id}
-                    className={`settings-menu-item ${isDestructive ? 'settings-menu-item-destructive' : ''}`}
+                    className={`settings-menu-item ${isActive ? 'active' : ''} ${isDestructive ? 'settings-menu-item-destructive' : ''}`}
                     onClick={() => navigate(item.path)}
                   >
                     <div className={`settings-menu-item-icon ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`}>

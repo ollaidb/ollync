@@ -28,6 +28,7 @@ interface Conversation {
   id: string
   user1_id: string
   user2_id: string
+  created_at?: string | null
   post_id?: string | null
   group_name?: string | null
   group_photo_url?: string | null
@@ -193,6 +194,7 @@ const Messages = () => {
   const [showForwardMessage, setShowForwardMessage] = useState(false)
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
   const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({})
+  const [groupCreator, setGroupCreator] = useState<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null } | null>(null)
   const [conversationAliases, setConversationAliases] = useState<Record<string, string>>({})
   const [infoLoading, setInfoLoading] = useState(false)
   const [infoParticipants, setInfoParticipants] = useState<ConversationParticipant[]>([])
@@ -213,6 +215,7 @@ const Messages = () => {
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
+  const inputContainerRef = useRef<HTMLDivElement | null>(null)
   const shouldScrollToBottomRef = useRef(false)
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -297,7 +300,25 @@ const Messages = () => {
     }
 
     requestAnimationFrame(scrollToBottom)
+    requestAnimationFrame(scrollToBottom)
   }, [messages])
+
+  useEffect(() => {
+    if (!inputContainerRef.current) return
+    const updateOffset = () => {
+      if (!inputContainerRef.current || !messagesListRef.current) return
+      const height = inputContainerRef.current.getBoundingClientRect().height + 12
+      messagesListRef.current.style.setProperty('--messages-input-offset', `${height}px`)
+      if (shouldScrollToBottomRef.current) {
+        messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
+        shouldScrollToBottomRef.current = false
+      }
+    }
+    updateOffset()
+    const observer = new ResizeObserver(updateOffset)
+    observer.observe(inputContainerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (openAppointment && (selectedConversation || conversationId)) {
@@ -587,6 +608,7 @@ const Messages = () => {
         id: string
         user1_id: string
         user2_id: string
+        created_at?: string | null
         post_id?: string | null
         is_group?: boolean
         group_name?: string | null
@@ -612,6 +634,12 @@ const Messages = () => {
         .eq('id', otherUserId)
         .single() : { data: null }
 
+      const { data: creatorUser } = isGroupConversation && convData.group_creator_id ? await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .eq('id', convData.group_creator_id)
+        .single() : { data: null }
+
       // Récupérer le titre du post si post_id existe
       let postTitle: string | null = null
       if (convData.post_id) {
@@ -626,6 +654,7 @@ const Messages = () => {
         }
       }
 
+      setGroupCreator(creatorUser ? (creatorUser as { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) : null)
       setSelectedConversation({
         ...convData,
         other_user: otherUser ? {
@@ -1801,6 +1830,14 @@ const Messages = () => {
     const otherUserId = selectedConversation?.other_user?.id
     const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
     const headerName = isSystemConversation ? SYSTEM_SENDER_NAME : displayName
+    const groupCreatorName = groupCreator?.full_name || groupCreator?.username || 'le créateur'
+    const groupCreatedAtLabel = selectedConversation?.created_at
+      ? new Date(selectedConversation.created_at).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+      : 'date inconnue'
     const canCopyMessage = !!activeMessage?.content
 
     if (isInfoView) {
@@ -2868,7 +2905,7 @@ const Messages = () => {
             isDestructive={true}
           />
         )}
-        <div className="conversation-messages-container">
+        <div className={`conversation-messages-container ${isSystemConversation ? 'system-conversation' : ''}`}>
           {loading ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
@@ -2975,7 +3012,57 @@ const Messages = () => {
                     </button>
                   </div>
                 )}
-              </div>
+                </div>
+              )}
+              {isGroupConversation && (
+                <div className="group-intro-wrapper">
+                  <div className="group-intro-card">
+                    <button
+                      type="button"
+                      className="group-intro-header"
+                      onClick={() => {
+                        const currentId = selectedConversation?.id || conversationId
+                        if (currentId) {
+                          navigate(`/messages/${currentId}/info`)
+                        }
+                      }}
+                    >
+                      <div className="group-intro-avatar">
+                        <img
+                          src={
+                            (selectedConversation?.group_photo_url || '').trim()
+                              ? selectedConversation?.group_photo_url || ''
+                              : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`
+                          }
+                          alt={displayName}
+                          onError={(event) => {
+                            const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`
+                            ;(event.target as HTMLImageElement).src = fallback
+                          }}
+                        />
+                      </div>
+                      <div className="group-intro-text">
+                        <p className="group-intro-title">{displayName || 'Groupe'}</p>
+                        <p className="group-intro-subtitle">Créé par {groupCreatorName}</p>
+                      </div>
+                    </button>
+                    <p className="group-intro-meta">
+                      Groupe créé le {groupCreatedAtLabel} par {groupCreatorName}.
+                    </p>
+                    <button
+                      type="button"
+                      className="group-intro-more"
+                      onClick={() => {
+                        const currentId = selectedConversation?.id || conversationId
+                        if (currentId) {
+                          navigate(`/messages/${currentId}/info`)
+                        }
+                      }}
+                    >
+                      En savoir plus
+                    </button>
+                  </div>
+                </div>
               )}
               {groupedMessages.map((group, groupIndex) => (
                 <div key={groupIndex} className="conversation-messages-group">
@@ -3201,7 +3288,7 @@ const Messages = () => {
           }}
         />
         {user && (selectedConversation || conversationId) && (
-          <div className="conversation-input-container">
+          <div className="conversation-input-container" ref={inputContainerRef}>
             {isSystemConversation && (
               <div className="system-conversation-banner">
                 Conversation d&apos;information Ollync. Vous pouvez uniquement lire ces messages.
@@ -3215,6 +3302,17 @@ const Messages = () => {
               disabled={isSystemConversation}
               onMessageSent={() => {
                 if (selectedConversation || conversationId) {
+                  shouldScrollToBottomRef.current = true
+                  requestAnimationFrame(() => {
+                    if (messagesListRef.current) {
+                      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
+                    }
+                  })
+                  setTimeout(() => {
+                    if (messagesListRef.current) {
+                      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
+                    }
+                  }, 120)
                   loadMessages(selectedConversation?.id || conversationId || '')
                   loadConversations()
                 }

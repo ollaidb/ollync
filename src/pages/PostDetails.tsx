@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
@@ -88,6 +88,9 @@ const PostDetails = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false)
+  const [viewerTouchStart, setViewerTouchStart] = useState<number | null>(null)
+  const [viewerTouchEnd, setViewerTouchEnd] = useState<number | null>(null)
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
     title: string
@@ -654,6 +657,7 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
+  const mediaItems = images
 
   const getDocumentName = (url?: string | null) => {
     if (!url) return 'Document PDF'
@@ -667,6 +671,103 @@ const PostDetails = () => {
     const fileName = cleanUrl.split('/').pop()
     return fileName ? decodeURIComponent(fileName) : 'Document PDF'
   }
+
+  const hasAddress = post?.location_address || (post?.location_lat && post?.location_lng)
+
+  // Fonctions pour le swipe des images
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe && images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    }
+    if (isRightSwipe && images.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+  }
+
+  const isVideoUrl = (url: string) => {
+    const cleanUrl = url.split('?')[0].split('#')[0]
+    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleanUrl)
+  }
+
+  const handleOpenViewer = (index: number) => {
+    if (mediaItems.length === 0) return
+    setCurrentImageIndex(index)
+    setIsMediaViewerOpen(true)
+  }
+
+  const handleCloseViewer = useCallback(() => {
+    setIsMediaViewerOpen(false)
+  }, [])
+
+  const goToNextMedia = useCallback(() => {
+    if (mediaItems.length === 0) return
+    setCurrentImageIndex((prev) => (prev + 1) % mediaItems.length)
+  }, [mediaItems.length])
+
+  const goToPrevMedia = useCallback(() => {
+    if (mediaItems.length === 0) return
+    setCurrentImageIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length)
+  }, [mediaItems.length])
+
+  const onViewerTouchStart = (e: React.TouchEvent) => {
+    setViewerTouchEnd(null)
+    setViewerTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onViewerTouchMove = (e: React.TouchEvent) => {
+    setViewerTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onViewerTouchEnd = () => {
+    if (!viewerTouchStart || !viewerTouchEnd) return
+    const distance = viewerTouchStart - viewerTouchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe) {
+      goToNextMedia()
+    }
+    if (isRightSwipe) {
+      goToPrevMedia()
+    }
+  }
+
+  useEffect(() => {
+    if (!isMediaViewerOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleCloseViewer()
+        return
+      }
+      if (event.key === 'ArrowRight') {
+        goToNextMedia()
+        return
+      }
+      if (event.key === 'ArrowLeft') {
+        goToPrevMedia()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMediaViewerOpen, handleCloseViewer, goToNextMedia, goToPrevMedia])
 
   if (loading) {
     return (
@@ -694,34 +795,6 @@ const PostDetails = () => {
         </div>
       </div>
     )
-  }
-
-  const hasAddress = post.location_address || (post.location_lat && post.location_lng)
-
-  // Fonctions pour le swipe des images
-  const minSwipeDistance = 50
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-
-    if (isLeftSwipe && images.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length)
-    }
-    if (isRightSwipe && images.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
   }
 
   return (
@@ -752,6 +825,19 @@ const PostDetails = () => {
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
+          onClick={(event) => {
+            const target = event.target as HTMLElement
+            if (target.closest('button') || target.closest('a')) return
+            handleOpenViewer(currentImageIndex)
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              handleOpenViewer(currentImageIndex)
+            }
+          }}
         >
           {images.length > 0 ? (
             <>
@@ -799,6 +885,73 @@ const PostDetails = () => {
             <div className="post-urgent-badge">URGENT</div>
           )}
         </div>
+
+        {isMediaViewerOpen && mediaItems.length > 0 && (
+          <div
+            className="post-media-viewer-overlay"
+            onClick={handleCloseViewer}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="post-media-viewer-content"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={onViewerTouchStart}
+              onTouchMove={onViewerTouchMove}
+              onTouchEnd={onViewerTouchEnd}
+            >
+              <button
+                type="button"
+                className="post-media-viewer-close"
+                onClick={handleCloseViewer}
+                aria-label="Fermer la galerie"
+              >
+                <X size={20} />
+              </button>
+              {mediaItems.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="post-media-viewer-nav post-media-viewer-nav-left"
+                    onClick={goToPrevMedia}
+                    aria-label="Média précédent"
+                  >
+                    <ChevronLeft size={26} />
+                  </button>
+                  <button
+                    type="button"
+                    className="post-media-viewer-nav post-media-viewer-nav-right"
+                    onClick={goToNextMedia}
+                    aria-label="Média suivant"
+                  >
+                    <ChevronRight size={26} />
+                  </button>
+                </>
+              )}
+              <div className="post-media-viewer-media">
+                {isVideoUrl(mediaItems[currentImageIndex]) ? (
+                  <video
+                    src={mediaItems[currentImageIndex]}
+                    className="post-media-viewer-video"
+                    controls
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={mediaItems[currentImageIndex]}
+                    alt={`${post.title} - Média ${currentImageIndex + 1}`}
+                    className="post-media-viewer-image"
+                  />
+                )}
+              </div>
+              {mediaItems.length > 1 && (
+                <div className="post-media-viewer-counter">
+                  {currentImageIndex + 1} / {mediaItems.length}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Zone scrollable */}
         <div className="post-details-scrollable">

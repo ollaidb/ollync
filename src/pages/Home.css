@@ -228,6 +228,10 @@
   transform: translateY(-2px);
 }
 
+.home-category-card:active {
+  transform: translateY(-1px);
+}
+
 .home-category-card:focus,
 .home-category-card:focus-visible,
 .home-category-card:active {
@@ -248,6 +252,20 @@
 
 .home-category-card:hover .home-category-icon {
   background-color: var(--accent);
+}
+
+.home-category-card:active .home-category-icon {
+  background-color: var(--accent);
+}
+
+@media (hover: none) {
+  .home-category-card:hover {
+    transform: none;
+  }
+
+  .home-category-card:hover .home-category-icon {
+    background-color: var(--primary);
+  }
 }
 
 .home-category-name {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Heart, Loader, Search, WifiOff } from 'lucide-react'
+import { Heart, Loader, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
@@ -356,13 +356,7 @@ const Favorites = () => {
             <div>
               <h1 className="favorites-title">{t('favorites:title')}</h1>
             </div>
-            <button
-              className="search-button"
-              onClick={() => navigate('/search')}
-              aria-label={t('favorites:searchAria')}
-            >
-              <Search size={20} />
-            </button>
+            <div className="favorites-header-spacer" aria-hidden="true" />
           </div>
 
           {/* Tabs */}

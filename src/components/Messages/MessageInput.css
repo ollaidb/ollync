@@ -414,6 +414,18 @@
   background: var(--card);
 }
 
+@media (max-width: 768px) {
+  .appointment-inline-input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .appointment-inline-input[type="time"] {
+    min-width: 0;
+  }
+}
+
 .appointment-inline-calendar-wrapper {
   margin: 8px 0;
   display: flex;

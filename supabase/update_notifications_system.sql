@@ -275,6 +275,12 @@ DECLARE
   conversation_post_id UUID;
   is_group_conversation BOOLEAN;
   group_name VARCHAR(255);
+  notification_type VARCHAR(50);
+  notification_title TEXT;
+  notification_group_key TEXT;
+  notification_metadata JSONB;
+  appointment_title TEXT;
+  appointment_datetime TIMESTAMPTZ;
 BEGIN
   SELECT 
     c.post_id,
@@ -305,8 +311,44 @@ BEGIN
     END IF;
   ELSIF NEW.message_type = 'link' THEN
     message_preview := COALESCE(NEW.link_title, NEW.link_url, 'Un lien');
+  ELSIF NEW.message_type = 'calendar_request' THEN
+    appointment_title := COALESCE(
+      NEW.calendar_request_data->>'title',
+      NEW.calendar_request_data->>'event_name',
+      'Rendez-vous'
+    );
+    IF NEW.calendar_request_data ? 'appointment_datetime' THEN
+      appointment_datetime := (NEW.calendar_request_data->>'appointment_datetime')::timestamptz;
+    ELSIF NEW.calendar_request_data ? 'start_date' THEN
+      appointment_datetime := (NEW.calendar_request_data->>'start_date')::timestamptz;
+    END IF;
+    IF appointment_datetime IS NOT NULL THEN
+      message_preview := 'Rendez-vous : "' || appointment_title || '" le ' ||
+        to_char(appointment_datetime, 'DD/MM/YYYY à HH24:MI');
+    ELSE
+      message_preview := 'Rendez-vous : "' || appointment_title || '"';
+    END IF;
   ELSE
     message_preview := 'Un message';
+  END IF;
+
+  notification_type := CASE
+    WHEN NEW.message_type = 'calendar_request' THEN 'appointment'
+    ELSE 'message'
+  END;
+  notification_group_key := notification_type || '_' || NEW.conversation_id::TEXT || '_' || NEW.sender_id::TEXT;
+  IF notification_type = 'appointment' THEN
+    notification_metadata := jsonb_build_object(
+      'conversation_id', NEW.conversation_id,
+      'is_group', is_group_conversation,
+      'appointment_title', appointment_title,
+      'appointment_datetime', appointment_datetime
+    );
+  ELSE
+    notification_metadata := jsonb_build_object(
+      'conversation_id', NEW.conversation_id,
+      'is_group', is_group_conversation
+    );
   END IF;
 
   IF is_group_conversation THEN
@@ -320,15 +362,19 @@ BEGIN
         AND user_id != NEW.sender_id
         AND COALESCE(is_active, true) = true
     LOOP
+      notification_title := CASE
+        WHEN notification_type = 'appointment' THEN sender_name || ' a créé un rendez-vous' || COALESCE(' dans ' || group_name, ' dans le groupe')
+        ELSE sender_name || ' a envoyé un message' || COALESCE(' dans ' || group_name, ' dans le groupe')
+      END;
       PERFORM create_or_update_notification(
         participant_record.user_id,
-        'message',
-        sender_name || ' a envoyé un message' || COALESCE(' dans ' || group_name, ' dans le groupe'),
+        notification_type,
+        notification_title,
         message_preview,
         COALESCE(conversation_post_id, NEW.conversation_id::UUID),
         NEW.sender_id, -- sender_id pour regroupement
-        'message_' || NEW.conversation_id::TEXT || '_' || NEW.sender_id::TEXT, -- group_key: 1 notification par conversation/sender
-        jsonb_build_object('conversation_id', NEW.conversation_id, 'is_group', true)
+        notification_group_key, -- group_key: 1 notification par conversation/sender
+        notification_metadata
       );
     END LOOP;
   ELSE
@@ -338,15 +384,19 @@ BEGIN
     WHERE c.id = NEW.conversation_id;
 
     IF recipient_id IS NOT NULL AND recipient_id != NEW.sender_id THEN
+      notification_title := CASE
+        WHEN notification_type = 'appointment' THEN sender_name || ' a créé un rendez-vous avec vous'
+        ELSE sender_name || ' vous a envoyé un message'
+      END;
       PERFORM create_or_update_notification(
         recipient_id,
-        'message',
-        sender_name || ' vous a envoyé un message',
+        notification_type,
+        notification_title,
         message_preview,
         COALESCE(conversation_post_id, NEW.conversation_id::UUID),
         NEW.sender_id, -- sender_id pour regroupement
-        'message_' || NEW.conversation_id::TEXT || '_' || NEW.sender_id::TEXT, -- group_key: 1 notification par conversation/sender
-        jsonb_build_object('conversation_id', NEW.conversation_id, 'is_group', false)
+        notification_group_key, -- group_key: 1 notification par conversation/sender
+        notification_metadata
       );
     END IF;
   END IF;

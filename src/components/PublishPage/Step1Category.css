@@ -43,6 +43,18 @@
   background-color: var(--muted);
 }
 
+.category-card:active {
+  border-color: var(--category-color, #6366F1);
+  background-color: var(--muted);
+}
+
+@media (hover: none) {
+  .category-card:hover {
+    border-color: var(--border);
+    background-color: var(--card);
+  }
+}
+
 .category-icon-wrapper {
   width: 36px;
   height: 36px;

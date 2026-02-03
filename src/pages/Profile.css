@@ -179,6 +179,34 @@
   background: var(--muted);
 }
 
+.profile-menu-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.profile-menu-item.active .profile-menu-item-icon,
+.profile-menu-item.active .profile-menu-item-chevron {
+  color: var(--primary-foreground);
+}
+
+.profile-menu-item:active {
+  background: var(--muted);
+}
+
+@media (hover: none) {
+  .profile-menu-item:hover {
+    background: var(--background);
+  }
+
+  .profile-menu-item:active {
+    background: var(--muted);
+  }
+
+  .profile-menu-item.active:active {
+    background: var(--primary);
+  }
+}
+
 .profile-menu-item-icon {
   width: 24px;
   height: 24px;
@@ -227,6 +255,13 @@
   color: var(--foreground);
 }
 
+@media (hover: none) {
+  .profile-menu-subitem:hover {
+    background: var(--muted);
+    color: var(--muted-foreground);
+  }
+}
+
 .profile-menu-subitem svg {
   color: var(--muted-foreground);
   flex-shrink: 0;
@@ -242,6 +277,12 @@
 .profile-menu-item-logout:hover {
   background: color-mix(in srgb, var(--destructive) 15%, var(--background));
   color: var(--destructive);
+}
+
+@media (hover: none) {
+  .profile-menu-item-logout:hover {
+    background: var(--background);
+  }
 }
 
 .profile-menu-item-logout .profile-menu-item-icon {
@@ -262,6 +303,12 @@
 .profile-menu-item-login:hover {
   background: color-mix(in srgb, var(--primary) 15%, var(--background));
   color: var(--primary);
+}
+
+@media (hover: none) {
+  .profile-menu-item-login:hover {
+    background: var(--background);
+  }
 }
 
 .profile-menu-item-login .profile-menu-item-icon {
