@@ -1,0 +1,231 @@
+.moderation-page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+}
+
+.moderation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.moderation-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.moderation-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.moderation-filters {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.moderation-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.moderation-filter-btn {
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+  padding: 8px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.moderation-filter-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.moderation-loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+.moderation-locked {
+  margin: auto;
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 360px;
+}
+
+.moderation-locked h2 {
+  margin: 16px 0 8px;
+  font-size: 22px;
+}
+
+.moderation-locked p {
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+
+.moderation-primary-btn {
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.moderation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 20px 40px;
+}
+
+.moderation-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.moderation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.moderation-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.moderation-status {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.moderation-status-pending {
+  background: color-mix(in srgb, var(--primary) 15%, var(--background));
+  color: var(--primary);
+}
+
+.moderation-status-reviewed {
+  background: color-mix(in srgb, var(--accent) 15%, var(--background));
+  color: var(--accent);
+}
+
+.moderation-status-resolved {
+  background: color-mix(in srgb, #2ecc71 18%, var(--background));
+  color: #2ecc71;
+}
+
+.moderation-status-dismissed {
+  background: color-mix(in srgb, var(--muted-foreground) 12%, var(--background));
+  color: var(--muted-foreground);
+}
+
+.moderation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.moderation-description {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.moderation-entities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.moderation-entity-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+}
+
+.moderation-entity-value {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.moderation-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.moderation-action {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.moderation-action:hover {
+  border-color: var(--primary);
+}
+
+.moderation-action.muted {
+  color: var(--muted-foreground);
+}
+
+.moderation-action.destructive {
+  border-color: color-mix(in srgb, var(--destructive) 30%, var(--border));
+  color: var(--destructive);
+}
+
+.moderation-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.moderation-empty {
+  padding: 40px 20px;
+}

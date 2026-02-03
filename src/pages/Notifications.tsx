@@ -11,6 +11,11 @@ import './Notifications.css'
 
 type FilterType = 'all' | 'like' | 'message' | 'request' | 'match' | 'appointment' | 'review' | 'news'
 
+const SYSTEM_SENDER_EMAIL = 'binta22116@gmail.com'
+const SYSTEM_SENDER_NAME = 'Ollync'
+const isSystemSenderEmail = (email?: string | null) =>
+  (email || '').trim().toLowerCase() === SYSTEM_SENDER_EMAIL
+
 interface Notification {
   id: string
   type: string
@@ -20,8 +25,16 @@ interface Notification {
   read: boolean
   created_at: string
   sender_id?: string | null
+  metadata?: {
+    conversation_id?: string | null
+    is_group?: boolean | null
+    appointment_id?: string | null
+  } | null
   sender?: {
     avatar_url?: string | null
+    full_name?: string | null
+    username?: string | null
+    email?: string | null
   } | null
 }
 
@@ -42,7 +55,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('*, sender:profiles!notifications_sender_id_fkey(avatar_url, full_name, username, email)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -110,7 +123,11 @@ const Notifications = () => {
         }
         break
       case 'message':
-        navigate('/messages')
+        if (notification.metadata?.conversation_id) {
+          navigate(`/messages/${notification.metadata.conversation_id}`)
+        } else {
+          navigate('/messages')
+        }
         break
       case 'follow':
         if (notification.related_id) {
@@ -148,10 +165,18 @@ const Notifications = () => {
         navigate('/profile/contracts')
         break
       case 'appointment':
-        navigate('/messages?filter=appointments')
+        if (notification.metadata?.conversation_id) {
+          navigate(`/messages/${notification.metadata.conversation_id}?filter=appointments`)
+        } else {
+          navigate('/messages?filter=appointments')
+        }
         break
       case 'group_added':
-        navigate('/messages')
+        if (notification.metadata?.conversation_id) {
+          navigate(`/messages/${notification.metadata.conversation_id}`)
+        } else {
+          navigate('/messages')
+        }
         break
       case 'welcome':
         navigate('/')
@@ -230,8 +255,22 @@ const Notifications = () => {
   }, [i18n.language, t])
 
   const getNotificationTitle = (notification: Notification) => {
+    if (notification.title && notification.title.trim().length > 0) {
+      const trimmedTitle = notification.title.trim()
+      if (isSystemSenderEmail(notification.sender?.email)) {
+        if (notification.type === 'message') {
+          return `${SYSTEM_SENDER_NAME} vous a envoyé un message`
+        }
+
+        const senderName = notification.sender?.full_name || notification.sender?.username
+        if (senderName && trimmedTitle.includes(senderName)) {
+          return trimmedTitle.replace(senderName, SYSTEM_SENDER_NAME)
+        }
+      }
+      return trimmedTitle
+    }
     return t(`notifications:types.${notification.type}`, {
-      defaultValue: notification.title || ''
+      defaultValue: ''
     })
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Pencil, Copy, Languages, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import Footer from '../components/Footer'
@@ -192,6 +192,7 @@ const Messages = () => {
   const [showDeleteMessageConfirm, setShowDeleteMessageConfirm] = useState(false)
   const [showForwardMessage, setShowForwardMessage] = useState(false)
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
+  const [messageReactions, setMessageReactions] = useState<Record<string, Array<{ emoji: string; count: number }>>>({})
   const [conversationAliases, setConversationAliases] = useState<Record<string, string>>({})
   const [infoLoading, setInfoLoading] = useState(false)
   const [infoParticipants, setInfoParticipants] = useState<ConversationParticipant[]>([])
@@ -206,6 +207,7 @@ const Messages = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<ConversationParticipant | null>(null)
   const [showMediaActions, setShowMediaActions] = useState(false)
   const [selectedMediaMessage, setSelectedMediaMessage] = useState<Message | null>(null)
+  const [missingNotice, setMissingNotice] = useState<string | null>(null)
 
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
@@ -257,6 +259,13 @@ const Messages = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, postId, conversationId])
 
+  useEffect(() => {
+    const state = location.state as { missingNotice?: string } | null
+    if (state?.missingNotice) {
+      setMissingNotice(state.missingNotice)
+    }
+  }, [location.state])
+
   // Recharger la conversation quand l'URL change
   useEffect(() => {
     if (user && conversationId && !selectedConversation) {
@@ -270,6 +279,12 @@ const Messages = () => {
       shouldScrollToBottomRef.current = true
     }
   }, [conversationId])
+
+  useEffect(() => {
+    if (selectedConversation?.id) {
+      shouldScrollToBottomRef.current = true
+    }
+  }, [selectedConversation?.id])
 
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return
@@ -383,11 +398,6 @@ const Messages = () => {
 
     const dayLabel = diffInDays > 1 ? 'jours' : 'jour'
     return `Dernière activité : il y a ${diffInDays} ${dayLabel}`
-  }
-
-  const isWithin24Hours = (dateString: string) => {
-    const createdAt = new Date(dateString).getTime()
-    return Date.now() - createdAt <= 24 * 60 * 60 * 1000
   }
 
   const hasLinkContent = (text?: string | null) => {
@@ -567,8 +577,9 @@ const Messages = () => {
         .single()
 
       if (!conv || !(conv as { id: string }).id) {
-        alert('Conversation introuvable')
-        navigate('/messages')
+        const notice = 'Cette conversation a été supprimée ou n\'existe plus.'
+        setMissingNotice(notice)
+        navigate('/messages', { replace: true, state: { missingNotice: notice } })
         return
       }
 
@@ -629,6 +640,7 @@ const Messages = () => {
         postTitle
       } as Conversation)
 
+      setMissingNotice(null)
       loadMessages(convId)
     } catch (error) {
       console.error('Error loading conversation:', error)
@@ -689,6 +701,7 @@ const Messages = () => {
         sender: sendersMap.get(msg.sender_id) || null
       }))
 
+      shouldScrollToBottomRef.current = true
       setMessages(formattedMessages)
 
       // Marquer les messages non lus comme lus
@@ -1506,33 +1519,23 @@ const Messages = () => {
     }
   }
 
-  const handleTranslateMessage = (msg?: Message | null) => {
-    if (!msg?.content) return
-    const text = encodeURIComponent(msg.content)
-    window.open(`https://translate.google.com/?sl=auto&tl=fr&text=${text}`, '_blank')
-  }
+  const reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 
-  const handleUpdateMessage = async (nextMessage: string | null) => {
-    if (!activeMessage || !user) return
-    if (activeMessage.sender_id !== user.id) return
-    if (!isWithin24Hours(activeMessage.created_at)) return
-    if (nextMessage === null) return
-
-    const trimmed = nextMessage.trim()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('messages') as any)
-      .update({ content: trimmed, edited_at: new Date().toISOString() })
-      .eq('id', activeMessage.id)
-      .eq('sender_id', user.id)
-
-    if (error) {
-      console.error('Error updating message:', error)
-      alert('Erreur lors de la modification du message')
-      return
+  const handleAddReaction = async (msg: Message, emoji: string) => {
+    if (!user) return
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('message_likes') as any)
+        .insert({ message_id: msg.id, user_id: user.id, emoji })
+      setMessageReactions((prev) => {
+        const current = prev[msg.id] || []
+        const next = current.map((item) => item.emoji === emoji ? { ...item, count: item.count + 1 } : item)
+        const exists = current.some((item) => item.emoji === emoji)
+        return { ...prev, [msg.id]: exists ? next : [...current, { emoji, count: 1 }] }
+      })
+    } catch (error) {
+      console.error('Error adding reaction:', error)
     }
-
-    setShowMessageActions(false)
-    loadMessages(selectedConversation?.id || conversationId || '')
   }
 
   const handleDeleteMessage = async (msg: Message, deleteForAll: boolean) => {
@@ -1798,13 +1801,6 @@ const Messages = () => {
     const otherUserId = selectedConversation?.other_user?.id
     const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
     const headerName = isSystemConversation ? SYSTEM_SENDER_NAME : displayName
-    const canEditMessage = !!activeMessage &&
-      activeMessage.sender_id === user?.id &&
-      isWithin24Hours(activeMessage.created_at) &&
-      (!activeMessage.message_type || activeMessage.message_type === 'text')
-    const canDeleteForAll = !!activeMessage &&
-      activeMessage.sender_id === user?.id &&
-      isWithin24Hours(activeMessage.created_at)
     const canCopyMessage = !!activeMessage?.content
 
     if (isInfoView) {
@@ -2999,20 +2995,20 @@ const Messages = () => {
                       >
                         <div
                           className="message-swipe-content"
-                          onContextMenu={isOwn ? (event) => {
+                          onContextMenu={(event) => {
                             event.preventDefault()
                             setActiveMessage(msg)
                             setShowMessageActions(true)
-                          } : undefined}
-                          onTouchStart={isOwn ? (event) => {
+                          }}
+                          onTouchStart={(event) => {
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
                             longPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowMessageActions(true)
                             }, 500)
-                          } : undefined}
-                          onTouchMove={isOwn ? (event) => {
+                          }}
+                          onTouchMove={(event) => {
                             const touch = event.touches[0]
                             const start = messageTouchRef.current
                             if (!start) return
@@ -3024,13 +3020,13 @@ const Messages = () => {
                                 longPressTimerRef.current = null
                               }
                             }
-                          } : undefined}
-                          onTouchEnd={isOwn ? () => {
+                          }}
+                          onTouchEnd={() => {
                             if (longPressTimerRef.current) {
                               window.clearTimeout(longPressTimerRef.current)
                               longPressTimerRef.current = null
                             }
-                          } : undefined}
+                          }}
                         >
                           <MessageBubble
                             message={msg}
@@ -3079,6 +3075,16 @@ const Messages = () => {
                               }
                             }}
                           />
+                          {messageReactions[msg.id]?.length ? (
+                            <div className={`message-reaction-row ${isOwn ? 'own' : 'other'}`}>
+                              {messageReactions[msg.id].map((reaction) => (
+                                <span key={reaction.emoji} className="message-reaction-chip">
+                                  <span className="message-reaction-emoji">{reaction.emoji}</span>
+                                  <span className="message-reaction-count">{reaction.count}</span>
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     )
@@ -3094,10 +3100,24 @@ const Messages = () => {
             onClick={() => setShowMessageActions(false)}
           >
             <div
-              className="message-actions-menu"
+              className="message-actions-menu message-actions-card"
               onClick={(event) => event.stopPropagation()}
             >
-              <h3 className="message-actions-title">Actions</h3>
+              <div className="message-actions-reactions">
+                {reactionEmojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className="message-reaction-btn"
+                    onClick={async () => {
+                      await handleAddReaction(activeMessage, emoji)
+                      setShowMessageActions(false)
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
               <button
                 className="message-action-item"
                 type="button"
@@ -3113,18 +3133,6 @@ const Messages = () => {
               <button
                 className="message-action-item"
                 type="button"
-                onClick={() => {
-                  handleTranslateMessage(activeMessage)
-                  setShowMessageActions(false)
-                }}
-                disabled={!activeMessage.content}
-              >
-                <Languages size={18} />
-                Traduire
-              </button>
-              <button
-                className="message-action-item"
-                type="button"
                 onClick={async () => {
                   setShowMessageActions(false)
                   setShowForwardMessage(true)
@@ -3135,42 +3143,24 @@ const Messages = () => {
                 <Send size={18} />
                 Transférer
               </button>
-              {activeMessage.sender_id === user?.id && (
-                <>
-                  <button
-                    className="message-action-item"
-                    type="button"
-                    onClick={() => {
-                      const nextMessage = window.prompt(
-                        'Modifier le message',
-                        activeMessage?.content || ''
-                      )
-                      void handleUpdateMessage(nextMessage)
-                    }}
-                    disabled={!canEditMessage}
-                  >
-                    <Pencil size={18} />
-                    Modifier
-                  </button>
-                  <button
-                    className="message-action-item danger"
-                    type="button"
-                    onClick={() => {
-                      setShowMessageActions(false)
-                      setShowDeleteMessageConfirm(true)
-                    }}
-                  >
-                    <Trash2 size={18} />
-                    Supprimer
-                  </button>
-                </>
-              )}
               <button
-                className="message-action-item cancel"
+                className="message-action-item danger"
+                type="button"
+                onClick={() => {
+                  setShowMessageActions(false)
+                  setShowDeleteMessageConfirm(true)
+                }}
+              >
+                <Trash2 size={18} />
+                Supprimer
+              </button>
+              <button
+                className="message-actions-close"
                 type="button"
                 onClick={() => setShowMessageActions(false)}
+                aria-label="Fermer"
               >
-                Annuler
+                ×
               </button>
             </div>
           </div>
@@ -3179,8 +3169,8 @@ const Messages = () => {
           <ConfirmationModal
             visible={showDeleteMessageConfirm}
             title="Supprimer le message"
-            message={canDeleteForAll ? 'Supprimer pour tout le monde ?' : 'Supprimer pour vous uniquement ?'}
-            onConfirm={() => handleDeleteMessage(activeMessage, canDeleteForAll)}
+            message="Supprimer pour vous uniquement ?"
+            onConfirm={() => handleDeleteMessage(activeMessage, false)}
             onCancel={() => setShowDeleteMessageConfirm(false)}
             confirmLabel="Supprimer"
             cancelLabel="Annuler"
@@ -3312,6 +3302,11 @@ const Messages = () => {
       </div>
 
       <div className="messages-content">
+        {missingNotice && (
+          <div className="messages-missing-banner">
+            {missingNotice}
+          </div>
+        )}
         {loading ? (
           <div className="loading-container">
             <Loader className="spinner-large" size={48} />

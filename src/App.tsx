@@ -17,6 +17,7 @@ import SwipePage from './pages/SwipePage'
 import UsersPage from './pages/UsersPage'
 import Search from './pages/Search'
 import Notifications from './pages/Notifications'
+import Moderation from './pages/Moderation'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ResetPassword from './pages/ResetPassword'
@@ -117,6 +118,7 @@ function AppContent() {
       <Route path="/users" element={<UsersPage />} />
       <Route path="/search" element={<Search />} />
       <Route path="/notifications" element={<Notifications />} />
+      <Route path="/moderation" element={<Moderation />} />
       <Route path="/urgent" element={<UrgentPosts />} />
       <Route path="/recent" element={<RecentPosts />} />
       <Route path="/auth/login" element={<Login />} />

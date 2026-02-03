@@ -82,20 +82,61 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
             
             // Créer l'appointment (table peut ne pas exister encore, donc on ignore l'erreur)
             try {
+              const appointmentTitle = calendarData.title || 'Rendez-vous'
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { error: appointmentError } = await (supabase.from('appointments') as any).insert({
-                message_id: messageResult[0].id,
-                conversation_id: conversationId,
-                sender_id: senderId,
-                recipient_id: recipientId,
-                appointment_datetime: calendarData.appointment_datetime,
-                title: calendarData.title || 'Rendez-vous',
-                status: 'pending'
-              })
+              const { data: appointmentRows, error: appointmentError } = await (supabase.from('appointments') as any)
+                .insert({
+                  message_id: messageResult[0].id,
+                  conversation_id: conversationId,
+                  sender_id: senderId,
+                  recipient_id: recipientId,
+                  appointment_datetime: calendarData.appointment_datetime,
+                  title: appointmentTitle,
+                  status: 'pending'
+                })
+                .select('id')
 
               if (appointmentError) {
                 console.error('Error creating appointment:', appointmentError)
                 // Ne pas bloquer l'envoi du message si l'appointment échoue
+              } else if (appointmentRows?.[0]?.id) {
+                const appointmentId = (appointmentRows[0] as { id: string }).id
+                const appointmentDateLabel = new Date(calendarData.appointment_datetime).toLocaleString('fr-FR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+                const { data: senderProfile } = await supabase
+                  .from('profiles')
+                  .select('full_name, username')
+                  .eq('id', senderId)
+                  .single()
+                const senderName = (senderProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
+                  || (senderProfile as { full_name?: string | null; username?: string | null } | null)?.username
+                  || 'Quelqu\'un'
+
+                // Notifications immédiates pour le créateur et le destinataire
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('notifications') as any).insert([
+                  {
+                    user_id: senderId,
+                    type: 'appointment',
+                    title: 'Vous avez créé un rendez-vous',
+                    content: `Rendez-vous : "${appointmentTitle}" le ${appointmentDateLabel}`,
+                    related_id: appointmentId,
+                    metadata: { conversation_id: conversationId, appointment_id: appointmentId }
+                  },
+                  {
+                    user_id: recipientId,
+                    type: 'appointment',
+                    title: `${senderName} a créé un rendez-vous avec vous`,
+                    content: `Rendez-vous : "${appointmentTitle}" le ${appointmentDateLabel}`,
+                    related_id: appointmentId,
+                    metadata: { conversation_id: conversationId, appointment_id: appointmentId }
+                  }
+                ])
               }
             } catch (err) {
               console.error('Error creating appointment (table may not exist):', err)
@@ -396,6 +437,14 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
       {showOptions && (
         <div className="message-options-panel">
+          <button
+            type="button"
+            className="message-options-close"
+            onClick={() => setShowOptions(false)}
+            aria-label="Fermer"
+          >
+            ×
+          </button>
           <button
             className="message-option-btn"
             onClick={() => {
