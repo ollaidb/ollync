@@ -15,6 +15,7 @@ interface PostCardProps {
     payment_type?: string | null
     location?: string | null
     images?: string[] | null
+    video?: string | null
     likes_count: number
     comments_count: number
     created_at: string
@@ -278,6 +279,8 @@ const PostCard = ({
   }
 
   const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
+  const mainMedia = mainImage || post.video || null
+  const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(mainMedia.split('?')[0].split('#')[0])
 
   const getPaymentDisplay = () => {
     const paymentType = post.payment_type || ''
@@ -343,13 +346,23 @@ const PostCard = ({
     return (
       <div className={`post-card post-card-list ${post.is_urgent ? 'post-card-urgent-border' : ''}`} onClick={handleCardClick}>
       <div className="post-card-image">
-        {mainImage ? (
-          <img 
-            src={mainImage} 
-            alt={post.title}
-            loading="lazy"
-            decoding="async"
-          />
+        {mainMedia ? (
+          isVideo ? (
+            <video
+              src={mainMedia}
+              className="post-card-media"
+              playsInline
+              preload="metadata"
+              muted
+            />
+          ) : (
+            <img 
+              src={mainMedia} 
+              alt={post.title}
+              loading="lazy"
+              decoding="async"
+            />
+          )
         ) : (
           <div className="post-card-image-placeholder">
             <ImageOff size={32} />
@@ -425,13 +438,23 @@ const PostCard = ({
       }}
     >
       <div className="post-card-image">
-        {mainImage ? (
-          <img 
-            src={mainImage} 
-            alt={post.title}
-            loading="lazy"
-            decoding="async"
-          />
+        {mainMedia ? (
+          isVideo ? (
+            <video
+              src={mainMedia}
+              className="post-card-media"
+              playsInline
+              preload="metadata"
+              muted
+            />
+          ) : (
+            <img 
+              src={mainMedia} 
+              alt={post.title}
+              loading="lazy"
+              decoding="async"
+            />
+          )
         ) : (
           <div className="post-card-image-placeholder">
             <ImageOff size={40} />
@@ -511,4 +534,3 @@ const PostCard = ({
 }
 
 export default memo(PostCard)
-

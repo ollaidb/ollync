@@ -4,7 +4,7 @@ import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
-import { getMyLocation, handlePublish, validatePublishForm, shouldShowSocialNetwork, getPaymentOptionConfig } from '../utils/publishHelpers'
+import { handlePublish, validatePublishForm, shouldShowSocialNetwork, getPaymentOptionConfig } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
@@ -54,6 +54,7 @@ export default function Publish() {
     media_type?: string | null
     dateFrom?: string | null
     dateTo?: string | null
+    tagged_post_id?: string | null
   }
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -91,6 +92,7 @@ export default function Publish() {
     exchange_service: '',
     revenue_share_percentage: '',
     co_creation_details: '',
+    materialCondition: '',
     urgent: false,
     images: [] as string[],
     video: null as string | null,
@@ -103,6 +105,7 @@ export default function Publish() {
     externalLink: '',
     documentUrl: '',
     documentName: '',
+    taggedPostId: ''
   }), [])
   const [formData, setFormData] = useState(initialFormData)
   const [isLoadingEdit, setIsLoadingEdit] = useState(false)
@@ -153,6 +156,12 @@ export default function Publish() {
     return params.get('name') || ''
   }
 
+  const parseMaterialConditionFromDescription = (description?: string | null) => {
+    if (!description) return ''
+    const match = description.match(/État du matériel\s*:\s*(.+)$/mi)
+    return match?.[1]?.trim() || ''
+  }
+
   const getStepFromForm = useCallback((data: typeof formData) => {
     if (!data.category) return 0
     if (!data.subcategory) return 1
@@ -177,6 +186,8 @@ export default function Publish() {
     const requiresPrice = !!paymentConfig?.requiresPrice
     const requiresExchangeService = !!paymentConfig?.requiresExchangeService
     const requiresRevenueShare = !!paymentConfig?.requiresPercentage
+    const requiresMaterialCondition =
+      category?.slug === 'vente' && subcategory?.slug === 'gorille'
 
     const hasStep3Required =
       data.title.trim().length > 0 &&
@@ -189,6 +200,7 @@ export default function Publish() {
           !Number.isNaN(parseFloat(data.revenue_share_percentage)) &&
           parseFloat(data.revenue_share_percentage) > 0 &&
           parseFloat(data.revenue_share_percentage) <= 100)) &&
+      (!requiresMaterialCondition || (data.materialCondition && data.materialCondition.trim().length > 0)) &&
       (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0))
 
     if (!hasStep3Required) return 3
@@ -282,6 +294,7 @@ export default function Publish() {
           exchange_service: postData.exchange_service || '',
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
           co_creation_details: postData.co_creation_details || '',
+          materialCondition: parseMaterialConditionFromDescription(postData.description),
           urgent: postData.is_urgent || false,
           images: postData.images || [],
           video: postData.video || null,
@@ -293,7 +306,8 @@ export default function Publish() {
           visibility: postData.visibility || 'public',
           externalLink: postData.external_link || '',
           documentUrl: postData.document_url || '',
-          documentName: parseDocumentNameFromUrl(postData.document_url)
+          documentName: parseDocumentNameFromUrl(postData.document_url),
+          taggedPostId: postData.tagged_post_id || ''
         }
 
         if (!isMounted) return
@@ -332,10 +346,6 @@ export default function Publish() {
 
   const updateFormData = (updates: Partial<typeof formData>) => {
     setFormData({ ...formData, ...updates })
-  }
-
-  const handleGetMyLocation = () => {
-    getMyLocation(formData, updateFormData)
   }
 
   const handlePublishPost = (status: 'draft' | 'active') => {
@@ -494,7 +504,7 @@ export default function Publish() {
             <Step5LocationMedia
               formData={formData}
               onUpdateFormData={updateFormData}
-              onGetMyLocation={handleGetMyLocation}
+              currentPostId={editPostId}
             />
           )}
         </div>

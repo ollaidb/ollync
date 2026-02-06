@@ -169,6 +169,7 @@ const Messages = () => {
   const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
+  const [messagesLoading, setMessagesLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -217,12 +218,15 @@ const Messages = () => {
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
   const shouldScrollToBottomRef = useRef(false)
+  const bottomAnchorRef = useRef<HTMLDivElement | null>(null)
+  const lastMessageRef = useRef<HTMLDivElement | null>(null)
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const isInfoView = location.pathname.endsWith('/info')
   const isMediaView = location.pathname.endsWith('/media')
   const isAppointmentsView = location.pathname.endsWith('/appointments')
+  const isConversationView = Boolean(conversationId || selectedConversation)
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
   useEffect(() => {
@@ -289,35 +293,60 @@ const Messages = () => {
     }
   }, [selectedConversation?.id])
 
+  const scrollToBottom = (align: ScrollLogicalPosition = 'end') => {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ block: align })
+    } else if (bottomAnchorRef.current) {
+      bottomAnchorRef.current.scrollIntoView({ block: 'end' })
+    } else if (messagesListRef.current) {
+      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
+    }
+    shouldScrollToBottomRef.current = false
+  }
+
+  const scheduleScrollToBottom = (align: ScrollLogicalPosition = 'end') => {
+    requestAnimationFrame(() => scrollToBottom(align))
+    window.setTimeout(() => scrollToBottom(align), 160)
+    window.setTimeout(() => scrollToBottom(align), 360)
+  }
+
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return
-    if (!messagesListRef.current) return
-
-    const scrollToBottom = () => {
-      if (!messagesListRef.current) return
-      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
-      shouldScrollToBottomRef.current = false
-    }
-
-    requestAnimationFrame(scrollToBottom)
-    requestAnimationFrame(scrollToBottom)
+    scheduleScrollToBottom('end')
   }, [messages])
 
   useEffect(() => {
     if (!inputContainerRef.current) return
     const updateOffset = () => {
       if (!inputContainerRef.current || !messagesListRef.current) return
-      const height = inputContainerRef.current.getBoundingClientRect().height + 12
+      const baseHeight = inputContainerRef.current.getBoundingClientRect().height + 12
+      let keyboardGap = 0
+      if (window.visualViewport) {
+        const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop
+        keyboardGap = Math.max(0, window.innerHeight - viewportBottom)
+      }
+      const height = baseHeight + keyboardGap
       messagesListRef.current.style.setProperty('--messages-input-offset', `${height}px`)
       if (shouldScrollToBottomRef.current) {
-        messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
-        shouldScrollToBottomRef.current = false
+        scheduleScrollToBottom('end')
       }
     }
     updateOffset()
     const observer = new ResizeObserver(updateOffset)
     observer.observe(inputContainerRef.current)
-    return () => observer.disconnect()
+    const viewport = window.visualViewport
+    if (viewport) {
+      viewport.addEventListener('resize', updateOffset)
+      viewport.addEventListener('scroll', updateOffset)
+    }
+    return () => {
+      observer.disconnect()
+      const viewport = window.visualViewport
+      if (viewport) {
+        viewport.removeEventListener('resize', updateOffset)
+        viewport.removeEventListener('scroll', updateOffset)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -476,17 +505,37 @@ const Messages = () => {
     }
   }
 
+  const fetchWithFallback = async <T,>(
+    runView: () => Promise<{ data: T | null; error: { code?: string } | null }>,
+    runTable: () => Promise<{ data: T | null; error: { code?: string } | null }>
+  ): Promise<{ data: T | null; error: { code?: string } | null }> => {
+    const viewResult = await runView()
+    if (!viewResult.error) {
+      return viewResult
+    }
+    return runTable()
+  }
+
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
   const findOrCreateConversation = async (otherUserId: string, postId?: string | null) => {
     if (!user) return null
 
     try {
       // Chercher une conversation existante entre ces deux utilisateurs (pas un groupe, pas supprimée)
-      const { data: existingConvs, error: searchError } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-        .is('deleted_at', null) // Exclure les conversations supprimées
+      const { data: existingConvs, error: searchError } = await fetchWithFallback(
+        () =>
+          supabase
+            .from('public_conversations_with_users')
+            .select('*')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+            .is('deleted_at', null),
+        () =>
+          supabase
+            .from('conversations')
+            .select('*')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+            .is('deleted_at', null)
+      )
 
       if (searchError) {
         console.error('Error searching for conversation:', searchError)
@@ -517,12 +566,22 @@ const Messages = () => {
         // Si l'erreur est due à une contrainte unique, essayer de récupérer la conversation existante
         if (insertError.code === '23505') {
           // Réessayer de trouver la conversation
-          const { data: retryConvs } = await supabase
-            .from('conversations')
-            .select('*')
-            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-            .is('deleted_at', null)
-            .limit(1)
+          const { data: retryConvs } = await fetchWithFallback(
+            () =>
+              supabase
+                .from('public_conversations_with_users')
+                .select('*')
+                .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+                .is('deleted_at', null)
+                .limit(1),
+            () =>
+              supabase
+                .from('conversations')
+                .select('*')
+                .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+                .is('deleted_at', null)
+                .limit(1)
+          )
           
           if (retryConvs && retryConvs.length > 0) {
             return retryConvs[0]
@@ -578,6 +637,8 @@ const Messages = () => {
     if (!user) return
 
     setLoading(true)
+    setSelectedConversation(null)
+    setMessages([])
     try {
       const { data: blocksData, error: blocksError } = await supabase
         .from('user_blocks')
@@ -591,11 +652,20 @@ const Messages = () => {
       const blockedIds = (blocksData || []).map((block) => (block as { blocked_id: string }).blocked_id)
       setBlockedUserIds(blockedIds)
 
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('id', convId)
-        .single()
+      const { data: conv } = await fetchWithFallback(
+        () =>
+          supabase
+            .from('public_conversations_with_users')
+            .select('*')
+            .eq('id', convId)
+            .single(),
+        () =>
+          supabase
+            .from('conversations')
+            .select('*')
+            .eq('id', convId)
+            .single()
+      )
 
       if (!conv || !(conv as { id: string }).id) {
         const notice = 'Cette conversation a été supprimée ou n\'existe plus.'
@@ -670,7 +740,7 @@ const Messages = () => {
       } as Conversation)
 
       setMissingNotice(null)
-      loadMessages(convId)
+      await loadMessages(convId)
     } catch (error) {
       console.error('Error loading conversation:', error)
     } finally {
@@ -681,89 +751,108 @@ const Messages = () => {
   const loadMessages = async (convId: string) => {
     if (!user) return
 
+    setMessagesLoading(true)
     // Utiliser select('*') pour éviter les problèmes de colonnes manquantes
-    const { data: messagesData, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', convId)
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      console.error('Error loading messages:', error)
-      setMessages([])
-      return
-    } else if (messagesData && messagesData.length > 0) {
-      // Filtrer les messages supprimés côté client (soft delete)
-      // Un message est visible si :
-      // - is_deleted est null/false OU
-      // - deleted_for_user_id n'est pas égal à l'utilisateur actuel
-      const visibleMessages = (messagesData as Array<Message & { 
-        is_deleted?: boolean | null
-        deleted_for_user_id?: string | null
-        is_deleted_for_all?: boolean | null
-      }>).filter((msg) => {
-        if (msg.is_deleted_for_all === true) {
-          return false
-        }
-        // Si le message est marqué comme supprimé pour cet utilisateur, l'exclure
-        if (msg.is_deleted === true && msg.deleted_for_user_id === user.id) {
-          return false
-        }
-        return true
-      })
-
-      const senderIds = [...new Set(visibleMessages.map((msg) => msg.sender_id).filter(Boolean))]
-      
-      const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url, email')
-        .in('id', senderIds) : { data: [], error: null }
-
-      if (sendersError) {
-        console.error('Error loading senders:', sendersError)
-      }
-
-      const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null; email?: string | null }> || []).map((s) => [s.id, s]))
-
-      const formattedMessages: Message[] = visibleMessages.map((msg) => ({
-        ...msg,
-        sender: sendersMap.get(msg.sender_id) || null
-      }))
-
-      shouldScrollToBottomRef.current = true
-      setMessages(formattedMessages)
-
-      // Marquer les messages non lus comme lus
-      const unreadMessages = formattedMessages.filter(
-        (msg) => msg.sender_id !== user.id && !msg.read_at
+    try {
+      const { data: messagesData, error } = await fetchWithFallback(
+        () =>
+          supabase
+            .from('public_messages_with_sender')
+            .select('*')
+            .eq('conversation_id', convId)
+            .order('created_at', { ascending: true }),
+        () =>
+          supabase
+            .from('messages')
+            .select('*')
+            .eq('conversation_id', convId)
+            .order('created_at', { ascending: true })
       )
 
-      if (unreadMessages.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: readError } = await (supabase as any)
-          .rpc('mark_conversation_messages_read', { p_conversation_id: convId })
+      if (error) {
+        console.error('Error loading messages:', error)
+        setMessages([])
+        return
+      }
 
-        if (readError) {
-          console.error('Error marking messages as read:', readError)
-        } else {
-          const nowIso = new Date().toISOString()
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.sender_id !== user.id && !msg.read_at
-                ? { ...msg, read_at: nowIso }
-                : msg
+      if (messagesData && messagesData.length > 0) {
+        // Filtrer les messages supprimés côté client (soft delete)
+        // Un message est visible si :
+        // - is_deleted est null/false OU
+        // - deleted_for_user_id n'est pas égal à l'utilisateur actuel
+        const visibleMessages = (messagesData as Array<Message & { 
+          is_deleted?: boolean | null
+          deleted_for_user_id?: string | null
+          is_deleted_for_all?: boolean | null
+        }>).filter((msg) => {
+          if (msg.is_deleted_for_all === true) {
+            return false
+          }
+          if (msg.deleted_for_user_id === user.id) {
+            return false
+          }
+          // Si le message est marqué comme supprimé pour cet utilisateur, l'exclure
+          if (msg.is_deleted === true && msg.deleted_for_user_id === user.id) {
+            return false
+          }
+          return true
+        })
+
+        const senderIds = [...new Set(visibleMessages.map((msg) => msg.sender_id).filter(Boolean))]
+        
+        const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, email')
+          .in('id', senderIds) : { data: [], error: null }
+
+        if (sendersError) {
+          console.error('Error loading senders:', sendersError)
+        }
+
+        const sendersMap = new Map((senders as Array<{ id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null; email?: string | null }> || []).map((s) => [s.id, s]))
+
+        const formattedMessages: Message[] = visibleMessages.map((msg) => ({
+          ...msg,
+          sender: sendersMap.get(msg.sender_id) || null
+        }))
+
+        shouldScrollToBottomRef.current = true
+        setMessages(formattedMessages)
+
+        // Marquer les messages non lus comme lus
+        const unreadMessages = formattedMessages.filter(
+          (msg) => msg.sender_id !== user.id && !msg.read_at
+        )
+
+        if (unreadMessages.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: readError } = await (supabase as any)
+            .rpc('mark_conversation_messages_read', { p_conversation_id: convId })
+
+          if (readError) {
+            console.error('Error marking messages as read:', readError)
+          } else {
+            const nowIso = new Date().toISOString()
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.sender_id !== user.id && !msg.read_at
+                  ? { ...msg, read_at: nowIso }
+                  : msg
+              )
+            )
+          }
+
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === convId ? { ...conv, unread: 0 } : conv
             )
           )
         }
-
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === convId ? { ...conv, unread: 0 } : conv
-          )
-        )
+      } else {
+        setMessages([])
       }
-    } else {
-      setMessages([])
+    } finally {
+      setMessagesLoading(false)
     }
   }
 
@@ -975,12 +1064,22 @@ const Messages = () => {
 
     try {
       const buildAppointmentsFromMessages = async () => {
-        const { data: convs, error: convError } = await supabase
-          .from('conversations')
-          .select('id, user1_id, user2_id, is_group')
-          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-          .is('deleted_at', null)
-          .eq('is_group', false)
+        const { data: convs, error: convError } = await fetchWithFallback(
+          () =>
+            supabase
+              .from('public_conversations_with_users')
+              .select('id, user1_id, user2_id, is_group')
+              .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+              .is('deleted_at', null)
+              .eq('is_group', false),
+          () =>
+            supabase
+              .from('conversations')
+              .select('id, user1_id, user2_id, is_group')
+              .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+              .is('deleted_at', null)
+              .eq('is_group', false)
+        )
 
         if (convError || !convs || convs.length === 0) {
           if (convError) {
@@ -997,12 +1096,22 @@ const Messages = () => {
           convOtherUserMap.set(conv.id, otherUserId)
         })
 
-        const { data: messagesData, error: messagesError } = await supabase
-          .from('messages')
-          .select('id, conversation_id, sender_id, created_at, calendar_request_data')
-          .in('conversation_id', convIds)
-          .eq('message_type', 'calendar_request')
-          .order('created_at', { ascending: false })
+        const { data: messagesData, error: messagesError } = await fetchWithFallback(
+          () =>
+            supabase
+              .from('public_messages_with_sender')
+              .select('id, conversation_id, sender_id, created_at, calendar_request_data')
+              .in('conversation_id', convIds)
+              .eq('message_type', 'calendar_request')
+              .order('created_at', { ascending: false }),
+          () =>
+            supabase
+              .from('messages')
+              .select('id, conversation_id, sender_id, created_at, calendar_request_data')
+              .in('conversation_id', convIds)
+              .eq('message_type', 'calendar_request')
+              .order('created_at', { ascending: false })
+        )
 
         if (messagesError || !messagesData || messagesData.length === 0) {
           if (messagesError) {
@@ -1101,12 +1210,22 @@ const Messages = () => {
 
     setSelectableUsersLoading(true)
     try {
-      const { data: convs, error } = await supabase
-        .from('conversations')
-        .select('user1_id, user2_id, is_group')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .is('deleted_at', null)
-        .eq('is_group', false)
+      const { data: convs, error } = await fetchWithFallback(
+        () =>
+          supabase
+            .from('public_conversations_with_users')
+            .select('user1_id, user2_id, is_group')
+            .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+            .is('deleted_at', null)
+            .eq('is_group', false),
+        () =>
+          supabase
+            .from('conversations')
+            .select('user1_id, user2_id, is_group')
+            .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+            .is('deleted_at', null)
+            .eq('is_group', false)
+      )
 
       if (error) {
         console.error('Error loading users from conversations:', error)
@@ -1156,7 +1275,9 @@ const Messages = () => {
   const loadConversations = useCallback(async () => {
     if (!user) return
 
-    setLoading(true)
+    if (!isConversationView) {
+      setLoading(true)
+    }
     try {
       const { data: participantRows, error: participantsError } = await supabase
         .from('conversation_participants')
@@ -1189,9 +1310,11 @@ const Messages = () => {
       setBlockedUserIds(blockedIdsArray)
       const blockedIds = new Set(blockedIdsArray)
 
-      // Charger les match_requests
-      const requestsData = await loadMatchRequests()
-      setMatchRequests(requestsData)
+      // Charger les match_requests uniquement si nécessaire
+      if (activeFilter === 'match_requests' || activeFilter === 'matches') {
+        const requestsData = await loadMatchRequests()
+        setMatchRequests(requestsData)
+      }
 
       if (activeFilter === 'appointments') {
         const appointmentsData = await loadAppointments()
@@ -1201,10 +1324,16 @@ const Messages = () => {
       // Pour l'onglet "Tout" : toutes les conversations (même sans messages)
       // Exclure uniquement les conversations supprimées (soft delete)
       let query = supabase
+        .from('public_conversations_with_users')
+        .select('*')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}${participantFilter}`)
+        .is('deleted_at', null)
+
+      const fallbackQuery = supabase
         .from('conversations')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}${participantFilter}`)
-        .is('deleted_at', null) // Exclure les conversations supprimées
+        .is('deleted_at', null)
 
       // Appliquer les filtres selon le type (l'archivage est géré par utilisateur)
       if (activeFilter === 'posts') {
@@ -1215,9 +1344,17 @@ const Messages = () => {
 
       // Trier par last_message_at si disponible, sinon par created_at
       // Utiliser nulls last pour mettre les conversations sans messages en fin de liste
-      const { data: convs, error } = await query
+      let { data: convs, error } = await query
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
+
+      if (error) {
+        const fallbackResult = await fallbackQuery
+          .order('last_message_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+        convs = fallbackResult.data
+        error = fallbackResult.error
+      }
 
       if (error) {
         console.error('Error loading conversations:', error)
@@ -1291,22 +1428,23 @@ const Messages = () => {
             const postTitleTrimmed = postTitleRaw?.trim() || ''
             const postTitle = postTitleTrimmed && postTitleTrimmed !== '0' ? postTitleTrimmed : null
 
-            // Vérifier si la conversation a des messages
-            // Note: On garde cette information mais on n'exclut plus les conversations sans messages
-            const { count: messageCount } = await supabase
-              .from('messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-
-            const hasMessages = (messageCount || 0) > 0
-
             // Récupérer le dernier message (sans utiliser .single() pour éviter les erreurs)
-            const { data: lastMsgData, error: lastMsgError } = await supabase
-              .from('messages')
-              .select('content, created_at, sender_id, message_type')
-              .eq('conversation_id', conv.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
+            const { data: lastMsgData, error: lastMsgError } = await fetchWithFallback(
+              () =>
+                supabase
+                  .from('public_messages_with_sender')
+                  .select('content, created_at, sender_id, message_type')
+                  .eq('conversation_id', conv.id)
+                  .order('created_at', { ascending: false })
+                  .limit(1),
+              () =>
+                supabase
+                  .from('messages')
+                  .select('content, created_at, sender_id, message_type')
+                  .eq('conversation_id', conv.id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+            )
 
             const lastMsgRow = !lastMsgError
               ? (lastMsgData as Array<{
@@ -1316,18 +1454,29 @@ const Messages = () => {
                   message_type?: string | null
                 }> | null)?.[0] ?? null
               : null
+            const hasMessages = !!lastMsgRow
             const rawContent = lastMsgRow?.content || ''
             const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
 
             // Compter les messages non lus (seulement si otherUserId existe)
             let unreadCount = 0
             if (otherUserId && hasMessages) {
-              const { count, error: countError } = await supabase
-                .from('messages')
-                .select('*', { count: 'exact', head: true })
-                .eq('conversation_id', conv.id)
-                .eq('sender_id', otherUserId)
-                .is('read_at', null)
+              const { count, error: countError } = await fetchWithFallback(
+                () =>
+                  supabase
+                    .from('public_messages_with_sender')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('conversation_id', conv.id)
+                    .eq('sender_id', otherUserId)
+                    .is('read_at', null),
+                () =>
+                  supabase
+                    .from('messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('conversation_id', conv.id)
+                    .eq('sender_id', otherUserId)
+                    .is('read_at', null)
+              )
               
               if (!countError) {
                 unreadCount = count || 0
@@ -1428,9 +1577,11 @@ const Messages = () => {
     } catch (error) {
       console.error('Error loading conversations:', error)
     } finally {
-      setLoading(false)
+      if (!isConversationView) {
+        setLoading(false)
+      }
     }
-  }, [user, activeFilter, loadMatchRequests, loadAppointments])
+  }, [user, activeFilter, loadMatchRequests, loadAppointments, isConversationView])
 
   const handleReportSubmit = async () => {
     if (!user || !selectedConversation?.other_user?.id || !reportReason) {
@@ -1587,18 +1738,44 @@ const Messages = () => {
       }
     } else {
       // Suppression pour soi uniquement
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('messages') as any)
-        .update({ is_deleted: true, deleted_for_user_id: user.id })
-        .eq('id', msg.id)
+      const { error: rpcError } = await (supabase as any).rpc('delete_message_for_user', { p_message_id: msg.id })
+      if (rpcError) {
+        const maybeMissingFn =
+          (rpcError as { message?: string }).message?.includes('delete_message_for_user') ||
+          (rpcError as { code?: string }).code === 'PGRST202'
+        if (maybeMissingFn) {
+          // Fallback: suppression directe (fonctionnera seulement pour l'expéditeur si la RLS l'autorise)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase.from('messages') as any)
+            .update({ is_deleted: true, deleted_for_user_id: user.id })
+            .eq('id', msg.id)
 
-      if (error) {
-        console.error('Error deleting message for me:', error)
-        alert('Erreur lors de la suppression')
-        return
+          if (error) {
+            console.error('Error deleting message for me:', error)
+            alert('Erreur lors de la suppression')
+            return
+          }
+        } else {
+          console.error('Error deleting message for me (RPC):', rpcError)
+          alert('Erreur lors de la suppression')
+          return
+        }
       }
     }
 
+    setMessages((prev) => prev.filter((item) => item.id !== msg.id))
+    setMessageReactions((prev) => {
+      if (!prev[msg.id]) return prev
+      const next = { ...prev }
+      delete next[msg.id]
+      return next
+    })
+    if (activeMessage?.id === msg.id) {
+      setActiveMessage(null)
+    }
+    if (selectedMediaMessage?.id === msg.id) {
+      setSelectedMediaMessage(null)
+    }
     setShowDeleteMessageConfirm(false)
     setShowMessageActions(false)
     loadMessages(selectedConversation?.id || conversationId || '')
@@ -1815,6 +1992,25 @@ const Messages = () => {
   }
 
   // Si une conversation est sélectionnée, afficher la vue de conversation
+  if (conversationId && !selectedConversation) {
+    return (
+      <div className="messages-page-container conversation-page">
+        <div className="conversation-header">
+          <BackButton className="conversation-back-button" />
+          <div className="conversation-header-center">
+            <h1 className="conversation-header-name">Conversation</h1>
+          </div>
+        </div>
+        <div className="conversation-messages-container">
+          <div className="loading-container">
+            <Loader className="spinner-large" size={48} />
+            <p>Chargement...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (selectedConversation || conversationId) {
     const isGroupConversation = !!selectedConversation?.is_group
     const groupDisplayName = (selectedConversation?.group_name || selectedConversation?.name || '').trim()
@@ -2906,7 +3102,7 @@ const Messages = () => {
           />
         )}
         <div className={`conversation-messages-container ${isSystemConversation ? 'system-conversation' : ''}`}>
-          {loading ? (
+          {loading || messagesLoading ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
               <p>Chargement...</p>
@@ -3074,11 +3270,13 @@ const Messages = () => {
                     const prevMsg = msgIndex > 0 ? group.messages[msgIndex - 1] : null
                     const showAvatar = !isOwn && (!prevMsg || prevMsg.sender_id !== msg.sender_id || 
                       new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000) // 5 minutes
+                    const isLastMessage = msg.id === messages[messages.length - 1]?.id
 
                     return (
                       <div
                         key={msg.id}
                         className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
+                        ref={isLastMessage ? lastMessageRef : null}
                       >
                         <div
                           className="message-swipe-content"
@@ -3178,6 +3376,7 @@ const Messages = () => {
                   })}
                 </div>
               ))}
+              <div ref={bottomAnchorRef} className="conversation-bottom-anchor" />
             </div>
           )}
         </div>
@@ -3300,22 +3499,13 @@ const Messages = () => {
               openCalendarOnMount={openAppointment}
               counterpartyId={!isGroupConversation ? (selectedConversation?.other_user?.id || null) : null}
               disabled={isSystemConversation}
-              onMessageSent={() => {
-                if (selectedConversation || conversationId) {
-                  shouldScrollToBottomRef.current = true
-                  requestAnimationFrame(() => {
-                    if (messagesListRef.current) {
-                      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
-                    }
-                  })
-                  setTimeout(() => {
-                    if (messagesListRef.current) {
-                      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
-                    }
-                  }, 120)
-                  loadMessages(selectedConversation?.id || conversationId || '')
-                  loadConversations()
-                }
+              onMessageSent={async () => {
+                const currentId = selectedConversation?.id || conversationId
+                if (!currentId) return
+                shouldScrollToBottomRef.current = true
+                await loadMessages(currentId)
+                scheduleScrollToBottom('center')
+                loadConversations()
               }}
             />
           </div>

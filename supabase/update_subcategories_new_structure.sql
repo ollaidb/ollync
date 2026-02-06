@@ -37,6 +37,7 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Service', 'service', 'Wrench', '#4facfe'),
   ('Vente', 'vente', 'ShoppingBag', '#f093fb'),
   ('Mission', 'mission', 'Target', '#43e97b'),
+  ('Studio & lieu', 'studio-lieu', 'Building2', '#f59e0b'),
   ('Autre', 'autre', 'MoreHorizontal', '#ffa726')
 ON CONFLICT (name) DO UPDATE
 SET slug = EXCLUDED.slug,
@@ -91,7 +92,7 @@ WHERE (category_id, slug) IN (
   FROM sub_categories sc
   JOIN categories c ON sc.category_id = c.id
   WHERE c.slug = 'vente'
-    AND sc.slug NOT IN ('echange', 'vente-comptes', 'don')
+    AND sc.slug NOT IN ('echange', 'vente-comptes', 'don', 'gorille')
   
   UNION ALL
   
@@ -160,7 +161,8 @@ SET name = EXCLUDED.name;
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Échange', 'echange'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Vente de comptes', 'vente-comptes'),
-  ((SELECT id FROM categories WHERE slug = 'vente'), 'Don', 'don')
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Don', 'don'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Matériel', 'gorille')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
@@ -173,7 +175,19 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
--- 7. Autre (⋯)
+-- 7. Studio & lieu
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio photo', 'studio-photo'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio vidéo', 'studio-video'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio', 'studio'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Appartement', 'appartement'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Maison', 'maison'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Bureau', 'bureau'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Autre', 'autre')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- 8. Autre (⋯)
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'autre'), 'Autre service', 'autre-service')
 ON CONFLICT (category_id, slug) DO UPDATE

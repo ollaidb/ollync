@@ -1,0 +1,123 @@
+/* ===== LISTES PERSONNALISÉES - À PUCES ===== */
+
+.custom-bullet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.custom-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--foreground);
+}
+
+.custom-bullet-point {
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.custom-bullet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.custom-bullet-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.custom-bullet-description {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* ===== LISTES PERSONNALISÉES - NUMÉROTÉES ===== */
+
+.custom-numbered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  counter-reset: item;
+}
+
+.custom-numbered-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--foreground);
+}
+
+.custom-numbered-point {
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.custom-numbered-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.custom-numbered-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.custom-numbered-description {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .custom-bullet-list,
+  .custom-numbered-list {
+    gap: 10px;
+  }
+
+  .custom-bullet-item,
+  .custom-numbered-item {
+    gap: 10px;
+  }
+
+  .custom-bullet-text,
+  .custom-numbered-text {
+    font-size: 13px;
+  }
+
+  .custom-bullet-description,
+  .custom-numbered-description {
+    font-size: 12px;
+  }
+}

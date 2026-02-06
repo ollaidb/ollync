@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Loader, X } from 'lucide-react'
+import { MapPin, Loader, X, Check } from 'lucide-react'
 import './LocationAutocomplete.css'
 
 interface LocationSuggestion {
@@ -46,6 +46,7 @@ export const LocationAutocomplete = ({
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [hasSelected, setHasSelected] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>()
@@ -60,8 +61,14 @@ export const LocationAutocomplete = ({
       setSuggestions([])
       setShowSuggestions(false)
       setIsLoading(false)
+      if (value.trim().length === 0) {
+        setHasSelected(false)
+      }
       return
     }
+
+    // Si l'utilisateur efface et retape, réinitialiser hasSelected
+    setHasSelected(false)
 
     timeoutRef.current = setTimeout(() => {
       searchLocations(value)
@@ -157,6 +164,7 @@ export const LocationAutocomplete = ({
     })
     setShowSuggestions(false)
     setSuggestions([])
+    setHasSelected(true)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -189,6 +197,7 @@ export const LocationAutocomplete = ({
     onChange('')
     setSuggestions([])
     setShowSuggestions(false)
+    setHasSelected(false)
     inputRef.current?.focus()
   }
 
@@ -217,13 +226,13 @@ export const LocationAutocomplete = ({
         <input
           ref={inputRef}
           type="text"
-          className="location-input"
+          className={`location-input ${hasSelected ? 'location-input-selected' : ''}`}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0) {
+            if (suggestions.length > 0 && !hasSelected) {
               setShowSuggestions(true)
             }
           }}
@@ -232,7 +241,10 @@ export const LocationAutocomplete = ({
         {isLoading && (
           <Loader size={18} className="location-input-loader" />
         )}
-        {value && !isLoading && (
+        {hasSelected && !isLoading && (
+          <Check size={20} className="location-input-check" style={{ color: '#10b981' }} />
+        )}
+        {value && !isLoading && !hasSelected && (
           <button
             type="button"
             className="location-input-clear"
@@ -242,12 +254,12 @@ export const LocationAutocomplete = ({
             <X size={16} />
           </button>
         )}
-        {!isLoading && (!value || value.length === 0) && (
+        {!isLoading && !hasSelected && (!value || value.length === 0) && (
           <MapPin size={20} className="location-input-icon" />
         )}
       </div>
 
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && suggestions.length > 0 && !hasSelected && (
         <div ref={suggestionsRef} className="location-suggestions">
           {suggestions.map((suggestion, index) => (
             <button

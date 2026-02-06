@@ -11,7 +11,7 @@ import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
-import { GooglePlacesAutocomplete } from '../../components/Location/GooglePlacesAutocomplete'
+import { LocationAutocomplete } from '../../components/Location/LocationAutocomplete'
 import { publicationTypes } from '../../constants/publishData'
 import './EditPublicProfile.css'
 
@@ -792,7 +792,7 @@ const EditPublicProfile = () => {
             {/* Localisation */}
             <div className="form-group">
               <label htmlFor="location">Localisation</label>
-              <GooglePlacesAutocomplete
+              <LocationAutocomplete
                 value={profile.location}
                 onChange={(value) => setProfile(prev => ({ ...prev, location: value }))}
                 onLocationSelect={(location) => {

@@ -15,6 +15,7 @@ interface Post {
   price?: number | null
   location?: string | null
   images?: string[] | null
+  video?: string | null
   likes_count: number
   comments_count: number
   created_at: string
@@ -69,10 +70,12 @@ const SwipePage = () => {
   const categoryOrder = useMemo(() => [
     'creation-contenu',
     'casting-role',
-    'montage',
+    'emploi',
+    'studio-lieu',
     'projets-equipe',
     'services',
-    'vente'
+    'vente',
+    'poste-service'
   ], [])
 
   // Générer les filtres dynamiquement depuis les catégories
@@ -389,6 +392,8 @@ const SwipePage = () => {
           <div className="swipe-masonry">
             {posts.map((post) => {
               const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
+              const mainMedia = mainImage || post.video || null
+              const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(mainMedia.split('?')[0].split('#')[0])
               const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
               
               return (
@@ -403,13 +408,23 @@ const SwipePage = () => {
                   </div>
                   
                   <div className={`swipe-card-image-wrapper ${post.is_urgent ? 'swipe-card-urgent' : ''}`}>
-                    {mainImage ? (
-                      <img 
-                        src={mainImage} 
-                        alt={post.title}
-                        className="swipe-card-image"
-                        loading="lazy"
-                      />
+                    {mainMedia ? (
+                      isVideo ? (
+                        <video
+                          src={mainMedia}
+                          className="swipe-card-image"
+                          playsInline
+                          preload="metadata"
+                          muted
+                        />
+                      ) : (
+                        <img 
+                          src={mainMedia} 
+                          alt={post.title}
+                          className="swipe-card-image"
+                          loading="lazy"
+                        />
+                      )
                     ) : (
                       <div className="swipe-card-image-placeholder">
                         <Tag size={32} />
@@ -471,4 +486,3 @@ const SwipePage = () => {
 }
 
 export default SwipePage
-

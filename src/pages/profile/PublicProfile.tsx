@@ -592,13 +592,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       orderDirection: 'desc'
     })
 
-    // Filtrer les posts qui ne sont pas de type "creation-contenu"
-    const nonCreationContenuPosts = fetchedPosts.filter(post => {
-      const categorySlug = post.category?.slug
-      return categorySlug !== 'creation-contenu'
-    })
-
-    setPosts(nonCreationContenuPosts)
+    setPosts(fetchedPosts)
     setPostsLoaded(true)
     setPostsLoading(false)
   }, [profileId])

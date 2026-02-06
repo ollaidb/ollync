@@ -285,6 +285,93 @@
 
   .match-request-detail-name {
     font-size: 16px;
+
+  /* Document section styling */
+  .match-request-detail-document {
+    margin-bottom: 12px;
+    padding: 12px;
+    background-color: var(--muted);
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .match-request-detail-document-label {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .match-request-detail-document-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    word-break: break-word;
+  }
+
+  .match-request-detail-document-link:hover {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+
+  .match-request-detail-document-link svg {
+    flex-shrink: 0;
+  }
+  /* Document section styling */
+  .match-request-detail-document {
+    margin-bottom: 12px;
+    padding: 12px;
+    background-color: var(--muted);
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .match-request-detail-document-label {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .match-request-detail-document-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    word-break: break-word;
+  }
+
+  .match-request-detail-document-link:hover {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+
+  .match-request-detail-document-link svg {
+    flex-shrink: 0;
+  }
   }
 
   .match-request-detail-message-text {

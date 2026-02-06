@@ -25,10 +25,12 @@ interface Category {
 const categoryOrder = [
   'creation-contenu',
   'casting-role',
-  'montage',
+  'emploi',
+  'studio-lieu',
   'projets-equipe',
   'services',
-  'vente'
+  'vente',
+  'poste-service'
 ]
 
 const UsersPage = () => {

@@ -42,7 +42,8 @@ interface ModerationReport {
   reported_post: ReportRelationPost | null
 }
 
-type FilterType = 'all' | 'pending' | 'profile' | 'post'
+type FilterType = 'all' | 'profile' | 'post'
+type StatusFilter = 'all' | 'pending'
 
 const Moderation = () => {
   const navigate = useNavigate()
@@ -50,7 +51,8 @@ const Moderation = () => {
   const [reports, setReports] = useState<ModerationReport[]>([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [activeFilter, setActiveFilter] = useState<FilterType>('pending')
+  const [activeFilter, setActiveFilter] = useState<FilterType>('profile')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
   const [confirmAction, setConfirmAction] = useState<{
     type: 'delete_profile' | 'delete_post'
     report: ModerationReport
@@ -98,13 +100,24 @@ const Moderation = () => {
 
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
-      if (activeFilter === 'all') return true
-      if (activeFilter === 'pending') return report.status === 'pending'
-      if (activeFilter === 'profile') return report.report_type === 'profile'
-      if (activeFilter === 'post') return report.report_type === 'post'
+      if (activeFilter !== 'all' && report.report_type !== activeFilter) return false
+      if (statusFilter === 'pending' && report.status !== 'pending') return false
       return true
     })
-  }, [reports, activeFilter])
+  }, [reports, activeFilter, statusFilter])
+
+  const profileReportsCount = useMemo(
+    () => reports.filter((report) => report.report_type === 'profile').length,
+    [reports]
+  )
+  const postReportsCount = useMemo(
+    () => reports.filter((report) => report.report_type === 'post').length,
+    [reports]
+  )
+  const pendingReportsCount = useMemo(
+    () => reports.filter((report) => report.status === 'pending').length,
+    [reports]
+  )
 
   const updateReportStatus = async (report: ModerationReport, status: ReportStatus) => {
     if (!user || !isModerator) return
@@ -123,6 +136,132 @@ const Moderation = () => {
       )
     }
     setActionLoading(null)
+  }
+
+  const findOrCreateConversation = useCallback(async (otherUserId: string, postId?: string | null) => {
+    if (!user) return null
+
+    try {
+      const { data: existingConvs, error: searchError } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+        .is('deleted_at', null)
+
+      if (searchError) {
+        console.error('Error searching for conversation:', searchError)
+      }
+
+      const existingConv = existingConvs?.find((conv) => {
+        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
+        return !convData.is_group && !convData.deleted_at
+      })
+
+      if (existingConv && (existingConv as { id: string }).id) {
+        return existingConv
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newConv, error: insertError } = await (supabase.from('conversations') as any)
+        .insert({
+          user1_id: user.id,
+          user2_id: otherUserId,
+          post_id: postId || null,
+          type: 'direct',
+          is_group: false
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Error creating conversation:', insertError)
+        if (insertError.code === '23505') {
+          const { data: retryConvs } = await supabase
+            .from('conversations')
+            .select('*')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+            .is('deleted_at', null)
+            .limit(1)
+
+          if (retryConvs && retryConvs.length > 0) {
+            return retryConvs[0]
+          }
+        }
+        return null
+      }
+
+      return newConv
+    } catch (error) {
+      console.error('Error in findOrCreateConversation:', error)
+      return null
+    }
+  }, [user])
+
+  const handleOpenConversation = async (
+    report: ModerationReport,
+    targetUserId: string | null | undefined,
+    postId?: string | null
+  ) => {
+    if (!targetUserId || !user) return
+    setActionLoading(report.id)
+
+    try {
+      const conversation = await findOrCreateConversation(targetUserId, postId)
+      if (conversation && (conversation as { id: string }).id) {
+        navigate(`/messages/${(conversation as { id: string }).id}`)
+      } else {
+        alert('Erreur lors de la création de la conversation')
+      }
+    } catch (error) {
+      console.error('Error opening conversation:', error)
+      alert('Erreur lors de l\'ouverture de la conversation')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const findConversationBetweenUsers = useCallback(async (userA: string, userB: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`and(user1_id.eq.${userA},user2_id.eq.${userB}),and(user1_id.eq.${userB},user2_id.eq.${userA})`)
+        .is('deleted_at', null)
+
+      if (error) {
+        console.error('Error finding conversation between users:', error)
+        return null
+      }
+
+      const existingConv = (data || []).find((conv) => {
+        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
+        return !convData.is_group && !convData.deleted_at
+      })
+
+      return existingConv || null
+    } catch (error) {
+      console.error('Error in findConversationBetweenUsers:', error)
+      return null
+    }
+  }, [])
+
+  const handleOpenExistingConversation = async (report: ModerationReport, userA?: string | null, userB?: string | null) => {
+    if (!userA || !userB) return
+    setActionLoading(report.id)
+
+    try {
+      const conversation = await findConversationBetweenUsers(userA, userB)
+      if (conversation && (conversation as { id: string }).id) {
+        navigate(`/messages/${(conversation as { id: string }).id}`)
+      } else {
+        alert('Aucune conversation entre ces deux utilisateurs.')
+      }
+    } catch (error) {
+      console.error('Error opening existing conversation:', error)
+      alert('Erreur lors de l\'ouverture de la conversation')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const handleDeletePost = async (report: ModerationReport) => {
@@ -210,30 +349,54 @@ const Moderation = () => {
         <div className="moderation-header-spacer" />
       </div>
 
-      <div className="moderation-filters">
+      <div className="moderation-summary">
+        <div className="moderation-summary-card">
+          <span className="moderation-summary-label">Profils signales</span>
+          <span className="moderation-summary-value">{profileReportsCount}</span>
+        </div>
+        <div className="moderation-summary-card">
+          <span className="moderation-summary-label">Annonces signalees</span>
+          <span className="moderation-summary-value">{postReportsCount}</span>
+        </div>
+        <div className="moderation-summary-card">
+          <span className="moderation-summary-label">En attente</span>
+          <span className="moderation-summary-value">{pendingReportsCount}</span>
+        </div>
+      </div>
+
+      <div className="moderation-tabs">
         <button
-          className={`moderation-filter-btn ${activeFilter === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('pending')}
-        >
-          En attente
-        </button>
-        <button
-          className={`moderation-filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('all')}
-        >
-          Tous
-        </button>
-        <button
-          className={`moderation-filter-btn ${activeFilter === 'profile' ? 'active' : ''}`}
+          className={`moderation-tab-btn ${activeFilter === 'profile' ? 'active' : ''}`}
           onClick={() => setActiveFilter('profile')}
         >
           Profils
         </button>
         <button
-          className={`moderation-filter-btn ${activeFilter === 'post' ? 'active' : ''}`}
+          className={`moderation-tab-btn ${activeFilter === 'post' ? 'active' : ''}`}
           onClick={() => setActiveFilter('post')}
         >
           Annonces
+        </button>
+        <button
+          className={`moderation-tab-btn ${activeFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('all')}
+        >
+          Tous
+        </button>
+      </div>
+
+      <div className="moderation-filters">
+        <button
+          className={`moderation-filter-btn ${statusFilter === 'pending' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('pending')}
+        >
+          En attente
+        </button>
+        <button
+          className={`moderation-filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('all')}
+        >
+          Tout afficher
         </button>
       </div>
 
@@ -245,7 +408,7 @@ const Moderation = () => {
             type="category"
             customIcon={Flag}
             customTitle="Aucun signalement"
-            customSubtext="Les signalements apparaitront ici."
+            customSubtext="Aucun signalement pour les filtres selectionnes."
           />
         </div>
       ) : (
@@ -307,6 +470,72 @@ const Moderation = () => {
                           : report.reported_post?.title || 'Annonce'}
                       </div>
                     </div>
+                  </div>
+
+                  <div className="moderation-links">
+                    {report.reported_user && (
+                      <button
+                        className="moderation-link"
+                        onClick={() => navigate(`/profile/public/${report.reported_user?.id}`)}
+                      >
+                        Voir profil signale
+                      </button>
+                    )}
+                    {report.reporter && (
+                      <button
+                        className="moderation-link"
+                        onClick={() => navigate(`/profile/public/${report.reporter?.id}`)}
+                      >
+                        Voir profil auteur
+                      </button>
+                    )}
+                    {report.reported_post && (
+                      <button
+                        className="moderation-link"
+                        onClick={() => navigate(`/post/${report.reported_post?.id}`)}
+                      >
+                        Voir annonce
+                      </button>
+                    )}
+                    {report.reported_user && (
+                      <button
+                        className="moderation-link"
+                        onClick={() =>
+                          handleOpenConversation(
+                            report,
+                            report.reported_user?.id,
+                            report.reported_post?.id ?? null
+                          )
+                        }
+                        disabled={isLoadingAction}
+                      >
+                        Voir messages avec signale
+                      </button>
+                    )}
+                    {report.reporter && (
+                      <button
+                        className="moderation-link"
+                        onClick={() => handleOpenConversation(report, report.reporter?.id)}
+                        disabled={isLoadingAction}
+                      >
+                        Voir messages avec auteur
+                      </button>
+                    )}
+                    {report.reporter && report.reported_user && (
+                      <button
+                        className="moderation-link"
+                        onClick={() =>
+                          handleOpenExistingConversation(
+                            report,
+                            report.reporter?.id,
+                            report.reported_user?.id
+                          )
+                        }
+                        disabled={isLoadingAction}
+                      >
+                        Voir conversation entre eux
+                      </button>
+                    )}
                   </div>
                 </div>
 

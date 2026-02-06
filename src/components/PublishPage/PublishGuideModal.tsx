@@ -9,6 +9,21 @@ type GuideSection = {
 
 const GUIDE_SECTIONS: GuideSection[] = [
   {
+    title: 'Titres courts / Tendance',
+    questions: [
+      'Quel trend, format ou plateforme ?',
+      'Le titre peut-il être juste un type de vidéo ou un scénario ?',
+      'Quel objectif principal (collab, tournage, idée, besoin) ?',
+    ],
+    examples: [
+      'Trend TikTok “nom du trend”',
+      'Reel Instagram “nom du format”',
+      'Scénario “nom du scénario”',
+      'Idée vidéo “titre simple”',
+      'Recherche associé pour composer',
+    ],
+  },
+  {
     title: 'Collaboration / Duo',
     questions: [
       'Quel type de duo veux-tu créer (humour, lifestyle, challenge) ?',
@@ -21,6 +36,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Duo créatif pour Reels Instagram',
       'Collaboration pour une série de vidéos',
       'Binôme pour challenges tendance',
+      'Cherche quelqu’un avec qui collaborer pour une vidéo',
     ],
   },
   {
@@ -36,6 +52,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Besoin d’un caméraman mobile',
       'Recherche cadreur discret pour tournage rapide',
       'Besoin d’aide pour filmer un reel',
+      'Recherche quelqu’un pour me filmer sur un spot précis',
     ],
   },
   {
@@ -51,6 +68,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Vlog découverte en ville',
       'Tournage vlog backstage',
       'Vlog challenge en extérieur',
+      'Vlog “sortie création de contenu”',
     ],
   },
   {
@@ -96,6 +114,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Vidéo test/expérience sociale',
       'Concept humoristique à tourner',
       'Challenge à plusieurs',
+      'Concept “scénario” à réaliser',
     ],
   },
   {
@@ -111,6 +130,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Studio photo dispo pour 2h',
       'Lieu lumineux pour vidéo',
       'Spots sympas pour tournage',
+      'Spot précis pour photos Instagram',
     ],
   },
   {

@@ -13,11 +13,17 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Live', slug: 'live' },
     { name: 'Autre', slug: 'autre' }
   ],
-  montage: [
+  emploi: [
     { name: 'Montage', slug: 'montage' },
     { name: 'micro-trottoir', slug: 'micro-trottoir' },
     { name: 'live', slug: 'live' },
     { name: 'Écriture de contenu', slug: 'ecriture-contenu' },
+    { name: 'Autre', slug: 'autre' }
+  ],
+  'poste-service': [
+    { name: 'Prestation', slug: 'prestation' },
+    { name: 'Food', slug: 'food' },
+    { name: 'Lieux', slug: 'lieux' },
     { name: 'Autre', slug: 'autre' }
   ],
   'casting-role': [
@@ -29,6 +35,11 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' },
     { name: 'YouTube vidéo', slug: 'youtube-video' },
     { name: 'Autre', slug: 'autre' }
+  ],
+  'studio-lieu': [
+    { name: 'Studio de création', slug: 'studio-creation' },
+    { name: 'Lieux résidentiels', slug: 'lieux-residentiels' },
+    { name: 'Lieux professionnels', slug: 'lieux-professionnels' }
   ],
   'projets-equipe': [
     { name: 'Émission', slug: 'projet-emission' },
@@ -45,6 +56,7 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Coaching contenu', slug: 'coaching-contenu' },
     { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
     { name: 'Organisation', slug: 'organisation' },
+    { name: 'Agence', slug: 'agence' },
     { name: 'Setup matériel', slug: 'setup-materiel' },
     { name: 'Autre', slug: 'autre' }
   ],
@@ -52,6 +64,7 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Comptes', slug: 'comptes' },
     { name: "Noms d'utilisateur", slug: 'noms-utilisateur' },
     { name: 'Concepts / Niches', slug: 'concepts-niches' },
+    { name: 'Matériel', slug: 'gorille' },
     { name: 'Autre', slug: 'autre' }
   ]
 }
@@ -59,4 +72,3 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
 export const getDefaultSubMenus = (categorySlug: string): Array<{ name: string; slug: string }> => {
   return DEFAULT_SUBMENUS[categorySlug] || []
 }
-

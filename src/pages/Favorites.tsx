@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, Loader, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
@@ -49,7 +49,10 @@ const Favorites = () => {
   const { t } = useTranslation(['favorites'])
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'posts' | 'profiles'>('posts')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const getTabFromParams = () =>
+    searchParams.get('tab') === 'profiles' ? 'profiles' : 'posts'
+  const [activeTab, setActiveTab] = useState<'posts' | 'profiles'>(getTabFromParams)
   const [favoritePosts, setFavoritePosts] = useState<Post[]>([])
   const [followedProfiles, setFollowedProfiles] = useState<FollowedProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -278,6 +281,14 @@ const Favorites = () => {
       window.removeEventListener('resize', updateOffset)
     }
   }, [])
+  
+  useEffect(() => {
+    const nextTab = getTabFromParams()
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // Écouter les changements de likes depuis d'autres pages
   useEffect(() => {
@@ -363,13 +374,27 @@ const Favorites = () => {
           <div className="favorites-tabs">
             <button
               className={`favorites-tab ${activeTab === 'posts' ? 'active' : ''}`}
-              onClick={() => setActiveTab('posts')}
+              onClick={() => {
+                setActiveTab('posts')
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev)
+                  params.delete('tab')
+                  return params
+                }, { replace: true })
+              }}
             >
               {t('favorites:tabPosts')} {favoritePosts.length > 0 && `(${favoritePosts.length})`}
             </button>
             <button
               className={`favorites-tab ${activeTab === 'profiles' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profiles')}
+              onClick={() => {
+                setActiveTab('profiles')
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev)
+                  params.set('tab', 'profiles')
+                  return params
+                }, { replace: true })
+              }}
             >
               {t('favorites:tabProfiles')} {followedProfiles.length > 0 && `(${followedProfiles.length})`}
             </button>

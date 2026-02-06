@@ -37,12 +37,23 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'youtube-video': [],
     'autre': []
   },
-  'montage': {
+  'emploi': {
     'montage': [],
     'micro-trottoir': [],
     'live': [],
     'ecriture-contenu': [],
     'autre': []
+  },
+  'poste-service': {
+    'prestation': [],
+    'food': [],
+    'lieux': [],
+    'autre': []
+  },
+  'studio-lieu': {
+    'studio-creation': [],
+    'lieux-residentiels': [],
+    'lieux-professionnels': []
   },
   'projets-equipe': {
     'projet-emission': [],
@@ -59,6 +70,7 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'coaching-contenu': [],
     'strategie-editoriale': [],
     'organisation': [],
+    'agence': [],
     'setup-materiel': [],
     'autre': []
   },
@@ -66,6 +78,7 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'comptes': [],
     'noms-utilisateur': [],
     'concepts-niches': [],
+    'gorille': [],
     'autre': []
   },
   // Compatibilité avec les anciens slugs (à supprimer progressivement)

@@ -144,7 +144,7 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
 
     // Règle 4 : Pour TOUTES les catégories (tous niveaux), retourner directement vers /home
     const categorySlugs = [
-      'creation-contenu', 'montage', 'casting-role', 'projets-equipe', 
+      'creation-contenu', 'emploi', 'casting-role', 'projets-equipe', 
       'services', 'vente', 'match', 'service', 'role', 'recrutement', 
       'projet', 'mission', 'autre'
     ]

@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight, UserX } from 'lucide-react'
+import { useAuth } from '../../hooks/useSupabase'
 import './Security.css'
 
 const Security = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isModerator = (user?.email || '').trim().toLowerCase() === 'binta22116@gmail.com'
 
   const menuItems = [
     {
@@ -43,6 +46,15 @@ const Security = () => {
       path: '/profile/security/blocked-profiles'
     }
   ]
+
+  if (isModerator) {
+    menuItems.push({
+      id: 'moderation',
+      icon: Shield,
+      label: 'Modération',
+      path: '/profile/security/moderation'
+    })
+  }
 
   return (
     <div className="security-page">

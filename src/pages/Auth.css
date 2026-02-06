@@ -629,12 +629,28 @@
   font-size: 14px;
   line-height: 1.6;
   margin: 0 0 12px 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   color: var(--muted-foreground);
 }
 
 .condition-modal-content li {
-  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.condition-modal-content li:before {
+  content: '•';
+  flex-shrink: 0;
+  color: var(--primary);
+  font-weight: 500;
+  margin-right: 4px;
 }
 
 .legal-detail-update {

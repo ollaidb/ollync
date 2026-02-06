@@ -7,6 +7,7 @@ import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { mapPost, type MappedPost } from '../utils/postMapper'
 import { GoogleMapComponent } from '../components/Maps/GoogleMap'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
@@ -22,6 +23,7 @@ interface Post {
   location_lng?: number | null
   location_address?: string | null
   images?: string[] | null
+  video?: string | null
   likes_count: number
   comments_count: number
   created_at: string
@@ -35,6 +37,7 @@ interface Post {
   media_type?: string | null
   external_link?: string | null
   document_url?: string | null
+  tagged_post_id?: string | null
   user?: {
     id: string
     username?: string | null
@@ -85,6 +88,8 @@ const PostDetails = () => {
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
+  const [requestDocument, setRequestDocument] = useState<File | null>(null)
+  const [requestDocumentName, setRequestDocumentName] = useState<string>('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -114,6 +119,7 @@ const PostDetails = () => {
       slug: string
     } | null
   }>>([])
+  const [taggedPost, setTaggedPost] = useState<MappedPost | null>(null)
   const [authorPostCount, setAuthorPostCount] = useState<number | null>(null)
   const maxPostsPerSection = isMobile ? 5 : 4
 
@@ -138,10 +144,10 @@ const PostDetails = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post])
 
-  // Réinitialiser l'index quand les images changent
+  // Réinitialiser l'index quand les médias changent
   useEffect(() => {
     setCurrentImageIndex(0)
-  }, [post?.images])
+  }, [post?.images, post?.video])
 
   const fetchPost = async () => {
     if (!id) return
@@ -218,6 +224,47 @@ const PostDetails = () => {
             slug: category.slug
           }
         }
+      }
+
+      // 4. Récupérer l'annonce taguée (optionnel)
+      if (post.tagged_post_id) {
+        try {
+          const { data: taggedData, error: taggedError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              title,
+              description,
+              price,
+              location,
+              images,
+              likes_count,
+              comments_count,
+              created_at,
+              needed_date,
+              number_of_people,
+              delivery_available,
+              is_urgent,
+              user_id,
+              category_id,
+              sub_category_id,
+              profiles (username, full_name, avatar_url),
+              categories (name, slug)
+            `)
+            .eq('id', post.tagged_post_id)
+            .single()
+
+          if (!taggedError && taggedData) {
+            setTaggedPost(mapPost(taggedData as any))
+          } else {
+            setTaggedPost(null)
+          }
+        } catch (taggedFetchError) {
+          console.error('Error fetching tagged post:', taggedFetchError)
+          setTaggedPost(null)
+        }
+      } else {
+        setTaggedPost(null)
       }
 
       // 4. Récupérer la sous-catégorie
@@ -491,6 +538,44 @@ const PostDetails = () => {
 
     setLoadingRequest(true)
     try {
+      let documentUrl: string | null = null
+      let documentName: string | null = null
+
+      // Uploader le document si c'est un annonce d'emploi et qu'il y a un document
+      if (post.category?.slug === 'emploi' && requestDocument) {
+        try {
+          const fileName = `${user.id}/${Date.now()}_${requestDocument.name}`
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('match_request_documents')
+            .upload(fileName, requestDocument, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Error uploading document:', uploadError)
+            alert(`Erreur lors de l'upload du document: ${uploadError.message}`)
+            setLoadingRequest(false)
+            return
+          }
+
+          if (uploadData) {
+            // Récupérer l'URL publique du document
+            const { data: publicUrlData } = supabase.storage
+              .from('match_request_documents')
+              .getPublicUrl(uploadData.path)
+
+            documentUrl = publicUrlData?.publicUrl || null
+            documentName = requestDocument.name
+          }
+        } catch (uploadErr) {
+          console.error('Error in document upload:', uploadErr)
+          alert('Erreur lors de l\'upload du document')
+          setLoadingRequest(false)
+          return
+        }
+      }
+
       const trimmedMessage = requestMessage.trim()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
@@ -499,7 +584,9 @@ const PostDetails = () => {
           to_user_id: post.user_id,
           related_post_id: id,
           status: 'pending',
-          request_message: trimmedMessage.length > 0 ? trimmedMessage : null
+          request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
+          request_document_url: documentUrl,
+          request_document_name: documentName
         })
         .select()
         .single()
@@ -514,6 +601,9 @@ const PostDetails = () => {
       if (data) {
         setMatchRequest({ id: data.id, status: data.status })
         setShowSendRequestModal(false)
+        setRequestMessage('')
+        setRequestDocument(null)
+        setRequestDocumentName('')
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -657,7 +747,7 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
-  const mediaItems = images
+  const mediaItems = [post?.video, ...images].filter(Boolean) as string[]
 
   const getDocumentName = (url?: string | null) => {
     if (!url) return 'Document PDF'
@@ -692,11 +782,11 @@ const PostDetails = () => {
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
 
-    if (isLeftSwipe && images.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    if (isLeftSwipe && mediaItems.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % mediaItems.length)
     }
-    if (isRightSwipe && images.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    if (isRightSwipe && mediaItems.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length)
     }
   }
 
@@ -827,7 +917,7 @@ const PostDetails = () => {
           onTouchEnd={onTouchEnd}
           onClick={(event) => {
             const target = event.target as HTMLElement
-            if (target.closest('button') || target.closest('a')) return
+            if (target.closest('button') || target.closest('a') || target.closest('video')) return
             handleOpenViewer(currentImageIndex)
           }}
           role="button"
@@ -839,33 +929,43 @@ const PostDetails = () => {
             }
           }}
         >
-          {images.length > 0 ? (
+          {mediaItems.length > 0 ? (
             <>
               <div 
                 className="post-hero-image-carousel"
                 style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
               >
-                {images.map((image, index) => (
+                {mediaItems.map((image, index) => (
                   <div key={index} className="post-hero-image-slide">
-                    <img src={image} alt={`${post.title} - Image ${index + 1}`} />
+                    {isVideoUrl(image) ? (
+                      <video
+                        src={image}
+                        controls
+                        playsInline
+                        className="post-hero-media"
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    ) : (
+                      <img src={image} alt={`${post.title} - Média ${index + 1}`} />
+                    )}
                   </div>
                 ))}
               </div>
               {/* Compteur d'images */}
-              {images.length > 1 && (
+              {mediaItems.length > 1 && (
                 <div className="post-hero-image-counter">
-                  {currentImageIndex + 1} / {images.length}
+                  {currentImageIndex + 1} / {mediaItems.length}
                 </div>
               )}
               {/* Indicateurs de pagination */}
-              {images.length > 1 && (
+              {mediaItems.length > 1 && (
                 <div className="post-hero-image-indicators">
-                  {images.map((_, index) => (
+                  {mediaItems.map((_, index) => (
                     <button
                       key={index}
                       className={`post-hero-image-indicator ${index === currentImageIndex ? 'active' : ''}`}
                       onClick={() => setCurrentImageIndex(index)}
-                      aria-label={`Aller à l'image ${index + 1}`}
+                      aria-label={`Aller au média ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -1195,6 +1295,18 @@ const PostDetails = () => {
               </div>
             )}
 
+            {taggedPost && (
+              <div className="tagged-post-section">
+                <h3>Annonce liée</h3>
+                <p className="tagged-post-subtitle">
+                  Annonce en rapport avec celle-ci, ajoutée par l'auteur.
+                </p>
+                <div className="tagged-post-grid">
+                  <PostCard post={taggedPost} viewMode="grid" hideCategoryBadge />
+                </div>
+              </div>
+            )}
+
             {/* Autres annonces */}
             {relatedPosts.length > 0 && (
               <div className="other-posts-section">
@@ -1210,7 +1322,12 @@ const PostDetails = () => {
                         const slug = post?.category?.slug
                         if (slug === 'creation-contenu') return navigate('/creation-contenu')
                         if (slug === 'casting-role') return navigate('/casting-role')
-                        if (slug === 'montage') return navigate('/montage')
+                        if (slug === 'emploi') return navigate('/emploi')
+                        if (slug === 'studio-lieu') return navigate('/studio-lieu')
+                        if (slug === 'projets-equipe') return navigate('/projets-equipe')
+                        if (slug === 'services') return navigate('/services')
+                        if (slug === 'vente') return navigate('/vente')
+                        if (slug === 'poste-service') return navigate('/poste-service')
                         return navigate('/search')
                       }}
                     >
@@ -1252,6 +1369,8 @@ const PostDetails = () => {
             onCancel={() => {
               setShowSendRequestModal(false)
               setRequestMessage('')
+              setRequestDocument(null)
+              setRequestDocumentName('')
             }}
             confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
             cancelLabel="Annuler"
@@ -1271,6 +1390,40 @@ const PostDetails = () => {
               />
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
+
+            {/* Document upload pour la catégorie emploi */}
+            {post?.category?.slug === 'emploi' && (
+              <div className="confirmation-modal-field">
+                <label className="confirmation-modal-label" htmlFor="match-request-document">
+                  Joindre un document (CV, etc.)
+                </label>
+                <div className="confirmation-modal-file-input-wrapper">
+                  <input
+                    id="match-request-document"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="confirmation-modal-file-input"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (file) {
+                        // Vérifier la taille du fichier (max 10MB)
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('Le fichier ne doit pas dépasser 10MB')
+                          return
+                        }
+                        setRequestDocument(file)
+                        setRequestDocumentName(file.name)
+                      }
+                    }}
+                  />
+                  {requestDocumentName && (
+                    <div className="confirmation-modal-file-name">
+                      ✓ {requestDocumentName}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </ConfirmationModal>
         )}
 
@@ -1306,4 +1459,3 @@ const PostDetails = () => {
 }
 
 export default PostDetails
-

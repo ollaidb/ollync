@@ -99,14 +99,34 @@
 
 .publish-guide-list {
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   color: var(--foreground);
   font-size: 14px;
   line-height: 1.5;
 }
 
+.publish-guide-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.publish-guide-list li:before {
+  content: '•';
+  flex-shrink: 0;
+  color: var(--primary);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
 .publish-guide-list li + li {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 @keyframes fadeIn {

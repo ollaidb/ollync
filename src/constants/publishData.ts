@@ -1,4 +1,4 @@
-import { Camera, Scissors, Users, Briefcase, Wrench, ShoppingBag } from 'lucide-react'
+import { Camera, Scissors, Users, Briefcase, Wrench, ShoppingBag, Building2 } from 'lucide-react'
 
 export interface Platform {
   id: string
@@ -29,7 +29,7 @@ export interface PublicationType {
   subcategories: Subcategory[]
 }
 
-// Ordre des catégories : Création de contenu, Casting, Emploi, Projet, Services, Vente
+// Ordre des catégories : Création de contenu, Casting, Emploi, Studio & lieu, Projet, Services, Vente, Poste/Service
 export const publicationTypes: PublicationType[] = [
   {
     id: 'creation-contenu',
@@ -88,7 +88,7 @@ export const publicationTypes: PublicationType[] = [
   },
   {
     id: 'casting-role',
-    name: 'Casting',
+    name: 'Casting/Roles',
     slug: 'casting-role',
     icon: Users,
     color: '#2196f3',
@@ -142,9 +142,9 @@ export const publicationTypes: PublicationType[] = [
     ]
   },
   {
-    id: 'montage',
+    id: 'emploi',
     name: 'Emploi',
-    slug: 'montage',
+    slug: 'emploi',
     icon: Scissors,
     color: '#9c27b0',
     description: 'Emploi : montage, micro-trottoir, live, écriture de contenu',
@@ -178,6 +178,31 @@ export const publicationTypes: PublicationType[] = [
         id: 'autre',
         name: 'Autre',
         slug: 'autre'
+      }
+    ]
+  },
+  {
+    id: 'studio-lieu',
+    name: 'Studio/Lieu',
+    slug: 'studio-lieu',
+    icon: Building2,
+    color: '#f59e0b',
+    description: 'Trouver un studio ou un lieu pour vos shootings et tournages',
+    subcategories: [
+      {
+        id: 'studio-creation',
+        name: 'Studio de création',
+        slug: 'studio-creation'
+      },
+      {
+        id: 'lieux-residentiels',
+        name: 'Lieux résidentiels',
+        slug: 'lieux-residentiels'
+      },
+      {
+        id: 'lieux-professionnels',
+        name: 'Lieux professionnels',
+        slug: 'lieux-professionnels'
       }
     ]
   },
@@ -270,6 +295,11 @@ export const publicationTypes: PublicationType[] = [
         slug: 'organisation'
       },
       {
+        id: 'agence',
+        name: 'Agence',
+        slug: 'agence'
+      },
+      {
         id: 'setup-materiel',
         name: 'Setup matériel',
         slug: 'setup-materiel'
@@ -310,6 +340,46 @@ export const publicationTypes: PublicationType[] = [
         slug: 'concepts-niches'
       },
       {
+        id: 'gorille',
+        name: 'Matériel',
+        slug: 'gorille'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre'
+      }
+    ]
+  },
+  {
+    id: 'poste-service',
+    name: 'Poste/Service',
+    slug: 'poste-service',
+    icon: Briefcase,
+    color: '#f97316',
+    description: 'Poste/Service : prestations, food, lieux et autres besoins',
+    subcategories: [
+      {
+        id: 'tout',
+        name: 'Tout',
+        slug: 'tout'
+      },
+      {
+        id: 'prestation',
+        name: 'Prestation',
+        slug: 'prestation'
+      },
+      {
+        id: 'food',
+        name: 'Food',
+        slug: 'food'
+      },
+      {
+        id: 'lieux',
+        name: 'Lieux',
+        slug: 'lieux'
+      },
+      {
         id: 'autre',
         name: 'Autre',
         slug: 'autre'
@@ -317,4 +387,3 @@ export const publicationTypes: PublicationType[] = [
     ]
   }
 ]
-

@@ -23,11 +23,7 @@ BEGIN
     RETURN;
   END IF;
 
-  v_welcome_message := E'Bienvenue sur Ollync !\\n\\n'
-    || E'Ollync est une plateforme de mise en relation pour creer des collaborations simplement et rapidement.\\n'
-    || E'Pour bien demarrer, publiez votre premiere annonce ici : [Publier votre annonce](https://ollync.app/publish)\\n'
-    || E'Nous vous souhaitons une belle experience sur l''application.\\n'
-    || E'Regles essentielles : respect, bienveillance, pas de spam ni de contenu trompeur, et protection de vos informations personnelles.';
+  v_welcome_message := E'Bienvenue sur Ollync Ollync est une plateforme de mise en relation pour creer des collaborations simplement et rapidement nous vous souhaitons une belle experience sur l''application';
 
   SELECT id
   INTO v_conversation_id
@@ -102,4 +98,3 @@ SELECT
   action_statement
 FROM information_schema.triggers
 WHERE trigger_name = 'on_auth_user_created';
-

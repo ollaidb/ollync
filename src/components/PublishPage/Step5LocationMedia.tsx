@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
-import { GooglePlacesAutocomplete } from '../Location/GooglePlacesAutocomplete'
+import { LocationAutocomplete } from '../Location/LocationAutocomplete'
 import ConsentModal from '../ConsentModal'
 import './Step5LocationMedia.css'
 
@@ -26,19 +26,24 @@ interface FormData {
   externalLink?: string
   documentUrl?: string
   documentName?: string
+  taggedPostId?: string
   [key: string]: any
 }
 
 interface Step5LocationMediaProps {
   formData: FormData
   onUpdateFormData: (updates: Partial<FormData>) => void
-  onGetMyLocation: () => void
+  currentPostId?: string | null
 }
 
-export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation }: Step5LocationMediaProps) => {
+export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [uploadingDocument, setUploadingDocument] = useState(false)
+  const [userPosts, setUserPosts] = useState<Array<{ id: string; title: string; image?: string | null }>>([])
+  const [loadingUserPosts, setLoadingUserPosts] = useState(false)
+  const [isTaggedPostOpen, setIsTaggedPostOpen] = useState(false)
+  const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
 
   // Hooks de consentement
   const locationConsent = useConsent('location')
@@ -55,6 +60,58 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     mediaConsent.handleReject()
     // L'action est simplement annulée, l'utilisateur reste sur la page
   }
+
+  useEffect(() => {
+    if (!user) {
+      setUserPosts([])
+      return
+    }
+
+    let isMounted = true
+    const fetchUserPosts = async () => {
+      setLoadingUserPosts(true)
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('id, title, created_at, images')
+          .eq('user_id', user.id)
+          .in('status', ['active', 'pending'] as any)
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching user posts:', error)
+          if (isMounted) setUserPosts([])
+          return
+        }
+
+        const filtered = (data || [])
+          .filter((post) => post.id !== currentPostId)
+          .map((post) => ({
+            id: post.id,
+            title: post.title || 'Annonce sans titre',
+            image: Array.isArray(post.images) && post.images.length > 0 ? post.images[0] : null
+          }))
+
+        if (isMounted) setUserPosts(filtered)
+      } catch (fetchError) {
+        console.error('Error fetching user posts:', fetchError)
+        if (isMounted) setUserPosts([])
+      } finally {
+        if (isMounted) setLoadingUserPosts(false)
+      }
+    }
+
+    fetchUserPosts()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, currentPostId])
+
+  const taggedPostName = useMemo(() => {
+    const selected = userPosts.find((post) => post.id === formData.taggedPostId)
+    return selected?.title || 'Choisir une annonce'
+  }, [userPosts, formData.taggedPostId])
 
   const getDocumentNameFromUrl = (url?: string | null) => {
     if (!url) return ''
@@ -77,94 +134,160 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     return `${baseUrl}#${params.toString()}`
   }
 
-  // Gérer le clic sur le bouton de localisation GPS
-  const handleGetLocationClick = () => {
-    locationConsent.requireConsent(() => {
-      onGetMyLocation()
+  const getVideoDuration = (file: File) =>
+    new Promise<number>((resolve, reject) => {
+      const video = document.createElement('video')
+      const url = URL.createObjectURL(file)
+      video.preload = 'metadata'
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(url)
+        resolve(video.duration)
+      }
+      video.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error('Impossible de lire la durée de la vidéo.'))
+      }
+      video.src = url
     })
-  }
 
-  const performImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const performMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
     if (!user) {
-      alert('Vous devez être connecté pour télécharger des images')
+      alert('Vous devez être connecté pour télécharger des médias')
       return
     }
 
-    const newFiles = Array.from(files).slice(0, 7 - formData.images.length)
-    if (newFiles.length === 0) return
-
     setUploading(true)
-    const uploadedUrls: string[] = []
+    const uploadedImages: string[] = []
+    let uploadedVideo: string | null = null
+    let remainingImageSlots = 7 - formData.images.length
+    const selectedFiles = Array.from(files)
 
-    for (const file of newFiles) {
+    for (const file of selectedFiles) {
       try {
         if (file.size > 52428800) {
           alert(`Le fichier ${file.name} est trop volumineux (max 50MB)`)
           continue
         }
 
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-        if (!allowedTypes.includes(file.type)) {
-          alert(`Le type de fichier ${file.name} n'est pas supporté. Utilisez JPEG, PNG, GIF ou WebP.`)
-          continue
-        }
-
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = fileName
-
-        const { error: uploadError } = await supabase.storage
-          .from('posts')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
-
-        if (uploadError) {
-          console.error('Error uploading image:', uploadError)
-          if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
-            alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
-          } else {
-            alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
+        if (file.type.startsWith('video/')) {
+          if (formData.video || uploadedVideo) {
+            alert('Vous ne pouvez ajouter qu\'une seule vidéo.')
+            continue
           }
-          continue
-        }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('posts')
-          .getPublicUrl(filePath)
+          const duration = await getVideoDuration(file)
+          if (duration > 10) {
+            alert('La vidéo ne doit pas dépasser 10 secondes')
+            continue
+          }
 
-        if (publicUrl) {
-          uploadedUrls.push(publicUrl)
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user.id}/videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+
+          const { error: uploadError } = await supabase.storage
+            .from('videos')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Error uploading video:', uploadError)
+            if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+              alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
+            } else {
+              alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
+            }
+            continue
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('videos')
+            .getPublicUrl(fileName)
+
+          if (publicUrl) {
+            uploadedVideo = publicUrl
+          } else {
+            console.error('Impossible de récupérer l\'URL publique de la vidéo')
+            alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
+          }
         } else {
-          console.error('Impossible de récupérer l\'URL publique de l\'image')
-          alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
+          if (remainingImageSlots <= 0) continue
+
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+          if (!allowedTypes.includes(file.type)) {
+            alert(`Le type de fichier ${file.name} n'est pas supporté. Utilisez JPEG, PNG, GIF ou WebP.`)
+            continue
+          }
+
+          const fileExt = file.name.split('.').pop()
+          const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+          const filePath = fileName
+
+          const { error: uploadError } = await supabase.storage
+            .from('posts')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError)
+            if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+              alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
+            } else {
+              alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
+            }
+            continue
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('posts')
+            .getPublicUrl(filePath)
+
+          if (publicUrl) {
+            uploadedImages.push(publicUrl)
+            remainingImageSlots -= 1
+          } else {
+            console.error('Impossible de récupérer l\'URL publique de l\'image')
+            alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
+          }
         }
       } catch (error) {
-        console.error('Error uploading image:', error)
+        console.error('Error uploading media:', error)
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
         alert(`Erreur lors du téléchargement de ${file.name}: ${errorMessage}`)
       }
     }
 
-    if (uploadedUrls.length > 0) {
-      onUpdateFormData({ images: [...formData.images, ...uploadedUrls] })
+    if (uploadedImages.length > 0 || uploadedVideo) {
+      onUpdateFormData({
+        images: uploadedImages.length > 0 ? [...formData.images, ...uploadedImages] : formData.images,
+        video: uploadedVideo ?? formData.video
+      })
     }
     setUploading(false)
+    if (e.target) {
+      e.target.value = ''
+    }
   }
 
-  // Envelopper handleImageUpload avec le consentement
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Envelopper handleMediaUpload avec le consentement
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     mediaConsent.requireConsent(() => {
-      performImageUpload(e)
+      performMediaUpload(e)
     })
   }
 
   const removeImage = (index: number) => {
     const newImages = formData.images.filter((_, i) => i !== index)
     onUpdateFormData({ images: newImages })
+  }
+
+  const removeVideo = () => {
+    onUpdateFormData({ video: null })
   }
 
   const performDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,7 +396,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
 
       <div className="form-group">
         <label className="form-label">Lieu *</label>
-        <GooglePlacesAutocomplete
+        <LocationAutocomplete
           value={formData.location_address || formData.location || ''}
           onChange={(value) => {
             // Si l'utilisateur tape manuellement, on met à jour juste location
@@ -285,16 +408,32 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
           placeholder="Rechercher une adresse (ex: Paris, France)"
           className="step5-location-autocomplete"
         />
-        <button
-          className="location-button"
-          onClick={handleGetLocationClick}
-        >
-          Utiliser ma localisation GPS
-        </button>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Photo *</label>
+        <label className="form-label">Média *</label>
+        <p className="form-helper-text">1 vidéo maximum par publication</p>
+        <div className="media-type-toggle" role="tablist" aria-label="Type de média">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mediaPickerType === 'photo'}
+            className={`media-type-toggle-btn ${mediaPickerType === 'photo' ? 'active' : ''}`}
+            onClick={() => setMediaPickerType('photo')}
+          >
+            Photos
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mediaPickerType === 'video'}
+            className={`media-type-toggle-btn ${mediaPickerType === 'video' ? 'active' : ''}`}
+            onClick={() => setMediaPickerType('video')}
+            disabled={!!formData.video}
+          >
+            Vidéo
+          </button>
+        </div>
         <div className="images-grid">
           {formData.images.map((url, index) => (
             <div key={index} className="image-preview">
@@ -307,6 +446,19 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
               </button>
             </div>
           ))}
+
+          {formData.video && (
+            <div className="image-preview">
+              <video src={formData.video} controls playsInline />
+              <button
+                className="remove-image-button"
+                onClick={removeVideo}
+                type="button"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
           
           {formData.images.length < 7 && (
             <label className="upload-area" style={{ opacity: uploading ? 0.6 : 1 }}>
@@ -318,14 +470,16 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
               ) : (
                 <>
                   <Upload size={40} />
-                  <span className="upload-text">Ajouter des photos</span>
+                  <span className="upload-text">
+                    {mediaPickerType === 'photo' ? 'Ajouter des photos' : 'Ajouter une vidéo'}
+                  </span>
                 </>
               )}
               <input
                 type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
+                accept={mediaPickerType === 'photo' ? 'image/*' : 'video/*'}
+                multiple={mediaPickerType === 'photo'}
+                onChange={handleMediaUpload}
                 disabled={uploading}
                 style={{ display: 'none' }}
               />
@@ -367,6 +521,53 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
           />
           <span>Marquer comme urgent</span>
         </label>
+      </div>
+
+      <div className="form-group dropdown-field">
+        <label className="form-label">Taguer une annonce (optionnel)</label>
+        <p className="form-helper-text">
+          Choisissez une annonce en rapport avec votre annonce pour la mettre en avant.
+        </p>
+        {loadingUserPosts ? (
+          <div className="form-helper-text">Chargement des annonces...</div>
+        ) : userPosts.length === 0 ? (
+          <div className="form-helper-text">Aucune annonce publiée pour le moment.</div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={`dropdown-trigger ${isTaggedPostOpen ? 'open' : ''}`}
+              onClick={() => setIsTaggedPostOpen((prev) => !prev)}
+            >
+              <span>{taggedPostName}</span>
+              <span className="dropdown-caret" aria-hidden="true" />
+            </button>
+            {isTaggedPostOpen && (
+              <div className="dropdown-list tagged-post-list">
+                {userPosts.map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    className={`tagged-post-option ${formData.taggedPostId === post.id ? 'selected' : ''}`}
+                    onClick={() => {
+                      onUpdateFormData({ taggedPostId: post.id })
+                      setIsTaggedPostOpen(false)
+                    }}
+                  >
+                    <div className="tagged-post-thumb">
+                      {post.image ? (
+                        <img src={post.image} alt={post.title} />
+                      ) : (
+                        <div className="tagged-post-thumb-placeholder" />
+                      )}
+                    </div>
+                    <span className="tagged-post-title">{post.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="form-group">
@@ -451,4 +652,3 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, onGetMyLocation
     </div>
   )
 }
-

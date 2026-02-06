@@ -671,6 +671,34 @@
   box-shadow: var(--ui-block-shadow);
 }
 
+.tagged-post-section {
+  margin-bottom: 32px;
+  padding: var(--ui-block-padding);
+  background: var(--ui-block-bg);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  box-shadow: var(--ui-block-shadow);
+}
+
+.tagged-post-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 8px 0;
+}
+
+.tagged-post-subtitle {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin: 0 0 16px 0;
+}
+
+.tagged-post-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
 .post-additional-title {
   font-size: 16px;
   font-weight: 600;

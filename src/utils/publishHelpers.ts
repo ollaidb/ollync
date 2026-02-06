@@ -16,6 +16,7 @@ interface FormData {
   responsibilities?: string
   required_skills?: string
   benefits?: string
+  materialCondition?: string
   location: string
   location_city: string
   location_lat: number | null
@@ -38,6 +39,7 @@ interface FormData {
   externalLink?: string
   documentUrl?: string
   documentName?: string
+  taggedPostId?: string
   [key: string]: any
 }
 
@@ -55,7 +57,7 @@ interface PaymentOptionConfig {
 }
 
 const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
-  montage: ['remuneration'],
+  emploi: ['remuneration'],
   services: ['remuneration', 'echange']
 }
 
@@ -103,7 +105,7 @@ export const validatePublishForm = (
   requireSocialNetwork: boolean = false
 ): ValidationResult => {
   const errors: string[] = []
-  const isJobCategory = formData.category === 'montage'
+  const isJobCategory = formData.category === 'emploi'
 
   // Catégorie et sous-catégorie
   if (!formData.category) {
@@ -111,6 +113,12 @@ export const validatePublishForm = (
   }
   if (!formData.subcategory) {
     errors.push('La sous-catégorie est obligatoire')
+  }
+
+  if (formData.category === 'vente' && formData.subcategory === 'gorille') {
+    if (!formData.materialCondition || formData.materialCondition.trim().length === 0) {
+      errors.push('L\'état du matériel est obligatoire')
+    }
   }
 
   // Titre
@@ -137,9 +145,11 @@ export const validatePublishForm = (
     errors.push('La date de besoin est obligatoire')
   }
 
-  // Photo (au moins une image)
-  if (!formData.images || formData.images.length === 0) {
-    errors.push('Au moins une photo est obligatoire')
+  // Média (au moins une photo ou une vidéo)
+  const hasImages = formData.images && formData.images.length > 0
+  const hasVideo = !!formData.video
+  if (!hasImages && !hasVideo) {
+    errors.push('Au moins un média (photo ou vidéo) est obligatoire')
   }
 
   // Moyen de paiement
@@ -194,7 +204,7 @@ export const shouldShowSocialNetwork = (
   const relevantCategories: Record<string, string[]> = {
     'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
     'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
-    'montage': ['montage', 'live'],
+    'emploi': ['montage', 'live'],
     'services': ['coaching-contenu', 'strategie-editoriale'],
     'vente': ['comptes']
   }
@@ -353,6 +363,13 @@ export const handlePublish = async (
     descriptionValue += `\n\nCo-création : ${formData.co_creation_details.trim()}`
   }
 
+  if (formData.category === 'vente' && formData.subcategory === 'gorille' && formData.materialCondition) {
+    const hasMaterialCondition = /État du matériel\s*:/i.test(descriptionValue)
+    if (!hasMaterialCondition) {
+      descriptionValue += `\n\nÉtat du matériel : ${formData.materialCondition.trim()}`
+    }
+  }
+
   const normalizeExternalLink = (link?: string) => {
     const trimmedLink = link?.trim()
     if (!trimmedLink) return null
@@ -407,6 +424,7 @@ export const handlePublish = async (
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
     external_link: normalizeExternalLink(formData.externalLink),
     document_url: buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
+    tagged_post_id: formData.taggedPostId || null,
     moderation_status: moderationResult.shouldBlock ? 'flagged' : 'clean',
     moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
     moderation_score: moderationResult.score || 0,
@@ -461,4 +479,3 @@ export const handlePublish = async (
     alert(`Erreur lors de la publication: ${error.message || 'Erreur inconnue'}`)
   }
 }
-

@@ -71,7 +71,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         if (calendarData.appointment_datetime && messageResult?.[0]?.id) {
           // Récupérer l'autre participant de la conversation
           const { data: conversation, error: convError } = await supabase
-            .from('conversations')
+            .from('public_conversations_with_users')
             .select('user1_id, user2_id')
             .eq('id', conversationId)
             .single()
@@ -557,4 +557,3 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 }
 
 export default MessageInput
-

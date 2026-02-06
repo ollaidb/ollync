@@ -231,18 +231,23 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers pour mettre à jour updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_posts_updated_at ON posts;
 CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_matches_updated_at ON matches;
 CREATE TRIGGER update_matches_updated_at BEFORE UPDATE ON matches
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
 CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_applications_updated_at ON applications;
 CREATE TRIGGER update_applications_updated_at BEFORE UPDATE ON applications
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -425,6 +430,7 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Service', 'service', 'Wrench', '#4facfe'),
   ('Vente', 'vente', 'ShoppingBag', '#f093fb'),
   ('Mission', 'mission', 'Target', '#43e97b'),
+  ('Studio & lieu', 'studio-lieu', 'Building2', '#f59e0b'),
   ('Autre', 'autre', 'MoreHorizontal', '#ffa726')
 ON CONFLICT (name) DO UPDATE
 SET slug = EXCLUDED.slug,
@@ -462,13 +468,25 @@ ON CONFLICT DO NOTHING;
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Échange', 'echange'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Vente de compte', 'vente-compte'),
-  ((SELECT id FROM categories WHERE slug = 'vente'), 'Gratuit', 'gratuit')
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Gratuit', 'gratuit'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Matériel', 'gorille')
 ON CONFLICT DO NOTHING;
 
 -- Mission
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'mission'), 'Colis', 'colis'),
   ((SELECT id FROM categories WHERE slug = 'mission'), 'Vérification', 'verification')
+ON CONFLICT DO NOTHING;
+
+-- Studio & lieu
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio photo', 'studio-photo'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio vidéo', 'studio-video'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio', 'studio'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Appartement', 'appartement'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Maison', 'maison'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Bureau', 'bureau'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Autre', 'autre')
 ON CONFLICT DO NOTHING;
 
 -- Autre

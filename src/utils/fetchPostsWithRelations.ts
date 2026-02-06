@@ -35,6 +35,8 @@ interface PostRow {
   delivery_available: boolean
   is_urgent?: boolean
   sub_category_id?: string | null
+  profiles?: ProfileRow | null
+  categories?: CategoryRow | null
   [key: string]: unknown
 }
 
@@ -54,6 +56,7 @@ interface CategoryRow {
 // Cache simple en mémoire (session-based)
 const cache = new Map<string, { data: MappedPost[], timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const MAX_LIMIT = 50
 
 /**
  * Génère une clé de cache basée sur les options
@@ -88,10 +91,13 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
     orderDirection = 'desc',
     useCache = true
   } = options
+  const safeLimit = Math.min(Math.max(limit, 1), MAX_LIMIT)
+  const safeOffset = Math.max(offset, 0)
+  const cacheOptions = { ...options, limit: safeLimit, offset: safeOffset }
 
   // Vérifier le cache si activé et offset = 0 (première page)
-  if (useCache && offset === 0) {
-    const cacheKey = getCacheKey(options)
+  if (useCache && safeOffset === 0) {
+    const cacheKey = getCacheKey(cacheOptions)
     const cached = cache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return cached.data
@@ -118,11 +124,14 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
       'is_urgent',
       'user_id',
       'category_id',
-      'sub_category_id'
+      'sub_category_id',
+      'profiles',
+      'categories',
+      'status'
     ].join(', ')
 
     let query = supabase
-      .from('posts')
+      .from('public_posts_with_relations')
       .select(fieldsToSelect)
       .eq('status', status)
 
@@ -140,7 +149,7 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
 
     query = query
       .order(orderBy, { ascending: orderDirection === 'asc' })
-      .range(offset, offset + limit - 1)
+      .range(safeOffset, safeOffset + safeLimit - 1)
 
     const { data: posts, error: postsError } = await query
 
@@ -153,54 +162,12 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
       return []
     }
 
-    // 2. Récupérer les IDs uniques
-    const userIds = [...new Set((posts as PostRow[]).map((p) => p.user_id).filter(Boolean))]
-    const categoryIds = [...new Set((posts as PostRow[]).map((p) => p.category_id).filter(Boolean))]
-
-    // 3. Récupérer les profils et catégories en parallèle pour améliorer les performances
-    const profilesMap = new Map<string, ProfileRow>()
-    const categoriesMap = new Map<string, CategoryRow>()
-    
-    const [profilesResult, categoriesResult] = await Promise.all([
-      userIds.length > 0
-        ? supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url')
-            .in('id', userIds)
-        : Promise.resolve({ data: null, error: null }),
-      categoryIds.length > 0
-        ? supabase
-            .from('categories')
-            .select('id, name, slug')
-            .in('id', categoryIds)
-        : Promise.resolve({ data: null, error: null })
-    ])
-
-    if (!profilesResult.error && profilesResult.data) {
-      (profilesResult.data as ProfileRow[]).forEach((profile) => {
-        profilesMap.set(profile.id, profile)
-      })
-    }
-
-    if (!categoriesResult.error && categoriesResult.data) {
-      (categoriesResult.data as CategoryRow[]).forEach((category) => {
-        categoriesMap.set(category.id, category)
-      })
-    }
-
-    // 5. Combiner les données
-    const postsWithRelations = (posts as PostRow[]).map((post) => ({
-      ...post,
-      profiles: profilesMap.get(post.user_id) || null,
-      categories: categoriesMap.get(post.category_id) || null
-    }))
-
-    // 6. Mapper vers le format attendu
-    const mappedPosts = mapPosts(postsWithRelations)
+    // 2. Mapper vers le format attendu
+    const mappedPosts = mapPosts(posts as PostRow[])
     
     // Mettre en cache si activé et offset = 0 (première page)
-    if (useCache && offset === 0) {
-      const cacheKey = getCacheKey(options)
+    if (useCache && safeOffset === 0) {
+      const cacheKey = getCacheKey(cacheOptions)
       cache.set(cacheKey, { data: mappedPosts, timestamp: Date.now() })
     }
     

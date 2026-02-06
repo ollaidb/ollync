@@ -25,6 +25,14 @@ WHERE slug = 'casting-role'
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
+-- Ajouter "Matériel" dans Vente
+INSERT INTO sub_categories (category_id, name, slug) 
+SELECT id, 'Matériel', 'gorille'
+FROM categories 
+WHERE slug = 'vente'
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
 -- Supprimer "Live" de Casting
 DELETE FROM sub_categories 
 WHERE slug = 'live'

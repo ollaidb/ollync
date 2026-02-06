@@ -93,6 +93,14 @@ const RecentPosts = () => {
     navigate(`/post/${post.id}`)
   }
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate('/home', { replace: true })
+  }
+
   const handleProfileClick = (e: React.MouseEvent, userId?: string) => {
     e.stopPropagation()
     if (userId) {
@@ -105,7 +113,7 @@ const RecentPosts = () => {
       {/* Header fixe */}
       <div className="swipe-header-fixed">
         <div className="swipe-header-content">
-          <BackButton className="swipe-back-button" />
+          <BackButton className="swipe-back-button" onClick={handleBack} />
           <h1 className="swipe-title">Annonces récentes</h1>
           <div className="swipe-header-spacer"></div>
         </div>
@@ -160,6 +168,8 @@ const RecentPosts = () => {
           <div className="swipe-masonry">
             {filteredPosts.map((post) => {
               const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
+              const mainMedia = mainImage || post.video || null
+              const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(mainMedia.split('?')[0].split('#')[0])
               const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
 
               return (
@@ -173,13 +183,23 @@ const RecentPosts = () => {
                   </div>
 
                   <div className={`swipe-card-image-wrapper ${post.is_urgent ? 'swipe-card-urgent' : ''}`}>
-                    {mainImage ? (
-                      <img
-                        src={mainImage}
-                        alt={post.title}
-                        className="swipe-card-image"
-                        loading="lazy"
-                      />
+                    {mainMedia ? (
+                      isVideo ? (
+                        <video
+                          src={mainMedia}
+                          className="swipe-card-image"
+                          playsInline
+                          preload="metadata"
+                          muted
+                        />
+                      ) : (
+                        <img
+                          src={mainMedia}
+                          alt={post.title}
+                          className="swipe-card-image"
+                          loading="lazy"
+                        />
+                      )
                     ) : (
                       <div className="swipe-card-image-placeholder">
                         <Tag size={32} />
@@ -343,5 +363,3 @@ const RecentPosts = () => {
 }
 
 export default RecentPosts
-
-

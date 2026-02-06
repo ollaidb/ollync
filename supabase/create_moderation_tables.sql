@@ -120,6 +120,47 @@ BEGIN
   END IF;
 END $$;
 
+-- Acces lecture aux conversations et messages pour moderation
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'conversations'
+      AND policyname = 'Moderator can view all conversations'
+  ) THEN
+    CREATE POLICY "Moderator can view all conversations" ON conversations
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+            AND lower(profiles.email) = 'binta22116@gmail.com'
+        )
+      );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'messages'
+      AND policyname = 'Moderator can view all messages'
+  ) THEN
+    CREATE POLICY "Moderator can view all messages" ON messages
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+            AND lower(profiles.email) = 'binta22116@gmail.com'
+        )
+      );
+  END IF;
+END $$;
+
 -- Fonctions de moderation (SECURITY DEFINER)
 -- Supprimer un post
 CREATE OR REPLACE FUNCTION public.delete_post_as_admin(target_post_id UUID)

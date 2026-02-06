@@ -28,8 +28,10 @@ i18n.use(initReactI18next).init({
       categories: {
         titles: {
           'creation-contenu': 'Création de contenu',
-          'montage': 'Montage',
-          'casting-role': 'Casting & rôles',
+          'emploi': 'Emploi',
+          'poste-service': 'Poste/Service',
+          'casting-role': 'Casting/Roles',
+          'studio-lieu': 'Studio/Lieu',
           'projets-equipe': 'Projets en équipe',
           'services': 'Services',
           'vente': 'Vente'
@@ -37,7 +39,9 @@ i18n.use(initReactI18next).init({
         descriptions: {
           'creation-contenu': 'Créer du contenu : photos, vidéos, vlogs, sketchs, trends, événements',
           'casting-role': 'Trouver des profils pour un projet ou une production',
-          'montage': 'Montage et post-production pour vos contenus',
+          'emploi': 'Emploi : montage et post-production pour vos contenus',
+          'poste-service': 'Poste/Service : prestations, food, lieux et autres besoins',
+          'studio-lieu': 'Trouver un studio ou un lieu pour vos shootings et tournages',
           'projets-equipe': 'Constituer une équipe pour votre projet',
           'services': 'Proposer ou trouver des services pour créateurs',
           'vente': 'Vendre des comptes, noms d’utilisateur ou concepts'
@@ -52,6 +56,9 @@ i18n.use(initReactI18next).init({
           'evenements': 'Événements',
           'live': 'Live',
           'autre': 'Autre',
+          'prestation': 'Prestation',
+          'food': 'Food',
+          'lieux': 'Lieux',
           'montage': 'Montage',
           'micro-trottoir': 'Micro-trottoir',
           'ecriture-contenu': 'Écriture de contenu',
@@ -70,13 +77,18 @@ i18n.use(initReactI18next).init({
           'projet-magazine': 'Magazine',
           'projet-blog': 'Blog',
           'projet-media': 'Média',
+          'studio-creation': 'Studio de création',
+          'lieux-residentiels': 'Lieux résidentiels',
+          'lieux-professionnels': 'Lieux professionnels',
           'coaching-contenu': 'Coaching contenu',
           'strategie-editoriale': 'Stratégie éditoriale',
           'organisation': 'Organisation',
+          'agence': 'Agence',
           'setup-materiel': 'Setup matériel',
           'comptes': 'Comptes',
           'noms-utilisateur': "Noms d'utilisateur",
-          'concepts-niches': 'Concepts / Niches'
+          'concepts-niches': 'Concepts / Niches',
+          'gorille': 'Matériel'
         },
         ui: {
           viewUsers: 'Voir les utilisateurs',
@@ -295,8 +307,10 @@ i18n.use(initReactI18next).init({
       categories: {
         titles: {
           'creation-contenu': 'Content creation',
-          'montage': 'Editing',
-          'casting-role': 'Casting & roles',
+          'emploi': 'Jobs',
+          'poste-service': 'Post/Service',
+          'casting-role': 'Casting/Roles',
+          'studio-lieu': 'Studio/Location',
           'projets-equipe': 'Team projects',
           'services': 'Services',
           'vente': 'Sales'
@@ -304,7 +318,9 @@ i18n.use(initReactI18next).init({
         descriptions: {
           'creation-contenu': 'Create content: photos, videos, vlogs, sketches, trends, events',
           'casting-role': 'Find profiles for a project or production',
-          'montage': 'Editing and post-production for your content',
+          'emploi': 'Jobs: editing and post-production for your content',
+          'poste-service': 'Post/Service: services, food, places, and other needs',
+          'studio-lieu': 'Find studios or locations for your shoots and filming',
           'projets-equipe': 'Build a team for your project',
           'services': 'Offer or find services for creators',
           'vente': 'Sell accounts, usernames, or concepts'
@@ -319,6 +335,9 @@ i18n.use(initReactI18next).init({
           'evenements': 'Events',
           'live': 'Live',
           'autre': 'Other',
+          'prestation': 'Service',
+          'food': 'Food',
+          'lieux': 'Places',
           'montage': 'Editing',
           'micro-trottoir': 'Street interview',
           'ecriture-contenu': 'Content writing',
@@ -337,13 +356,18 @@ i18n.use(initReactI18next).init({
           'projet-magazine': 'Magazine',
           'projet-blog': 'Blog',
           'projet-media': 'Media',
+          'studio-creation': 'Creation studio',
+          'lieux-residentiels': 'Residential places',
+          'lieux-professionnels': 'Professional places',
           'coaching-contenu': 'Content coaching',
           'strategie-editoriale': 'Editorial strategy',
           'organisation': 'Organization',
+          'agence': 'Agency',
           'setup-materiel': 'Equipment setup',
           'comptes': 'Accounts',
           'noms-utilisateur': 'Usernames',
-          'concepts-niches': 'Concepts / niches'
+          'concepts-niches': 'Concepts / niches',
+          'gorille': 'Equipment'
         },
         ui: {
           viewUsers: 'View users',

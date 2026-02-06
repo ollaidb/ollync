@@ -25,6 +25,7 @@ INSERT INTO categories (name, slug, icon, color) VALUES
   ('Création de contenu', 'creation-contenu', 'Camera', '#667eea'),
   ('Casting', 'casting-role', 'Users', '#2196f3'),
   ('Emploi', 'montage', 'Scissors', '#9c27b0'),
+  ('Studio & lieu', 'studio-lieu', 'Building2', '#f59e0b'),
   ('Projet', 'projets-equipe', 'Briefcase', '#4facfe'),
   ('Services', 'services', 'Wrench', '#43e97b'),
   ('Vente', 'vente', 'ShoppingBag', '#f093fb')
@@ -221,7 +222,19 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
--- 4. Projet (projets-equipe)
+-- 4. Studio & lieu
+INSERT INTO sub_categories (category_id, name, slug) VALUES
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio photo', 'studio-photo'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio vidéo', 'studio-video'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Studio', 'studio'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Appartement', 'appartement'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Maison', 'maison'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Bureau', 'bureau'),
+  ((SELECT id FROM categories WHERE slug = 'studio-lieu'), 'Autre', 'autre')
+ON CONFLICT (category_id, slug) DO UPDATE
+SET name = EXCLUDED.name;
+
+-- 5. Projet (projets-equipe)
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Émission', 'projet-emission'),
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Newsletter', 'projet-newsletter'),
@@ -235,21 +248,23 @@ INSERT INTO sub_categories (category_id, name, slug) VALUES
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
--- 5. Services
+-- 6. Services
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'services'), 'Coaching contenu', 'coaching-contenu'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Stratégie éditoriale', 'strategie-editoriale'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Organisation', 'organisation'),
+  ((SELECT id FROM categories WHERE slug = 'services'), 'Agence', 'agence'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Setup matériel', 'setup-materiel'),
   ((SELECT id FROM categories WHERE slug = 'services'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
 
--- 6. Vente
+-- 7. Vente
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Comptes', 'comptes'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Noms d''utilisateur', 'noms-utilisateur'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Concepts / Niches', 'concepts-niches'),
+  ((SELECT id FROM categories WHERE slug = 'vente'), 'Matériel', 'gorille'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
@@ -283,9 +298,10 @@ ORDER BY
     WHEN 'creation-contenu' THEN 1
     WHEN 'casting-role' THEN 2
     WHEN 'montage' THEN 3
-    WHEN 'projets-equipe' THEN 4
-    WHEN 'services' THEN 5
-    WHEN 'vente' THEN 6
+    WHEN 'studio-lieu' THEN 4
+    WHEN 'projets-equipe' THEN 5
+    WHEN 'services' THEN 6
+    WHEN 'vente' THEN 7
     ELSE 7
   END,
   sc.name;

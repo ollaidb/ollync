@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, LucideIcon, ChevronRight } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, Building2, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'
@@ -39,10 +39,17 @@ const Header = () => {
       subMenus: []
     },
     { 
-      id: 'montage', 
+      id: 'emploi', 
       icon: Scissors, 
-      label: translateCategoryLabel('montage', 'Emploi'), 
-      path: '/montage',
+      label: translateCategoryLabel('emploi', 'Emploi'), 
+      path: '/emploi',
+      subMenus: []
+    },
+    { 
+      id: 'studio-lieu', 
+      icon: Building2, 
+      label: translateCategoryLabel('studio-lieu', 'Studio & lieu'), 
+      path: '/studio-lieu',
       subMenus: []
     },
     { 
@@ -74,7 +81,8 @@ const Header = () => {
       const categoriesConfig = [
         { id: 'creation-contenu', icon: Camera, label: translateCategoryLabel('creation-contenu', 'Création de contenu'), path: '/creation-contenu' },
         { id: 'casting-role', icon: Users, label: translateCategoryLabel('casting-role', 'Casting'), path: '/casting-role' },
-        { id: 'montage', icon: Scissors, label: translateCategoryLabel('montage', 'Emploi'), path: '/montage' },
+        { id: 'emploi', icon: Scissors, label: translateCategoryLabel('emploi', 'Emploi'), path: '/emploi' },
+      { id: 'studio-lieu', icon: Building2, label: translateCategoryLabel('studio-lieu', 'Studio & lieu'), path: '/studio-lieu' },
         { id: 'projets-equipe', icon: Briefcase, label: translateCategoryLabel('projets-equipe', 'Projet'), path: '/projets-equipe' },
         { id: 'services', icon: Wrench, label: translateCategoryLabel('services', 'Services'), path: '/services' },
         { id: 'vente', icon: ShoppingBag, label: translateCategoryLabel('vente', 'Vente'), path: '/vente' }

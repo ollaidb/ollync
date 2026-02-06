@@ -1,5 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
+import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
+import { CustomList } from '../CustomList/CustomList'
 import './Step4Description.css'
 
 interface FormData {
@@ -9,6 +11,7 @@ interface FormData {
   socialNetwork?: string
   price: string
   exchange_type: string
+  materialCondition?: string
   contract_type?: string
   work_schedule?: string
   responsibilities?: string
@@ -29,24 +32,8 @@ interface Step4DescriptionProps {
   onContinue: () => void
   selectedCategory?: { slug: string } | null
   selectedSubcategory?: { slug: string } | null
+  selectedSubSubCategory?: { slug: string } | null
 }
-
-// Liste des réseaux sociaux disponibles
-const SOCIAL_NETWORKS = [
-  { id: 'tiktok', name: 'TikTok' },
-  { id: 'instagram', name: 'Instagram' },
-  { id: 'youtube', name: 'YouTube' },
-  { id: 'facebook', name: 'Facebook' },
-  { id: 'snapchat', name: 'Snapchat' },
-  { id: 'twitter', name: 'Twitter' },
-  { id: 'pinterest', name: 'Pinterest' },
-  { id: 'twitch', name: 'Twitch' },
-  { id: 'linkedin', name: 'LinkedIn' },
-  { id: 'whatsapp', name: 'WhatsApp' },
-  { id: 'discord', name: 'Discord' },
-  { id: 'reddit', name: 'Reddit' },
-  { id: 'autre', name: 'Autre' }
-]
 
 export const Step4Description = ({ 
   formData, 
@@ -59,13 +46,49 @@ export const Step4Description = ({
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
-  const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'montage'
+  const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'emploi'
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
   const requiresPrice = !!paymentConfig?.requiresPrice
   const requiresExchangeService = !!paymentConfig?.requiresExchangeService
   const requiresRevenueShare = !!paymentConfig?.requiresPercentage
   const showCoCreationDetails = formData.exchange_type === 'co-creation'
+  const [isSocialNetworkOpen, setIsSocialNetworkOpen] = useState(false)
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [isContractOpen, setIsContractOpen] = useState(false)
+  const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
+
+  const contractOptions = [
+    { id: 'cdi', name: 'CDI' },
+    { id: 'cdd', name: 'CDD' },
+    { id: 'freelance', name: 'Freelance' },
+    { id: 'stage', name: 'Stage' },
+    { id: 'alternance', name: 'Alternance' },
+    { id: 'interim', name: 'Intérim' },
+    { id: 'autre', name: 'Autre' }
+  ]
+
+  const materialConditionOptions = [
+    { id: 'neuf', name: 'État neuf' },
+    { id: 'bon-etat', name: 'Bon état' },
+    { id: 'etat-moyen', name: 'État moyen' }
+  ]
+
+  const selectedSocialNetworkName =
+    SOCIAL_NETWORKS_CONFIG.find((network) => network.id === formData.socialNetwork)?.name ??
+    'Choisir un réseau'
+  const selectedPaymentName =
+    paymentOptions.find((option) => option.id === formData.exchange_type)?.name ??
+    'Choisir un moyen de paiement'
+  const selectedContractName =
+    contractOptions.find((option) => option.id === formData.contract_type)?.name ??
+    'Choisir un type de contrat'
+  const selectedMaterialConditionName =
+    materialConditionOptions.find((option) => option.id === formData.materialCondition)?.name ??
+    'Choisir un état du matériel'
+  const isMaterialSale =
+    (selectedCategory?.slug ?? formData.category) === 'vente' &&
+    (selectedSubcategory?.slug ?? formData.subcategory) === 'gorille'
   const descriptionPlaceholder = isJobCategory
     ? 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.'
     : 'Décrivez en détail votre annonce...'
@@ -74,20 +97,18 @@ export const Step4Description = ({
   useEffect(() => {
     if (paymentOptions.length === 0) return
     const hasValidPayment = paymentOptions.some((option) => option.id === formData.exchange_type)
-    const shouldAutoSelect = paymentOptions.length === 1 && !hasValidPayment
     const shouldFixInvalid = !!formData.exchange_type && !hasValidPayment
 
-    if (shouldAutoSelect || shouldFixInvalid) {
+    if (shouldFixInvalid) {
       onUpdateFormData({
-        exchange_type: paymentOptions[0].id,
+        exchange_type: '',
         price: '',
         exchange_service: '',
         revenue_share_percentage: '',
         co_creation_details: ''
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentOptions, formData.exchange_type])
+  }, [paymentOptions])
   
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
@@ -103,6 +124,7 @@ export const Step4Description = ({
       parseFloat(formData.revenue_share_percentage) > 0 &&
       parseFloat(formData.revenue_share_percentage) <= 100
     )) &&
+    (!isMaterialSale || (formData.materialCondition && formData.materialCondition.trim().length > 0)) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
 
   return (
@@ -122,41 +144,56 @@ export const Step4Description = ({
 
       {isJobCategory && (
         <>
-          <div className="form-group">
+          <div className="form-group dropdown-field">
             <label className="form-label">Type de contrat *</label>
-            <select
-              className="form-select"
-              value={formData.contract_type || ''}
-              onChange={(e) => onUpdateFormData({ contract_type: e.target.value })}
+            <button
+              type="button"
+              className={`dropdown-trigger ${isContractOpen ? 'open' : ''}`}
+              onClick={() => setIsContractOpen((prev) => !prev)}
             >
-              <option value="">Sélectionner un type de contrat...</option>
-              <option value="cdi">CDI</option>
-              <option value="cdd">CDD</option>
-              <option value="freelance">Freelance</option>
-              <option value="stage">Stage</option>
-              <option value="alternance">Alternance</option>
-              <option value="interim">Intérim</option>
-              <option value="autre">Autre</option>
-            </select>
+              <span>{selectedContractName}</span>
+              <span className="dropdown-caret" aria-hidden="true" />
+            </button>
+            {isContractOpen && (
+              <CustomList
+                items={contractOptions}
+                selectedId={formData.contract_type}
+                onSelectItem={(optionId) => {
+                  onUpdateFormData({ contract_type: optionId })
+                  setIsContractOpen(false)
+                }}
+                className="dropdown-list"
+                showCheckbox={false}
+                showDescription={false}
+              />
+            )}
           </div>
         </>
       )}
 
       {showSocialNetwork && (
-        <div className="form-group">
+        <div className="form-group dropdown-field">
           <label className="form-label">Réseau social concerné *</label>
-          <select
-            className="form-select"
-            value={formData.socialNetwork || ''}
-            onChange={(e) => onUpdateFormData({ socialNetwork: e.target.value })}
+          <button
+            type="button"
+            className={`dropdown-trigger ${isSocialNetworkOpen ? 'open' : ''}`}
+            onClick={() => setIsSocialNetworkOpen((prev) => !prev)}
           >
-            <option value="">Sélectionner un réseau social...</option>
-            {SOCIAL_NETWORKS.map((network) => (
-              <option key={network.id} value={network.id}>
-                {network.name}
-              </option>
-            ))}
-          </select>
+            <span>{selectedSocialNetworkName}</span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {isSocialNetworkOpen && (
+            <CustomList
+              items={SOCIAL_NETWORKS_CONFIG}
+              selectedId={formData.socialNetwork}
+              onSelectItem={(networkId) => {
+                onUpdateFormData({ socialNetwork: networkId })
+                setIsSocialNetworkOpen(false)
+              }}
+              className="social-networks-list dropdown-list"
+              showCheckbox={false}
+            />
+          )}
         </div>
       )}
 
@@ -173,37 +210,70 @@ export const Step4Description = ({
         </div>
       )}
 
-      {!isJobCategory && (
-        <div className="form-group">
-          <label className="form-label">Moyen de paiement *</label>
-          <select
-            className="form-select"
-            value={formData.exchange_type}
-            onChange={(e) => {
-              const newExchangeType = e.target.value
-              onUpdateFormData({ 
-                exchange_type: newExchangeType,
-                price: newExchangeType === 'remuneration' ? formData.price : '',
-                exchange_service: newExchangeType === 'echange' ? formData.exchange_service : '',
-                revenue_share_percentage: newExchangeType === 'partage-revenus' ? formData.revenue_share_percentage : '',
-                co_creation_details: newExchangeType === 'co-creation' ? formData.co_creation_details : ''
-              })
-            }}
-            disabled={paymentOptions.length === 1}
+      {isMaterialSale && (
+        <div className="form-group dropdown-field">
+          <label className="form-label">État du matériel *</label>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isMaterialConditionOpen ? 'open' : ''}`}
+            onClick={() => setIsMaterialConditionOpen((prev) => !prev)}
           >
-            {paymentOptions.length > 1 && <option value="">Sélectionner...</option>}
-            {paymentOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
+            <span>{selectedMaterialConditionName}</span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {isMaterialConditionOpen && (
+            <CustomList
+              items={materialConditionOptions}
+              selectedId={formData.materialCondition}
+              onSelectItem={(optionId) => {
+                onUpdateFormData({ materialCondition: optionId })
+                setIsMaterialConditionOpen(false)
+              }}
+              className="dropdown-list"
+              showCheckbox={false}
+              showDescription={false}
+            />
+          )}
         </div>
       )}
 
-      {(isJobCategory || requiresPrice) && (
+      {/* Moyen de paiement - Visible pour toutes les catégories */}
+      <div className="form-group dropdown-field">
+        <label className="form-label">
+          {isJobCategory ? 'Type de rémunération *' : 'Moyen de paiement *'}
+        </label>
+        <button
+          type="button"
+          className={`dropdown-trigger ${isPaymentOpen ? 'open' : ''}`}
+          onClick={() => setIsPaymentOpen((prev) => !prev)}
+        >
+          <span>{selectedPaymentName}</span>
+          <span className="dropdown-caret" aria-hidden="true" />
+        </button>
+        {isPaymentOpen && (
+          <CustomList
+            items={paymentOptions}
+            selectedId={formData.exchange_type}
+            onSelectItem={(optionId) => {
+              onUpdateFormData({
+                exchange_type: optionId,
+                price: optionId === 'remuneration' ? formData.price : '',
+                exchange_service: optionId === 'echange' ? formData.exchange_service : '',
+                revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
+                co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
+              })
+              setIsPaymentOpen(false)
+            }}
+            className="payment-options-list dropdown-list"
+            showCheckbox={false}
+            showDescription={false}
+          />
+        )}
+      </div>
+
+      {requiresPrice && (
         <div className="form-group">
-          <label className="form-label">{isJobCategory ? 'Salaire (€) *' : 'Prix (€) *'}</label>
+          <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
           <input
             type="number"
             className="form-input"
@@ -329,4 +399,3 @@ export const Step4Description = ({
     </div>
   )
 }
-

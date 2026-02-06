@@ -7,11 +7,13 @@ import Publish from './pages/Publish'
 import Messages from './pages/Messages'
 import Profile from './pages/Profile'
 import CreationContenu from './pages/CreationContenu'
-import Montage from './pages/Montage'
+import Emploi from './pages/Emploi'
 import CastingRole from './pages/CastingRole'
+import StudioLieu from './pages/StudioLieu'
 import ProjetsEquipe from './pages/ProjetsEquipe'
 import Service from './pages/Service'
 import Vente from './pages/Vente'
+import PosteService from './pages/PosteService'
 import PostDetails from './pages/PostDetails'
 import SwipePage from './pages/SwipePage'
 import UsersPage from './pages/UsersPage'
@@ -92,10 +94,14 @@ function AppContent() {
       <Route path="/creation-contenu/:submenu" element={<CreationContenu />} />
       <Route path="/creation-contenu/:submenu/:subSubMenu" element={<CreationContenu />} />
       <Route path="/creation-contenu/:submenu/:subSubMenu/:subSubSubMenu" element={<CreationContenu />} />
-      <Route path="/montage" element={<Montage />} />
-      <Route path="/montage/:submenu" element={<Montage />} />
-      <Route path="/montage/:submenu/:subSubMenu" element={<Montage />} />
-      <Route path="/montage/:submenu/:subSubMenu/:subSubSubMenu" element={<Montage />} />
+      <Route path="/emploi" element={<Emploi />} />
+      <Route path="/emploi/:submenu" element={<Emploi />} />
+      <Route path="/emploi/:submenu/:subSubMenu" element={<Emploi />} />
+      <Route path="/emploi/:submenu/:subSubMenu/:subSubSubMenu" element={<Emploi />} />
+      <Route path="/studio-lieu" element={<StudioLieu />} />
+      <Route path="/studio-lieu/:submenu" element={<StudioLieu />} />
+      <Route path="/studio-lieu/:submenu/:subSubMenu" element={<StudioLieu />} />
+      <Route path="/studio-lieu/:submenu/:subSubMenu/:subSubSubMenu" element={<StudioLieu />} />
       <Route path="/casting-role" element={<CastingRole />} />
       <Route path="/casting-role/:submenu" element={<CastingRole />} />
       <Route path="/casting-role/:submenu/:subSubMenu" element={<CastingRole />} />
@@ -112,6 +118,10 @@ function AppContent() {
       <Route path="/vente/:submenu" element={<Vente />} />
       <Route path="/vente/:submenu/:subSubMenu" element={<Vente />} />
       <Route path="/vente/:submenu/:subSubMenu/:subSubSubMenu" element={<Vente />} />
+      <Route path="/poste-service" element={<PosteService />} />
+      <Route path="/poste-service/:submenu" element={<PosteService />} />
+      <Route path="/poste-service/:submenu/:subSubMenu" element={<PosteService />} />
+      <Route path="/poste-service/:submenu/:subSubMenu/:subSubSubMenu" element={<PosteService />} />
       <Route path="/publier-annonce" element={<Publish />} />
       <Route path="/post/:id" element={<PostDetails />} />
       <Route path="/swipe" element={<SwipePage />} />
@@ -157,4 +167,3 @@ function App() {
 }
 
 export default App
-

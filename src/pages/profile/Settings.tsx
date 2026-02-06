@@ -1,15 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe, Shield } from 'lucide-react'
+import { User, CreditCard, Palette, Bell, Mail, Wifi, Database, ChevronRight, Trash2, Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../../hooks/useSupabase'
 import './Settings.css'
 
 const Settings = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
   const { t } = useTranslation(['settings'])
-  const isModerator = (user?.email || '').trim().toLowerCase() === 'binta22116@gmail.com'
 
   const menuItems = [
     {
@@ -67,15 +64,6 @@ const Settings = () => {
       path: '/profile/settings/delete-account'
     }
   ]
-
-  if (isModerator) {
-    menuItems.push({
-      id: 'moderation',
-      icon: Shield,
-      label: t('settings:moderation'),
-      path: '/profile/settings/moderation'
-    })
-  }
 
   return (
     <div className="settings-page">

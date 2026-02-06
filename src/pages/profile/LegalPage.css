@@ -63,13 +63,54 @@
 
 .legal-detail-content ul,
 .legal-detail-content ol {
-  margin: 0 0 16px 20px;
+  margin: 0 0 16px 0;
   padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .legal-detail-content li {
-  margin: 0 0 8px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
   font-size: 15px;
+  line-height: 1.5;
+}
+
+.legal-detail-content ul li:before {
+  content: '•';
+  flex-shrink: 0;
+  color: var(--primary);
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.legal-detail-content ol {
+  counter-reset: item;
+}
+
+.legal-detail-content ol li {
+  counter-increment: item;
+}
+
+.legal-detail-content ol li:before {
+  content: counter(item);
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
 }
 
 .legal-detail-content strong {

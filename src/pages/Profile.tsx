@@ -264,7 +264,7 @@ const Profile = () => {
       return <DeleteAccount />
     }
 
-    if (location.pathname === '/profile/settings/moderation') {
+    if (location.pathname === '/profile/security/moderation') {
       return <Moderation />
     }
 

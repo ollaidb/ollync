@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Check, XCircle, MessageCircle } from 'lucide-react'
+import { X, Check, XCircle, MessageCircle, FileText, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import MessageInput from './MessageInput'
 import ConfirmationModal from '../ConfirmationModal'
@@ -12,6 +12,8 @@ interface MatchRequestDetailProps {
     to_user_id: string
     related_post_id?: string | null
     request_message?: string | null
+    request_document_url?: string | null
+    request_document_name?: string | null
     related_service_name?: string | null
     related_service_description?: string | null
     related_service_payment_type?: 'price' | 'exchange' | null
@@ -62,7 +64,7 @@ const MatchRequestDetail = ({
   const findOrCreateConversation = async (otherUserId: string) => {
     try {
       const { data: existingConvs, error: searchError } = await supabase
-        .from('conversations')
+        .from('public_conversations_with_users')
         .select('*')
         .or(`and(user1_id.eq.${currentUserId},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${currentUserId})`)
         .is('deleted_at', null)
@@ -331,6 +333,23 @@ const MatchRequestDetail = ({
             </div>
           )}
 
+          {request.request_document_url && (
+            <div className="match-request-detail-document">
+              <p className="match-request-detail-document-label">Document :</p>
+              <a
+                href={request.request_document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="match-request-detail-document-link"
+                download={request.request_document_name}
+              >
+                <FileText size={18} />
+                <span>{request.request_document_name || 'Document'}</span>
+                <Download size={16} />
+              </a>
+            </div>
+          )}
+
           <div className="match-request-detail-status">
             <span className={`status-badge status-${request.status}`}>
               {request.status === 'pending' && 'En attente'}
@@ -478,4 +497,3 @@ const MatchRequestDetail = ({
 }
 
 export default MatchRequestDetail
-

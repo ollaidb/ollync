@@ -31,9 +31,9 @@
 }
 
 .publish-content {
-  max-width: 1200px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 12px 20px;
+  padding: 12px 20px 24px;
   width: 100%;
   box-sizing: border-box;
 }

@@ -60,6 +60,7 @@ const Home = () => {
   const [creationContenuPosts, setCreationContenuPosts] = useState<Post[]>([])
   const [castingPosts, setCastingPosts] = useState<Post[]>([])
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
+  const [studioLieuPosts, setStudioLieuPosts] = useState<Post[]>([])
 
 
   // Nombre d'annonces par section : mobile 5, web 4
@@ -466,21 +467,23 @@ const Home = () => {
         ])
         
         // Charger les posts par catégorie en parallèle
-        const [creationContenu, casting, emploi] = await Promise.all([
+        const [creationContenu, casting, emploi, studioLieu] = await Promise.all([
           fetchCategoryPosts('creation-contenu'),
           fetchCategoryPosts('casting-role'),
-          fetchCategoryPosts('montage') // Emploi utilise le slug 'montage'
+          fetchCategoryPosts('emploi'), // Emploi utilise le slug 'emploi'
+          fetchCategoryPosts('studio-lieu')
         ])
         
         setCreationContenuPosts(creationContenu)
         setCastingPosts(casting)
         setEmploiPosts(emploi)
+        setStudioLieuPosts(studioLieu)
         
         // Une fois les posts récents et urgents chargés, charger les recommandations
         // en excluant les IDs déjà affichés
         const recentIds = recent.map(p => p.id)
         const urgentIds = urgent.map(p => p.id)
-        const categoryIds = [...creationContenu, ...casting, ...emploi].map(p => p.id)
+        const categoryIds = [...creationContenu, ...casting, ...emploi, ...studioLieu].map(p => p.id)
         const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
         
         // Charger les recommandations de manière asynchrone sans bloquer
@@ -765,7 +768,7 @@ const Home = () => {
           {/* Section Emploi */}
           {emploiPosts.length > 0 && (
             <div className="home-posts-section">
-              <h2 className="home-section-title">{t('categories:titles.montage')}</h2>
+              <h2 className="home-section-title">{t('categories:titles.emploi')}</h2>
               <div className="home-posts-grid">
                 {emploiPosts.slice(0, maxPostsPerSection).map((post) => (
                   <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
@@ -773,7 +776,27 @@ const Home = () => {
                 {emploiPosts.length >= maxPostsPerSection && (
                   <button
                     className="home-show-more-btn home-plus-btn"
-                    onClick={() => navigate('/montage')}
+                    onClick={() => navigate('/emploi')}
+                  >
+                    <Plus size={32} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Section Studio & lieu */}
+          {studioLieuPosts.length > 0 && (
+            <div className="home-posts-section">
+              <h2 className="home-section-title">{t('categories:titles.studio-lieu')}</h2>
+              <div className="home-posts-grid">
+                {studioLieuPosts.slice(0, maxPostsPerSection).map((post) => (
+                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
+                ))}
+                {studioLieuPosts.length >= maxPostsPerSection && (
+                  <button
+                    className="home-show-more-btn home-plus-btn"
+                    onClick={() => navigate('/studio-lieu')}
                   >
                     <Plus size={32} />
                   </button>
