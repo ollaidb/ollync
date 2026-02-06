@@ -174,6 +174,7 @@ export interface Database {
           benefits: string | null
           location: string | null
           images: string[] | null
+          video: string | null
           delivery_available: boolean
           status: string
           views_count: number
@@ -194,6 +195,7 @@ export interface Database {
           benefits?: string | null
           location?: string | null
           images?: string[] | null
+          video?: string | null
           delivery_available?: boolean
           status?: string
           views_count?: number
@@ -214,6 +216,7 @@ export interface Database {
           benefits?: string | null
           location?: string | null
           images?: string[] | null
+          video?: string | null
           delivery_available?: boolean
           status?: string
           views_count?: number
@@ -426,4 +429,3 @@ export interface Database {
     }
   }
 }
-

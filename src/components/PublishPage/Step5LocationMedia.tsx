@@ -77,6 +77,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           .eq('user_id', user.id)
           .in('status', ['active', 'pending'] as any)
           .order('created_at', { ascending: false })
+          .returns<Array<{ id: string; title: string | null; created_at: string; images: string[] | null }>>()
 
         if (error) {
           console.error('Error fetching user posts:', error)
@@ -85,8 +86,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         }
 
         const filtered = (data || [])
-          .filter((post) => post.id !== currentPostId)
-          .map((post) => ({
+          .filter((post: { id: string }) => post.id !== currentPostId)
+          .map((post: { id: string; title: string | null; images: string[] | null }) => ({
             id: post.id,
             title: post.title || 'Annonce sans titre',
             image: Array.isArray(post.images) && post.images.length > 0 ? post.images[0] : null

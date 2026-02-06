@@ -13,6 +13,7 @@ export interface SupabasePost {
   price?: number | null
   location?: string | null
   images?: string[] | null
+  video?: string | null
   likes_count: number
   comments_count: number
   created_at: string
@@ -40,6 +41,7 @@ export interface MappedPost {
   price?: number | null
   location?: string | null
   images?: string[] | null
+  video?: string | null
   likes_count: number
   comments_count: number
   created_at: string
@@ -85,4 +87,3 @@ export function mapPost(post: SupabasePost): MappedPost {
 export function mapPosts(posts: SupabasePost[]): MappedPost[] {
   return posts.map(mapPost)
 }
-

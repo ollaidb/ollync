@@ -505,10 +505,10 @@ const Messages = () => {
     }
   }
 
-  const fetchWithFallback = async <T,>(
-    runView: () => Promise<{ data: T | null; error: { code?: string } | null }>,
-    runTable: () => Promise<{ data: T | null; error: { code?: string } | null }>
-  ): Promise<{ data: T | null; error: { code?: string } | null }> => {
+  const fetchWithFallback = async (
+    runView: () => PromiseLike<{ data: any; error: { code?: string } | null; count?: number | null }>,
+    runTable: () => PromiseLike<{ data: any; error: { code?: string } | null; count?: number | null }>
+  ): Promise<{ data: any; error: { code?: string } | null; count?: number | null }> => {
     const viewResult = await runView()
     if (!viewResult.error) {
       return viewResult
@@ -525,7 +525,7 @@ const Messages = () => {
       const { data: existingConvs, error: searchError } = await fetchWithFallback(
         () =>
           supabase
-            .from('public_conversations_with_users')
+            .from('public_conversations_with_users' as any)
             .select('*')
             .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
             .is('deleted_at', null),
@@ -542,7 +542,7 @@ const Messages = () => {
       }
 
       // Filtrer pour exclure les groupes et les conversations supprimées
-      const existingConv = existingConvs?.find(conv => {
+      const existingConv = (existingConvs as Array<any> | null)?.find((conv: any) => {
         const convData = conv as { is_group?: boolean; deleted_at?: string | null }
         return !convData.is_group && !convData.deleted_at
       })
@@ -569,7 +569,7 @@ const Messages = () => {
           const { data: retryConvs } = await fetchWithFallback(
             () =>
               supabase
-                .from('public_conversations_with_users')
+                .from('public_conversations_with_users' as any)
                 .select('*')
                 .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
                 .is('deleted_at', null)
@@ -583,8 +583,9 @@ const Messages = () => {
                 .limit(1)
           )
           
-          if (retryConvs && retryConvs.length > 0) {
-            return retryConvs[0]
+          const retryList = (retryConvs as Array<any> | null) || []
+          if (retryList.length > 0) {
+            return retryList[0]
           }
         }
         return null
@@ -655,7 +656,7 @@ const Messages = () => {
       const { data: conv } = await fetchWithFallback(
         () =>
           supabase
-            .from('public_conversations_with_users')
+            .from('public_conversations_with_users' as any)
             .select('*')
             .eq('id', convId)
             .single(),
@@ -757,7 +758,7 @@ const Messages = () => {
       const { data: messagesData, error } = await fetchWithFallback(
         () =>
           supabase
-            .from('public_messages_with_sender')
+            .from('public_messages_with_sender' as any)
             .select('*')
             .eq('conversation_id', convId)
             .order('created_at', { ascending: true }),
@@ -1067,7 +1068,7 @@ const Messages = () => {
         const { data: convs, error: convError } = await fetchWithFallback(
           () =>
             supabase
-              .from('public_conversations_with_users')
+              .from('public_conversations_with_users' as any)
               .select('id, user1_id, user2_id, is_group')
               .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
               .is('deleted_at', null)
@@ -1081,17 +1082,18 @@ const Messages = () => {
               .eq('is_group', false)
         )
 
-        if (convError || !convs || convs.length === 0) {
+        const convList = (convs as Array<any> | null) || []
+        if (convError || convList.length === 0) {
           if (convError) {
             console.error('Error loading conversations for appointments fallback:', convError)
           }
           return []
         }
 
-        const convIds = (convs as Array<{ id: string }>).map((conv) => conv.id)
+        const convIds = (convList as Array<{ id: string }>).map((conv) => conv.id)
         const convOtherUserMap = new Map<string, string>()
 
-        ;(convs as Array<{ id: string; user1_id: string; user2_id: string }>).forEach((conv) => {
+        ;(convList as Array<{ id: string; user1_id: string; user2_id: string }>).forEach((conv) => {
           const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
           convOtherUserMap.set(conv.id, otherUserId)
         })
@@ -1099,7 +1101,7 @@ const Messages = () => {
         const { data: messagesData, error: messagesError } = await fetchWithFallback(
           () =>
             supabase
-              .from('public_messages_with_sender')
+              .from('public_messages_with_sender' as any)
               .select('id, conversation_id, sender_id, created_at, calendar_request_data')
               .in('conversation_id', convIds)
               .eq('message_type', 'calendar_request')
@@ -1113,7 +1115,8 @@ const Messages = () => {
               .order('created_at', { ascending: false })
         )
 
-        if (messagesError || !messagesData || messagesData.length === 0) {
+        const messagesList = (messagesData as Array<any> | null) || []
+        if (messagesError || messagesList.length === 0) {
           if (messagesError) {
             console.error('Error loading appointment messages:', messagesError)
           }
@@ -1122,7 +1125,7 @@ const Messages = () => {
 
         const otherUserIds = Array.from(
           new Set(
-            (messagesData as Array<{ conversation_id: string }>).map((msg) => convOtherUserMap.get(msg.conversation_id)).filter(Boolean) as string[]
+            (messagesList as Array<{ conversation_id: string }>).map((msg) => convOtherUserMap.get(msg.conversation_id)).filter(Boolean) as string[]
           )
         )
 
@@ -1133,7 +1136,7 @@ const Messages = () => {
 
         const usersMap = new Map((usersResponse.data || []).map((u) => [u.id, u]))
 
-        return (messagesData as Array<{
+        return (messagesList as Array<{
           id: string
           conversation_id: string
           sender_id: string
@@ -1213,7 +1216,7 @@ const Messages = () => {
       const { data: convs, error } = await fetchWithFallback(
         () =>
           supabase
-            .from('public_conversations_with_users')
+            .from('public_conversations_with_users' as any)
             .select('user1_id, user2_id, is_group')
             .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
             .is('deleted_at', null)
@@ -1324,7 +1327,7 @@ const Messages = () => {
       // Pour l'onglet "Tout" : toutes les conversations (même sans messages)
       // Exclure uniquement les conversations supprimées (soft delete)
       let query = supabase
-        .from('public_conversations_with_users')
+        .from('public_conversations_with_users' as any)
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}${participantFilter}`)
         .is('deleted_at', null)
@@ -1432,7 +1435,7 @@ const Messages = () => {
             const { data: lastMsgData, error: lastMsgError } = await fetchWithFallback(
               () =>
                 supabase
-                  .from('public_messages_with_sender')
+                  .from('public_messages_with_sender' as any)
                   .select('content, created_at, sender_id, message_type')
                   .eq('conversation_id', conv.id)
                   .order('created_at', { ascending: false })
@@ -1464,7 +1467,7 @@ const Messages = () => {
               const { count, error: countError } = await fetchWithFallback(
                 () =>
                   supabase
-                    .from('public_messages_with_sender')
+                    .from('public_messages_with_sender' as any)
                     .select('*', { count: 'exact', head: true })
                     .eq('conversation_id', conv.id)
                     .eq('sender_id', otherUserId)
