@@ -166,6 +166,7 @@ const Contracts = () => {
     prix: 'Prix',
     'partage-revenus': 'Partage de revenus',
     echange: 'Échange de service',
+    'visibilite-contre-service': 'Visibilité contre service',
     'co-creation': 'Co-création',
     participation: 'Participation',
     association: 'Association',
@@ -178,6 +179,7 @@ const Contracts = () => {
     { id: 'remuneration', label: 'Rémunération' },
     { id: 'prix', label: 'Prix' },
     { id: 'echange', label: 'Échange de service' },
+    { id: 'visibilite-contre-service', label: 'Visibilité contre service' },
     { id: 'co-creation', label: 'Co-création' },
     { id: 'participation', label: 'Participation' },
     { id: 'association', label: 'Association' },
@@ -186,7 +188,8 @@ const Contracts = () => {
 
   const shouldShowRevenueShare = resolvedContractType === 'partage-revenus'
   const shouldShowPrice = resolvedContractType === 'remuneration' || resolvedContractType === 'prix'
-  const shouldShowExchange = resolvedContractType === 'echange'
+  const shouldShowExchange =
+    resolvedContractType === 'echange' || resolvedContractType === 'visibilite-contre-service'
 
   const legalArticles = useMemo(() => {
     const baseArticles = [

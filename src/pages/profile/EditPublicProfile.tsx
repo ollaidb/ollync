@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Camera, Instagram, Linkedin, Globe, Plus } from 'lucide-react'
+import { Save, X, Camera, Plus } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
@@ -12,7 +12,9 @@ import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { LocationAutocomplete } from '../../components/Location/LocationAutocomplete'
+import { CustomList } from '../../components/CustomList/CustomList'
 import { publicationTypes } from '../../constants/publishData'
+import { getAllPaymentOptions, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -30,10 +32,12 @@ const EditPublicProfile = () => {
     location: '',
     bio: '',
     skills: [] as string[],
+    display_categories: [] as string[],
+    profile_type: '',
     services: [] as Array<{
       name: string
       description: string
-      payment_type: 'price' | 'exchange'
+      payment_type: string
       value: string
     }>,
     socialLinks: [] as string[],
@@ -42,18 +46,21 @@ const EditPublicProfile = () => {
       phone_verified: false,
       email_verified: false
   })
-  const [newSocialLink, setNewSocialLink] = useState('')
-  const [interestSearch, setInterestSearch] = useState('')
-  const [showInterestSuggestions, setShowInterestSuggestions] = useState(false)
-  const interestSearchRef = useRef<HTMLDivElement>(null)
+  const [displayCategorySearch, setDisplayCategorySearch] = useState('')
+  const [showDisplayCategorySuggestions, setShowDisplayCategorySuggestions] = useState(false)
+  const displayCategorySearchRef = useRef<HTMLDivElement>(null)
+  const [profileTypeSearch, setProfileTypeSearch] = useState('')
+  const [showProfileTypeSuggestions, setShowProfileTypeSuggestions] = useState(false)
+  const profileTypeSearchRef = useRef<HTMLDivElement>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null)
   const [serviceForm, setServiceForm] = useState({
     name: '',
     description: '',
-    payment_type: 'price' as 'price' | 'exchange',
+    payment_type: '',
     value: ''
   })
+  const [isServicePaymentOpen, setIsServicePaymentOpen] = useState(false)
 
   // Hook de consentement pour les données personnelles du profil
   const profileConsent = useConsent('profile_data')
@@ -111,8 +118,10 @@ const EditPublicProfile = () => {
       location: (profileData as { location?: string | null }).location || '',
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
+      display_categories: (profileData as { display_categories?: string[] | null }).display_categories || [],
+      profile_type: (profileData as { profile_type?: string | null }).profile_type || '',
       services: (() => {
-        const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }> | string[] | null }).services
+        const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: string; value: string }> | string[] | null }).services
         if (!servicesData) {
           console.log('ℹ️ Aucun service dans le profil (édition)')
           return []
@@ -151,7 +160,7 @@ const EditPublicProfile = () => {
             return {
               name: serviceName,
               description: '',
-              payment_type: 'price' as const,
+              payment_type: 'remuneration',
               value: ''
             }
           })
@@ -179,10 +188,16 @@ const EditPublicProfile = () => {
           
           // Si c'est un objet, normaliser
           const serviceObj: Record<string, unknown> = typeof service === 'object' && service !== null ? service as Record<string, unknown> : {}
+          const rawPaymentType = String(serviceObj.payment_type || '').trim()
+          const normalizedPaymentType = rawPaymentType === 'exchange'
+            ? 'echange'
+            : rawPaymentType === 'price'
+              ? 'remuneration'
+              : rawPaymentType || 'remuneration'
           const normalizedService = {
             name: String(serviceObj.name || '').trim(),
             description: String(serviceObj.description || '').trim(),
-            payment_type: (serviceObj.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+            payment_type: normalizedPaymentType,
             value: String(serviceObj.value || '').trim()
           }
           console.log(`  Service ${index}:`, normalizedService)
@@ -213,19 +228,34 @@ const EditPublicProfile = () => {
   // Fermer les suggestions quand on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (interestSearchRef.current && !interestSearchRef.current.contains(event.target as Node)) {
-        setShowInterestSuggestions(false)
+      const target = event.target as Node
+      if (displayCategorySearchRef.current && !displayCategorySearchRef.current.contains(target)) {
+        setShowDisplayCategorySuggestions(false)
+      }
+      if (profileTypeSearchRef.current && !profileTypeSearchRef.current.contains(target)) {
+        setShowProfileTypeSuggestions(false)
       }
     }
 
-    if (showInterestSuggestions) {
+    if (showDisplayCategorySuggestions || showProfileTypeSuggestions) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showInterestSuggestions])
+  }, [showDisplayCategorySuggestions, showProfileTypeSuggestions])
+
+  useEffect(() => {
+    if (isServicePaymentOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = ''
+      }
+    }
+    document.body.style.overflow = ''
+    return undefined
+  }, [isServicePaymentOpen])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -284,88 +314,102 @@ const EditPublicProfile = () => {
   }
 
 
-  const handleRemoveSkill = (skill: string) => {
+  const profileTypeOptions = useMemo(() => ([
+    { id: 'creator', label: 'Créateur de contenu' },
+    { id: 'freelance', label: 'Prestataire / Freelance' },
+    { id: 'company', label: 'Entreprise' },
+    { id: 'studio', label: 'Studio / Lieu' },
+    { id: 'institut', label: 'Institut / Beauté' },
+    { id: 'other', label: 'Autre' }
+  ]), [])
+
+  const displayCategoryOptions = useMemo(() => (
+    publicationTypes.map(category => ({
+      id: category.slug,
+      label: t(`categories:titles.${category.slug}`, { defaultValue: category.name })
+    }))
+  ), [t])
+
+  const displayCategoryLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+    displayCategoryOptions.forEach(option => map.set(option.id, option.label))
+    return map
+  }, [displayCategoryOptions])
+
+  const filteredDisplayCategoryOptions = useCallback(() => {
+    if (!displayCategorySearch.trim()) {
+      return displayCategoryOptions
+    }
+    const searchLower = displayCategorySearch.toLowerCase()
+    return displayCategoryOptions.filter(option =>
+      option.label.toLowerCase().includes(searchLower)
+    )
+  }, [displayCategorySearch, displayCategoryOptions])
+
+  const filteredProfileTypeOptions = useCallback(() => {
+    if (!profileTypeSearch.trim()) {
+      return profileTypeOptions
+    }
+    const searchLower = profileTypeSearch.toLowerCase()
+    return profileTypeOptions.filter(option =>
+      option.label.toLowerCase().includes(searchLower)
+    )
+  }, [profileTypeSearch, profileTypeOptions])
+
+  const handleAddDisplayCategory = (categorySlug: string) => {
+    if (!profile.display_categories.includes(categorySlug)) {
+      setProfile(prev => ({
+        ...prev,
+        display_categories: [...prev.display_categories, categorySlug]
+      }))
+    }
+    setDisplayCategorySearch('')
+    setShowDisplayCategorySuggestions(false)
+  }
+
+  const handleRemoveDisplayCategory = (categorySlug: string) => {
     setProfile(prev => ({
       ...prev,
-      skills: prev.skills.filter(s => s !== skill)
+      display_categories: prev.display_categories.filter(cat => cat !== categorySlug)
     }))
   }
 
-  // Générer la liste des options de centres d'intérêt basée sur les catégories
-  const getInterestOptions = useCallback(() => {
-    const options: string[] = []
-    
-    publicationTypes.forEach(category => {
-      const categoryLabel = t(`categories:titles.${category.slug}`, { defaultValue: category.name })
-      if (category.slug === 'creation-contenu') {
-        // Pour "Création de contenu", ajouter la catégorie principale
-        options.push(categoryLabel)
-        // Ajouter aussi les sous-catégories
-        category.subcategories.forEach(sub => {
-          if (sub.slug !== 'tout') {
-            options.push(t(`categories:submenus.${sub.slug}`, { defaultValue: sub.name }))
-          }
-        })
-      } else {
-        // Pour les autres catégories (Casting, Emploi, etc.), ajouter uniquement les sous-catégories
-        category.subcategories.forEach(sub => {
-          if (sub.slug !== 'tout') {
-            options.push(t(`categories:submenus.${sub.slug}`, { defaultValue: sub.name }))
-          }
-        })
-      }
-    })
-    
-    return options.sort()
-  }, [t])
-
-  // Filtrer les options selon la recherche
-  const filteredInterestOptions = useCallback(() => {
-    const allOptions = getInterestOptions()
-    if (!interestSearch.trim()) {
-      return allOptions
-    }
-    const searchLower = interestSearch.toLowerCase()
-    return allOptions.filter(option => 
-      option.toLowerCase().includes(searchLower)
-    )
-  }, [interestSearch, getInterestOptions])
-
-  // Ajouter un centre d'intérêt
-  const handleAddInterest = (interest: string) => {
-    const trimmedInterest = interest.trim()
-    if (trimmedInterest && !profile.skills.includes(trimmedInterest)) {
-      setProfile(prev => ({
-        ...prev,
-        skills: [...prev.skills, trimmedInterest]
-      }))
-      setInterestSearch('')
-      setShowInterestSuggestions(false)
-    }
+  const handleSelectProfileType = (typeId: string) => {
+    setProfile(prev => ({ ...prev, profile_type: typeId }))
+    setProfileTypeSearch('')
+    setShowProfileTypeSuggestions(false)
   }
 
-  // Ajouter un centre d'intérêt personnalisé (pas dans la liste)
-  const handleAddCustomInterest = () => {
-    if (interestSearch.trim() && !profile.skills.includes(interestSearch.trim())) {
-      handleAddInterest(interestSearch)
-    }
+  const handleClearProfileType = () => {
+    setProfile(prev => ({ ...prev, profile_type: '' }))
+  }
+
+  const normalizeServicePaymentType = (value: string) => {
+    if (value === 'price') return 'remuneration'
+    if (value === 'exchange') return 'echange'
+    return value
   }
 
   const handleOpenServiceModal = (index?: number) => {
     if (index !== undefined && index !== null) {
       // Modifier un service existant
       setEditingServiceIndex(index)
-      setServiceForm(profile.services[index])
+      const existingService = profile.services[index]
+      setServiceForm({
+        ...existingService,
+        payment_type: normalizeServicePaymentType(existingService.payment_type)
+      })
       } else {
       // Ajouter un nouveau service
       setEditingServiceIndex(null)
       setServiceForm({
         name: '',
         description: '',
-        payment_type: 'price',
+        payment_type: '',
         value: ''
       })
     }
+    setIsServicePaymentOpen(false)
     setShowServiceModal(true)
   }
 
@@ -375,9 +419,10 @@ const EditPublicProfile = () => {
     setServiceForm({
       name: '',
       description: '',
-      payment_type: 'price',
+      payment_type: '',
       value: ''
     })
+    setIsServicePaymentOpen(false)
   }
 
   const handleSaveService = async () => {
@@ -391,12 +436,19 @@ const EditPublicProfile = () => {
       return
     }
 
-    if (!serviceForm.value.trim()) {
-      if (serviceForm.payment_type === 'price') {
+    const paymentConfig = getPaymentOptionConfig(serviceForm.payment_type)
+    const requiresPrice = !!paymentConfig?.requiresPrice
+    const requiresExchangeService = !!paymentConfig?.requiresExchangeService
+    const requiresPercentage = !!paymentConfig?.requiresPercentage
+
+    if ((requiresPrice || requiresExchangeService || requiresPercentage) && !serviceForm.value.trim()) {
+      if (requiresPrice) {
         alert('Le prix est obligatoire')
+      } else if (requiresPercentage) {
+        alert('Le pourcentage est obligatoire')
       } else {
         alert('La description de l\'échange est obligatoire')
-    }
+      }
       return
     }
 
@@ -409,7 +461,7 @@ const EditPublicProfile = () => {
       value: serviceForm.value.trim()
     }
 
-    let updatedServices: Array<{ name: string; description: string; payment_type: 'price' | 'exchange'; value: string }>
+    let updatedServices: Array<{ name: string; description: string; payment_type: string; value: string }>
     
     if (editingServiceIndex !== null) {
       // Modifier un service existant
@@ -519,106 +571,10 @@ const EditPublicProfile = () => {
     )
   }
 
-  const handleAddSocialLink = () => {
-    if (newSocialLink.trim() && !profile.socialLinks.includes(newSocialLink.trim())) {
-      setProfile(prev => ({
-        ...prev,
-        socialLinks: [...prev.socialLinks, newSocialLink.trim()]
-      }))
-      setNewSocialLink('')
-    }
-  }
-
-  const handleRemoveSocialLink = async (link: string) => {
-    if (!user) return
-
-    const updatedSocialLinks = profile.socialLinks.filter(l => l !== link)
-    
-    // Mettre à jour l'état local
-    setProfile(prev => ({
-      ...prev,
-      socialLinks: updatedSocialLinks
-    }))
-
-    // Sauvegarder immédiatement dans la base de données
-    try {
-      console.log(`💾 Sauvegarde automatique après suppression de lien social: ${updatedSocialLinks.length} liens restants`)
-      const socialLinksToSave = convertSocialLinksToObject(updatedSocialLinks)
-      
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: profileError } = await (supabase.from('profiles') as any)
-        .upsert({
-          id: user.id,
-          social_links: Object.keys(socialLinksToSave).length > 0 ? socialLinksToSave : {},
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        })
-
-      if (profileError) {
-        console.error('❌ Erreur lors de la sauvegarde automatique:', profileError)
-        alert('Erreur lors de la suppression du lien social')
-        // Restaurer l'état en cas d'erreur
-        setProfile(prev => ({
-          ...prev,
-          socialLinks: profile.socialLinks
-        }))
-      } else {
-        console.log('✅ Lien social supprimé et sauvegardé automatiquement')
-      }
-    } catch (err) {
-      console.error('Error removing social link:', err)
-      alert('Erreur lors de la suppression du lien social')
-      // Restaurer l'état en cas d'erreur
-      setProfile(prev => ({
-        ...prev,
-        socialLinks: profile.socialLinks
-      }))
-    }
-  }
-
-
-  // Détecter le type de réseau social à partir de l'URL
-  const detectSocialType = (url: string): { type: string; icon: typeof Instagram | typeof Linkedin | typeof Globe; name: string } => {
-    const lowerUrl = url.toLowerCase().trim()
-    if (lowerUrl.includes('instagram.com') || lowerUrl.includes('instagr.am') || (lowerUrl.startsWith('@') && !lowerUrl.includes('tiktok'))) {
-      return { type: 'instagram', icon: Instagram, name: 'Instagram' }
-    }
-    if (lowerUrl.includes('tiktok.com') || (lowerUrl.startsWith('@') && lowerUrl.includes('tiktok'))) {
-      return { type: 'tiktok', icon: Globe, name: 'TikTok' }
-    }
-    if (lowerUrl.includes('linkedin.com') || lowerUrl.includes('linked.in')) {
-      return { type: 'linkedin', icon: Linkedin, name: 'LinkedIn' }
-    }
-    if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
-      return { type: 'twitter', icon: Globe, name: 'Twitter/X' }
-    }
-    if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com')) {
-      return { type: 'facebook', icon: Globe, name: 'Facebook' }
-    }
-    return { type: 'website', icon: Globe, name: 'Site web' }
-  }
-
   // Convertir le tableau de liens sociaux en objet pour la base de données
   const convertSocialLinksToObject = (links: string[]): Record<string, string> => {
-    const socialObj: Record<string, string> = {}
-    links.forEach(link => {
-      const detected = detectSocialType(link)
-      if (detected.type === 'instagram') {
-        socialObj.instagram = link
-      } else if (detected.type === 'tiktok') {
-        socialObj.tiktok = link
-      } else if (detected.type === 'linkedin') {
-        socialObj.linkedin = link
-      } else if (detected.type === 'twitter') {
-        socialObj.twitter = link
-      } else if (detected.type === 'facebook') {
-        socialObj.facebook = link
-      } else {
-        socialObj.website = link
-      }
-    })
-    return socialObj
+    const firstLink = links[0]?.trim()
+    return firstLink ? { website: firstLink } : {}
   }
 
   const handleSave = () => {
@@ -670,6 +626,8 @@ const EditPublicProfile = () => {
           location: profile.location || null,
           avatar_url: profile.avatar_url || null,
           skills: skillsToSave,
+          display_categories: profile.display_categories,
+          profile_type: profile.profile_type || null,
           services: servicesToSave,
           social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
@@ -729,6 +687,7 @@ const EditPublicProfile = () => {
     <div className="page">
       <PageHeader title="Éditer le profil" />
       <div className="page-content edit-public-profile-page">
+        <div className="edit-public-profile-spacer" />
         <div className="edit-public-profile-container">
           <div className="form-section">
             {/* Photo de profil */}
@@ -768,7 +727,7 @@ const EditPublicProfile = () => {
 
             {/* Nom / Pseudo */}
             <div className="form-group">
-              <label htmlFor="full_name">Nom complet</label>
+              <label htmlFor="full_name">Nom</label>
               <input
                 type="text"
                 id="full_name"
@@ -779,7 +738,7 @@ const EditPublicProfile = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="username">Nom d'utilisateur / Pseudo</label>
+              <label htmlFor="username">Pseudo</label>
               <input
                 type="text"
                 id="username"
@@ -791,7 +750,7 @@ const EditPublicProfile = () => {
 
             {/* Localisation */}
             <div className="form-group">
-              <label htmlFor="location">Localisation</label>
+              <label htmlFor="location">Ville</label>
               <LocationAutocomplete
                 value={profile.location}
                 onChange={(value) => setProfile(prev => ({ ...prev, location: value }))}
@@ -807,7 +766,7 @@ const EditPublicProfile = () => {
 
             {/* Bio & Description */}
             <div className="form-group">
-              <label htmlFor="bio">Bio & Description</label>
+              <label htmlFor="bio">Bio</label>
               <textarea
                 id="bio"
                 value={profile.bio}
@@ -819,19 +778,19 @@ const EditPublicProfile = () => {
               <div className="char-count">{profile.bio.length}/500</div>
             </div>
 
-            {/* Centres d'intérêt */}
-            <div className="form-group">
-              <label>Centres d'intérêt</label>
-              
-              {/* Liste des centres d'intérêt ajoutés */}
+            {/* Catégories d'affichage */}
+            <div className="form-group compact-top">
+              <label>Catégories d'affichage</label>
+              <p className="form-hint compact">Choisissez où vous voulez que votre profil apparaisse dans l'application.</p>
+
               <div className="tags-list">
-                {profile.skills.map((skill, index) => (
-                  <span key={index} className="tag">
-                    {skill}
+                {profile.display_categories.map((categorySlug) => (
+                  <span key={categorySlug} className="tag">
+                    {displayCategoryLabelMap.get(categorySlug) || categorySlug}
                     <button
                       type="button"
                       className="tag-remove"
-                      onClick={() => handleRemoveSkill(skill)}
+                      onClick={() => handleRemoveDisplayCategory(categorySlug)}
                     >
                       <X size={14} />
                     </button>
@@ -839,54 +798,47 @@ const EditPublicProfile = () => {
                 ))}
               </div>
 
-              {/* Barre de recherche avec suggestions */}
-              <div className="interest-search-container" ref={interestSearchRef}>
+              <div className="interest-search-container" ref={displayCategorySearchRef}>
                 <div className="interest-search-wrapper">
                   <input
                     type="text"
                     className="interest-search-input"
-                    value={interestSearch}
+                    value={displayCategorySearch}
                     onChange={(e) => {
-                      setInterestSearch(e.target.value)
-                      setShowInterestSuggestions(true)
+                      setDisplayCategorySearch(e.target.value)
+                      setShowDisplayCategorySuggestions(true)
                     }}
-                    onFocus={() => setShowInterestSuggestions(true)}
+                    onFocus={() => setShowDisplayCategorySuggestions(true)}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
-                        // Si la recherche correspond exactement à une option, l'ajouter
-                        // Sinon, proposer d'ajouter comme option personnalisée
-                        const exactMatch = filteredInterestOptions().find(
-                          opt => opt.toLowerCase() === interestSearch.toLowerCase()
+                        const exactMatch = filteredDisplayCategoryOptions().find(
+                          opt => opt.label.toLowerCase() === displayCategorySearch.toLowerCase()
                         )
                         if (exactMatch) {
-                          handleAddInterest(exactMatch)
-                        } else if (interestSearch.trim()) {
-                          handleAddCustomInterest()
+                          handleAddDisplayCategory(exactMatch.id)
                         }
                       }
                     }}
-                    placeholder="Chercher votre intérêt"
+                    placeholder="Choisir une catégorie"
                   />
                 </div>
-                
-                {/* Suggestions de centres d'intérêt */}
-                {showInterestSuggestions && (
+
+                {showDisplayCategorySuggestions && (
                   <div className="interest-suggestions">
-                    {/* Afficher toutes les options si pas de recherche, sinon filtrer */}
-                    {filteredInterestOptions().length > 0 ? (
+                    {filteredDisplayCategoryOptions().length > 0 ? (
                       <>
-                        {filteredInterestOptions().map((option, index) => {
-                          const isAlreadyAdded = profile.skills.includes(option)
+                        {filteredDisplayCategoryOptions().map((option) => {
+                          const isAlreadyAdded = profile.display_categories.includes(option.id)
                           return (
                             <button
-                              key={index}
+                              key={option.id}
                               type="button"
                               className={`interest-suggestion-item ${isAlreadyAdded ? 'disabled' : ''}`}
-                              onClick={() => !isAlreadyAdded && handleAddInterest(option)}
+                              onClick={() => !isAlreadyAdded && handleAddDisplayCategory(option.id)}
                               disabled={isAlreadyAdded}
                             >
-                              {option}
+                              {option.label}
                               {isAlreadyAdded && <span className="already-added-badge">Ajouté</span>}
                             </button>
                           )
@@ -897,19 +849,76 @@ const EditPublicProfile = () => {
                         Aucun résultat trouvé
                       </div>
                     )}
-                    
-                    {/* Option pour ajouter une valeur personnalisée si la recherche ne correspond à rien */}
-                    {interestSearch.trim() && 
-                     !filteredInterestOptions().some(opt => opt.toLowerCase() === interestSearch.toLowerCase()) &&
-                     !profile.skills.includes(interestSearch.trim()) && (
-                      <button
-                        type="button"
-                        className="interest-suggestion-item custom-option"
-                        onClick={handleAddCustomInterest}
-                      >
-                        <Plus size={16} />
-                        Ajouter "{interestSearch.trim()}" comme option personnalisée
-                      </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Statut */}
+            <div className="form-group">
+              <label>Statut</label>
+              <p className="form-hint compact">Indiquez votre type de profil pour aider les autres à mieux vous identifier.</p>
+
+              <div className="tags-list">
+                {profile.profile_type && (
+                  <span className="tag">
+                    {profileTypeOptions.find(option => option.id === profile.profile_type)?.label || profile.profile_type}
+                    <button
+                      type="button"
+                      className="tag-remove"
+                      onClick={handleClearProfileType}
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                )}
+              </div>
+
+              <div className="interest-search-container" ref={profileTypeSearchRef}>
+                <div className="interest-search-wrapper">
+                  <input
+                    type="text"
+                    className="interest-search-input"
+                    value={profileTypeSearch}
+                    onChange={(e) => {
+                      setProfileTypeSearch(e.target.value)
+                      setShowProfileTypeSuggestions(true)
+                    }}
+                    onFocus={() => setShowProfileTypeSuggestions(true)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const exactMatch = filteredProfileTypeOptions().find(
+                          opt => opt.label.toLowerCase() === profileTypeSearch.toLowerCase()
+                        )
+                        if (exactMatch) {
+                          handleSelectProfileType(exactMatch.id)
+                        }
+                      }
+                    }}
+                    placeholder="Choisir un statut"
+                  />
+                </div>
+
+                {showProfileTypeSuggestions && (
+                  <div className="interest-suggestions">
+                    {filteredProfileTypeOptions().length > 0 ? (
+                      <>
+                        {filteredProfileTypeOptions().map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className="interest-suggestion-item"
+                            onClick={() => handleSelectProfileType(option.id)}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="interest-suggestion-item no-results">
+                        Aucun résultat trouvé
+                      </div>
                     )}
                   </div>
                 )}
@@ -1025,44 +1034,88 @@ const EditPublicProfile = () => {
                       />
                       <div className="char-count">{serviceForm.description.length}/200</div>
                 </div>
-                    <div className="form-group">
-                      <label htmlFor="service-payment-type">Mode de paiement *</label>
-                      <select
-                        id="service-payment-type"
-                        value={serviceForm.payment_type}
-                        onChange={(e) => setServiceForm(prev => ({ 
-                      ...prev,
-                          payment_type: e.target.value as 'price' | 'exchange',
-                          value: '' // Réinitialiser la valeur lors du changement
-                    }))}
+                    <div className="form-group dropdown-field">
+                      <label className="form-label">Mode de paiement *</label>
+                      <button
+                        type="button"
+                        className={`dropdown-trigger ${isServicePaymentOpen ? 'open' : ''}`}
+                        onClick={() => setIsServicePaymentOpen((prev) => !prev)}
                       >
-                        <option value="price">Prix</option>
-                        <option value="exchange">Échange de service</option>
-                      </select>
-                </div>
-                    <div className="form-group">
-                      <label htmlFor="service-value">
-                        {serviceForm.payment_type === 'price' ? 'Prix *' : 'Valeur associée (description de l\'échange) *'}
-                      </label>
-                      {serviceForm.payment_type === 'price' ? (
-                  <input
-                    type="text"
-                          id="service-value"
-                          value={serviceForm.value}
-                          onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
-                          placeholder="Ex: 150€, Sur devis, Gratuit..."
+                        <span>
+                          {getPaymentOptionConfig(serviceForm.payment_type)?.name ?? 'Choisir un moyen de paiement'}
+                        </span>
+                        <span className="dropdown-caret" aria-hidden="true" />
+                      </button>
+                      {isServicePaymentOpen && (
+                        <div
+                          className="service-payment-backdrop"
+                          onClick={() => setIsServicePaymentOpen(false)}
                         />
-                      ) : (
-                        <textarea
-                          id="service-value"
-                          value={serviceForm.value}
-                          onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
-                          placeholder="Décrivez ce que vous proposez en échange..."
-                          rows={3}
-                          maxLength={300}
-                  />
                       )}
-                </div>
+                      {isServicePaymentOpen && (
+                        <div className="service-payment-panel service-payment-list">
+                          <div className="service-payment-title">Choisissez votre mode de paiement</div>
+                          <CustomList
+                            items={getAllPaymentOptions()}
+                            selectedId={serviceForm.payment_type}
+                            onSelectItem={(optionId) => {
+                              setServiceForm(prev => ({
+                                ...prev,
+                                payment_type: optionId,
+                                value: ''
+                              }))
+                              setIsServicePaymentOpen(false)
+                            }}
+                            className="payment-options-list service-payment-options"
+                            showCheckbox={false}
+                            showDescription={false}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {(() => {
+                      const paymentConfig = getPaymentOptionConfig(serviceForm.payment_type)
+                      const requiresPrice = !!paymentConfig?.requiresPrice
+                      const requiresExchangeService = !!paymentConfig?.requiresExchangeService
+                      const requiresPercentage = !!paymentConfig?.requiresPercentage
+                      const shouldShowValue = requiresPrice || requiresExchangeService || requiresPercentage
+                      const valueLabel = requiresPrice
+                        ? 'Prix *'
+                        : requiresPercentage
+                          ? 'Pourcentage *'
+                          : 'Valeur associée (description de l\'échange) *'
+                      const valuePlaceholder = requiresPrice
+                        ? 'Ex: 150€, Sur devis, Gratuit...'
+                        : requiresPercentage
+                          ? 'Ex: 10%'
+                          : 'Décrivez ce que vous proposez en échange...'
+
+                      if (!shouldShowValue) return null
+
+                      return (
+                        <div className="form-group">
+                          <label htmlFor="service-value">{valueLabel}</label>
+                          {requiresPrice || requiresPercentage ? (
+                            <input
+                              type="text"
+                              id="service-value"
+                              value={serviceForm.value}
+                              onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
+                              placeholder={valuePlaceholder}
+                            />
+                          ) : (
+                            <textarea
+                              id="service-value"
+                              value={serviceForm.value}
+                              onChange={(e) => setServiceForm(prev => ({ ...prev, value: e.target.value }))}
+                              placeholder={valuePlaceholder}
+                              rows={3}
+                              maxLength={300}
+                            />
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                   <div className="service-modal-footer">
                     <button
@@ -1084,51 +1137,21 @@ const EditPublicProfile = () => {
               </div>
             )}
 
-            {/* Liens sociaux */}
+            {/* Lien */}
             <div className="form-group">
-              <label>Réseaux sociaux</label>
-              <div className="tags-input-container">
-                <div className="tags-list">
-                  {profile.socialLinks.map((link, index) => {
-                    const detected = detectSocialType(link)
-                    const Icon = detected.icon
-                    return (
-                      <span key={index} className="tag social-tag">
-                        <Icon size={14} />
-                        <span className="tag-text">{link}</span>
-                        <button
-                          type="button"
-                          className="tag-remove"
-                          onClick={() => handleRemoveSocialLink(link)}
-                        >
-                          <X size={14} />
-                        </button>
-                      </span>
-                    )
-                  })}
-                </div>
-                <div className="tag-input-wrapper">
-                  <input
-                    type="text"
-                    value={newSocialLink}
-                    onChange={(e) => setNewSocialLink(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAddSocialLink()
-                      }
-                    }}
-                    placeholder="Ajouter un lien"
-                  />
-                  <button
-                    type="button"
-                    className="tag-add-button"
-                    onClick={handleAddSocialLink}
-                  >
-                    Ajouter
-                  </button>
-                </div>
-              </div>
+              <label>Lien</label>
+              <input
+                type="text"
+                value={profile.socialLinks[0] || ''}
+                onChange={(e) => {
+                  const value = e.target.value.trim()
+                  setProfile(prev => ({
+                    ...prev,
+                    socialLinks: value ? [value] : []
+                  }))
+                }}
+                placeholder="https://..."
+              />
             </div>
 
             {/* Actions */}

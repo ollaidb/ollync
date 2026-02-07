@@ -28,7 +28,7 @@
 }
 
 .page-body {
-  padding: 20px 16px;
+  padding: 0;
 }
 
 .empty-state {
@@ -51,4 +51,3 @@
   font-size: 16px;
   color: var(--muted-foreground);
 }
-

@@ -293,6 +293,8 @@ const PostCard = ({
     switch (paymentType) {
       case 'echange':
         return 'Échange de service'
+      case 'visibilite-contre-service':
+        return 'Visibilité contre service'
       case 'co-creation':
         return hasPrice ? `${post.price} €` : 'Co-création'
       case 'participation':

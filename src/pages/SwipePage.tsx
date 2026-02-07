@@ -245,9 +245,8 @@ const SwipePage = () => {
       })
 
       // Filtrer les posts : exclure ceux déjà swipés et ceux de l'utilisateur
-      // TEMPORAIRE : Si aucun post après filtrage strict, afficher quand même les posts de l'utilisateur pour debug
       let filteredPosts = (fetchedPosts as Post[]).filter(post => 
-        !swipedPostIds.has(post.id) && post.user_id !== user.id
+        !swipedPostIds.has(post.id) && (user ? post.user_id !== user.id : true)
       )
       
       // Si aucun post après filtrage strict mais qu'il y en a avant, afficher au moins ceux non swipés

@@ -38,6 +38,11 @@ export const PAYMENT_OPTIONS_CONFIG: PaymentOption[] = [
     id: 'echange',
     name: 'Échange de service',
     description: 'Troc de services où les deux parties s\'échangent leurs compétences sans transaction monétaire.'
+  },
+  {
+    id: 'visibilite-contre-service',
+    name: 'Visibilité contre service',
+    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.'
   }
 ]
 
@@ -52,7 +57,8 @@ export const filterPaymentOptionsByCategory = (
   // Vous pouvez ajouter des filtres spécifiques par catégorie ici
   const categoryPaymentsMap: Record<string, string[]> = {
     emploi: ['remuneration'],
-    services: ['remuneration', 'echange', 'co-creation']
+    services: ['remuneration', 'echange', 'co-creation'],
+    'poste-service': ['remuneration', 'visibilite-contre-service']
   }
 
   const allowedIds = categoryPaymentsMap[categorySlug ?? '']

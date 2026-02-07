@@ -11,13 +11,20 @@ import PostCard from '../../components/PostCard'
 import { useToastContext } from '../../contexts/ToastContext'
 import ServiceDetailModal from '../../components/ServiceDetailModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
+import { getPaymentOptionConfig } from '../../utils/publishHelpers'
 import './PublicProfile.css'
 
 interface Service {
   name: string
   description: string
-  payment_type: 'price' | 'exchange'
+  payment_type: string
   value: string
+}
+
+const normalizeServicePaymentType = (value: string) => {
+  if (value === 'price') return 'remuneration'
+  if (value === 'exchange') return 'echange'
+  return value || 'remuneration'
 }
 
 interface ProfileData {
@@ -305,7 +312,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   const name = extractValue(serviceObj.name)
                   const description = extractValue(serviceObj.description)
                   const value = extractValue(serviceObj.value)
-                  const payment_type = serviceObj.payment_type === 'exchange' ? 'exchange' : 'price'
+                  const payment_type = normalizeServicePaymentType(String(serviceObj.payment_type || '').trim())
                   
                   // Ne pas filtrer si le nom est vide - on peut avoir un service sans nom
                   // Mais on filtre si c'est du JSON brut
@@ -321,7 +328,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   return {
                     name: finalName.trim(),
                     description: description.trim(),
-                    payment_type: payment_type as 'price' | 'exchange',
+                    payment_type,
                     value: value.trim()
                   }
                 }
@@ -332,7 +339,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   return {
                     name: parsedService.trim(),
                     description: '',
-                    payment_type: 'price' as const,
+                    payment_type: 'remuneration',
                     value: ''
                   }
                 }
@@ -347,7 +354,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   const name = extractValue(serviceObj.name)
                   const description = extractValue(serviceObj.description)
                   const value = extractValue(serviceObj.value)
-                  const payment_type = serviceObj.payment_type === 'exchange' ? 'exchange' : 'price'
+                  const payment_type = normalizeServicePaymentType(String(serviceObj.payment_type || '').trim())
                   
                   // Ne pas filtrer si le name est vide - on peut avoir un service sans nom
                   // Mais on filtre si c'est du JSON brut
@@ -363,7 +370,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   return {
                     name: finalName.trim(),
                     description: description.trim(),
-                    payment_type: payment_type as 'price' | 'exchange',
+                    payment_type,
                     value: value.trim()
                   }
                 }
@@ -885,7 +892,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           return {
             name: service.trim(),
             description: '',
-            payment_type: 'price' as const,
+            payment_type: 'remuneration',
             value: ''
           }
         }
@@ -904,7 +911,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       return {
         name: cleanedName,
         description: cleanedDescription,
-        payment_type: (service.payment_type === 'exchange' ? 'exchange' : 'price') as 'price' | 'exchange',
+        payment_type: normalizeServicePaymentType(String(service.payment_type || '').trim()),
         value: cleanedValue
       }
     }).filter(s => {
@@ -1186,20 +1193,39 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                       >
                         <div className="service-block-header">
                           <h4 className="service-block-title">{serviceName || `Service ${index + 1}`}</h4>
-                          <div className="service-block-payment">
-                            {service.payment_type === 'price' && serviceValue && (
-                              <div className="service-block-price">
-                                <DollarSign size={16} />
-                                <span>{serviceValue}</span>
+                        <div className="service-block-payment">
+                          {(() => {
+                            const paymentConfig = getPaymentOptionConfig(service.payment_type)
+                            const paymentLabel = paymentConfig?.name || 'Paiement'
+                            const requiresPrice = paymentConfig?.requiresPrice || service.payment_type === 'price'
+                            const requiresExchangeService = paymentConfig?.requiresExchangeService || service.payment_type === 'exchange'
+                            const requiresPercentage = !!paymentConfig?.requiresPercentage
+
+                            if ((requiresPrice || requiresPercentage) && serviceValue) {
+                              return (
+                                <div className="service-block-price">
+                                  <DollarSign size={16} />
+                                  <span>{serviceValue}</span>
+                                </div>
+                              )
+                            }
+
+                            if (requiresExchangeService) {
+                              return (
+                                <div className="service-block-exchange-badge">
+                                  <RefreshCw size={16} />
+                                  <span>{paymentLabel}</span>
+                                </div>
+                              )
+                            }
+
+                            return (
+                              <div className="service-block-payment-badge">
+                                <span>{paymentLabel}</span>
                               </div>
-                            )}
-                            {service.payment_type === 'exchange' && (
-                              <div className="service-block-exchange-badge">
-                                <RefreshCw size={16} />
-                                <span>Échange</span>
-                              </div>
-                            )}
-                          </div>
+                            )
+                          })()}
+                        </div>
                         </div>
                         
                         {serviceDescription && (

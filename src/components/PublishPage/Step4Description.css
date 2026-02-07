@@ -170,6 +170,68 @@
   flex-direction: column;
 }
 
+.publish-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.12);
+  z-index: 9998;
+}
+
+.publish-dropdown-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(340px, calc(100vw - 48px));
+  max-height: 55vh;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+.publish-dropdown-title {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.publish-dropdown-panel .custom-list {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(55vh - 40px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.publish-list {
+  position: static;
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  margin-top: 0;
+  left: auto;
+  transform: none;
+}
+
+.publish-dropdown-panel .custom-list-item-content {
+  align-items: center;
+}
+
+.publish-dropdown-panel .custom-list-item-name {
+  text-align: center;
+  width: 100%;
+}
+
 /* Personnalisation du scrollbar pour les listes */
 .payment-options-list::-webkit-scrollbar {
   width: 8px;

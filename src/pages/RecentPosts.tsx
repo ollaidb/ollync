@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshCw, Tag, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
+import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
 import './SwipePage.css'
@@ -10,6 +11,7 @@ type Post = MappedPost
 
 const RecentPosts = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -79,7 +81,9 @@ const RecentPosts = () => {
       const createdAt = new Date(post.created_at).getTime()
       const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
 
-      return matchesQuery && matchesDate
+      const matchesOwner = user ? post.user_id !== user.id : true
+
+      return matchesQuery && matchesDate && matchesOwner
     })
 
     return filtered.sort((a, b) => {
@@ -87,7 +91,7 @@ const RecentPosts = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [posts, searchQuery, dateFilter, sortOrder])
+  }, [posts, searchQuery, dateFilter, sortOrder, user])
 
   const handlePostClick = (post: Post) => {
     navigate(`/post/${post.id}`)

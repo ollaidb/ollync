@@ -1,10 +1,11 @@
 import { X, DollarSign, RefreshCw } from 'lucide-react'
+import { getPaymentOptionConfig } from '../utils/publishHelpers'
 import './ServiceDetailModal.css'
 
 interface Service {
   name: string
   description: string
-  payment_type: 'price' | 'exchange'
+  payment_type: string
   value: string
 }
 
@@ -27,6 +28,12 @@ const ServiceDetailModal = ({
 }: ServiceDetailModalProps) => {
   if (!service) return null
 
+  const paymentConfig = getPaymentOptionConfig(service.payment_type)
+  const paymentLabel = paymentConfig?.name || 'Paiement'
+  const requiresPrice = paymentConfig?.requiresPrice || service.payment_type === 'price'
+  const requiresExchangeService = paymentConfig?.requiresExchangeService || service.payment_type === 'exchange'
+  const requiresPercentage = !!paymentConfig?.requiresPercentage
+
   return (
     <div className="service-detail-overlay" onClick={onClose}>
       <div className="service-detail-content" onClick={(e) => e.stopPropagation()}>
@@ -38,16 +45,27 @@ const ServiceDetailModal = ({
           <h2 className="service-detail-title">{service.name}</h2>
           
           <div className="service-detail-payment">
-            {service.payment_type === 'price' && service.value && (
+            {requiresPrice && service.value && (
               <div className="service-detail-price-badge">
                 <DollarSign size={20} />
                 <span>{service.value}</span>
               </div>
             )}
-            {service.payment_type === 'exchange' && (
+            {requiresPercentage && service.value && (
+              <div className="service-detail-price-badge">
+                <DollarSign size={20} />
+                <span>{service.value}</span>
+              </div>
+            )}
+            {requiresExchangeService && (
               <div className="service-detail-exchange-badge">
                 <RefreshCw size={20} />
-                <span>Échange</span>
+                <span>{paymentLabel}</span>
+              </div>
+            )}
+            {!requiresPrice && !requiresExchangeService && !requiresPercentage && (
+              <div className="service-detail-payment-badge">
+                <span>{paymentLabel}</span>
               </div>
             )}
           </div>
@@ -60,9 +78,9 @@ const ServiceDetailModal = ({
           </div>
         )}
 
-        {service.payment_type === 'exchange' && service.value && (
+        {requiresExchangeService && service.value && (
           <div className="service-detail-exchange-section">
-            <h3 className="service-detail-exchange-label">Échange proposé</h3>
+            <h3 className="service-detail-exchange-label">{paymentLabel}</h3>
             <p className="service-detail-exchange-value">{service.value}</p>
           </div>
         )}

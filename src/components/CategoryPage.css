@@ -1,10 +1,7 @@
 /* Page Category - Nouveau design avec header bleu clair */
 
 .category-page-new {
-  min-height: 100vh;
   background-color: var(--background);
-  display: flex;
-  flex-direction: column;
   position: relative;
 }
 
@@ -15,20 +12,36 @@
   padding-bottom: 12px;
   padding-left: 20px;
   padding-right: 20px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  border-bottom: none;
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
 }
 
 .category-header-row {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: 12px;
+  padding-left: 20px;
+  padding-right: 20px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.category-search-section {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 90px);
+  margin-top: 48px;
+  position: relative;
+  z-index: 1;
 }
 
 .category-back-button {
@@ -119,9 +132,9 @@
 .category-filters-section {
   background: var(--background);
   padding: 10px 0 20px 0;
-  position: sticky;
-  top: calc(env(safe-area-inset-top, 0px) + 72px);
-  z-index: 20;
+  position: relative;
+  top: auto;
+  z-index: 1;
   /* Permettre aux menus de dépasser */
   overflow: visible;
 }
@@ -421,14 +434,29 @@
 /* 4. Liste des annonces par section avec scroll horizontal */
 .category-content-section {
   flex: 1;
-  padding: 20px 20px calc(env(safe-area-inset-bottom, 0px) + 100px) 20px;
+  padding: 20px 20px 0 20px;
+  margin-top: 0;
   overflow-y: visible;
+  overflow-x: visible;
   position: relative;
   z-index: 1; /* En arrière-plan pour que les menus soient visibles */
 }
 
+.category-scrollable {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
+  padding-bottom: 0 !important;
+}
+
+.category-header-spacer {
+  height: 12px;
+}
+
 .category-posts-section {
   margin-bottom: 24px;
+}
+
+.category-posts-section:last-child {
+  margin-bottom: 0;
 }
 
 .category-posts-grid {
@@ -540,4 +568,3 @@
     gap: 8px;
   }
 }
-

@@ -58,7 +58,8 @@ interface PaymentOptionConfig {
 
 const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   emploi: ['remuneration'],
-  services: ['remuneration', 'echange']
+  services: ['remuneration', 'echange'],
+  'poste-service': ['remuneration', 'visibilite-contre-service']
 }
 
 const DEFAULT_PAYMENT_OPTIONS = [
@@ -77,7 +78,12 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
   'partage-revenus': { id: 'partage-revenus', name: 'Partage de revenus', requiresPercentage: true },
   remuneration: { id: 'remuneration', name: 'Rémunération', requiresPrice: true },
   prix: { id: 'prix', name: 'Prix', requiresPrice: true },
-  echange: { id: 'echange', name: 'Échange de service', requiresExchangeService: true }
+  echange: { id: 'echange', name: 'Échange de service', requiresExchangeService: true },
+  'visibilite-contre-service': {
+    id: 'visibilite-contre-service',
+    name: 'Visibilité contre service',
+    requiresExchangeService: true
+  }
 }
 
 export const getPaymentOptionsForCategory = (
@@ -85,6 +91,21 @@ export const getPaymentOptionsForCategory = (
 ): PaymentOptionConfig[] => {
   const optionIds = PAYMENT_OPTIONS_BY_CATEGORY[categorySlug ?? ''] || DEFAULT_PAYMENT_OPTIONS
   return optionIds.map((id) => PAYMENT_OPTION_CONFIGS[id] || { id, name: id })
+}
+
+export const getAllPaymentOptions = (): PaymentOptionConfig[] => {
+  const optionOrder = [
+    'co-creation',
+    'participation',
+    'association',
+    'partage-revenus',
+    'remuneration',
+    'prix',
+    'echange',
+    'visibilite-contre-service'
+  ]
+
+  return optionOrder.map((id) => PAYMENT_OPTION_CONFIGS[id] || { id, name: id })
 }
 
 export const getPaymentOptionConfig = (

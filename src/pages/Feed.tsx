@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState'
 import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import RecommendationsSection from '../components/RecommendationsSection'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { useAuth } from '../hooks/useSupabase'
 import './Feed.css'
 
 interface Post {
@@ -34,6 +35,7 @@ interface Post {
 }
 
 const Feed = () => {
+  const { user } = useAuth()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,13 +63,14 @@ const Feed = () => {
         orderDirection: 'desc',
         useCache: pageNum === 0 // Utiliser le cache seulement pour la première page
       })
+      const visiblePosts = user ? fetchedPosts.filter((post) => post.user_id !== user.id) : fetchedPosts
 
       if (pageNum === 0) {
-        setPosts(fetchedPosts)
+        setPosts(visiblePosts)
       } else {
-        setPosts(prev => [...prev, ...fetchedPosts])
+        setPosts(prev => [...prev, ...visiblePosts])
       }
-      setHasMore(fetchedPosts.length === POSTS_PER_PAGE)
+      setHasMore(visiblePosts.length === POSTS_PER_PAGE)
       setError(null)
     } catch (err) {
       console.error('Error fetching posts:', err)
@@ -197,4 +200,3 @@ const Feed = () => {
 }
 
 export default Feed
-

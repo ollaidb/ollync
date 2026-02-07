@@ -155,17 +155,26 @@ export const Step4Description = ({
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
             {isContractOpen && (
-              <CustomList
-                items={contractOptions}
-                selectedId={formData.contract_type}
-                onSelectItem={(optionId) => {
-                  onUpdateFormData({ contract_type: optionId })
-                  setIsContractOpen(false)
-                }}
-                className="dropdown-list"
-                showCheckbox={false}
-                showDescription={false}
-              />
+              <>
+                <div
+                  className="publish-dropdown-backdrop"
+                  onClick={() => setIsContractOpen(false)}
+                />
+                <div className="publish-dropdown-panel">
+                  <div className="publish-dropdown-title">Choisissez un type de contrat</div>
+                  <CustomList
+                    items={contractOptions}
+                    selectedId={formData.contract_type}
+                    onSelectItem={(optionId) => {
+                      onUpdateFormData({ contract_type: optionId })
+                      setIsContractOpen(false)
+                    }}
+                    className="publish-list"
+                    showCheckbox={false}
+                    showDescription={false}
+                  />
+                </div>
+              </>
             )}
           </div>
         </>
@@ -183,16 +192,25 @@ export const Step4Description = ({
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
           {isSocialNetworkOpen && (
-            <CustomList
-              items={SOCIAL_NETWORKS_CONFIG}
-              selectedId={formData.socialNetwork}
-              onSelectItem={(networkId) => {
-                onUpdateFormData({ socialNetwork: networkId })
-                setIsSocialNetworkOpen(false)
-              }}
-              className="social-networks-list dropdown-list"
-              showCheckbox={false}
-            />
+            <>
+              <div
+                className="publish-dropdown-backdrop"
+                onClick={() => setIsSocialNetworkOpen(false)}
+              />
+              <div className="publish-dropdown-panel">
+                <div className="publish-dropdown-title">Choisissez un réseau social</div>
+                <CustomList
+                  items={SOCIAL_NETWORKS_CONFIG}
+                  selectedId={formData.socialNetwork}
+                  onSelectItem={(networkId) => {
+                    onUpdateFormData({ socialNetwork: networkId })
+                    setIsSocialNetworkOpen(false)
+                  }}
+                  className="social-networks-list publish-list"
+                  showCheckbox={false}
+                />
+              </div>
+            </>
           )}
         </div>
       )}
@@ -222,17 +240,26 @@ export const Step4Description = ({
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
           {isMaterialConditionOpen && (
-            <CustomList
-              items={materialConditionOptions}
-              selectedId={formData.materialCondition}
-              onSelectItem={(optionId) => {
-                onUpdateFormData({ materialCondition: optionId })
-                setIsMaterialConditionOpen(false)
-              }}
-              className="dropdown-list"
-              showCheckbox={false}
-              showDescription={false}
-            />
+            <>
+              <div
+                className="publish-dropdown-backdrop"
+                onClick={() => setIsMaterialConditionOpen(false)}
+              />
+              <div className="publish-dropdown-panel">
+                <div className="publish-dropdown-title">Choisissez un état du matériel</div>
+                <CustomList
+                  items={materialConditionOptions}
+                  selectedId={formData.materialCondition}
+                  onSelectItem={(optionId) => {
+                    onUpdateFormData({ materialCondition: optionId })
+                    setIsMaterialConditionOpen(false)
+                  }}
+                  className="publish-list"
+                  showCheckbox={false}
+                  showDescription={false}
+                />
+              </div>
+            </>
           )}
         </div>
       )}
@@ -251,23 +278,32 @@ export const Step4Description = ({
           <span className="dropdown-caret" aria-hidden="true" />
         </button>
         {isPaymentOpen && (
-          <CustomList
-            items={paymentOptions}
-            selectedId={formData.exchange_type}
-            onSelectItem={(optionId) => {
-              onUpdateFormData({
-                exchange_type: optionId,
-                price: optionId === 'remuneration' ? formData.price : '',
-                exchange_service: optionId === 'echange' ? formData.exchange_service : '',
-                revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
-                co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
-              })
-              setIsPaymentOpen(false)
-            }}
-            className="payment-options-list dropdown-list"
-            showCheckbox={false}
-            showDescription={false}
-          />
+          <>
+            <div
+              className="publish-dropdown-backdrop"
+              onClick={() => setIsPaymentOpen(false)}
+            />
+            <div className="publish-dropdown-panel">
+              <div className="publish-dropdown-title">Choisissez un moyen de paiement</div>
+              <CustomList
+                items={paymentOptions}
+                selectedId={formData.exchange_type}
+                onSelectItem={(optionId) => {
+                  onUpdateFormData({
+                    exchange_type: optionId,
+                    price: optionId === 'remuneration' ? formData.price : '',
+                    exchange_service: optionId === 'echange' ? formData.exchange_service : '',
+                    revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
+                    co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
+                  })
+                  setIsPaymentOpen(false)
+                }}
+                className="payment-options-list publish-list"
+                showCheckbox={false}
+                showDescription={false}
+              />
+            </div>
+          </>
         )}
       </div>
 

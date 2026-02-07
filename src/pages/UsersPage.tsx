@@ -13,6 +13,7 @@ interface User {
   full_name?: string | null
   avatar_url?: string | null
   bio?: string | null
+  profile_type?: string | null
 }
 
 interface Category {
@@ -72,7 +73,25 @@ const UsersPage = () => {
     ]
   }, [categories, t])
 
+  const profileTypeLabelMap = useMemo(() => ({
+    creator: 'Créateur de contenu',
+    freelance: 'Prestataire / Freelance',
+    company: 'Entreprise',
+    studio: 'Studio / Lieu',
+    institut: 'Institut / Beauté',
+    other: 'Autre'
+  }), [])
+
   // Récupérer les catégories
+  useEffect(() => {
+    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+  }, [])
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -133,82 +152,33 @@ const UsersPage = () => {
 
     try {
       // Trouver la catégorie si un filtre est sélectionné
-      let activeCategoryId: string | undefined
+      let activeCategorySlug: string | undefined
       if (selectedCategory !== 'all') {
-        const category = categories.find(c => c.slug === selectedCategory)
-        if (category) {
-          activeCategoryId = category.id
-        }
+        activeCategorySlug = selectedCategory
       } else if (categoryId) {
         // Si on vient d'un lien avec categoryId, l'utiliser
-        activeCategoryId = categoryId
+        const category = categories.find(c => c.id === categoryId)
+        if (category) {
+          activeCategorySlug = category.slug
+        }
       }
 
-      // Récupérer le nombre total de catégories pour déterminer si un utilisateur a "toutes" les catégories
-      const { data: allCategoriesData } = await supabase
-        .from('categories')
-        .select('id')
-      
-      const totalCategoriesCount = allCategoriesData?.length || 0
+      const start = pageNum * USERS_PER_PAGE
+      const end = start + USERS_PER_PAGE - 1
 
-      // Si on filtre par une catégorie spécifique
-      if (activeCategoryId) {
-        // Récupérer tous les utilisateurs qui ont cette catégorie dans leurs centres d'intérêt
-        const { data: userInterestsData, error: userInterestsError } = await supabase
-          .from('user_interests')
-          .select('user_id, category_id')
-
-        if (userInterestsError) {
-          console.error('Error fetching user interests:', userInterestsError)
-          // Si la table n'existe pas encore, continuer sans filtrage
-        }
-
-        // Grouper les centres d'intérêt par utilisateur
-        const userInterestsMap = new Map<string, Set<string>>()
-        if (userInterestsData) {
-          userInterestsData.forEach((item: { user_id: string; category_id: string }) => {
-            if (!userInterestsMap.has(item.user_id)) {
-              userInterestsMap.set(item.user_id, new Set())
-            }
-            userInterestsMap.get(item.user_id)?.add(item.category_id)
-          })
-        }
-
-        // Filtrer les utilisateurs qui doivent apparaître dans cette catégorie :
-        // - Ceux qui ont cette catégorie dans leurs centres d'intérêt
-        // - Ceux qui ont toutes les catégories (apparaissent partout)
-        // - Ceux qui n'ont aucune catégorie (n'apparaissent nulle part, donc on les exclut)
-        const validUserIds: string[] = []
-        userInterestsMap.forEach((categoryIds, userId) => {
-          // Si l'utilisateur a toutes les catégories, il apparaît partout
-          if (categoryIds.size === totalCategoriesCount && totalCategoriesCount > 0) {
-            validUserIds.push(userId)
-          }
-          // Si l'utilisateur a cette catégorie spécifique, il apparaît
-          else if (categoryIds.has(activeCategoryId!)) {
-            validUserIds.push(userId)
-          }
-        })
-
-        // Récupérer les profils avec pagination
-        const start = pageNum * USERS_PER_PAGE
-        const end = start + USERS_PER_PAGE - 1
-        const paginatedUserIds = validUserIds.slice(start, end + 1).filter((id: string) => user ? id !== user.id : true)
-
-        if (paginatedUserIds.length === 0) {
-          if (pageNum === 0) {
-            setUsers([])
-          }
-          setHasMore(false)
-          setLoading(false)
-          setLoadingMore(false)
-          return
-        }
-
-        const { data: profilesData, error: profilesError } = await supabase
+      // Filtre "Tout" : afficher tous les utilisateurs
+      if (!activeCategorySlug) {
+        let query = supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, bio')
-          .in('id', paginatedUserIds)
+          .select('id, username, full_name, avatar_url, bio, profile_type', { count: 'exact' })
+          .order('updated_at', { ascending: false })
+          .range(start, end)
+
+        if (user) {
+          query = query.neq('id', user.id)
+        }
+
+        const { data: profilesData, error: profilesError, count } = await query
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError)
@@ -226,113 +196,47 @@ const UsersPage = () => {
         }
         fetchFollowingStatus(fetchedUsers.map((item) => item.id))
 
-        setHasMore(paginatedUserIds.length === USERS_PER_PAGE && validUserIds.length > end + 1)
+        if (typeof count === 'number') {
+          setHasMore(count > end + 1)
+        } else {
+          setHasMore(fetchedUsers.length === USERS_PER_PAGE)
+        }
+        return
+      }
+
+      let query = supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, bio, profile_type', { count: 'exact' })
+        .contains('display_categories', [activeCategorySlug])
+        .order('updated_at', { ascending: false })
+        .range(start, end)
+
+      if (user) {
+        query = query.neq('id', user.id)
+      }
+
+      const { data: profilesData, error: profilesError, count } = await query
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError)
+        setLoading(false)
+        setLoadingMore(false)
+        return
+      }
+
+      const fetchedUsers = (profilesData || []) as User[]
+
+      if (pageNum === 0) {
+        setUsers(fetchedUsers)
       } else {
-        // Filtre "Tout" : afficher tous les utilisateurs qui ont des centres d'intérêt
-        // (ceux qui n'ont aucune catégorie n'apparaissent nulle part)
-        const { data: userInterestsData, error: userInterestsError } = await supabase
-          .from('user_interests')
-          .select('user_id')
+        setUsers(prev => [...prev, ...fetchedUsers])
+      }
+      fetchFollowingStatus(fetchedUsers.map((item) => item.id))
 
-        if (userInterestsError) {
-          console.error('Error fetching user interests:', userInterestsError)
-          // Si la table n'existe pas encore, afficher tous les utilisateurs qui ont des posts
-          const { data: postsData } = await supabase
-            .from('posts')
-            .select('user_id')
-            .eq('status', 'active')
-          
-          const uniqueUserIds = [...new Set(
-            (postsData || [])
-              .map((p: { user_id?: string }) => p.user_id)
-              .filter((id): id is string => Boolean(id))
-              .filter((id: string) => user ? id !== user.id : true)
-          )]
-
-          const start = pageNum * USERS_PER_PAGE
-          const end = start + USERS_PER_PAGE - 1
-          const paginatedUserIds = uniqueUserIds.slice(start, end + 1)
-
-          if (paginatedUserIds.length === 0) {
-            if (pageNum === 0) {
-              setUsers([])
-            }
-            setHasMore(false)
-            setLoading(false)
-            setLoadingMore(false)
-            return
-          }
-
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url, bio')
-            .in('id', paginatedUserIds)
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError)
-            setLoading(false)
-            setLoadingMore(false)
-            return
-          }
-
-          const fetchedUsers = (profilesData || []) as User[]
-
-          if (pageNum === 0) {
-            setUsers(fetchedUsers)
-          } else {
-            setUsers(prev => [...prev, ...fetchedUsers])
-          }
-          fetchFollowingStatus(fetchedUsers.map((item) => item.id))
-
-          setHasMore(paginatedUserIds.length === USERS_PER_PAGE && uniqueUserIds.length > end + 1)
-          return
-        }
-
-        // Extraire les user_ids uniques qui ont au moins un centre d'intérêt
-        const uniqueUserIds = [...new Set(
-          (userInterestsData || [])
-            .map((item: { user_id: string }) => item.user_id)
-            .filter(Boolean)
-            .filter((id: string) => user ? id !== user.id : true)
-        )]
-
-        if (uniqueUserIds.length === 0) {
-          if (pageNum === 0) {
-            setUsers([])
-          }
-          setHasMore(false)
-          setLoading(false)
-          setLoadingMore(false)
-          return
-        }
-
-        // Récupérer les profils avec pagination
-        const start = pageNum * USERS_PER_PAGE
-        const end = start + USERS_PER_PAGE - 1
-        const paginatedUserIds = uniqueUserIds.slice(start, end + 1)
-
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url, bio')
-          .in('id', paginatedUserIds)
-
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError)
-          setLoading(false)
-          setLoadingMore(false)
-          return
-        }
-
-        const fetchedUsers = (profilesData || []) as User[]
-
-        if (pageNum === 0) {
-          setUsers(fetchedUsers)
-        } else {
-          setUsers(prev => [...prev, ...fetchedUsers])
-        }
-        fetchFollowingStatus(fetchedUsers.map((item) => item.id))
-
-        setHasMore(paginatedUserIds.length === USERS_PER_PAGE && uniqueUserIds.length > end + 1)
+      if (typeof count === 'number') {
+        setHasMore(count > end + 1)
+      } else {
+        setHasMore(fetchedUsers.length === USERS_PER_PAGE)
       }
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -474,6 +378,10 @@ const UsersPage = () => {
             {users.map((userItem) => {
               const displayName = userItem.username || userItem.full_name || 'Utilisateur'
               
+              const profileTypeLabel = userItem.profile_type
+                ? profileTypeLabelMap[userItem.profile_type as keyof typeof profileTypeLabelMap] || userItem.profile_type
+                : ''
+
               return (
                 <div 
                   key={userItem.id} 
@@ -500,6 +408,9 @@ const UsersPage = () => {
 
                   {/* Nom de l'utilisateur */}
                   <div className="users-card-name">{displayName}</div>
+                  {profileTypeLabel && (
+                    <div className="users-card-type">{profileTypeLabel}</div>
+                  )}
                   
                   {/* Bio de l'utilisateur */}
                   {userItem.bio && (

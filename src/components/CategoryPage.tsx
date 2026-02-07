@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Search, Users, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Users, ChevronDown, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from './PostCard'
@@ -9,6 +9,7 @@ import BackButton from './BackButton'
 import { EmptyState } from './EmptyState'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { useAuth } from '../hooks/useSupabase'
 import { 
   getSubSubCategories, 
   hasSubSubCategories,
@@ -16,6 +17,7 @@ import {
   hasSubSubSubCategories,
   subSubCategoriesMap
 } from '../utils/subSubCategories'
+import '../pages/SwipePage.css'
 import './CategoryPage.css'
 
 interface Post {
@@ -55,10 +57,16 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     subSubSubMenu?: string
   }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [posts, setPosts] = useState<Post[]>([])
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>([])
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [openNestedDropdown, setOpenNestedDropdown] = useState<string | null>(null)
@@ -163,6 +171,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       useCache: true
     })
 
+    // Exclure les posts de l'utilisateur connecté
+    if (user?.id) {
+      posts = posts.filter((post) => post.user_id !== user.id)
+    }
+
     // Filtrer par sous-sous-menu (N3) si présent
     if (subSubMenu) {
       posts = posts.filter((post) => {
@@ -186,23 +199,47 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     setLoading(false)
   }
 
-  // Filtrer les posts en fonction de la recherche
+  // Filtrer les posts (recherche + période + tri)
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredPosts(posts)
-      return
-    }
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const now = Date.now()
+    const dateLimitMs = dateFilter === '1d'
+      ? 24 * 60 * 60 * 1000
+      : dateFilter === '2d'
+        ? 2 * 24 * 60 * 60 * 1000
+      : dateFilter === '7d'
+          ? 7 * 24 * 60 * 60 * 1000
+          : dateFilter === '2w'
+            ? 14 * 24 * 60 * 60 * 1000
+            : dateFilter === '3w'
+              ? 21 * 24 * 60 * 60 * 1000
+              : dateFilter === '1m'
+                ? 30 * 24 * 60 * 60 * 1000
+                : dateFilter === '2m'
+                  ? 60 * 24 * 60 * 60 * 1000
+                  : null
 
-    const query = searchQuery.toLowerCase()
     const filtered = posts.filter((post) => {
-      return (
-        post.title?.toLowerCase().includes(query) ||
-        post.description?.toLowerCase().includes(query) ||
-        post.location?.toLowerCase().includes(query)
-      )
+      const matchesQuery = normalizedQuery.length === 0
+        || post.title?.toLowerCase().includes(normalizedQuery)
+        || post.description?.toLowerCase().includes(normalizedQuery)
+        || post.location?.toLowerCase().includes(normalizedQuery)
+
+      const createdAt = new Date(post.created_at).getTime()
+      const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
+      const matchesOwner = user ? post.user_id !== user.id : true
+
+      return matchesQuery && matchesDate && matchesOwner
     })
-    setFilteredPosts(filtered)
-  }, [searchQuery, posts])
+
+    const sorted = filtered.sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime()
+      const bTime = new Date(b.created_at).getTime()
+      return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
+    })
+
+    setFilteredPosts(sorted)
+  }, [searchQuery, posts, dateFilter, sortOrder, user])
 
   const handleSubCategoryClick = (subMenuSlug: string) => {
     if (subMenuSlug === 'tout') {
@@ -288,14 +325,14 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
   }, [filteredPosts])
 
   return (
-    <div className="category-page-new">
-      {/* 1. Header fixe (titre + actions) */}
-      <div className="category-header-new">
-        <div className="category-header-row">
-          <BackButton className="category-back-button" />
-          <h1 className="category-title-new">{categoryName}</h1>
+    <div className="category-page-new swipe-page">
+      {/* Header fixe (même style que Swipe/Recent) */}
+      <div className="swipe-header-fixed">
+        <div className="swipe-header-content">
+          <BackButton className="swipe-back-button" />
+          <h1 className="swipe-title">{categoryName}</h1>
           <div className="category-header-actions">
-            <button 
+            <button
               onClick={() => navigate('/users')}
               className="category-users-button"
               title={t('categories:ui.viewUsers')}
@@ -304,25 +341,35 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* 2. Recherche */}
-      <div className="category-search-section">
-        <div className="category-search-box">
-          <Search size={20} className="category-search-icon" />
-          <input
-            type="text"
-            placeholder={t('categories:ui.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="category-search-input"
-          />
+        {/* Barre de recherche (style Recent) */}
+        <div className="swipe-search-row">
+          <div className="swipe-search-bar">
+            <Search size={20} />
+            <input
+              type="text"
+              placeholder={t('categories:ui.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="swipe-search-input"
+            />
+            <button
+              type="button"
+              className="swipe-filter-toggle"
+              onClick={() => {
+                setPendingSortOrder(sortOrder)
+                setPendingDateFilter(dateFilter)
+                setIsFilterOpen(true)
+              }}
+              aria-label="Filtrer"
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* 3. Filtres de sous-catégories (scroll horizontal) */}
-      <div className="category-filters-section">
-        <div className="category-filters-scroll">
+        {/* Menu (style Swipe) */}
+        <div className="swipe-filters category-filters-scroll">
           {subMenus.length === 0 && !loading && (
             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted-foreground)' }}>
               {t('categories:ui.noSubcategories')}
@@ -361,7 +408,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 }}
               >
                 <button
-                  className={`category-filter-button ${isActive ? 'active' : ''} ${hasSubSub ? 'has-dropdown' : ''}`}
+                  className={`swipe-filter-btn category-filter-button ${isActive ? 'active' : ''} ${hasSubSub ? 'has-dropdown' : ''}`}
                   onClick={() => {
                     console.log(`[CategoryPage] Clic sur N2: ${subMenuLabel}, hasSubSub: ${hasSubSub}, isDropdownOpen: ${isDropdownOpen}`)
                     if (hasSubSub) {
@@ -572,8 +619,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         </div>
       </div>
 
-      {/* 4. Liste des annonces par section avec scroll horizontal (3 par section) */}
-      <div className="category-content-section">
+      {/* Contenu scrollable */}
+      <div className="swipe-scrollable category-scrollable">
+        <div className="category-header-spacer" aria-hidden="true" />
+        <div className="category-content-section">
         {loading ? (
           <div className="category-posts-section">
             <div className="category-posts-grid">
@@ -605,10 +654,122 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             </div>
           ))
         )}
+        </div>
       </div>
+
+      {isFilterOpen && (
+        <div
+          className="swipe-filter-modal-overlay"
+          onClick={() => setIsFilterOpen(false)}
+        >
+          <div className="swipe-filter-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="swipe-filter-modal-header">
+              <h2>Filtrer</h2>
+              <button
+                type="button"
+                className="swipe-filter-close"
+                onClick={() => setIsFilterOpen(false)}
+                aria-label="Fermer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Trier par date</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingSortOrder === 'desc' ? 'active' : ''}`}
+                  onClick={() => setPendingSortOrder('desc')}
+                >
+                  Plus récentes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingSortOrder === 'asc' ? 'active' : ''}`}
+                  onClick={() => setPendingSortOrder('asc')}
+                >
+                  Plus anciennes
+                </button>
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Période</p>
+              <div className="swipe-filter-options swipe-filter-options-scroll">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '1d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('1d')}
+                >
+                  1 jour
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2d')}
+                >
+                  2 jours
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '7d' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('7d')}
+                >
+                  7 jours
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2w' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2w')}
+                >
+                  2 semaines
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '3w' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('3w')}
+                >
+                  3 semaines
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '1m' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('1m')}
+                >
+                  1 mois
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingDateFilter === '2m' ? 'active' : ''}`}
+                  onClick={() => setPendingDateFilter('2m')}
+                >
+                  2 mois
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="swipe-filter-apply"
+              onClick={() => {
+                setSortOrder(pendingSortOrder)
+                setDateFilter(pendingDateFilter)
+                setIsFilterOpen(false)
+              }}
+            >
+              Appliquer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default CategoryPage
-

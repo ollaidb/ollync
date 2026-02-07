@@ -6,6 +6,7 @@ import BackButton from '../components/BackButton'
 import { EmptyState } from '../components/EmptyState'
 import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
+import { useAuth } from '../hooks/useSupabase'
 import '../components/CategoryPage.css'
 
 interface Post {
@@ -34,6 +35,7 @@ interface Post {
 }
 
 const UrgentPosts = () => {
+  const { user } = useAuth()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +67,9 @@ const UrgentPosts = () => {
       })
 
       // Filtrer les posts urgents
-      const urgentPosts = fetchedPosts.filter((post: any) => post.is_urgent === true)
+      const urgentPosts = fetchedPosts
+        .filter((post: any) => post.is_urgent === true)
+        .filter((post: any) => (user ? post.user_id !== user.id : true))
         .sort((a: any, b: any) => {
           if (a.needed_date && b.needed_date) {
             return new Date(a.needed_date).getTime() - new Date(b.needed_date).getTime()
@@ -143,5 +147,3 @@ const UrgentPosts = () => {
 }
 
 export default UrgentPosts
-
-

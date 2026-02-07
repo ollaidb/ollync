@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
@@ -41,6 +42,7 @@ interface Category {
 }
 
 const Search = () => {
+  const { user } = useAuth()
   const [selectedFilter, _setSelectedFilter] = useState('all')
   const [results, setResults] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
@@ -151,6 +153,9 @@ const Search = () => {
       }
 
       let filteredPosts = posts as Post[]
+      if (user?.id) {
+        filteredPosts = filteredPosts.filter((post) => post.user_id !== user.id)
+      }
       if (locationCoords) {
         filteredPosts = filteredPosts.filter((post) => {
           if (!post.location_lat || !post.location_lng) return false

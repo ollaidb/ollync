@@ -74,9 +74,10 @@ const Home = () => {
       orderDirection: 'desc',
       useCache: true
     })
-    
-    setRecentPosts(posts)
-    return posts
+
+    const filtered = user ? posts.filter((post) => post.user_id !== user.id) : posts
+    setRecentPosts(filtered)
+    return filtered
   }
 
   const fetchUrgentPosts = async () => {
@@ -93,7 +94,9 @@ const Home = () => {
 
       // Filtrer les posts urgents (is_urgent: true)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const urgent = urgentPosts.filter((post: any) => post.is_urgent === true)
+      const urgent = urgentPosts
+        .filter((post: any) => post.is_urgent === true)
+        .filter((post: any) => (user ? post.user_id !== user.id : true))
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .sort((a: any, b: any) => {
           if (a.needed_date && b.needed_date) {
@@ -134,7 +137,8 @@ const Home = () => {
         useCache: true
       })
 
-      return posts
+      const filtered = user ? posts.filter((post) => post.user_id !== user.id) : posts
+      return filtered
     } catch (error) {
       console.error(`Error fetching posts for category ${categorySlug}:`, error)
       return []

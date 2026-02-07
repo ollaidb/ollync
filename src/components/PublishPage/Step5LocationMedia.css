@@ -437,11 +437,11 @@
 .step5-location-autocomplete {
   margin-bottom: 8px;
   position: relative;
-  z-index: auto;
+  z-index: 200;
 }
 
 .step5-location-autocomplete:focus-within {
-  z-index: auto;
+  z-index: 300;
 }
 
 .location-coordinates-info {
