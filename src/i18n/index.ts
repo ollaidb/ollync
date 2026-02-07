@@ -171,6 +171,40 @@ i18n.use(initReactI18next).init({
         pushMissingKey: 'Clé VAPID manquante. Ajoute VITE_WEB_PUSH_PUBLIC_KEY dans .env.',
         pushPermissionDenied: 'Permission refusée pour les notifications.'
       },
+      consent: {
+        actions: {
+          accept: 'J\'accepte',
+          decline: 'Refuser',
+          askAgain: 'Me redemander la prochaine fois'
+        },
+        blocked: 'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres de gestion des données.',
+        types: {
+          location: {
+            title: 'Utilisation de la localisation',
+            message: 'Nous utilisons votre localisation pour afficher votre profil et vos annonces selon votre zone géographique. Acceptez-vous l\'utilisation de votre localisation ?'
+          },
+          media: {
+            title: 'Utilisation des médias',
+            message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Acceptez-vous l\'utilisation et l\'affichage de vos médias ?'
+          },
+          profile_data: {
+            title: 'Utilisation des données de profil',
+            message: 'Vos informations de profil peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Acceptez-vous leur enregistrement et leur affichage ?'
+          },
+          messaging: {
+            title: 'Utilisation de la messagerie',
+            message: 'La messagerie permet d\'échanger avec d\'autres utilisateurs. Acceptez-vous l\'activation de la messagerie ?'
+          },
+          cookies: {
+            title: 'Utilisation des cookies',
+            message: 'Nous utilisons des cookies pour améliorer votre expérience et personnaliser le contenu. Acceptez-vous l\'utilisation des cookies ?'
+          },
+          behavioral_data: {
+            title: 'Analyse d\'utilisation',
+            message: 'Nous analysons votre utilisation pour vous proposer du contenu et des recommandations adaptés. Acceptez-vous cette analyse ?'
+          }
+        }
+      },
       common: {
         back: 'Retour',
         searchLanguagePlaceholder: 'Rechercher une langue',
@@ -449,6 +483,40 @@ i18n.use(initReactI18next).init({
         pushUnsupported: 'Push notifications are not supported on this browser.',
         pushMissingKey: 'Missing VAPID key. Add VITE_WEB_PUSH_PUBLIC_KEY to .env.',
         pushPermissionDenied: 'Permission denied for notifications.'
+      },
+      consent: {
+        actions: {
+          accept: 'I agree',
+          decline: 'Decline',
+          askAgain: 'Ask me again next time'
+        },
+        blocked: 'This action requires consent. You can update this choice in data management settings.',
+        types: {
+          location: {
+            title: 'Location usage',
+            message: 'We use your location to display your profile and listings based on your area. Do you agree to the use of your location?'
+          },
+          media: {
+            title: 'Media usage',
+            message: 'The photos and videos you add may be visible to other users based on your settings. Do you agree to the use and display of your media?'
+          },
+          profile_data: {
+            title: 'Profile data usage',
+            message: 'Your profile information may be visible to other users based on your settings. Do you agree to its storage and display?'
+          },
+          messaging: {
+            title: 'Messaging usage',
+            message: 'Messaging lets you chat with other users. Do you agree to enable messaging?'
+          },
+          cookies: {
+            title: 'Cookies usage',
+            message: 'We use cookies to improve your experience and personalize content. Do you agree to the use of cookies?'
+          },
+          behavioral_data: {
+            title: 'Usage analysis',
+            message: 'We analyze your usage to offer tailored content and recommendations. Do you agree to this analysis?'
+          }
+        }
       },
       common: {
         back: 'Back',

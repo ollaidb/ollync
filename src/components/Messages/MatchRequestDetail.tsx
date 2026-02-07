@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X, Check, XCircle, MessageCircle, FileText, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import MessageInput from './MessageInput'
@@ -46,6 +47,7 @@ const MatchRequestDetail = ({
   onUpdate,
   onStartConversation 
 }: MatchRequestDetailProps) => {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [showMessageInput, setShowMessageInput] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
@@ -60,6 +62,7 @@ const MatchRequestDetail = ({
   const isSent = request.from_user_id === currentUserId
   const isPending = request.status === 'pending'
   const isAccepted = request.status === 'accepted'
+  const profileUserId = request.other_user?.id
 
   const findOrCreateConversation = async (otherUserId: string) => {
     try {
@@ -67,15 +70,14 @@ const MatchRequestDetail = ({
         .from('public_conversations_with_users')
         .select('*')
         .or(`and(user1_id.eq.${currentUserId},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${currentUserId})`)
-        .is('deleted_at', null)
 
       if (searchError) {
         console.error('Error searching for conversation:', searchError)
       }
 
       const existingConv = existingConvs?.find(conv => {
-        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
-        return !convData.is_group && !convData.deleted_at
+        const convData = conv as { is_group?: boolean }
+        return !convData.is_group
       })
 
       if (existingConv && (existingConv as { id: string }).id) {
@@ -264,9 +266,19 @@ const MatchRequestDetail = ({
           </button>
 
           <div className="match-request-detail-header">
-            <h2 className="match-request-detail-name">
-              {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
-            </h2>
+            {profileUserId ? (
+              <button
+                type="button"
+                className="match-request-detail-name match-request-detail-name-link"
+                onClick={() => navigate(`/profile/public/${profileUserId}`)}
+              >
+                {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+              </button>
+            ) : (
+              <h2 className="match-request-detail-name">
+                {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+              </h2>
+            )}
             <div className={`match-request-detail-badge ${isReceived ? 'received' : 'sent'}`}>
               {isReceived ? 'Reçue' : 'Envoyée'}
             </div>

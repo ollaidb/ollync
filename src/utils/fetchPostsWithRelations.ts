@@ -10,6 +10,7 @@ interface FetchPostsOptions {
   categoryId?: string
   subCategoryId?: string
   userId?: string
+  excludeUserId?: string
   status?: string
   limit?: number
   offset?: number
@@ -66,6 +67,7 @@ function getCacheKey(options: FetchPostsOptions): string {
     categoryId: options.categoryId,
     subCategoryId: options.subCategoryId,
     userId: options.userId,
+    excludeUserId: options.excludeUserId,
     status: options.status,
     limit: options.limit,
     offset: options.offset,
@@ -84,6 +86,7 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
     categoryId,
     subCategoryId,
     userId,
+    excludeUserId,
     status = 'active',
     limit = 50,
     offset = 0,
@@ -145,6 +148,10 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
 
     if (userId) {
       query = query.eq('user_id', userId)
+    }
+
+    if (excludeUserId) {
+      query = query.neq('user_id', excludeUserId)
     }
 
     query = query

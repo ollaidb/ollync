@@ -51,6 +51,7 @@ interface ValidationResult {
 interface PaymentOptionConfig {
   id: string
   name: string
+  description?: string
   requiresPrice?: boolean
   requiresPercentage?: boolean
   requiresExchangeService?: boolean
@@ -63,25 +64,61 @@ const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
 }
 
 const DEFAULT_PAYMENT_OPTIONS = [
+  'remuneration',
+  'partage-revenus',
+  'echange',
+  'visibilite-contre-service',
   'co-creation',
   'participation',
-  'association',
-  'partage-revenus',
-  'remuneration',
-  'echange'
+  'association'
 ]
 
 const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
-  'co-creation': { id: 'co-creation', name: 'Co-création' },
-  participation: { id: 'participation', name: 'Participation' },
-  association: { id: 'association', name: 'Association' },
-  'partage-revenus': { id: 'partage-revenus', name: 'Partage de revenus', requiresPercentage: true },
-  remuneration: { id: 'remuneration', name: 'Rémunération', requiresPrice: true },
-  prix: { id: 'prix', name: 'Prix', requiresPrice: true },
-  echange: { id: 'echange', name: 'Échange de service', requiresExchangeService: true },
+  'co-creation': {
+    id: 'co-creation',
+    name: 'Co-création',
+    description: 'Collaboration créative où les  parties contribuent conjointement au projet avec partage des résultats.',
+  },
+  participation: {
+    id: 'participation',
+    name: 'Participation',
+    description:
+      'Engagement collectif où chaque participant contribue à la réussite du projet sans contrepartie monétaire.'
+  },
+  association: {
+    id: 'association',
+    name: 'Association',
+    description:
+      'Regroupement de ressources et compétences pour atteindre un objectif commun en tant que partenaires.'
+  },
+  'partage-revenus': {
+    id: 'partage-revenus',
+    name: 'Partage de revenus',
+    description: 'Les gains générés sont répartis entre les partenaires selon un pourcentage convenu d\'avance.',
+    requiresPercentage: true
+  },
+  remuneration: {
+    id: 'remuneration',
+    name: 'Rémunération',
+    description: 'Paiement en euros pour les services rendus ou le travail fourni selon un tarif établi.',
+    requiresPrice: true
+  },
+  prix: {
+    id: 'prix',
+    name: 'Prix',
+    description: 'Prix fixe à payer pour l’annonce.',
+    requiresPrice: true
+  },
+  echange: {
+    id: 'echange',
+    name: 'Échange de service',
+    description: 'Troc de services où les parties s\'échangent leurs compétences sans transaction monétaire.',
+    requiresExchangeService: true
+  },
   'visibilite-contre-service': {
     id: 'visibilite-contre-service',
     name: 'Visibilité contre service',
+    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.',
     requiresExchangeService: true
   }
 }
@@ -95,14 +132,14 @@ export const getPaymentOptionsForCategory = (
 
 export const getAllPaymentOptions = (): PaymentOptionConfig[] => {
   const optionOrder = [
+    'remuneration',
+    'partage-revenus',
+    'echange',
+    'visibilite-contre-service',
     'co-creation',
     'participation',
     'association',
-    'partage-revenus',
-    'remuneration',
-    'prix',
-    'echange',
-    'visibilite-contre-service'
+    'prix'
   ]
 
   return optionOrder.map((id) => PAYMENT_OPTION_CONFIGS[id] || { id, name: id })
@@ -310,53 +347,94 @@ export const handlePublish = async (
     return
   }
 
-  // Déterminer si le réseau social est requis
-  // formData.category et formData.subcategory sont déjà des slugs
-  const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
-
-  // Validation complète des champs obligatoires uniquement pour une publication
-  if (status === 'active') {
-    const validation = validatePublishForm(formData, requireSocialNetwork)
-    if (!validation.isValid) {
-      alert(validation.errors.join('\n'))
-      return
-    }
-  }
-
-  // Récupérer les IDs de catégorie et sous-catégorie depuis la base de données
+  // Récupérer les IDs et slugs de catégorie/sous-catégorie depuis la base de données
   let categoryId: string | null = null
   let subCategoryId: string | null = null
+  let categorySlug: string | null = null
+  let subcategorySlug: string | null = null
 
   try {
     // Récupérer la catégorie (N1)
     if (!formData.category) {
       throw new Error('Category is required')
     }
-    
-    const { data: categoryData } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('slug', formData.category)
-      .single()
 
-    if (categoryData) {
-      categoryId = (categoryData as any).id
+    const categorySlugAliases: Record<string, string[]> = {
+      emploi: ['emploi', 'montage', 'recrutement']
+    }
+
+    const categoryCandidates = categorySlugAliases[formData.category] || [formData.category]
+
+    const { data: categoryBySlug } = await supabase
+      .from('categories')
+      .select('id, slug')
+      .in('slug', categoryCandidates)
+      .limit(10)
+
+    const pickCategoryByPriority = (rows: Array<{ id: string; slug: string }>) => {
+      for (const candidate of categoryCandidates) {
+        const found = rows.find((row) => row.slug === candidate)
+        if (found) return found
+      }
+      return rows[0] || null
+    }
+
+    const categoryFromSlug = categoryBySlug ? pickCategoryByPriority(categoryBySlug as any[]) : null
+
+    const { data: categoryById } = await supabase
+      .from('categories')
+      .select('id, slug')
+      .eq('id', formData.category)
+      .limit(1)
+
+    const categoryRecord = categoryFromSlug || (categoryById && categoryById[0]) || null
+
+    if (categoryRecord) {
+      categoryId = (categoryRecord as any).id
+      categorySlug = (categoryRecord as any).slug
 
       // Récupérer la sous-catégorie (N2) si elle existe
       if (formData.subcategory && formData.subcategory !== 'tout') {
-        const { data: subCategoryData } = await (supabase.from('sub_categories') as any)
-          .select('id')
+        const { data: subCategoryBySlug } = await (supabase.from('sub_categories') as any)
+          .select('id, slug')
           .eq('category_id', categoryId)
           .eq('slug', formData.subcategory)
-          .single()
+          .limit(1)
 
-        if (subCategoryData) {
-          subCategoryId = (subCategoryData as any).id
+        const { data: subCategoryById } = await (supabase.from('sub_categories') as any)
+          .select('id, slug')
+          .eq('id', formData.subcategory)
+          .limit(1)
+
+        const subCategoryRecord =
+          (subCategoryBySlug && subCategoryBySlug[0]) || (subCategoryById && subCategoryById[0]) || null
+
+        if (subCategoryRecord) {
+          subCategoryId = (subCategoryRecord as any).id
+          subcategorySlug = (subCategoryRecord as any).slug
         }
       }
     }
   } catch (error) {
     console.error('Error fetching category/subcategory:', error)
+  }
+
+  const normalizedCategorySlug = categorySlug ?? formData.category
+  const normalizedSubcategorySlug = subcategorySlug ?? formData.subcategory
+
+  // Déterminer si le réseau social est requis
+  const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
+
+  // Validation complète des champs obligatoires uniquement pour une publication
+  if (status === 'active') {
+    const validation = validatePublishForm(
+      { ...formData, category: formData.category, subcategory: formData.subcategory },
+      requireSocialNetwork
+    )
+    if (!validation.isValid) {
+      alert(validation.errors.join('\n'))
+      return
+    }
   }
 
   // Note: Les niveaux N3 et N4 sont stockés dans media_type et option
@@ -384,7 +462,7 @@ export const handlePublish = async (
     descriptionValue += `\n\nCo-création : ${formData.co_creation_details.trim()}`
   }
 
-  if (formData.category === 'vente' && formData.subcategory === 'gorille' && formData.materialCondition) {
+  if (normalizedCategorySlug === 'vente' && normalizedSubcategorySlug === 'gorille' && formData.materialCondition) {
     const hasMaterialCondition = /État du matériel\s*:/i.test(descriptionValue)
     if (!hasMaterialCondition) {
       descriptionValue += `\n\nÉtat du matériel : ${formData.materialCondition.trim()}`

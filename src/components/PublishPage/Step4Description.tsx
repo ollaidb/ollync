@@ -300,7 +300,7 @@ export const Step4Description = ({
                 }}
                 className="payment-options-list publish-list"
                 showCheckbox={false}
-                showDescription={false}
+                showDescription={true}
               />
             </div>
           </>

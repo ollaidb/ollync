@@ -84,7 +84,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     fetchSubMenus()
     fetchPosts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submenu, subSubMenu, subSubSubMenu, categorySlug])
+  }, [submenu, subSubMenu, subSubSubMenu, categorySlug, user?.id])
 
   // Fermer les dropdowns si on clique ailleurs
   useEffect(() => {
@@ -169,10 +169,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       limit: 15, // Réduit de 50 à 15 pour un chargement initial plus rapide
       orderBy: 'created_at',
       orderDirection: 'desc',
-      useCache: true
+      useCache: true,
+      excludeUserId: user?.id
     })
 
-    // Exclure les posts de l'utilisateur connecté
+    // Exclure les posts de l'utilisateur connecté (fallback si besoin)
     if (user?.id) {
       posts = posts.filter((post) => !post.user_id || post.user_id !== user.id)
     }

@@ -12,7 +12,7 @@ export const PAYMENT_OPTIONS_CONFIG: PaymentOption[] = [
   {
     id: 'co-creation',
     name: 'Co-création',
-    description: 'Collaboration créative où les deux parties contribuent conjointement au projet avec partage des résultats.'
+    description: 'Collaboration créative où les parties contribuent conjointement au projet avec partage des résultats.'
   },
   {
     id: 'participation',
@@ -37,7 +37,7 @@ export const PAYMENT_OPTIONS_CONFIG: PaymentOption[] = [
   {
     id: 'echange',
     name: 'Échange de service',
-    description: 'Troc de services où les deux parties s\'échangent leurs compétences sans transaction monétaire.'
+    description: 'Troc de services où les parties s\'échangent leurs compétences sans transaction monétaire.'
   },
   {
     id: 'visibilite-contre-service',

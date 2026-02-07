@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -86,6 +86,7 @@ interface Review {
 
 const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOwnProfile?: boolean }) => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const { showSuccess } = useToastContext()
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -97,6 +98,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [reviews, setReviews] = useState<Review[]>([])
   const [postsLoading, setPostsLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [ratingAverage, setRatingAverage] = useState<number | null>(null)
+  const [ratingCount, setRatingCount] = useState(0)
+  const [ratingSummaryLoading, setRatingSummaryLoading] = useState(false)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -115,6 +119,20 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [serviceRequestMessage, setServiceRequestMessage] = useState('')
 
   const profileId = userId || user?.id
+
+  const normalizeTab = (value?: string | null) => {
+    if (value === 'annonces' || value === 'avis' || value === 'a-propos') {
+      return value
+    }
+    return null
+  }
+
+  const handleTabChange = (tab: 'a-propos' | 'annonces' | 'avis') => {
+    setActiveTab(tab)
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.set('tab', tab)
+    setSearchParams(nextParams)
+  }
 
   // Log pour déboguer l'affichage du bouton
   useEffect(() => {
@@ -649,6 +667,35 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setReviewsLoading(false)
   }, [profileId])
 
+  const fetchRatingSummary = useCallback(async () => {
+    if (!profileId) return
+
+    setRatingSummaryLoading(true)
+    const { data, error } = await supabase
+      .from('ratings')
+      .select('rating')
+      .eq('rated_user_id', profileId)
+
+    if (error) {
+      console.error('Error fetching rating summary:', error)
+      setRatingAverage(null)
+      setRatingCount(0)
+    } else {
+      const ratings = (data || []).map((item: { rating: number }) => item.rating)
+      const count = ratings.length
+      if (count === 0) {
+        setRatingAverage(null)
+        setRatingCount(0)
+      } else {
+        const total = ratings.reduce((sum, value) => sum + value, 0)
+        setRatingAverage(total / count)
+        setRatingCount(count)
+      }
+    }
+
+    setRatingSummaryLoading(false)
+  }, [profileId])
+
   const handleToggleFavorite = async () => {
     if (!user || !profileId || isOwnProfile) return
 
@@ -766,9 +813,29 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }, [profileId, user, isOwnProfile])
 
   useEffect(() => {
+    const normalizedTab = normalizeTab(searchParams.get('tab'))
+    if (!normalizedTab) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.set('tab', activeTab)
+      setSearchParams(nextParams, { replace: true })
+      return
+    }
+    if (normalizedTab !== activeTab) {
+      setActiveTab(normalizedTab)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  useEffect(() => {
     setPosts([])
     setPostsLoaded(false)
   }, [profileId])
+
+  useEffect(() => {
+    if (profileId) {
+      fetchRatingSummary()
+    }
+  }, [profileId, fetchRatingSummary])
 
   useEffect(() => {
     if (selectedService) {
@@ -1013,6 +1080,23 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           {profile.username && (
             <p className="profile-username-text">{profile.username}</p>
           )}
+          {!ratingSummaryLoading && ratingCount > 0 && (
+            <div className="profile-rating-row">
+              <div className="profile-rating-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={14}
+                    className={ratingAverage && star <= ratingAverage ? 'filled' : ''}
+                    fill={ratingAverage && star <= ratingAverage ? '#ffc107' : 'none'}
+                  />
+                ))}
+              </div>
+              <span className="profile-rating-text">
+                {ratingAverage ? ratingAverage.toFixed(1) : '0.0'} ({ratingCount} avis)
+              </span>
+            </div>
+          )}
           {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
             <button
               className="profile-edit-text-btn"
@@ -1050,19 +1134,19 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       <div className="profile-secondary-menu">
         <button
           className={`profile-menu-btn ${activeTab === 'a-propos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('a-propos')}
+          onClick={() => handleTabChange('a-propos')}
         >
           à propos
         </button>
         <button
           className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
-          onClick={() => setActiveTab('annonces')}
+          onClick={() => handleTabChange('annonces')}
         >
           annonce
         </button>
         <button
           className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
-          onClick={() => setActiveTab('avis')}
+          onClick={() => handleTabChange('avis')}
         >
           avis
         </button>
@@ -1152,23 +1236,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   )}
                 </div>
               )
-            )}
-
-            {/* CENTRES D'INTÉRÊT */}
-            {interests.length > 0 && (
-              <div className="profile-interests-section">
-                <h3 className="interests-title">centre dinteret</h3>
-                <div className="interests-scroll">
-                  {interests.map((interest, index) => (
-                    <div 
-                      key={index} 
-                      className={`interest-bubble ${index === 0 ? 'active' : ''}`}
-                    >
-                      {interest}
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
 
             {/* SERVICES */}

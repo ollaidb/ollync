@@ -61,7 +61,8 @@ const Feed = () => {
         offset: pageNum * POSTS_PER_PAGE,
         orderBy: 'created_at',
         orderDirection: 'desc',
-        useCache: pageNum === 0 // Utiliser le cache seulement pour la première page
+        useCache: pageNum === 0, // Utiliser le cache seulement pour la première page
+        excludeUserId: user?.id
       })
       const visiblePosts = user ? fetchedPosts.filter((post) => post.user_id !== user.id) : fetchedPosts
 
@@ -90,7 +91,7 @@ const Feed = () => {
 
   useEffect(() => {
     fetchPosts(0, true)
-  }, [])
+  }, [user?.id])
 
   const loadMore = () => {
     if (!loadingMore && !loading && hasMore) {

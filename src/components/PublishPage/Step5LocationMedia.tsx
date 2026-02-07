@@ -382,12 +382,14 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     lng: number
     city?: string
   }) => {
-    onUpdateFormData({
-      location: location.city || location.address.split(',')[0].trim(),
-      location_address: location.address,
-      location_lat: location.lat,
-      location_lng: location.lng,
-      location_city: location.city || ''
+    locationConsent.requireConsent(() => {
+      onUpdateFormData({
+        location: location.city || location.address.split(',')[0].trim(),
+        location_address: location.address,
+        location_lat: location.lat,
+        location_lng: location.lng,
+        location_city: location.city || ''
+      })
     })
   }
 
@@ -641,6 +643,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         message={locationConsent.messages.message}
         onAccept={locationConsent.handleAccept}
         onReject={handleRejectLocation}
+        askAgainChecked={locationConsent.askAgainNextTime}
+        onAskAgainChange={locationConsent.setAskAgainNextTime}
       />
 
       <ConsentModal
@@ -649,6 +653,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={handleRejectMedia}
+        askAgainChecked={mediaConsent.askAgainNextTime}
+        onAskAgainChange={mediaConsent.setAskAgainNextTime}
       />
     </div>
   )

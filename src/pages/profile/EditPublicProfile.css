@@ -120,7 +120,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(320px, calc(100vw - 56px));
-  max-height: 55vh;
+  max-height: 45vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -147,10 +147,25 @@
 }
 
 .service-payment-list .custom-list {
-  max-height: calc(55vh - 40px);
+  max-height: calc(45vh - 40px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.service-payment-list .custom-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.service-payment-list .custom-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  border-radius: 999px;
+}
+
+.service-payment-list .custom-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .service-payment-list .custom-list-item-content {

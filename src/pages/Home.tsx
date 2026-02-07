@@ -57,6 +57,7 @@ const Home = () => {
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [urgentPosts, setUrgentPosts] = useState<Post[]>([])
   const [recommendedPosts, setRecommendedPosts] = useState<Post[]>([])
+  const [recommendedLoading, setRecommendedLoading] = useState(false)
   const [creationContenuPosts, setCreationContenuPosts] = useState<Post[]>([])
   const [castingPosts, setCastingPosts] = useState<Post[]>([])
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
@@ -72,7 +73,8 @@ const Home = () => {
       limit: maxPostsPerSection * 2, // Charger un peu plus pour avoir assez
       orderBy: 'created_at',
       orderDirection: 'desc',
-      useCache: true
+      useCache: true,
+      excludeUserId: user?.id
     })
 
     const filtered = user ? posts.filter((post) => post.user_id !== user.id) : posts
@@ -89,7 +91,8 @@ const Home = () => {
         status: 'active',
         limit: maxPostsPerSection * 2, // Charger un peu plus pour avoir assez après tri
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        excludeUserId: user?.id
       })
 
       // Filtrer les posts urgents (is_urgent: true)
@@ -134,7 +137,8 @@ const Home = () => {
         limit: maxPostsPerSection,
         orderBy: 'created_at',
         orderDirection: 'desc',
-        useCache: true
+        useCache: true,
+        excludeUserId: user?.id
       })
 
       const filtered = user ? posts.filter((post) => post.user_id !== user.id) : posts
@@ -182,7 +186,8 @@ const Home = () => {
         status: 'active',
         limit: 100,
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        excludeUserId: user?.id
       })
 
       // Trier par engagement (likes + comments + views)
@@ -253,7 +258,8 @@ const Home = () => {
           status: 'active',
           limit: 100, // Réduire de 200 à 100 pour améliorer les performances
           orderBy: 'created_at',
-          orderDirection: 'desc'
+          orderDirection: 'desc',
+          excludeUserId: user?.id
         })
 
         // Filtrer et mélanger aléatoirement
@@ -336,7 +342,8 @@ const Home = () => {
         status: 'active',
         limit: 100, // Réduire de 200 à 100 pour améliorer les performances
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        excludeUserId: user?.id
       })
 
       // 5. Exclure les posts déjà affichés et ceux déjà swipés
@@ -409,7 +416,8 @@ const Home = () => {
         status: 'active',
         limit: 100,
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        excludeUserId: user?.id
       })
 
       const popular = allPosts
@@ -490,10 +498,17 @@ const Home = () => {
         const categoryIds = [...creationContenu, ...casting, ...emploi, ...studioLieu].map(p => p.id)
         const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
         
-        // Charger les recommandations de manière asynchrone sans bloquer
-        fetchRecommendedPosts(excludeIds).catch(err => {
-          console.error('Error fetching recommended posts:', err)
-        })
+      // Charger les recommandations de manière asynchrone sans bloquer
+      if (user) {
+        setRecommendedLoading(true)
+        fetchRecommendedPosts(excludeIds)
+          .catch(err => {
+            console.error('Error fetching recommended posts:', err)
+          })
+          .finally(() => {
+            setRecommendedLoading(false)
+          })
+      }
       } catch (error) {
         console.error('Error loading posts:', error)
       } finally {
@@ -710,20 +725,26 @@ const Home = () => {
           )}
 
           {/* Section Recommandations - JUSTE APRÈS URGENT - Seulement si connecté ET s'il y a des recommandations */}
-          {user && recommendedPosts.length > 0 && !loading && (
+          {user && (recommendedLoading || recommendedPosts.length > 0) && !loading && (
             <div className="home-posts-section">
               <h2 className="home-section-title">{labels.recommendations}</h2>
               <div className="home-posts-grid">
-                {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
-                ))}
-                {recommendedPosts.length >= maxPostsPerSection && (
-                  <button
-                    className="home-show-more-btn home-plus-btn"
-                    onClick={() => navigate('/search?recommended=true')}
-                  >
-                    <Plus size={32} />
-                  </button>
+                {recommendedLoading ? (
+                  <PostCardSkeleton viewMode="grid" count={maxPostsPerSection} />
+                ) : (
+                  <>
+                    {recommendedPosts.slice(0, maxPostsPerSection).map((post) => (
+                      <PostCard key={post.id} post={post} viewMode="grid" hideCategoryBadge />
+                    ))}
+                    {recommendedPosts.length >= maxPostsPerSection && (
+                      <button
+                        className="home-show-more-btn home-plus-btn"
+                        onClick={() => navigate('/search?recommended=true')}
+                      >
+                        <Plus size={32} />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

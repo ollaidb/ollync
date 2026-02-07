@@ -105,6 +105,8 @@ export interface Database {
           bio: string | null
           location: string | null
           birth_date: string | null
+          data_consent_enabled?: boolean | null
+          data_consent?: Record<string, unknown> | null
           contract_full_name: string | null
           contract_email: string | null
           contract_phone: string | null
@@ -126,6 +128,8 @@ export interface Database {
           bio?: string | null
           location?: string | null
           birth_date?: string | null
+          data_consent_enabled?: boolean | null
+          data_consent?: Record<string, unknown> | null
           contract_full_name?: string | null
           contract_email?: string | null
           contract_phone?: string | null
@@ -147,6 +151,8 @@ export interface Database {
           bio?: string | null
           location?: string | null
           birth_date?: string | null
+          data_consent_enabled?: boolean | null
+          data_consent?: Record<string, unknown> | null
           contract_full_name?: string | null
           contract_email?: string | null
           contract_phone?: string | null

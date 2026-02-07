@@ -147,7 +147,8 @@ const SwipePage = () => {
         limit: POSTS_PER_PAGE,
         offset: pageNum * POSTS_PER_PAGE,
         orderBy: 'created_at',
-        orderDirection: 'desc'
+        orderDirection: 'desc',
+        excludeUserId: user?.id
       })
 
       console.log('📦 Posts récupérés:', fetchedPosts.length)

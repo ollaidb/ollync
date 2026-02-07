@@ -293,6 +293,7 @@ const Messages = () => {
     }
   }, [selectedConversation?.id])
 
+
   const scrollToBottom = (align: ScrollLogicalPosition = 'end') => {
     if (lastMessageRef.current) {
       lastMessageRef.current.scrollIntoView({ block: align })
@@ -1059,6 +1060,13 @@ const Messages = () => {
       return []
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user || !isConversationView) return
+    loadMatchRequests().then((requests) => {
+      setMatchRequests(requests)
+    })
+  }, [user, isConversationView, loadMatchRequests])
 
   const loadAppointments = useCallback(async () => {
     if (!user) return []
@@ -2038,6 +2046,20 @@ const Messages = () => {
       })
       : 'date inconnue'
     const canCopyMessage = !!activeMessage?.content
+    const currentConversationId = selectedConversation?.id || conversationId
+    const acceptedMatchForConversation = matchRequests.find((request) => {
+      if (request.status !== 'accepted') return false
+      if (request.conversation_id && currentConversationId) {
+        return request.conversation_id === currentConversationId
+      }
+      if (!selectedConversation?.post_id || !request.related_post_id) return false
+      if (request.related_post_id !== selectedConversation.post_id) return false
+      if (!user || !otherUserId) return false
+      return (
+        (request.from_user_id === user.id && request.to_user_id === otherUserId) ||
+        (request.to_user_id === user.id && request.from_user_id === otherUserId)
+      )
+    })
 
     if (isInfoView) {
       const isGroupOwner = !!user && selectedConversation?.group_creator_id === user.id
@@ -3104,7 +3126,9 @@ const Messages = () => {
             isDestructive={true}
           />
         )}
-        <div className={`conversation-messages-container ${isSystemConversation ? 'system-conversation' : ''}`}>
+        <div
+          className={`conversation-messages-container ${isSystemConversation ? 'system-conversation' : ''}`}
+        >
           {loading || messagesLoading ? (
             <div className="loading-container">
               <Loader className="spinner-large" size={48} />
@@ -3379,6 +3403,20 @@ const Messages = () => {
                   })}
                 </div>
               ))}
+              {acceptedMatchForConversation?.related_post_id && (
+                <div className="conversation-match-message">
+                  <div className="conversation-match-bubble">
+                    <div className="conversation-match-label">Annonce acceptée</div>
+                    <button
+                      type="button"
+                      className="conversation-match-link-inline"
+                      onClick={() => navigate(`/post/${acceptedMatchForConversation.related_post_id}`)}
+                    >
+                      {acceptedMatchForConversation.related_post?.title || 'Voir l\'annonce'}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div ref={bottomAnchorRef} className="conversation-bottom-anchor" />
             </div>
           )}

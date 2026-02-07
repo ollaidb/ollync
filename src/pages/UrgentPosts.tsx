@@ -63,7 +63,8 @@ const UrgentPosts = () => {
         limit: 100, // Charger beaucoup pour avoir assez après filtrage
         orderBy: 'created_at',
         orderDirection: 'desc',
-        useCache: true
+        useCache: true,
+        excludeUserId: user?.id
       })
 
       // Filtrer les posts urgents
@@ -94,7 +95,7 @@ const UrgentPosts = () => {
 
   useEffect(() => {
     fetchPosts()
-  }, [])
+  }, [user?.id])
 
   return (
     <div className="category-page-new">

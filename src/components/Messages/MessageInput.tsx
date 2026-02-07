@@ -541,6 +541,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={mediaConsent.handleReject}
+        askAgainChecked={mediaConsent.askAgainNextTime}
+        onAskAgainChange={mediaConsent.setAskAgainNextTime}
       />
 
 

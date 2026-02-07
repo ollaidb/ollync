@@ -32,7 +32,8 @@ const RecentPosts = () => {
         limit: 100,
         orderBy: 'created_at',
         orderDirection: 'desc',
-        useCache: true
+        useCache: true,
+        excludeUserId: user?.id
       })
 
       setPosts(fetchedPosts)

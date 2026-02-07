@@ -59,6 +59,19 @@
   margin: 0;
 }
 
+.match-request-detail-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.match-request-detail-name-link:hover {
+  color: var(--primary);
+}
+
 .match-request-detail-badge {
   display: inline-block;
   padding: 4px 10px;
@@ -378,4 +391,3 @@
     font-size: 14px;
   }
 }
-

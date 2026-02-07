@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -38,6 +38,11 @@ interface Post {
   external_link?: string | null
   document_url?: string | null
   tagged_post_id?: string | null
+  contract_type?: string | null
+  work_schedule?: string | null
+  responsibilities?: string | null
+  required_skills?: string | null
+  benefits?: string | null
   user?: {
     id: string
     username?: string | null
@@ -96,6 +101,7 @@ const PostDetails = () => {
   const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false)
   const [viewerTouchStart, setViewerTouchStart] = useState<number | null>(null)
   const [viewerTouchEnd, setViewerTouchEnd] = useState<number | null>(null)
+  const [viewerDidSwipe, setViewerDidSwipe] = useState(false)
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
     title: string
@@ -122,6 +128,17 @@ const PostDetails = () => {
   const [taggedPost, setTaggedPost] = useState<MappedPost | null>(null)
   const [authorPostCount, setAuthorPostCount] = useState<number | null>(null)
   const maxPostsPerSection = isMobile ? 5 : 4
+  const recommendedPostsFull = useMemo(() => {
+    const list: Array<any> = []
+    if (taggedPost) list.push(taggedPost)
+    relatedPosts.forEach((postItem) => {
+      if (!taggedPost || postItem.id !== taggedPost.id) {
+        list.push(postItem)
+      }
+    })
+    return list
+  }, [taggedPost, relatedPosts])
+  const recommendedPosts = recommendedPostsFull.slice(0, maxPostsPerSection)
 
   useEffect(() => {
     if (id) {
@@ -747,7 +764,13 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
-  const mediaItems = [post?.video, ...images].filter(Boolean) as string[]
+  const mediaItems = [post?.video, ...images].filter((item): item is string => {
+    if (typeof item !== 'string') return false
+    const trimmed = item.trim()
+    if (!trimmed) return false
+    if (trimmed === 'null' || trimmed === 'undefined') return false
+    return true
+  })
 
   const getDocumentName = (url?: string | null) => {
     if (!url) return 'Document PDF'
@@ -831,9 +854,11 @@ const PostDetails = () => {
     const isRightSwipe = distance < -minSwipeDistance
 
     if (isLeftSwipe) {
+      setViewerDidSwipe(true)
       goToNextMedia()
     }
     if (isRightSwipe) {
+      setViewerDidSwipe(true)
       goToPrevMedia()
     }
   }
@@ -989,16 +1014,21 @@ const PostDetails = () => {
         {isMediaViewerOpen && mediaItems.length > 0 && (
           <div
             className="post-media-viewer-overlay"
-            onClick={handleCloseViewer}
+            onClick={() => {
+              if (viewerDidSwipe) {
+                setViewerDidSwipe(false)
+                return
+              }
+              handleCloseViewer()
+            }}
             role="dialog"
             aria-modal="true"
+            onTouchStart={onViewerTouchStart}
+            onTouchMove={onViewerTouchMove}
+            onTouchEnd={onViewerTouchEnd}
           >
             <div
               className="post-media-viewer-content"
-              onClick={(event) => event.stopPropagation()}
-              onTouchStart={onViewerTouchStart}
-              onTouchMove={onViewerTouchMove}
-              onTouchEnd={onViewerTouchEnd}
             >
               <button
                 type="button"
@@ -1013,7 +1043,10 @@ const PostDetails = () => {
                   <button
                     type="button"
                     className="post-media-viewer-nav post-media-viewer-nav-left"
-                    onClick={goToPrevMedia}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      goToPrevMedia()
+                    }}
                     aria-label="Média précédent"
                   >
                     <ChevronLeft size={26} />
@@ -1021,14 +1054,20 @@ const PostDetails = () => {
                   <button
                     type="button"
                     className="post-media-viewer-nav post-media-viewer-nav-right"
-                    onClick={goToNextMedia}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      goToNextMedia()
+                    }}
                     aria-label="Média suivant"
                   >
                     <ChevronRight size={26} />
                   </button>
                 </>
               )}
-              <div className="post-media-viewer-media">
+              <div
+                className="post-media-viewer-media"
+                onClick={(event) => event.stopPropagation()}
+              >
                 {isVideoUrl(mediaItems[currentImageIndex]) ? (
                   <video
                     src={mediaItems[currentImageIndex]}
@@ -1121,11 +1160,48 @@ const PostDetails = () => {
             <div className="post-description-section">
               <h3 className="post-description-title">Description</h3>
               <p className="post-description-text">{post.description}</p>
+              {(post.responsibilities || post.required_skills || post.benefits) && (
+                <div className="post-description-details">
+                  {post.responsibilities && (
+                    <div className="post-description-detail">
+                      <span className="post-description-detail-label">Missions</span>
+                      <span className="post-description-detail-value">{post.responsibilities}</span>
+                    </div>
+                  )}
+                  {post.required_skills && (
+                    <div className="post-description-detail">
+                      <span className="post-description-detail-label">Compétences recherchées</span>
+                      <span className="post-description-detail-value">{post.required_skills}</span>
+                    </div>
+                  )}
+                  {post.benefits && (
+                    <div className="post-description-detail">
+                      <span className="post-description-detail-label">Avantages</span>
+                      <span className="post-description-detail-value">{post.benefits}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Autres informations nécessaires */}
             <div className="post-additional-info-section">
               <h3 className="post-additional-title">Autre informations nécessaire</h3>
+              {/* Type de contrat */}
+              {post.contract_type && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Type de contrat</span>
+                  <span className="post-info-value">{post.contract_type}</span>
+                </div>
+              )}
+
+              {/* Horaires */}
+              {post.work_schedule && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Horaires</span>
+                  <span className="post-info-value">{post.work_schedule}</span>
+                </div>
+              )}
               {/* Catégorie et sous-catégorie */}
               {(post.category || post.sub_category) && (
                 <div className="post-info-item">
@@ -1295,27 +1371,15 @@ const PostDetails = () => {
               </div>
             )}
 
-            {taggedPost && (
-              <div className="tagged-post-section">
-                <h3>Annonce liée</h3>
-                <p className="tagged-post-subtitle">
-                  Annonce en rapport avec celle-ci, ajoutée par l'auteur.
-                </p>
-                <div className="tagged-post-grid">
-                  <PostCard post={taggedPost} viewMode="grid" hideCategoryBadge />
-                </div>
-              </div>
-            )}
-
             {/* Autres annonces */}
-            {relatedPosts.length > 0 && (
+            {recommendedPosts.length > 0 && (
               <div className="other-posts-section">
                 <h3>Annonces qui pourront vous intéresser</h3>
                 <div className="other-posts-grid">
-                  {relatedPosts.slice(0, maxPostsPerSection).map((relatedPost) => (
+                  {recommendedPosts.map((relatedPost) => (
                     <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" hideCategoryBadge />
                   ))}
-                  {relatedPosts.length >= maxPostsPerSection && (
+                  {recommendedPostsFull.length >= maxPostsPerSection && (
                     <button
                       className="other-posts-plus-btn"
                       onClick={() => {

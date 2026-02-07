@@ -148,6 +148,15 @@
   border-bottom-left-radius: 4px;
 }
 
+.message-bubble.calendar-message {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 16%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 6%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  color: var(--foreground);
+}
+
 .message-bubble p {
   margin: 0;
   font-size: 15px;
@@ -254,6 +263,12 @@
 .message-bubble.own .message-calendar-time {
   color: var(--primary-foreground);
   opacity: 0.9;
+}
+
+.message-bubble.calendar-message .message-calendar-date,
+.message-bubble.calendar-message .message-calendar-time {
+  color: var(--muted-foreground);
+  opacity: 1;
 }
 
 .message-document-download,

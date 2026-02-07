@@ -4,6 +4,7 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
+  padding: 12px;
 }
 
 .custom-list.no-checkbox .custom-list-item {
@@ -15,7 +16,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
   background: var(--background);
@@ -77,9 +78,52 @@
 
 /* Description de l'élément */
 .custom-list-item-description {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted-foreground);
   line-height: 1.4;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.custom-list-item-description.expanded {
+  display: block;
+}
+
+.custom-list-item-description-text {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+}
+
+.custom-list-item-description-text.collapsed {
+  white-space: nowrap;
+}
+
+.custom-list-item-description-more {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.custom-list-item-description.expanded .custom-list-item-description-text {
+  display: inline;
+}
+
+.custom-list-item-description.expanded .custom-list-item-description-more {
+  display: inline;
+  margin-left: 6px;
+}
+
+.custom-list-item-description-more:hover {
+  text-decoration: none;
 }
 
 /* Responsive */
@@ -94,6 +138,10 @@
   }
 
   .custom-list-item-description {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .custom-list-item-description-more {
+    font-size: 11px;
   }
 }

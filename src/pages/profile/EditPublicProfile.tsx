@@ -1176,6 +1176,8 @@ const EditPublicProfile = () => {
         message={profileConsent.messages.message}
         onAccept={profileConsent.handleAccept}
         onReject={handleRejectConsent}
+        askAgainChecked={profileConsent.askAgainNextTime}
+        onAskAgainChange={profileConsent.setAskAgainNextTime}
       />
 
       {/* Modal de confirmation */}
