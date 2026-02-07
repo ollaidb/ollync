@@ -22,6 +22,7 @@ import './CategoryPage.css'
 
 interface Post {
   id: string
+  user_id: string
   title: string
   description: string
   price?: number | null
