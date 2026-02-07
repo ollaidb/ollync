@@ -11,7 +11,7 @@ import './SwipePage.css'
 
 interface Post {
   id: string
-  user_id: string
+  user_id?: string
   title: string
   description: string
   price?: number | null
@@ -155,7 +155,7 @@ const Search = () => {
 
       let filteredPosts = posts as Post[]
       if (user?.id) {
-        filteredPosts = filteredPosts.filter((post) => post.user_id !== user.id)
+        filteredPosts = filteredPosts.filter((post) => !post.user_id || post.user_id !== user.id)
       }
       if (locationCoords) {
         filteredPosts = filteredPosts.filter((post) => {
@@ -205,6 +205,7 @@ const Search = () => {
         const category = categoriesMap.get(post.category_id)
         return {
           id: post.id,
+          user_id: post.user_id,
           title: post.title,
           description: post.description,
           price: post.price,

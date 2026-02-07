@@ -22,7 +22,7 @@ import './CategoryPage.css'
 
 interface Post {
   id: string
-  user_id: string
+  user_id?: string
   title: string
   description: string
   price?: number | null
@@ -174,7 +174,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
     // Exclure les posts de l'utilisateur connecté
     if (user?.id) {
-      posts = posts.filter((post) => post.user_id !== user.id)
+      posts = posts.filter((post) => !post.user_id || post.user_id !== user.id)
     }
 
     // Filtrer par sous-sous-menu (N3) si présent
@@ -228,7 +228,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
       const createdAt = new Date(post.created_at).getTime()
       const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
-      const matchesOwner = user ? post.user_id !== user.id : true
+      const matchesOwner = user ? !post.user_id || post.user_id !== user.id : true
 
       return matchesQuery && matchesDate && matchesOwner
     })
