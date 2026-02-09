@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { PublishGuideModal } from '../components/PublishPage/PublishGuideModal'
-import { Step0OfferDemand } from '../components/PublishPage/Step0OfferDemand'
+import { Step0OfferDemand, type OfferDemandType } from '../components/PublishPage/Step0OfferDemand'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
 import { Step3Option } from '../components/PublishPage/Step3Option'
@@ -69,7 +69,7 @@ export default function Publish() {
   }, [])
 
   const initialFormData = useMemo(() => ({
-    listingType: '',
+    listingType: '' as OfferDemandType | '',
     category: null as string | null,
     subcategory: null as string | null,
     subSubCategory: null as string | null, // N3
@@ -273,7 +273,7 @@ export default function Publish() {
         const mediaTypeValue = postData.media_type || ''
 
         const nextFormData = {
-          listingType: (postData.listing_type as string | null) || 'offer',
+          listingType: ((postData.listing_type as OfferDemandType | null) || 'offer') as OfferDemandType,
           category: categorySlugValue,
           subcategory: subcategorySlugValue,
           subSubCategory: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
@@ -424,7 +424,7 @@ export default function Publish() {
         <div className="publish-content">
           {step === 0 && (
             <Step0OfferDemand
-              value={formData.listingType}
+              value={formData.listingType || null}
               onSelect={(listingType) => {
                 updateFormData({ listingType })
                 setStep(1)
