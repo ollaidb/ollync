@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react'
+import { Search as SearchIcon, SlidersHorizontal, X, CheckCircle2, Circle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
+import { publicationTypes } from '../constants/publishData'
+import { filterPaymentOptionsByCategory } from '../utils/paymentOptions'
 import './Search.css'
 import './SwipePage.css'
 
@@ -26,6 +28,7 @@ interface Post {
   number_of_people?: number | null
   delivery_available: boolean
   listing_type?: string | null
+  payment_type?: string | null
   user?: {
     username?: string | null
     full_name?: string | null
@@ -43,12 +46,21 @@ interface Category {
   slug: string
 }
 
+interface SubCategory {
+  id?: string
+  name: string
+  slug: string
+}
+
 const Search = () => {
   const { user } = useAuth()
-  const [selectedFilter, _setSelectedFilter] = useState('all')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedSubCategory, setSelectedSubCategory] = useState('all')
   const [results, setResults] = useState<Post[]>([])
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
@@ -57,16 +69,143 @@ const Search = () => {
   const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
   const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
   const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all')
+  const [pendingPaymentTypeFilter, setPendingPaymentTypeFilter] = useState<string>('all')
+  const [pendingCategory, setPendingCategory] = useState('all')
+  const [pendingSubCategory, setPendingSubCategory] = useState('all')
+  const [pendingSubCategories, setPendingSubCategories] = useState<SubCategory[]>([])
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isLocationPanelOpen, setIsLocationPanelOpen] = useState(false)
+  const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false)
+  const [selectedLocations, setSelectedLocations] = useState<Array<{ label: string; lat?: number; lng?: number }>>([])
+  const [radiusKm, setRadiusKm] = useState<number>(50)
   const { t } = useTranslation(['categories'])
 
-  // (category order removed — not used with location-only search)
+  const categoryOrder = useMemo(() => [
+    'creation-contenu',
+    'casting-role',
+    'emploi',
+    'studio-lieu',
+    'projets-equipe',
+    'services',
+    'vente',
+    'poste-service'
+  ], [])
 
-  // (filters removed — search page now uses location-only input)
+  const filters = useMemo(() => {
+    const list = publicationTypes
+      .filter((cat) => categoryOrder.includes(cat.slug))
+      .sort((a, b) => categoryOrder.indexOf(a.slug) - categoryOrder.indexOf(b.slug))
+      .map((cat) => ({
+        id: cat.slug,
+        label: t(`categories:titles.${cat.slug}`, { defaultValue: cat.name })
+      }))
+    return [
+      { id: 'all', label: t('categories:submenus.tout') },
+      ...list
+    ]
+  }, [categoryOrder, t])
+
+  const selectedCategoryLabel = useMemo(() => {
+    return filters.find((filter) => filter.id === selectedCategory)?.label ?? 'Toutes les catégories'
+  }, [filters, selectedCategory])
+
+  const selectedSubCategoryLabel = useMemo(() => {
+    if (selectedCategory === 'all' || selectedSubCategory === 'all') return null
+    return subCategories.find((sub) => sub.slug === selectedSubCategory)?.name ?? null
+  }, [selectedCategory, selectedSubCategory, subCategories])
+
+  const categoryMenuLabel = useMemo(() => {
+    if (selectedCategory === 'all') return 'Toutes les catégories'
+    if (selectedSubCategoryLabel) return selectedSubCategoryLabel
+    return selectedCategoryLabel
+  }, [selectedCategory, selectedSubCategoryLabel, selectedCategoryLabel])
+
+  const sortSubCategories = useCallback((items: SubCategory[]) => {
+    return [...items].sort((a, b) => {
+      const aIsOther = (a.slug || '').toLowerCase() === 'autre' || (a.name || '').toLowerCase() === 'autre'
+      const bIsOther = (b.slug || '').toLowerCase() === 'autre' || (b.name || '').toLowerCase() === 'autre'
+      if (aIsOther && !bIsOther) return 1
+      if (!aIsOther && bIsOther) return -1
+      return a.name.localeCompare(b.name)
+    })
+  }, [])
+
+  const pendingPaymentOptions = useMemo(() => {
+    return filterPaymentOptionsByCategory(pendingCategory === 'all' ? null : pendingCategory)
+  }, [pendingCategory])
 
   useEffect(() => {
     fetchCategories()
   }, [])
+
+  const loadSubCategories = useCallback(async (categorySlug: string) => {
+    if (categorySlug === 'all') {
+      return []
+    }
+
+    const category = categories.find((item) => item.slug === categorySlug)
+    if (!category) {
+      const fallbackCategory = publicationTypes.find((item) => item.slug === categorySlug)
+      const fallbackSubs = (fallbackCategory?.subcategories || [])
+        .filter((sub) => sub.slug !== 'tout')
+        .map((sub) => ({ name: sub.name, slug: sub.slug }))
+      return sortSubCategories(fallbackSubs)
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('sub_categories')
+        .select('id, name, slug')
+        .eq('category_id', category.id)
+        .order('name')
+
+      if (error) {
+        console.error('Error fetching sub categories:', error)
+        const fallbackCategory = publicationTypes.find((item) => item.slug === categorySlug)
+        const fallbackSubs = (fallbackCategory?.subcategories || [])
+          .filter((sub) => sub.slug !== 'tout')
+          .map((sub) => ({ name: sub.name, slug: sub.slug }))
+        return sortSubCategories(fallbackSubs)
+      }
+
+      const rows = (data || []) as SubCategory[]
+      if (rows.length === 0) {
+        const fallbackCategory = publicationTypes.find((item) => item.slug === categorySlug)
+        const fallbackSubs = (fallbackCategory?.subcategories || [])
+          .filter((sub) => sub.slug !== 'tout')
+          .map((sub) => ({ name: sub.name, slug: sub.slug }))
+        return sortSubCategories(fallbackSubs)
+      }
+
+      return sortSubCategories(rows)
+    } catch (error) {
+      console.error('Error fetching sub categories:', error)
+      const fallbackCategory = publicationTypes.find((item) => item.slug === categorySlug)
+      const fallbackSubs = (fallbackCategory?.subcategories || [])
+        .filter((sub) => sub.slug !== 'tout')
+        .map((sub) => ({ name: sub.name, slug: sub.slug }))
+      return sortSubCategories(fallbackSubs)
+    }
+  }, [categories, sortSubCategories])
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchSubcategories = async () => {
+      if (selectedCategory === 'all') {
+        setSubCategories([])
+        return
+      }
+      const list = await loadSubCategories(selectedCategory)
+      if (isMounted) {
+        setSubCategories(sortSubCategories(list))
+      }
+    }
+    fetchSubcategories()
+    return () => {
+      isMounted = false
+    }
+  }, [selectedCategory, loadSubCategories, sortSubCategories])
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371 // km
@@ -98,30 +237,31 @@ const Search = () => {
   }
 
   const searchPosts = async (query: string) => {
-    if (!query.trim() && !locationCoords) {
-      setResults([])
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
 
     try {
       let categoryId: string | undefined
-      if (selectedFilter !== 'all') {
-        const category = categories.find(c => c.slug === selectedFilter)
+      if (selectedCategory !== 'all') {
+        const category = categories.find(c => c.slug === selectedCategory)
         if (category) categoryId = category.id
+      }
+
+      let subCategoryId: string | undefined
+      if (selectedSubCategory !== 'all' && subCategories.length > 0) {
+        const subCategory = subCategories.find((item) => item.slug === selectedSubCategory)
+        if (subCategory?.id) {
+          subCategoryId = subCategory.id
+        }
       }
 
       const fieldsToSelect = [
         'id',
         'listing_type',
+        'payment_type',
         'title',
         'description',
         'price',
         'location',
-        'location_lat',
-        'location_lng',
         'images',
         'likes_count',
         'comments_count',
@@ -147,6 +287,12 @@ const Search = () => {
       if (categoryId) {
         postsQuery = postsQuery.eq('category_id', categoryId)
       }
+      if (subCategoryId) {
+        postsQuery = postsQuery.eq('sub_category_id', subCategoryId)
+      }
+      if (paymentTypeFilter !== 'all') {
+        postsQuery = postsQuery.eq('payment_type', paymentTypeFilter)
+      }
 
       const { data: posts, error: postsError } = await postsQuery
 
@@ -161,18 +307,7 @@ const Search = () => {
       if (user?.id) {
         filteredPosts = filteredPosts.filter((post) => !post.user_id || post.user_id !== user.id)
       }
-      if (locationCoords) {
-        filteredPosts = filteredPosts.filter((post) => {
-          if (!post.location_lat || !post.location_lng) return false
-          const distance = calculateDistance(
-            locationCoords.lat,
-            locationCoords.lng,
-            post.location_lat,
-            post.location_lng
-          )
-          return distance <= 50
-        })
-      }
+      // Filtrage par distance désactivé tant que les colonnes lat/lng ne sont pas disponibles
 
       if (filteredPosts.length === 0) {
         setResults([])
@@ -221,6 +356,7 @@ const Search = () => {
           needed_date: post.needed_date,
           number_of_people: post.number_of_people,
           delivery_available: post.delivery_available || false,
+          payment_type: post.payment_type || null,
           user: profile ? {
             username: profile.username,
             full_name: profile.full_name,
@@ -245,16 +381,16 @@ const Search = () => {
   useEffect(() => {
     // Debounce pour recherches de localisation
     const timeoutId = setTimeout(() => {
-      if (locationFilter && locationFilter.trim().length > 0) {
-        searchPosts(locationFilter)
+      if (searchQuery && searchQuery.trim().length > 0) {
+        searchPosts(searchQuery)
       } else {
-        setResults([])
+        searchPosts('')
       }
     }, 500)
 
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationFilter, selectedFilter, locationCoords])
+  }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter])
 
   const filteredResults = useMemo(() => {
     const now = Date.now()
@@ -297,6 +433,20 @@ const Search = () => {
   }) => {
     setLocationFilter(location.address)
     setLocationCoords({ lat: location.lat, lng: location.lng })
+    setSelectedLocations((prev) => {
+      if (prev.some((item) => item.label === location.address)) return prev
+      return [...prev, { label: location.address, lat: location.lat, lng: location.lng }]
+    })
+  }
+
+  const handleRemoveLocation = (label: string) => {
+    setSelectedLocations((prev) => prev.filter((item) => item.label !== label))
+  }
+
+  const handleClearLocations = () => {
+    setSelectedLocations([])
+    setLocationFilter('')
+    setLocationCoords(null)
   }
 
   const handleLike = () => {
@@ -310,27 +460,55 @@ const Search = () => {
         <div className="search-header-content">
           <BackButton className="search-back-button" />
 
-          <div className="search-location-autocomplete-wrapper" style={{ flex: 1 }}>
-            <LocationAutocomplete
-              value={locationFilter}
-              onChange={setLocationFilter}
-              onLocationSelect={handleLocationSelect}
-              placeholder={t('search:locationPlaceholder') || 'Rechercher une adresse (ex: Paris, France)'}
+          <div className="search-input-wrapper" style={{ flex: 1 }}>
+            <SearchIcon className="search-input-icon" size={16} />
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Rechercher"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+        </div>
+        <div className="search-filter-menu-container">
+          <div className="search-filter-menu">
           <button
             type="button"
-            className="swipe-filter-toggle"
+            className="search-filter-menu-btn"
             onClick={() => {
               setPendingSortOrder(sortOrder)
               setPendingDateFilter(dateFilter)
               setPendingListingTypeFilter(listingTypeFilter)
+              setPendingCategory(selectedCategory)
+              setPendingSubCategory(selectedSubCategory)
+              setPendingSubCategories(subCategories)
+              setPendingPaymentTypeFilter(paymentTypeFilter)
               setIsFilterOpen(true)
             }}
-            aria-label="Filtrer"
           >
-            <SlidersHorizontal size={18} />
+            Filtres
           </button>
+          <button
+            type="button"
+            className="search-filter-menu-btn"
+            onClick={() => {
+              setPendingCategory(selectedCategory)
+              setPendingSubCategory(selectedSubCategory)
+              setPendingSubCategories(subCategories)
+              setIsCategoryPanelOpen(true)
+            }}
+          >
+            {categoryMenuLabel}
+          </button>
+          <button
+            type="button"
+            className="search-filter-menu-btn"
+            onClick={() => setIsLocationPanelOpen((prev) => !prev)}
+          >
+            Lieu
+          </button>
+          </div>
         </div>
       </div>
 
@@ -340,16 +518,16 @@ const Search = () => {
           <div className="search-loading">
             <p>{t('search:searching')}</p>
           </div>
-        ) : (locationFilter.trim().length > 0) ? (
+        ) : (searchQuery.trim().length > 0 || results.length > 0) ? (
           <>
             <div className="search-results-header">
               <p className="search-results-count">
-                {filteredResults.length} résultat{filteredResults.length > 1 ? 's' : ''} pour "{locationFilter}"
+                {filteredResults.length} résultat{filteredResults.length > 1 ? 's' : ''}{searchQuery.trim().length > 0 ? ` pour "${searchQuery}"` : ''}
               </p>
             </div>
 
             {filteredResults.length > 0 ? (
-              <div className="search-results-list">
+              <div className="search-results-list posts-list">
                 {filteredResults.map((post) => (
                   <PostCard
                     key={post.id}
@@ -361,7 +539,7 @@ const Search = () => {
               </div>
             ) : (
               <div className="search-empty-state">
-                <p>Aucun résultat trouvé pour "{locationFilter}"</p>
+                <p>Aucun résultat trouvé{searchQuery.trim().length > 0 ? ` pour "${searchQuery}"` : ''}</p>
               </div>
             )}
           </>
@@ -371,43 +549,116 @@ const Search = () => {
                 <SearchIcon size={36} />
               </div>
               <h2 className="search-empty-title">{t('search:emptyTitle')}</h2>
-              <p className="search-empty-text">Saisissez un lieu pour commencer</p>
+              <p className="search-empty-text">Saisissez un mot pour commencer</p>
           </div>
         )}
       </div>
 
       {isFilterOpen && (
         <div
-          className="swipe-filter-modal-overlay"
+          className="search-location-overlay"
           onClick={() => setIsFilterOpen(false)}
         >
-          <div className="swipe-filter-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="swipe-filter-modal-header">
-              <h2>Filtrer</h2>
+          <div
+            className="search-location-sheet search-location-sheet--tall"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="search-location-panel-header">
+              <h3>Filtres</h3>
               <button
                 type="button"
-                className="swipe-filter-close"
+                className="search-location-panel-close"
                 onClick={() => setIsFilterOpen(false)}
                 aria-label="Fermer"
               >
-                <X size={18} />
+                <X size={16} />
+              </button>
+            </div>
+            <div className="search-location-divider" />
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Catégorie</p>
+              <button
+                type="button"
+                className="search-filter-category-link"
+                onClick={() => {
+                  setIsFilterOpen(false)
+                  setPendingCategory(selectedCategory)
+                  setPendingSubCategory(selectedSubCategory)
+                  setPendingSubCategories(subCategories)
+                  setIsCategoryPanelOpen(true)
+                }}
+              >
+                {categoryMenuLabel}
               </button>
             </div>
             <div className="swipe-filter-section">
-              <p className="swipe-filter-section-title">Trier par date</p>
-              <div className="swipe-filter-options">
+              <p className="swipe-filter-section-title">Type d'annonce</p>
+              <div className="swipe-filter-options swipe-filter-options-list">
                 <button
                   type="button"
-                  className={`swipe-filter-option ${pendingSortOrder === 'desc' ? 'active' : ''}`}
+                  className={`swipe-filter-option swipe-filter-option--plain ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('all')}
+                >
+                  {pendingListingTypeFilter === 'all' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option swipe-filter-option--plain ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('offer')}
+                >
+                  {pendingListingTypeFilter === 'offer' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                  Offre
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option swipe-filter-option--plain ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('request')}
+                >
+                  {pendingListingTypeFilter === 'request' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+                  Demande
+                </button>
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Moyen de paiement</p>
+              <div className="swipe-filter-options swipe-filter-options-scroll">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingPaymentTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingPaymentTypeFilter('all')}
+                >
+                  Tous
+                </button>
+                {pendingPaymentOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`swipe-filter-option ${pendingPaymentTypeFilter === option.id ? 'active' : ''}`}
+                    onClick={() => setPendingPaymentTypeFilter(option.id)}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Ordre</p>
+              <div className="swipe-filter-options swipe-filter-options-list">
+                <button
+                  type="button"
+                  className={`swipe-filter-option swipe-filter-option--plain ${pendingSortOrder === 'desc' ? 'active' : ''}`}
                   onClick={() => setPendingSortOrder('desc')}
                 >
+                  {pendingSortOrder === 'desc' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                   Plus récentes
                 </button>
                 <button
                   type="button"
-                  className={`swipe-filter-option ${pendingSortOrder === 'asc' ? 'active' : ''}`}
+                  className={`swipe-filter-option swipe-filter-option--plain ${pendingSortOrder === 'asc' ? 'active' : ''}`}
                   onClick={() => setPendingSortOrder('asc')}
                 >
+                  {pendingSortOrder === 'asc' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                   Plus anciennes
                 </button>
               </div>
@@ -473,44 +724,224 @@ const Search = () => {
                 </button>
               </div>
             </div>
+            <div className="search-location-actions">
+              <button
+                type="button"
+                className="search-location-action secondary"
+                onClick={() => setIsFilterOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="search-location-action primary"
+                onClick={() => {
+                  setSortOrder(pendingSortOrder)
+                  setDateFilter(pendingDateFilter)
+                  setListingTypeFilter(pendingListingTypeFilter)
+                  setSelectedCategory(pendingCategory)
+                  setSelectedSubCategory(pendingSubCategory)
+                  setSubCategories(pendingSubCategories)
+                  setPaymentTypeFilter(pendingPaymentTypeFilter)
+                  setIsFilterOpen(false)
+                }}
+              >
+                Appliquer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCategoryPanelOpen && (
+        <div
+          className="search-location-overlay"
+          onClick={() => setIsCategoryPanelOpen(false)}
+        >
+          <div
+            className="search-location-sheet search-location-sheet--tall"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="search-location-panel-header">
+              <h3>Catégories</h3>
+              <button
+                type="button"
+                className="search-location-panel-close"
+                onClick={() => setIsCategoryPanelOpen(false)}
+                aria-label="Fermer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="search-location-divider" />
             <div className="swipe-filter-section">
-              <p className="swipe-filter-section-title">Type d'annonce</p>
-              <div className="swipe-filter-options">
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('all')}
-                >
-                  Toutes
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('offer')}
-                >
-                  Offre
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('request')}
-                >
-                  Demande
-                </button>
+              <div className="swipe-filter-options swipe-filter-options-list">
+                {filters.map((filter) => {
+                  const cat = publicationTypes.find((c) => c.slug === filter.id)
+                  const Icon = cat?.icon
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      className={`category-list-item ${pendingCategory === filter.id ? 'active' : ''}`}
+                      onClick={async () => {
+                        setPendingCategory(filter.id)
+                        setPendingSubCategory('all')
+                        const nextSubCategories = filter.id === 'all'
+                          ? []
+                          : await loadSubCategories(filter.id)
+                        setPendingSubCategories(nextSubCategories)
+                      }}
+                    >
+                      <span className="category-list-icon">
+                        {Icon ? <Icon size={18} /> : <Circle size={16} />}
+                      </span>
+                      <span className="category-list-label">{filter.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
-            <button
-              type="button"
-              className="swipe-filter-apply"
-              onClick={() => {
-                setSortOrder(pendingSortOrder)
-                setDateFilter(pendingDateFilter)
-                setListingTypeFilter(pendingListingTypeFilter)
-                setIsFilterOpen(false)
-              }}
-            >
-              Appliquer
-            </button>
+            {pendingCategory !== 'all' && (
+              <div className="swipe-filter-section">
+                <p className="swipe-filter-section-title">Sous-catégories</p>
+                {pendingSubCategories.length === 0 ? (
+                  <p className="swipe-filter-empty">Aucune sous-catégorie</p>
+                ) : (
+                  <div className="swipe-filter-options swipe-filter-options-list">
+                    <button
+                      type="button"
+                      className={`subcategory-list-item ${pendingSubCategory === 'all' ? 'active' : ''}`}
+                      onClick={() => setPendingSubCategory('all')}
+                    >
+                      <span className="subcategory-list-label">Tout</span>
+                    </button>
+                    {pendingSubCategories.map((sub) => (
+                      <button
+                        key={sub.slug}
+                        type="button"
+                        className={`subcategory-list-item ${pendingSubCategory === sub.slug ? 'active' : ''}`}
+                        onClick={() => setPendingSubCategory(sub.slug)}
+                      >
+                        <span className="subcategory-list-label">{sub.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="search-location-actions">
+              <button
+                type="button"
+                className="search-location-action secondary"
+                onClick={() => setIsCategoryPanelOpen(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="search-location-action primary"
+                onClick={() => {
+                  setSelectedCategory(pendingCategory)
+                  setSelectedSubCategory(pendingSubCategory)
+                  setSubCategories(pendingSubCategories)
+                  setIsCategoryPanelOpen(false)
+                }}
+              >
+                Appliquer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isLocationPanelOpen && (
+        <div
+          className="search-location-overlay"
+          onClick={() => setIsLocationPanelOpen(false)}
+        >
+          <div
+            className="search-location-sheet search-location-sheet--tall"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="search-location-panel-header">
+              <h3>Où cherchez-vous ?</h3>
+              <button
+                type="button"
+                className="search-location-panel-close"
+                onClick={() => setIsLocationPanelOpen(false)}
+                aria-label="Fermer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="search-location-divider" />
+            <div className="search-location-panel-input">
+              <LocationAutocomplete
+                value={locationFilter}
+                onChange={setLocationFilter}
+                onLocationSelect={handleLocationSelect}
+                placeholder={t('search:locationPlaceholder') || 'Rechercher un lieu'}
+              />
+            </div>
+            <div className="search-location-suggestion">
+              <button
+                type="button"
+                className="search-location-action"
+              >
+                Autour de moi
+              </button>
+            </div>
+            {selectedLocations.length > 0 && (
+              <div className="search-location-selected">
+                {selectedLocations.map((item) => (
+                  <div key={item.label} className="search-location-chip">
+                    <span>{item.label}</span>
+                    <button
+                      type="button"
+                      className="search-location-chip-remove"
+                      onClick={() => handleRemoveLocation(item.label)}
+                      aria-label="Supprimer"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="search-location-radius">
+              <p>Dans un rayon de</p>
+              <div className="search-location-radius-slider">
+                <input
+                  type="range"
+                  min={0}
+                  max={200}
+                  step={5}
+                  value={radiusKm}
+                  onChange={(event) => setRadiusKm(Number(event.target.value))}
+                  aria-label="Rayon en kilomètres"
+                />
+                <div className="search-location-radius-range">
+                  <span>0 km</span>
+                  <span>{radiusKm} km</span>
+                  <span>200 km</span>
+                </div>
+              </div>
+            </div>
+            <div className="search-location-actions">
+              <button
+                type="button"
+                className="search-location-action secondary"
+                onClick={handleClearLocations}
+              >
+                Effacer
+              </button>
+              <button
+                type="button"
+                className="search-location-action primary"
+                onClick={() => setIsLocationPanelOpen(false)}
+              >
+                Valider la localisation
+              </button>
+            </div>
           </div>
         </div>
       )}

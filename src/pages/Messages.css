@@ -101,8 +101,10 @@
   align-items: center;
   background-color: var(--input);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 6px 12px;
   gap: 12px;
+  min-height: 32px;
+  height: 32px;
 }
 
 .messages-search-bar svg {
@@ -114,9 +116,11 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--foreground);
   outline: none;
+  height: 32px;
+  line-height: 32px;
 }
 
 .messages-search-input::placeholder {
@@ -1029,6 +1033,7 @@
 .conversation-match-bubble {
   display: inline-flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
   padding: 8px 12px;
   border-radius: 16px;
@@ -1047,6 +1052,7 @@
   font-weight: 700;
   text-transform: uppercase;
   color: var(--muted-foreground);
+  text-align: center;
 }
 
 .conversation-match-link-inline {
@@ -1056,7 +1062,7 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--foreground);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1064,6 +1070,22 @@
 
 .conversation-match-link-inline:hover {
   color: var(--primary);
+}
+
+.dark .conversation-match-bubble {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 32%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 16%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.dark .conversation-item.appointment-item {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 28%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 12%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
 }
 
 .conversation-bottom-anchor {

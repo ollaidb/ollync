@@ -5,6 +5,7 @@ import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
+import { PAYMENT_OPTIONS_CONFIG } from '../utils/paymentOptions'
 import './SwipePage.css'
 
 type Post = MappedPost
@@ -19,9 +20,11 @@ const RecentPosts = () => {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
   const [listingTypeFilter, setListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all')
   const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
   const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
   const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
+  const [pendingPaymentTypeFilter, setPendingPaymentTypeFilter] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const fetchPosts = async () => {
@@ -88,8 +91,10 @@ const RecentPosts = () => {
 
       const matchesListingType =
         listingTypeFilter === 'all' || post.listing_type === listingTypeFilter
+      const matchesPaymentType =
+        paymentTypeFilter === 'all' || post.payment_type === paymentTypeFilter
 
-      return matchesQuery && matchesDate && matchesOwner && matchesListingType
+      return matchesQuery && matchesDate && matchesOwner && matchesListingType && matchesPaymentType
     })
 
     return filtered.sort((a, b) => {
@@ -97,7 +102,7 @@ const RecentPosts = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [posts, searchQuery, dateFilter, sortOrder, listingTypeFilter, user])
+  }, [posts, searchQuery, dateFilter, sortOrder, listingTypeFilter, paymentTypeFilter, user])
 
   const handlePostClick = (post: Post) => {
     navigate(`/post/${post.id}`)
@@ -119,7 +124,7 @@ const RecentPosts = () => {
   }
 
   return (
-    <div className="swipe-page">
+    <div className="swipe-page recent-posts-page">
       {/* Header fixe */}
       <div className="swipe-header-fixed">
         <div className="swipe-header-content">
@@ -140,16 +145,17 @@ const RecentPosts = () => {
             <button
               type="button"
               className="swipe-filter-toggle"
-              onClick={() => {
-                setPendingSortOrder(sortOrder)
-                setPendingDateFilter(dateFilter)
-                setPendingListingTypeFilter(listingTypeFilter)
-                setIsFilterOpen(true)
-              }}
-              aria-label="Filtrer"
-            >
-              <SlidersHorizontal size={18} />
-            </button>
+            onClick={() => {
+              setPendingSortOrder(sortOrder)
+              setPendingDateFilter(dateFilter)
+              setPendingListingTypeFilter(listingTypeFilter)
+              setPendingPaymentTypeFilter(paymentTypeFilter)
+              setIsFilterOpen(true)
+            }}
+            aria-label="Filtrer"
+          >
+            <SlidersHorizontal size={18} />
+          </button>
           </div>
         </div>
       </div>
@@ -276,6 +282,54 @@ const RecentPosts = () => {
               </button>
             </div>
             <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Type d'annonce</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('offer')}
+                >
+                  Offre
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('request')}
+                >
+                  Demande
+                </button>
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Moyen de paiement</p>
+              <div className="swipe-filter-options swipe-filter-options-scroll">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingPaymentTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingPaymentTypeFilter('all')}
+                >
+                  Tous
+                </button>
+                {PAYMENT_OPTIONS_CONFIG.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`swipe-filter-option ${pendingPaymentTypeFilter === option.id ? 'active' : ''}`}
+                    onClick={() => setPendingPaymentTypeFilter(option.id)}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="swipe-filter-section">
               <p className="swipe-filter-section-title">Trier par date</p>
               <div className="swipe-filter-options">
                 <button
@@ -355,32 +409,6 @@ const RecentPosts = () => {
                 </button>
               </div>
             </div>
-            <div className="swipe-filter-section">
-              <p className="swipe-filter-section-title">Type d'annonce</p>
-              <div className="swipe-filter-options">
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('all')}
-                >
-                  Toutes
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('offer')}
-                >
-                  Offre
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('request')}
-                >
-                  Demande
-                </button>
-              </div>
-            </div>
             <button
               type="button"
               className="swipe-filter-apply"
@@ -388,6 +416,7 @@ const RecentPosts = () => {
                 setSortOrder(pendingSortOrder)
                 setDateFilter(pendingDateFilter)
                 setListingTypeFilter(pendingListingTypeFilter)
+                setPaymentTypeFilter(pendingPaymentTypeFilter)
                 setIsFilterOpen(false)
               }}
             >

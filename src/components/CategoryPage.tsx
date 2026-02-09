@@ -10,6 +10,7 @@ import { EmptyState } from './EmptyState'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { useAuth } from '../hooks/useSupabase'
+import { filterPaymentOptionsByCategory } from '../utils/paymentOptions'
 import { 
   getSubSubCategories, 
   hasSubSubCategories,
@@ -35,6 +36,7 @@ interface Post {
   number_of_people?: number | null
   delivery_available: boolean
   listing_type?: string | null
+  payment_type?: string | null
   user?: {
     username?: string | null
     full_name?: string | null
@@ -67,9 +69,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
   const [listingTypeFilter, setListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>('all')
   const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
   const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
   const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
+  const [pendingPaymentTypeFilter, setPendingPaymentTypeFilter] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [subMenus, setSubMenus] = useState<Array<{ name: string; slug: string }>>([])
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -82,6 +86,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
   const getSubMenuLabel = (slug: string, fallback: string) => {
     return t(`categories:submenus.${slug}`, { defaultValue: fallback })
   }
+
+  const paymentOptions = useMemo(
+    () => filterPaymentOptionsByCategory(categorySlug),
+    [categorySlug]
+  )
 
   useEffect(() => {
     fetchSubMenus()
@@ -235,8 +244,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       const matchesOwner = user ? !post.user_id || post.user_id !== user.id : true
       const matchesListingType =
         listingTypeFilter === 'all' || post.listing_type === listingTypeFilter
+      const matchesPaymentType =
+        paymentTypeFilter === 'all' || post.payment_type === paymentTypeFilter
 
-      return matchesQuery && matchesDate && matchesOwner && matchesListingType
+      return matchesQuery && matchesDate && matchesOwner && matchesListingType && matchesPaymentType
     })
 
     const sorted = filtered.sort((a, b) => {
@@ -246,7 +257,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     })
 
     setFilteredPosts(sorted)
-  }, [searchQuery, posts, dateFilter, sortOrder, listingTypeFilter, user])
+  }, [searchQuery, posts, dateFilter, sortOrder, listingTypeFilter, paymentTypeFilter, user])
 
   const handleSubCategoryClick = (subMenuSlug: string) => {
     if (subMenuSlug === 'tout') {
@@ -363,16 +374,17 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             <button
               type="button"
               className="swipe-filter-toggle"
-              onClick={() => {
-                setPendingSortOrder(sortOrder)
-                setPendingDateFilter(dateFilter)
-                setPendingListingTypeFilter(listingTypeFilter)
-                setIsFilterOpen(true)
-              }}
-              aria-label="Filtrer"
-            >
-              <SlidersHorizontal size={18} />
-            </button>
+            onClick={() => {
+              setPendingSortOrder(sortOrder)
+              setPendingDateFilter(dateFilter)
+              setPendingListingTypeFilter(listingTypeFilter)
+              setPendingPaymentTypeFilter(paymentTypeFilter)
+              setIsFilterOpen(true)
+            }}
+            aria-label="Filtrer"
+          >
+            <SlidersHorizontal size={18} />
+          </button>
           </div>
         </div>
 
@@ -683,6 +695,54 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
               </button>
             </div>
             <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Type d'annonce</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('offer')}
+                >
+                  Offre
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('request')}
+                >
+                  Demande
+                </button>
+              </div>
+            </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Moyen de paiement</p>
+              <div className="swipe-filter-options swipe-filter-options-scroll">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingPaymentTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingPaymentTypeFilter('all')}
+                >
+                  Tous
+                </button>
+                {paymentOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`swipe-filter-option ${pendingPaymentTypeFilter === option.id ? 'active' : ''}`}
+                    onClick={() => setPendingPaymentTypeFilter(option.id)}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="swipe-filter-section">
               <p className="swipe-filter-section-title">Trier par date</p>
               <div className="swipe-filter-options">
                 <button
@@ -762,32 +822,6 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 </button>
               </div>
             </div>
-            <div className="swipe-filter-section">
-              <p className="swipe-filter-section-title">Type d'annonce</p>
-              <div className="swipe-filter-options">
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('all')}
-                >
-                  Toutes
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('offer')}
-                >
-                  Offre
-                </button>
-                <button
-                  type="button"
-                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
-                  onClick={() => setPendingListingTypeFilter('request')}
-                >
-                  Demande
-                </button>
-              </div>
-            </div>
             <button
               type="button"
               className="swipe-filter-apply"
@@ -795,6 +829,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 setSortOrder(pendingSortOrder)
                 setDateFilter(pendingDateFilter)
                 setListingTypeFilter(pendingListingTypeFilter)
+                setPaymentTypeFilter(pendingPaymentTypeFilter)
                 setIsFilterOpen(false)
               }}
             >

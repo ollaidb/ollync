@@ -89,7 +89,9 @@
   gap: 10px;
   background-color: var(--input);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 6px 12px;
+  min-height: 32px;
+  height: 32px;
 }
 
 .swipe-search-bar svg {
@@ -104,6 +106,8 @@
   font-size: 14px;
   color: var(--foreground);
   outline: none;
+  height: 32px;
+  line-height: 32px;
 }
 
 .swipe-search-input::placeholder {
@@ -582,6 +586,57 @@
   color: var(--primary-foreground);
   font-weight: 600;
   cursor: pointer;
+}
+
+.recent-posts-page .swipe-filter-modal {
+  width: min(300px, 90vw);
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.recent-posts-page .swipe-filter-modal-header h2 {
+  font-size: 14px;
+}
+
+.recent-posts-page .swipe-filter-close {
+  width: 28px;
+  height: 28px;
+}
+
+.recent-posts-page .swipe-filter-section {
+  margin-bottom: 10px;
+}
+
+.recent-posts-page .swipe-filter-section-title {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.recent-posts-page .swipe-filter-options {
+  gap: 6px;
+}
+
+.recent-posts-page .swipe-filter-option {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.recent-posts-page .swipe-filter-apply {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.recent-posts-page .swipe-search-bar {
+  min-height: 32px;
+  padding: 6px 12px;
+  height: 32px;
+}
+
+.recent-posts-page .swipe-search-input {
+  height: 32px;
+  font-size: 14px;
+  line-height: 32px;
 }
 
 /* ============================================

@@ -17,6 +17,7 @@
   padding: 0;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  margin-left: -14px;
 }
 
 .back-button:hover {
@@ -33,4 +34,3 @@
     background: transparent;
   }
 }
-

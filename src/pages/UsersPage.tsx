@@ -14,6 +14,7 @@ interface User {
   avatar_url?: string | null
   bio?: string | null
   profile_type?: string | null
+  email?: string | null
 }
 
 interface Category {
@@ -33,6 +34,11 @@ const categoryOrder = [
   'vente',
   'poste-service'
 ]
+
+const MODERATOR_EMAIL = 'binta22116@gmail.com'
+
+const isModeratorEmail = (email?: string | null) =>
+  (email || '').trim().toLowerCase() === MODERATOR_EMAIL
 
 const UsersPage = () => {
   const navigate = useNavigate()
@@ -170,13 +176,15 @@ const UsersPage = () => {
       if (!activeCategorySlug) {
         let query = supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, bio, profile_type', { count: 'exact' })
+          .select('id, username, full_name, avatar_url, bio, profile_type, email', { count: 'exact' })
           .order('updated_at', { ascending: false })
           .range(start, end)
 
         if (user) {
           query = query.neq('id', user.id)
         }
+
+        query = query.neq('email', MODERATOR_EMAIL)
 
         const { data: profilesData, error: profilesError, count } = await query
 
@@ -188,25 +196,26 @@ const UsersPage = () => {
         }
 
         const fetchedUsers = (profilesData || []) as User[]
+        const visibleUsers = fetchedUsers.filter((profile) => !isModeratorEmail(profile.email))
 
         if (pageNum === 0) {
-          setUsers(fetchedUsers)
+          setUsers(visibleUsers)
         } else {
-          setUsers(prev => [...prev, ...fetchedUsers])
+          setUsers(prev => [...prev, ...visibleUsers])
         }
-        fetchFollowingStatus(fetchedUsers.map((item) => item.id))
+        fetchFollowingStatus(visibleUsers.map((item) => item.id))
 
         if (typeof count === 'number') {
           setHasMore(count > end + 1)
         } else {
-          setHasMore(fetchedUsers.length === USERS_PER_PAGE)
+          setHasMore(visibleUsers.length === USERS_PER_PAGE)
         }
         return
       }
 
       let query = supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, profile_type', { count: 'exact' })
+        .select('id, username, full_name, avatar_url, bio, profile_type, email', { count: 'exact' })
         .contains('display_categories', [activeCategorySlug])
         .order('updated_at', { ascending: false })
         .range(start, end)
@@ -214,6 +223,8 @@ const UsersPage = () => {
       if (user) {
         query = query.neq('id', user.id)
       }
+
+      query = query.neq('email', MODERATOR_EMAIL)
 
       const { data: profilesData, error: profilesError, count } = await query
 
@@ -225,18 +236,19 @@ const UsersPage = () => {
       }
 
       const fetchedUsers = (profilesData || []) as User[]
+      const visibleUsers = fetchedUsers.filter((profile) => !isModeratorEmail(profile.email))
 
       if (pageNum === 0) {
-        setUsers(fetchedUsers)
+        setUsers(visibleUsers)
       } else {
-        setUsers(prev => [...prev, ...fetchedUsers])
+        setUsers(prev => [...prev, ...visibleUsers])
       }
-      fetchFollowingStatus(fetchedUsers.map((item) => item.id))
+      fetchFollowingStatus(visibleUsers.map((item) => item.id))
 
       if (typeof count === 'number') {
         setHasMore(count > end + 1)
       } else {
-        setHasMore(fetchedUsers.length === USERS_PER_PAGE)
+        setHasMore(visibleUsers.length === USERS_PER_PAGE)
       }
     } catch (error) {
       console.error('Error fetching users:', error)

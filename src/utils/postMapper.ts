@@ -38,6 +38,7 @@ export interface MappedPost {
   id: string
   user_id?: string
   listing_type?: string | null
+  payment_type?: string | null
   title: string
   description: string
   price?: number | null

@@ -24,6 +24,24 @@
   z-index: 1;
 }
 
+.location-input-icon-btn {
+  position: absolute;
+  right: 8px;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.location-input-icon-btn .location-input-icon {
+  position: static;
+  pointer-events: auto;
+}
+
 .location-input {
   width: 100%;
   padding: 12px 40px 12px 16px;

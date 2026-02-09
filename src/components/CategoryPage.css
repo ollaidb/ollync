@@ -58,6 +58,57 @@
   text-align: center;
 }
 
+.category-page-new .swipe-search-bar {
+  min-height: 32px;
+  padding: 6px 12px;
+  height: 32px;
+}
+
+.category-page-new .swipe-search-input {
+  height: 32px;
+  font-size: 14px;
+  line-height: 32px;
+}
+
+.category-page-new .swipe-filter-modal {
+  width: min(300px, 90vw);
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.category-page-new .swipe-filter-modal-header h2 {
+  font-size: 14px;
+}
+
+.category-page-new .swipe-filter-close {
+  width: 28px;
+  height: 28px;
+}
+
+.category-page-new .swipe-filter-section {
+  margin-bottom: 10px;
+}
+
+.category-page-new .swipe-filter-section-title {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.category-page-new .swipe-filter-options {
+  gap: 6px;
+}
+
+.category-page-new .swipe-filter-option {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.category-page-new .swipe-filter-apply {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .category-search-section {
   background: var(--background);
   padding: 12px 20px 8px 20px;

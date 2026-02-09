@@ -28,6 +28,7 @@ interface LocationAutocompleteProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  onIconClick?: () => void
 }
 
 // Cache simple pour éviter les requêtes répétées
@@ -40,7 +41,8 @@ export const LocationAutocomplete = ({
   onLocationSelect,
   placeholder = 'Rechercher un lieu...',
   className = '',
-  disabled = false
+  disabled = false,
+  onIconClick
 }: LocationAutocompleteProps) => {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -255,7 +257,22 @@ export const LocationAutocomplete = ({
           </button>
         )}
         {!isLoading && !hasSelected && (!value || value.length === 0) && (
-          <MapPin size={20} className="location-input-icon" />
+          onIconClick ? (
+            <button
+              type="button"
+              className="location-input-icon-btn"
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                onIconClick()
+              }}
+              aria-label="Ouvrir les filtres de lieu"
+            >
+              <MapPin size={20} className="location-input-icon" />
+            </button>
+          ) : (
+            <MapPin size={20} className="location-input-icon" />
+          )
         )}
       </div>
 
@@ -287,4 +304,3 @@ export const LocationAutocomplete = ({
     </div>
   )
 }
-
