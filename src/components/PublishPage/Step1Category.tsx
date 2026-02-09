@@ -2,6 +2,7 @@ import { publicationTypes } from '../../constants/publishData'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import './Step1Category.css'
 
 interface Step1CategoryProps {
@@ -11,6 +12,7 @@ interface Step1CategoryProps {
 export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
   const { t } = useTranslation(['publish', 'categories'])
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
+  const isMobile = useIsMobile()
 
   const toggleDescription = (e: React.MouseEvent, categoryId: string) => {
     e.stopPropagation()
@@ -25,6 +27,21 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
     if (words.length <= wordLimit) return { preview: text, hasMore: false }
     return { preview: words.slice(0, wordLimit).join(' '), hasMore: true }
   }
+
+  const getPreviewWithHalfWord = (text: string, baseWordLimit: number) => {
+    const adjustedLimit = baseWordLimit + 2
+    const { preview, hasMore } = getPreviewText(text, adjustedLimit)
+    if (!hasMore) return { preview, hasMore }
+    const words = text.trim().split(/\s+/)
+    const nextWord = words[adjustedLimit] ?? ''
+    if (!nextWord) return { preview, hasMore }
+    const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
+    return { preview: `${preview} ${nextWord.slice(0, cutLength)}`, hasMore }
+  }
+  const getFirstSentence = (text: string) => {
+    const match = text.match(/^.*?[.!?](\s|$)/)
+    return match ? match[0].trim() : text
+  }
   return (
     <div className="step1-category">
       <h2 className="step-question">{t('publish:step1Title')}</h2>
@@ -36,7 +53,7 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
           const categoryDescription = t(`categories:descriptions.${category.slug}`, {
             defaultValue: category.description
           })
-          const isExpanded = !!expandedDescriptions[category.id]
+          const isExpanded = isMobile || !!expandedDescriptions[category.id]
           const extraWordsMap: Record<string, number> = {
             'emploi': 2,
             'creation-contenu': 1,
@@ -44,7 +61,8 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
             'projets-equipe': 1
           }
           const extraWords = extraWordsMap[category.slug] ?? 0
-          const { preview, hasMore } = getPreviewText(categoryDescription, 6 + extraWords)
+          const { preview, hasMore } = getPreviewWithHalfWord(categoryDescription, 6 + extraWords)
+          const mobilePreview = getFirstSentence(categoryDescription)
           return (
             <button
               key={category.id}
@@ -61,8 +79,12 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
                   <span
                     className={`category-description ${isExpanded || !hasMore ? 'is-expanded' : 'is-collapsed'}`}
                   >
-                    {isExpanded || !hasMore ? categoryDescription : preview}
-                    {hasMore && !isExpanded && (
+                    {isExpanded || !hasMore
+                      ? categoryDescription
+                      : isMobile
+                        ? mobilePreview
+                        : preview}
+                    {!isMobile && hasMore && !isExpanded && (
                       <button
                         type="button"
                         className="category-more inline"
@@ -72,7 +94,7 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
                         ...
                       </button>
                     )}
-                    {hasMore && isExpanded && (
+                    {!isMobile && hasMore && isExpanded && (
                       <button
                         type="button"
                         className="category-more inline"

@@ -3,6 +3,7 @@ import { Heart } from 'lucide-react'
 import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import './Step2Subcategory.css'
 
 interface Step2SubcategoryProps {
@@ -20,6 +21,7 @@ export const Step2Subcategory = ({
 }: Step2SubcategoryProps) => {
   const navigate = useNavigate()
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
+  const isMobile = useIsMobile()
   
   if (!selectedCategory) return null
 
@@ -46,15 +48,19 @@ export const Step2Subcategory = ({
     return { preview: words.slice(0, wordLimit).join(' '), hasMore: true }
   }
 
-  const truncateLastWord = (text: string) => {
+  const getPreviewWithHalfWord = (text: string, baseWordLimit: number) => {
+    const adjustedLimit = baseWordLimit + 2
+    const { preview, hasMore } = getPreviewText(text, adjustedLimit)
+    if (!hasMore) return { preview, hasMore }
     const words = text.trim().split(/\s+/)
-    if (words.length === 0) return text
-    const lastIndex = words.length - 1
-    const lastWord = words[lastIndex]
-    if (lastWord.length <= 2) return text
-    const cutLength = Math.max(1, Math.floor(lastWord.length / 2))
-    words[lastIndex] = lastWord.slice(0, cutLength)
-    return words.join(' ')
+    const nextWord = words[adjustedLimit] ?? ''
+    if (!nextWord) return { preview, hasMore }
+    const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
+    return { preview: `${preview} ${nextWord.slice(0, cutLength)}`, hasMore }
+  }
+  const getFirstSentence = (text: string) => {
+    const match = text.match(/^.*?[.!?](\s|$)/)
+    return match ? match[0].trim() : text
   }
 
   return (
@@ -63,7 +69,7 @@ export const Step2Subcategory = ({
       <div className="subcategories-list">
         {selectedCategory.subcategories.map((subcategory) => {
           const description = subcategory.description?.trim()
-          const isExpanded = !!expandedDescriptions[subcategory.id]
+          const isExpanded = isMobile || !!expandedDescriptions[subcategory.id]
           const wordLimitMap: Record<string, Record<string, number>> = {
             'creation-contenu': {
               live: 8,
@@ -123,75 +129,11 @@ export const Step2Subcategory = ({
           }
           const wordLimit =
             wordLimitMap[selectedCategory.slug]?.[subcategory.slug] ?? 6
-          const shouldUsePartialWord =
-            selectedCategory.slug === 'emploi' && subcategory.slug === 'ecriture-contenu'
           const { preview, hasMore } = description
-            ? getPreviewText(description, wordLimit)
+            ? getPreviewWithHalfWord(description, wordLimit)
             : { preview: '', hasMore: false }
-          const shouldCutLastWord =
-            selectedCategory.slug === 'studio-lieu' && subcategory.slug === 'lieux-professionnels'
-          const shouldAddPartialNextWord =
-            selectedCategory.slug === 'projets-equipe' && subcategory.slug === 'projet-newsletter'
-          const shouldAddPartialNextWordForBlog =
-            selectedCategory.slug === 'projets-equipe' && subcategory.slug === 'projet-blog'
-          const shouldAddPartialNextWordForYoutube =
-            selectedCategory.slug === 'projets-equipe' && subcategory.slug === 'projet-youtube'
-          const shouldAddPartialNextWordForPodcast =
-            selectedCategory.slug === 'projets-equipe' && subcategory.slug === 'projet-podcast'
-          const shouldAddPartialNextWordForMagazine =
-            selectedCategory.slug === 'projets-equipe' && subcategory.slug === 'projet-magazine'
-          const shouldAddPartialNextWordForMonetisation =
-            selectedCategory.slug === 'services' && subcategory.slug === 'monetisation-audience'
-          let displayPreview = preview
-          if (shouldUsePartialWord && !isExpanded && hasMore) {
-            displayPreview = `${preview} conte`
-          }
-          if (shouldCutLastWord && !isExpanded && hasMore) {
-            displayPreview = truncateLastWord(displayPreview)
-          }
-          if (shouldAddPartialNextWord && !isExpanded && hasMore) {
-            const words = description?.trim().split(/\s+/) ?? []
-            const nextWord = words[wordLimit] ?? ''
-            if (nextWord) {
-              const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-              displayPreview = `${displayPreview} ${nextWord.slice(0, cutLength)}`
-            }
-          }
-          if (shouldAddPartialNextWordForBlog && !isExpanded && hasMore) {
-            const words = description?.trim().split(/\s+/) ?? []
-            const nextWord = words[wordLimit] ?? ''
-            if (nextWord) {
-              const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-              displayPreview = `${displayPreview} ${nextWord.slice(0, cutLength)}`
-            }
-          }
-          if (shouldAddPartialNextWordForYoutube && !isExpanded && hasMore) {
-            const words = description?.trim().split(/\s+/) ?? []
-            const nextWord = words[wordLimit] ?? ''
-            if (nextWord) {
-              const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-              displayPreview = `${displayPreview} ${nextWord.slice(0, cutLength)}`
-            }
-          }
-          if (shouldAddPartialNextWordForPodcast && !isExpanded && hasMore) {
-            const words = description?.trim().split(/\s+/) ?? []
-            const nextWord = words[wordLimit] ?? ''
-            if (nextWord) {
-              const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-              displayPreview = `${displayPreview} ${nextWord.slice(0, cutLength)}`
-            }
-          }
-          if (shouldAddPartialNextWordForMagazine && !isExpanded && hasMore) {
-            const words = description?.trim().split(/\s+/) ?? []
-            const nextWord = words[wordLimit] ?? ''
-            if (nextWord) {
-              const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-              displayPreview = `${displayPreview} ${nextWord.slice(0, cutLength)}`
-            }
-          }
-          if (shouldAddPartialNextWordForMonetisation && !isExpanded && hasMore) {
-            displayPreview = `${displayPreview} aud`
-          }
+          const mobilePreview = description ? getFirstSentence(description) : ''
+          const displayPreview = preview
           return (
             <button
               key={subcategory.id}
@@ -209,8 +151,12 @@ export const Step2Subcategory = ({
                     <span
                       className={`subcategory-description ${isExpanded || !hasMore ? 'is-expanded' : 'is-collapsed'}`}
                     >
-                      {isExpanded || !hasMore ? description : displayPreview}
-                      {hasMore && !isExpanded && (
+                      {isExpanded || !hasMore
+                        ? description
+                        : isMobile
+                          ? mobilePreview
+                          : displayPreview}
+                      {!isMobile && hasMore && !isExpanded && (
                         <button
                           type="button"
                           className="subcategory-more inline"
@@ -220,7 +166,7 @@ export const Step2Subcategory = ({
                           ...
                         </button>
                       )}
-                      {hasMore && isExpanded && (
+                      {!isMobile && hasMore && isExpanded && (
                         <button
                           type="button"
                           className="subcategory-more inline"
