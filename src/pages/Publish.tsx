@@ -415,7 +415,7 @@ export default function Publish() {
         />
       </div>
 
-      <div className="publish-content-wrapper">
+      <div className={`publish-content-wrapper ${step === 4 ? 'has-actions' : 'no-actions'}`}>
         <div className="publish-content">
           {step === 0 && (
             <Step1Category

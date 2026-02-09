@@ -385,9 +385,38 @@ const Annonces = () => {
         .filter((profile): profile is ParticipantProfile => !!profile)
         .filter((profile) => profile.id !== user.id)
 
-      setRatingParticipants(participants)
+      const { data: matchRequestsData, error: matchRequestsError } = await supabase
+        .from('match_requests')
+        .select('from_user_id, to_user_id')
+        .eq('related_post_id', post.id)
+        .eq('status', 'accepted')
 
-      if (participants.length === 0) {
+      if (matchRequestsError) {
+        console.error('Error loading match request participants:', matchRequestsError)
+      }
+
+      const matchParticipantIds = new Set<string>()
+      ;(matchRequestsData || []).forEach((req: { from_user_id: string; to_user_id: string }) => {
+        if (req.from_user_id && req.from_user_id !== user.id) matchParticipantIds.add(req.from_user_id)
+        if (req.to_user_id && req.to_user_id !== user.id) matchParticipantIds.add(req.to_user_id)
+      })
+
+      const { data: matchProfiles } = matchParticipantIds.size > 0 ? await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', Array.from(matchParticipantIds)) : { data: [] }
+
+      const combined = new Map<string, ParticipantProfile>()
+      participants.forEach((profile) => combined.set(profile.id, profile))
+      ;(matchProfiles || []).forEach((profile: ParticipantProfile) => {
+        if (profile.id !== user.id) {
+          combined.set(profile.id, profile)
+        }
+      })
+
+      setRatingParticipants(Array.from(combined.values()))
+
+      if (combined.size === 0) {
         return
       }
 
@@ -773,4 +802,3 @@ const Annonces = () => {
 }
 
 export default Annonces
-

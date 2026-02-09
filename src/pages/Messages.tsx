@@ -517,6 +517,55 @@ const Messages = () => {
     return runTable()
   }
 
+  const loadConversationSummaries = useCallback(async (conversationIds: string[]) => {
+    if (!user || conversationIds.length === 0) {
+      return {
+        lastMessageMap: new Map<string, { content?: string | null; created_at: string; sender_id?: string | null; message_type?: string | null }>(),
+        unreadCountMap: new Map<string, number>()
+      }
+    }
+
+    try {
+      const { data: summaryRows, error: summaryError } = await (supabase as any).rpc('get_conversation_summaries', {
+        conversation_ids: conversationIds,
+        viewer_id: user.id
+      })
+
+      if (!summaryError && Array.isArray(summaryRows)) {
+        const lastMessageMap = new Map<string, { content?: string | null; created_at: string; sender_id?: string | null; message_type?: string | null }>()
+        const unreadCountMap = new Map<string, number>()
+
+        for (const row of summaryRows as Array<{
+          conversation_id: string
+          last_message_content?: string | null
+          last_message_created_at?: string | null
+          last_message_sender_id?: string | null
+          last_message_type?: string | null
+          unread_count?: number | null
+        }>) {
+          if (!row?.conversation_id) continue
+          if (row.last_message_created_at) {
+            lastMessageMap.set(row.conversation_id, {
+              content: row.last_message_content || '',
+              created_at: row.last_message_created_at,
+              sender_id: row.last_message_sender_id || null,
+              message_type: row.last_message_type || null
+            })
+          }
+          if (typeof row.unread_count === 'number') {
+            unreadCountMap.set(row.conversation_id, row.unread_count)
+          }
+        }
+
+        return { lastMessageMap, unreadCountMap }
+      }
+    } catch (error) {
+      console.error('Error loading conversation summaries:', error)
+    }
+
+    return null
+  }, [user])
+
   // Fonction utilitaire pour trouver ou créer une conversation unique entre deux utilisateurs
   const findOrCreateConversation = async (otherUserId: string, postId?: string | null) => {
     if (!user) return null
@@ -1430,6 +1479,10 @@ const Messages = () => {
           return !state?.deleted_at
         })
 
+        const activeConversationIds = activeConvs.map((conv) => conv.id)
+        const summaries = await loadConversationSummaries(activeConversationIds)
+        const useSummaries = summaries !== null
+
         // Pour chaque conversation, récupérer le dernier message et compter les non-lus
         const convsWithData = await Promise.all(
           activeConvs.map(async (conv) => {
@@ -1439,60 +1492,74 @@ const Messages = () => {
             const postTitleTrimmed = postTitleRaw?.trim() || ''
             const postTitle = postTitleTrimmed && postTitleTrimmed !== '0' ? postTitleTrimmed : null
 
-            // Récupérer le dernier message (sans utiliser .single() pour éviter les erreurs)
-            const { data: lastMsgData, error: lastMsgError } = await fetchWithFallback(
-              () =>
-                supabase
-                  .from('public_messages_with_sender' as any)
-                  .select('content, created_at, sender_id, message_type')
-                  .eq('conversation_id', conv.id)
-                  .order('created_at', { ascending: false })
-                  .limit(1),
-              () =>
-                supabase
-                  .from('messages')
-                  .select('content, created_at, sender_id, message_type')
-                  .eq('conversation_id', conv.id)
-                  .order('created_at', { ascending: false })
-                  .limit(1)
-            )
+            let lastMsgRow: {
+              content?: string | null
+              created_at: string
+              sender_id?: string | null
+              message_type?: string | null
+            } | null = null
 
-            const lastMsgRow = !lastMsgError
-              ? (lastMsgData as Array<{
-                  content?: string | null
-                  created_at: string
-                  sender_id?: string | null
-                  message_type?: string | null
-                }> | null)?.[0] ?? null
-              : null
-            const hasMessages = !!lastMsgRow
-            const rawContent = lastMsgRow?.content || ''
-            const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
-
-            // Compter les messages non lus (seulement si otherUserId existe)
             let unreadCount = 0
-            if (otherUserId && hasMessages) {
-              const { count, error: countError } = await fetchWithFallback(
+
+            if (useSummaries && summaries) {
+              const summary = summaries.lastMessageMap.get(conv.id) || null
+              lastMsgRow = summary
+              unreadCount = summaries.unreadCountMap.get(conv.id) || 0
+            } else {
+              // Fallback: requêtes par conversation si la fonction SQL n'est pas disponible
+              const { data: lastMsgData, error: lastMsgError } = await fetchWithFallback(
                 () =>
                   supabase
                     .from('public_messages_with_sender' as any)
-                    .select('*', { count: 'exact', head: true })
+                    .select('content, created_at, sender_id, message_type')
                     .eq('conversation_id', conv.id)
-                    .eq('sender_id', otherUserId)
-                    .is('read_at', null),
+                    .order('created_at', { ascending: false })
+                    .limit(1),
                 () =>
                   supabase
                     .from('messages')
-                    .select('*', { count: 'exact', head: true })
+                    .select('content, created_at, sender_id, message_type')
                     .eq('conversation_id', conv.id)
-                    .eq('sender_id', otherUserId)
-                    .is('read_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
               )
-              
-              if (!countError) {
-                unreadCount = count || 0
+
+              lastMsgRow = !lastMsgError
+                ? (lastMsgData as Array<{
+                    content?: string | null
+                    created_at: string
+                    sender_id?: string | null
+                    message_type?: string | null
+                  }> | null)?.[0] ?? null
+                : null
+
+              if (otherUserId && lastMsgRow) {
+                const { count, error: countError } = await fetchWithFallback(
+                  () =>
+                    supabase
+                      .from('public_messages_with_sender' as any)
+                      .select('*', { count: 'exact', head: true })
+                      .eq('conversation_id', conv.id)
+                      .eq('sender_id', otherUserId)
+                      .is('read_at', null),
+                  () =>
+                    supabase
+                      .from('messages')
+                      .select('*', { count: 'exact', head: true })
+                      .eq('conversation_id', conv.id)
+                      .eq('sender_id', otherUserId)
+                      .is('read_at', null)
+                )
+                
+                if (!countError) {
+                  unreadCount = count || 0
+                }
               }
             }
+
+            const hasMessages = !!lastMsgRow
+            const rawContent = lastMsgRow?.content || ''
+            const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
 
             const state = stateMap.get(conv.id)
             return {
@@ -1592,7 +1659,7 @@ const Messages = () => {
         setLoading(false)
       }
     }
-  }, [user, activeFilter, loadMatchRequests, loadAppointments, isConversationView])
+  }, [user, activeFilter, loadMatchRequests, loadAppointments, isConversationView, loadConversationSummaries])
 
   const handleReportSubmit = async () => {
     if (!user || !selectedConversation?.other_user?.id || !reportReason) {

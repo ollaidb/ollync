@@ -16,6 +16,7 @@ export interface Subcategory {
   id: string
   name: string
   slug: string
+  description?: string
   options?: Option[]
 }
 
@@ -37,7 +38,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'creation-contenu',
     icon: Camera,
     color: '#667eea',
-    description: 'Créer du contenu : photos, vidéos, vlogs, sketchs, trends, événements',
+    description: 'Créer du contenu à plusieurs : photos, vidéos, vlogs, sketchs, trends, lives ou événements.',
     subcategories: [
       {
         id: 'tout',
@@ -47,42 +48,58 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'photo',
         name: 'Photo',
-        slug: 'photo'
+        slug: 'photo',
+        description:
+          'Trouver un partenaire pour faire des photos ensemble (photos Insta, lifestyle, souvenirs, créatif, photos sur un lieu ou un thème précis, pas forcément pro).'
       },
       {
         id: 'video',
         name: 'Vidéo',
-        slug: 'video'
+        slug: 'video',
+        description:
+          'Collaborer pour créer du contenu ensemble et trouver son duo (playback, vidéos face-caméra, discussions, formats courts, duo/couple/amis, etc.).'
       },
       {
         id: 'vlog',
         name: 'Vlog',
-        slug: 'vlog'
+        slug: 'vlog',
+        description:
+          "Être filmé(e) ou filmer quelqu'un pour un vlog, comme un caméraman mobile (suivre la personne, filmage naturel, plans en mouvement)."
       },
       {
         id: 'sketchs',
         name: 'Sketchs',
-        slug: 'sketchs'
+        slug: 'sketchs',
+        description:
+          'Jouer des rôles dans un script ou un scénario (amis, comédie, mise en scène, personnages, sketch de couple, famille, etc.).'
       },
       {
         id: 'trends',
         name: 'Trends',
-        slug: 'trends'
+        slug: 'trends',
+        description:
+          'Réaliser des trends/défis qui nécessitent un partenaire (choré, duo, challenges, formats viraux).'
       },
       {
         id: 'evenements',
         name: 'Événements',
-        slug: 'evenements'
+        slug: 'evenements',
+        description:
+          'Aller à un événement avec quelqu’un pour créer du contenu sur place (concert, expo, activité, reportage léger).'
       },
       {
         id: 'live',
         name: 'Live',
-        slug: 'live'
+        slug: 'live',
+        description:
+          'Animer un live à deux ou échanger sur un sujet précis (débat, discussion, partage d’avis, co-animation).'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -92,7 +109,8 @@ export const publicationTypes: PublicationType[] = [
     slug: 'casting-role',
     icon: Users,
     color: '#2196f3',
-    description: 'Trouver des profils pour un projet ou une production',
+    description:
+      'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif).',
     subcategories: [
       {
         id: 'tout',
@@ -102,42 +120,58 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'figurant',
         name: 'Figurant',
-        slug: 'figurant'
+        slug: 'figurant',
+        description:
+          'Rechercher des figurants pour apparaître dans un projet (vidéo, comédie, clip, tournage, contenu créatif).'
       },
       {
         id: 'modele-photo',
         name: 'Modèle photo',
-        slug: 'modele-photo'
+        slug: 'modele-photo',
+        description:
+          'Trouver des modèles pour des photos de projet ou de mise en valeur (make-up, coiffure, ongles, skincare, vêtements, chaussures, sport, lifestyle, animaux, etc.).'
       },
       {
         id: 'modele-video',
         name: 'Modèle vidéo',
-        slug: 'modele-video'
+        slug: 'modele-video',
+        description:
+          'Trouver des modèles pour apparaître dans des vidéos ou clips (présentation produit, mise en scène, contenu créatif, lookbook, sport, lifestyle, etc.).'
       },
       {
         id: 'voix-off',
         name: 'Voix off',
-        slug: 'voix-off'
+        slug: 'voix-off',
+        description:
+          'Rechercher une voix pour narrer, présenter ou poser un texte (pub, documentaire, story, vidéo explicative, intro, outro).'
       },
       {
         id: 'invite-podcast',
         name: 'Invité podcast',
-        slug: 'invite-podcast'
+        slug: 'invite-podcast',
+        description:
+          'Inviter une personne pour intervenir, partager son avis ou discuter d’un thème précis dans un podcast.'
       },
       {
         id: 'invite-micro-trottoir',
         name: 'Invité micro-trottoir',
-        slug: 'invite-micro-trottoir'
+        slug: 'invite-micro-trottoir',
+        description:
+          'Trouver des personnes à interviewer dehors pour des questions, réactions ou témoignages.'
       },
       {
         id: 'youtube-video',
         name: 'YouTube vidéo',
-        slug: 'youtube-video'
+        slug: 'youtube-video',
+        description:
+          'Inviter quelqu’un pour une vidéo YouTube (débat, témoignage, concept, vlog, challenge, réaction, interview).'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -147,7 +181,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'emploi',
     icon: Scissors,
     color: '#9c27b0',
-    description: 'Emploi : montage, micro-trottoir, live, écriture de contenu',
+    description: 'Métiers liés à la création de contenu (vidéo, photo, montage, community, etc.).',
     subcategories: [
       {
         id: 'tout',
@@ -157,27 +191,51 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'montage',
         name: 'Montage',
-        slug: 'montage'
+        slug: 'montage',
+        description:
+          'Chercher quelqu’un pour faire le montage de vidéos ou photos (formats courts, longues vidéos, retouches, assemblage complet).'
       },
       {
         id: 'micro-trottoir',
         name: 'micro-trottoir',
-        slug: 'micro-trottoir'
+        slug: 'micro-trottoir',
+        description:
+          'Recruter une personne pour réaliser des micro-trottoirs (interviewer des gens dans la rue pour votre projet ou contenu).'
+      },
+      {
+        id: 'community-manager',
+        name: 'Community manager',
+        slug: 'community-manager',
+        description:
+          'Gérer la communauté et les réseaux (planning, publications, engagement, réponses, animation).'
       },
       {
         id: 'live',
         name: 'live',
-        slug: 'live'
+        slug: 'live',
+        description:
+          'Trouver quelqu’un pour animer des lives autour de vos produits, services ou contenus à promouvoir sur les réseaux.'
       },
       {
         id: 'ecriture-contenu',
         name: 'Écriture de contenu',
-        slug: 'ecriture-contenu'
+        slug: 'ecriture-contenu',
+        description:
+          'Trouver une personne pour écrire du contenu pour vos projets (scripts, textes, idées, publications, etc.).'
+      },
+      {
+        id: 'scenariste',
+        name: 'Scénariste',
+        slug: 'scenariste',
+        description:
+          'Écrire des scripts et scénarios pour des vidéos, projets ou contenus.'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -187,22 +245,35 @@ export const publicationTypes: PublicationType[] = [
     slug: 'studio-lieu',
     icon: Building2,
     color: '#f59e0b',
-    description: 'Trouver un studio ou un lieu pour vos shootings et tournages',
+    description: 'Trouver des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
     subcategories: [
       {
         id: 'studio-creation',
         name: 'Studio de création',
-        slug: 'studio-creation'
+        slug: 'studio-creation',
+        description:
+          'Louer un studio équipé pour créer du contenu (photos, vidéos, interviews, tournages), parfois avec matériel disponible.'
       },
       {
         id: 'lieux-residentiels',
         name: 'Lieux résidentiels',
-        slug: 'lieux-residentiels'
+        slug: 'lieux-residentiels',
+        description:
+          'Louer un appartement ou une maison pour quelques heures afin de créer du contenu dans un cadre réel.'
       },
       {
         id: 'lieux-professionnels',
         name: 'Lieux professionnels',
-        slug: 'lieux-professionnels'
+        slug: 'lieux-professionnels',
+        description:
+          'Louer un espace professionnel pour produire du contenu (bureaux, salles de réunion, conférences, lives, interviews).'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -212,7 +283,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'projets-equipe',
     icon: Briefcase,
     color: '#4facfe',
-    description: 'Trouver un associé, un collaborateur ou rejoindre un projet',
+    description: 'Monter une équipe pour réaliser un vrai projet créatif de A à Z.',
     subcategories: [
       {
         id: 'tout',
@@ -222,47 +293,79 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'projet-emission',
         name: 'Émission',
-        slug: 'projet-emission'
+        slug: 'projet-emission',
+        description:
+          'Trouver des personnes pour créer une émission (concept, tournage, animation, montage, diffusion).'
       },
       {
         id: 'projet-newsletter',
         name: 'Newsletter',
-        slug: 'projet-newsletter'
+        slug: 'projet-newsletter',
+        description:
+          'Monter une équipe pour lancer une newsletter (idées, écriture, design, diffusion, croissance).'
       },
       {
         id: 'projet-interview',
         name: 'Interview',
-        slug: 'projet-interview'
+        slug: 'projet-interview',
+        description:
+          'Créer une série d’interviews avec une équipe (invités, préparation, tournage, montage).'
       },
       {
         id: 'projet-podcast',
         name: 'Podcast',
-        slug: 'projet-podcast'
+        slug: 'projet-podcast',
+        description:
+          'Lancer un podcast avec des profils complémentaires (animation, technique, contenu, diffusion).'
+      },
+      {
+        id: 'projet-documentaire',
+        name: 'Documentaire',
+        slug: 'projet-documentaire',
+        description:
+          'Monter une équipe pour réaliser un documentaire (recherche, tournage, montage, narration).'
+      },
+      {
+        id: 'projet-court-metrage',
+        name: 'Court-métrage',
+        slug: 'projet-court-metrage',
+        description:
+          'Créer un court-métrage avec une équipe (scénario, tournage, rôles, montage).'
       },
       {
         id: 'projet-youtube',
         name: 'Chaîne YouTube',
-        slug: 'projet-youtube'
+        slug: 'projet-youtube',
+        description:
+          'Monter une équipe pour une chaîne YouTube (idées, tournage, montage, rôles).'
       },
       {
         id: 'projet-magazine',
         name: 'Magazine',
-        slug: 'projet-magazine'
+        slug: 'projet-magazine',
+        description:
+          'Créer un magazine avec une équipe (rédaction, design, contenu, publication).'
       },
       {
         id: 'projet-blog',
         name: 'Blog',
-        slug: 'projet-blog'
+        slug: 'projet-blog',
+        description:
+          'Lancer un blog avec des personnes complémentaires (écriture, contenu, stratégie, diffusion).'
       },
       {
         id: 'projet-media',
         name: 'Média',
-        slug: 'projet-media'
+        slug: 'projet-media',
+        description:
+          'Créer un média avec une équipe (ligne éditoriale, production, diffusion, croissance).'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -272,7 +375,8 @@ export const publicationTypes: PublicationType[] = [
     slug: 'services',
     icon: Wrench,
     color: '#43e97b',
-    description: 'Services pour créateurs : coaching, stratégie, organisation, setup',
+    description:
+      'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel).',
     subcategories: [
       {
         id: 'tout',
@@ -282,32 +386,86 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'coaching-contenu',
         name: 'Coaching contenu',
-        slug: 'coaching-contenu'
+        slug: 'coaching-contenu',
+        description:
+          'Coaching pour la création de contenu et la direction artistique (idées, formats, publication, rythme, optimisation du compte).'
       },
       {
         id: 'strategie-editoriale',
         name: 'Stratégie éditoriale',
-        slug: 'strategie-editoriale'
+        slug: 'strategie-editoriale',
+        description:
+          'Définir votre ligne éditoriale et votre plan de contenu (quoi publier, quand, sur quel réseau).'
       },
       {
         id: 'organisation',
         name: 'Organisation',
-        slug: 'organisation'
+        slug: 'organisation',
+        description:
+          'Aide à organiser la production de contenu (planning, fréquence, workflow, gestion des posts).'
       },
       {
         id: 'agence',
         name: 'Agence',
-        slug: 'agence'
+        slug: 'agence',
+        description:
+          'Agence qui gère vos collaborations et opportunités (mise en relation, partenariats, pourcentage).'
+      },
+      {
+        id: 'branding',
+        name: 'Branding',
+        slug: 'branding',
+        description:
+          'Construire l’image de marque d’un créateur (identité, positionnement, cohérence visuelle).'
+      },
+      {
+        id: 'analyse-profil',
+        name: 'Analyse de profil',
+        slug: 'analyse-profil',
+        description:
+          'Analyser un profil créateur pour identifier points forts, axes d’amélioration et opportunités.'
+      },
+      {
+        id: 'proposition-idees',
+        name: 'Proposition d’idées',
+        slug: 'proposition-idees',
+        description:
+          'Proposer des idées et concepts de contenus adaptés à un créateur ou une niche.'
+      },
+      {
+        id: 'assistant-createur',
+        name: 'Assistant créateur',
+        slug: 'assistant-createur',
+        description:
+          'Assister un créateur dans la production et l’organisation de ses contenus.'
+      },
+      {
+        id: 'monetisation-audience',
+        name: 'Monétisation audience',
+        slug: 'monetisation-audience',
+        description:
+          'Aider un créateur à monétiser son audience (offres, partenariats, produits, stratégie).'
+      },
+      {
+        id: 'aisance-camera',
+        name: 'Aisance caméra',
+        slug: 'aisance-camera',
+        description:
+          'Aider un créateur à être à l’aise face caméra (posture, voix, présence, confiance).'
       },
       {
         id: 'setup-materiel',
         name: 'Setup matériel',
-        slug: 'setup-materiel'
+        slug: 'setup-materiel',
+        description:
+          'Accompagnement pour installer un setup de création (décor, éclairage, espace, optimisation du lieu).'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -317,7 +475,8 @@ export const publicationTypes: PublicationType[] = [
     slug: 'vente',
     icon: ShoppingBag,
     color: '#f093fb',
-    description: 'Vente de comptes, noms d\'utilisateur, concepts et packs pour créateurs',
+    description:
+      'Acheter ou vendre (comptes, noms d\'utilisateur, concepts, matériel).',
     subcategories: [
       {
         id: 'tout',
@@ -327,27 +486,37 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'comptes',
         name: 'Comptes',
-        slug: 'comptes'
+        slug: 'comptes',
+        description:
+          'Vendre un compte déjà créé avec son audience, son thème ou son historique.'
       },
       {
         id: 'noms-utilisateur',
         name: 'Noms d\'utilisateur',
-        slug: 'noms-utilisateur'
+        slug: 'noms-utilisateur',
+        description:
+          'Vendre un nom d’utilisateur disponible ou rare, utile pour un nouveau projet.'
       },
       {
         id: 'concepts-niches',
         name: 'Concepts / Niches',
-        slug: 'concepts-niches'
+        slug: 'concepts-niches',
+        description:
+          'Vendre des idées ou concepts de création de contenu (thèmes, niches, formats, concepts YouTube/TikTok).'
       },
       {
         id: 'gorille',
         name: 'Matériel',
-        slug: 'gorille'
+        slug: 'gorille',
+        description:
+          'Vendre du matériel de création de contenu (caméra, micro, éclairage, téléphone, fond, setup, etc.), neuf ou déjà utilisé.'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   },
@@ -357,7 +526,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'poste-service',
     icon: Briefcase,
     color: '#f97316',
-    description: 'Poste/Service : prestations, food, lieux et autres besoins',
+    description: 'Échange service ↔ visibilité (prestataire propose un service, créateur offre la visibilité).',
     subcategories: [
       {
         id: 'tout',
@@ -367,22 +536,30 @@ export const publicationTypes: PublicationType[] = [
       {
         id: 'prestation',
         name: 'Prestation',
-        slug: 'prestation'
+        slug: 'prestation',
+        description:
+          'Prestations de services (ongles, maquillage, coiffure, massage, épilation, soins esthétiques, etc.).'
       },
       {
         id: 'food',
         name: 'Food',
-        slug: 'food'
+        slug: 'food',
+        description:
+          'Établissements de restauration (restaurants, cafés, bars, etc.).'
       },
       {
         id: 'lieux',
         name: 'Lieux',
-        slug: 'lieux'
+        slug: 'lieux',
+        description:
+          'Lieux à proposer ou à découvrir (hôtels, lieux touristiques, espaces de loisirs, boîtes de nuit, etc.).'
       },
       {
         id: 'autre',
         name: 'Autre',
-        slug: 'autre'
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
       }
     ]
   }

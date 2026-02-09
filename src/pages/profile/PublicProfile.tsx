@@ -1086,14 +1086,14 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    size={14}
-                    className={ratingAverage && star <= ratingAverage ? 'filled' : ''}
+                    size={10}
                     fill={ratingAverage && star <= ratingAverage ? '#ffc107' : 'none'}
+                    stroke={ratingAverage && star <= ratingAverage ? '#ffc107' : 'var(--muted-foreground)'}
                   />
                 ))}
               </div>
               <span className="profile-rating-text">
-                {ratingAverage ? ratingAverage.toFixed(1) : '0.0'} ({ratingCount} avis)
+                {ratingAverage ? ratingAverage.toFixed(1) : '0.0'}/5 avis ({ratingCount})
               </span>
             </div>
           )}
@@ -1356,8 +1356,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                             <Star 
                               key={star} 
                               size={16} 
-                              className={star <= review.rating ? 'filled' : ''}
                               fill={star <= review.rating ? '#ffc107' : 'none'}
+                              stroke={star <= review.rating ? '#ffc107' : 'var(--muted-foreground)'}
                             />
                           ))}
                         </div>

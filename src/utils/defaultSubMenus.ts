@@ -16,8 +16,10 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
   emploi: [
     { name: 'Montage', slug: 'montage' },
     { name: 'micro-trottoir', slug: 'micro-trottoir' },
+    { name: 'Community manager', slug: 'community-manager' },
     { name: 'live', slug: 'live' },
     { name: 'Écriture de contenu', slug: 'ecriture-contenu' },
+    { name: 'Scénariste', slug: 'scenariste' },
     { name: 'Autre', slug: 'autre' }
   ],
   'poste-service': [
@@ -39,13 +41,16 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
   'studio-lieu': [
     { name: 'Studio de création', slug: 'studio-creation' },
     { name: 'Lieux résidentiels', slug: 'lieux-residentiels' },
-    { name: 'Lieux professionnels', slug: 'lieux-professionnels' }
+    { name: 'Lieux professionnels', slug: 'lieux-professionnels' },
+    { name: 'Autre', slug: 'autre' }
   ],
   'projets-equipe': [
     { name: 'Émission', slug: 'projet-emission' },
     { name: 'Newsletter', slug: 'projet-newsletter' },
     { name: 'Interview', slug: 'projet-interview' },
     { name: 'Podcast', slug: 'projet-podcast' },
+    { name: 'Documentaire', slug: 'projet-documentaire' },
+    { name: 'Court-métrage', slug: 'projet-court-metrage' },
     { name: 'Chaîne YouTube', slug: 'projet-youtube' },
     { name: 'Magazine', slug: 'projet-magazine' },
     { name: 'Blog', slug: 'projet-blog' },
@@ -57,6 +62,12 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
     { name: 'Organisation', slug: 'organisation' },
     { name: 'Agence', slug: 'agence' },
+    { name: 'Branding', slug: 'branding' },
+    { name: 'Analyse de profil', slug: 'analyse-profil' },
+    { name: 'Proposition d’idées', slug: 'proposition-idees' },
+    { name: 'Assistant créateur', slug: 'assistant-createur' },
+    { name: 'Monétisation audience', slug: 'monetisation-audience' },
+    { name: 'Aisance caméra', slug: 'aisance-camera' },
     { name: 'Setup matériel', slug: 'setup-materiel' },
     { name: 'Autre', slug: 'autre' }
   ],

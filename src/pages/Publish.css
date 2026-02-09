@@ -21,9 +21,13 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+
+.publish-content-wrapper.has-actions {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
 }
 
 .publish-content-wrapper::-webkit-scrollbar {

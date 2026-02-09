@@ -92,32 +92,49 @@ const Favorites = () => {
       // Récupérer les posts likés
       const postIds = likes.map((like: { post_id: string }) => like.post_id)
       
-      // Récupérer les posts avec leurs relations
+      // Récupérer les posts avec relations via la vue (fallback sur tables si la vue n'existe pas)
       const { data: postsData, error: postsError } = await supabase
+        .from('public_posts_with_relations' as any)
+        .select('*')
+        .in('id', postIds)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (!postsError && postsData) {
+        setFavoritePosts(mapPosts(postsData))
+        return
+      }
+
+      if (postsError) {
+        console.error('Error fetching posts via view:', postsError)
+      }
+
+      // Fallback: requêtes séparées si la vue n'est pas disponible
+      const { data: fallbackPosts, error: fallbackError } = await supabase
         .from('posts')
         .select('*')
         .in('id', postIds)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
-      if (postsError) {
-        console.error('Error fetching posts:', postsError)
+      if (fallbackError) {
+        console.error('Error fetching posts:', fallbackError)
         // Vérifier si c'est une erreur réseau
-        if (postsError.message?.includes('Failed to fetch') || 
-            postsError.message?.includes('NetworkError') ||
-            postsError.message?.includes('network') ||
-            postsError.message?.includes('ERR_')) {
+        if (fallbackError.message?.includes('Failed to fetch') || 
+            fallbackError.message?.includes('NetworkError') ||
+            fallbackError.message?.includes('network') ||
+            fallbackError.message?.includes('ERR_')) {
           setNetworkError(true)
         }
         return
       }
 
-      if (postsData && postsData.length > 0) {
+      if (fallbackPosts && fallbackPosts.length > 0) {
         // Récupérer les relations séparément
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const userIds = [...new Set(postsData.map((p: any) => p.user_id).filter(Boolean))]
+        const userIds = [...new Set(fallbackPosts.map((p: any) => p.user_id).filter(Boolean))]
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const categoryIds = [...new Set(postsData.map((p: any) => p.category_id).filter(Boolean))]
+        const categoryIds = [...new Set(fallbackPosts.map((p: any) => p.category_id).filter(Boolean))]
 
         const { data: profiles } = await supabase
           .from('profiles')
@@ -135,7 +152,7 @@ const Favorites = () => {
         const categoriesMap = new Map((categories || []).map((c: any) => [c.id, c]))
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const postsWithRelations = postsData.map((post: any) => ({
+        const postsWithRelations = fallbackPosts.map((post: any) => ({
           ...post,
           profiles: profilesMap.get(post.user_id) || null,
           categories: categoriesMap.get(post.category_id) || null
@@ -200,33 +217,49 @@ const Favorites = () => {
       }
 
       if (profiles && profiles.length > 0) {
-        // Pour chaque profil, récupérer le nombre de posts et de followers
-        const profilesWithCounts = await Promise.all(
-          profiles.map(async (profile: { id: string; username: string | null; full_name: string | null; avatar_url: string | null; bio: string | null }) => {
-            // Compter les posts
-            const { count: postsCount } = await supabase
-              .from('posts')
-              .select('*', { count: 'exact', head: true })
-              .eq('user_id', profile.id)
-              .eq('status', 'active')
+        const [postsResult, followersResult] = await Promise.all([
+          supabase
+            .from('posts')
+            .select('user_id')
+            .in('user_id', followingIds)
+            .eq('status', 'active'),
+          supabase
+            .from('follows')
+            .select('following_id')
+            .in('following_id', followingIds)
+        ])
 
-            // Compter les followers
-            const { count: followersCount } = await supabase
-              .from('follows')
-              .select('id', { count: 'exact', head: true })
-              .eq('following_id', profile.id)
+        if (postsResult.error) {
+          console.error('Error fetching posts counts:', postsResult.error)
+        }
+        if (followersResult.error) {
+          console.error('Error fetching followers counts:', followersResult.error)
+        }
 
-            return {
-              id: profile.id,
-              username: profile.username,
-              full_name: profile.full_name,
-              avatar_url: profile.avatar_url,
-              bio: profile.bio,
-              postsCount: postsCount || 0,
-              followers: followersCount || 0
-            }
-          })
-        )
+        const postsCountMap = new Map<string, number>()
+        const followersCountMap = new Map<string, number>()
+
+        for (const row of postsResult.data || []) {
+          const userId = (row as { user_id?: string }).user_id
+          if (!userId) continue
+          postsCountMap.set(userId, (postsCountMap.get(userId) || 0) + 1)
+        }
+
+        for (const row of followersResult.data || []) {
+          const userId = (row as { following_id?: string }).following_id
+          if (!userId) continue
+          followersCountMap.set(userId, (followersCountMap.get(userId) || 0) + 1)
+        }
+
+        const profilesWithCounts = profiles.map((profile: { id: string; username: string | null; full_name: string | null; avatar_url: string | null; bio: string | null }) => ({
+          id: profile.id,
+          username: profile.username,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          bio: profile.bio,
+          postsCount: postsCountMap.get(profile.id) || 0,
+          followers: followersCountMap.get(profile.id) || 0
+        }))
 
         setFollowedProfiles(profilesWithCounts)
       } else {

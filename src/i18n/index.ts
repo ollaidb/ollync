@@ -37,14 +37,19 @@ i18n.use(initReactI18next).init({
           'vente': 'Vente'
         },
         descriptions: {
-          'creation-contenu': 'Créer du contenu : photos, vidéos, vlogs, sketchs, trends, événements',
-          'casting-role': 'Trouver des profils pour un projet ou une production',
-          'emploi': 'Emploi : montage et post-production pour vos contenus',
-          'poste-service': 'Poste/Service : prestations, food, lieux et autres besoins',
-          'studio-lieu': 'Trouver un studio ou un lieu pour vos shootings et tournages',
-          'projets-equipe': 'Constituer une équipe pour votre projet',
-          'services': 'Proposer ou trouver des services pour créateurs',
-          'vente': 'Vendre des comptes, noms d’utilisateur ou concepts'
+          'creation-contenu':
+            'Créer du contenu à plusieurs : photos, vidéos, vlogs, sketchs, trends, lives ou événements.',
+          'casting-role':
+            'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif).',
+          'emploi': 'Métiers liés à la création de contenu (vidéo, photo, montage, community, etc.).',
+          'poste-service':
+            'Échange service ↔ visibilité (prestataire propose un service, créateur offre la visibilité).',
+          'studio-lieu':
+            'Trouver des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
+          'projets-equipe': 'Monter une équipe pour réaliser un vrai projet créatif de A à Z.',
+          'services':
+            'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel).',
+          'vente': 'Acheter ou vendre (comptes, noms d\'utilisateur, concepts, matériel).'
         },
         submenus: {
           'tout': 'Tout',
@@ -61,6 +66,8 @@ i18n.use(initReactI18next).init({
           'lieux': 'Lieux',
           'montage': 'Montage',
           'micro-trottoir': 'Micro-trottoir',
+          'community-manager': 'Community manager',
+          'scenariste': 'Scénariste',
           'ecriture-contenu': 'Écriture de contenu',
           'figurant': 'Figurant',
           'modele-photo': 'Modèle photo',
@@ -73,6 +80,8 @@ i18n.use(initReactI18next).init({
           'projet-newsletter': 'Newsletter',
           'projet-interview': 'Interview',
           'projet-podcast': 'Podcast',
+          'projet-documentaire': 'Documentaire',
+          'projet-court-metrage': 'Court-métrage',
           'projet-youtube': 'Chaîne YouTube',
           'projet-magazine': 'Magazine',
           'projet-blog': 'Blog',
@@ -84,6 +93,12 @@ i18n.use(initReactI18next).init({
           'strategie-editoriale': 'Stratégie éditoriale',
           'organisation': 'Organisation',
           'agence': 'Agence',
+          'branding': 'Branding',
+          'analyse-profil': 'Analyse de profil',
+          'proposition-idees': 'Proposition d’idées',
+          'assistant-createur': 'Assistant créateur',
+          'monetisation-audience': 'Monétisation audience',
+          'aisance-camera': 'Aisance caméra',
           'setup-materiel': 'Setup matériel',
           'comptes': 'Comptes',
           'noms-utilisateur': "Noms d'utilisateur",
@@ -350,14 +365,16 @@ i18n.use(initReactI18next).init({
           'vente': 'Sales'
         },
         descriptions: {
-          'creation-contenu': 'Create content: photos, videos, vlogs, sketches, trends, events',
-          'casting-role': 'Find profiles for a project or production',
-          'emploi': 'Jobs: editing and post-production for your content',
-          'poste-service': 'Post/Service: services, food, places, and other needs',
-          'studio-lieu': 'Find studios or locations for your shoots and filming',
-          'projets-equipe': 'Build a team for your project',
-          'services': 'Offer or find services for creators',
-          'vente': 'Sell accounts, usernames, or concepts'
+          'creation-contenu': 'Create content together: photos, videos, vlogs, sketches, trends, lives, or events.',
+          'casting-role':
+            'Find people to act in a project (extras, roles, comedy, filming, creative content).',
+          'emploi': 'Jobs related to content creation (video, photo, editing, community, etc.).',
+          'poste-service': 'Service exchange for visibility (provider offers a service, creator provides visibility).',
+          'studio-lieu': 'Find places to create content (shoots, filming, sets, suitable spaces).',
+          'projets-equipe': 'Build a team to deliver a real creative project from A to Z.',
+          'services':
+            'Offer or look for content-creation services (content coaching, editorial strategy, organization, agency, equipment setup).',
+          'vente': 'Buy or sell (accounts, usernames, concepts, equipment).'
         },
         submenus: {
           'tout': 'All',
@@ -374,6 +391,8 @@ i18n.use(initReactI18next).init({
           'lieux': 'Places',
           'montage': 'Editing',
           'micro-trottoir': 'Street interview',
+          'community-manager': 'Community manager',
+          'scenariste': 'Scriptwriter',
           'ecriture-contenu': 'Content writing',
           'figurant': 'Extra',
           'modele-photo': 'Photo model',
@@ -386,6 +405,8 @@ i18n.use(initReactI18next).init({
           'projet-newsletter': 'Newsletter',
           'projet-interview': 'Interview',
           'projet-podcast': 'Podcast',
+          'projet-documentaire': 'Documentary',
+          'projet-court-metrage': 'Short film',
           'projet-youtube': 'YouTube channel',
           'projet-magazine': 'Magazine',
           'projet-blog': 'Blog',
@@ -397,6 +418,12 @@ i18n.use(initReactI18next).init({
           'strategie-editoriale': 'Editorial strategy',
           'organisation': 'Organization',
           'agence': 'Agency',
+          'branding': 'Branding',
+          'analyse-profil': 'Profile analysis',
+          'proposition-idees': 'Idea proposals',
+          'assistant-createur': 'Creator assistant',
+          'monetisation-audience': 'Audience monetization',
+          'aisance-camera': 'Camera confidence',
           'setup-materiel': 'Equipment setup',
           'comptes': 'Accounts',
           'noms-utilisateur': 'Usernames',

@@ -89,9 +89,349 @@ export const Step4Description = ({
   const isMaterialSale =
     (selectedCategory?.slug ?? formData.category) === 'vente' &&
     (selectedSubcategory?.slug ?? formData.subcategory) === 'gorille'
+  const categorySlug = selectedCategory?.slug ?? formData.category ?? ''
+  const subcategorySlug = selectedSubcategory?.slug ?? formData.subcategory ?? ''
+  const creationContenuExamples: Record<string, { title: string; description: string }> = {
+    photo: {
+      title: 'Ex : Photo Insta (années 2000)',
+      description:
+        'Ex : Je cherche à faire des photos Insta style années 2000 pour une durée de 2 heures et environ 20 à 40 photos avec mon téléphone.'
+    },
+    video: {
+      title: 'Ex : Vidéo face-caméra (discussion)',
+      description:
+        'Ex : Je veux filmer une vidéo face-caméra type discussion pour une durée de 1h30 et 3 vidéos courtes.'
+    },
+    vlog: {
+      title: 'Ex : Vlog (journée)',
+      description:
+        'Ex : Je veux filmer un vlog de journée pour une durée de 3 heures et un vlog complet (plans + moments clés).'
+    },
+    sketchs: {
+      title: 'Ex : Sketch (titre du sketch)',
+      description:
+        'Ex : Type comédie/duo/personnages pour une durée de 2 heures et un sketch complet.'
+    },
+    trends: {
+      title: 'Ex : Trend (nom du trend)',
+      description:
+        'Ex : Trend [nom du trend] pour une durée de 1 heure et 3 vidéos + variantes.'
+    },
+    evenements: {
+      title: 'Ex : Événement (type d’événement)',
+      description:
+        'Ex : Type concert/expo/festival/soirée pour une durée de 2 heures et photos + vidéos.'
+    },
+    live: {
+      title: 'Ex : Live (thème du live)',
+      description:
+        'Ex : Thème [sujet] pour une durée de 45 min et un live clair et interactif.'
+    },
+    autre: {
+      title: 'Ex : Autre type de contenu',
+      description:
+        'Ex : Décrivez le type de contenu recherché si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const castingRoleExamples: Record<string, { title: string; description: string }> = {
+    figurant: {
+      title: 'Ex : Figurant pour vidéo comédie',
+      description:
+        'Ex : Je cherche des figurants pour apparaître dans une vidéo comédie. Durée : 2h.'
+    },
+    'modele-photo': {
+      title: 'Ex : Modèle photo pour lookbook',
+      description:
+        'Ex : Je cherche un modèle photo pour un shooting mode (vêtements/chaussures). Durée : 2h.'
+    },
+    'modele-video': {
+      title: 'Ex : Modèle vidéo pour clip',
+      description:
+        'Ex : Je cherche un modèle vidéo pour apparaître dans un clip/vidéo créative. Durée : 3h.'
+    },
+    'voix-off': {
+      title: 'Ex : Voix off pour vidéo promo',
+      description:
+        'Ex : Je cherche une voix off pour une vidéo promo (1 à 2 minutes).'
+    },
+    'invite-podcast': {
+      title: 'Ex : Invité podcast (thème)',
+      description:
+        'Ex : Je cherche un invité pour parler d’un thème précis dans un podcast. Durée : 45 min.'
+    },
+    'invite-micro-trottoir': {
+      title: 'Ex : Micro‑trottoir (thème)',
+      description:
+        'Ex : Je cherche des personnes à interviewer dans la rue sur un thème précis. Durée : 10 min.'
+    },
+    'youtube-video': {
+      title: 'Ex : Vidéo YouTube (type de vidéo)',
+      description:
+        'Ex : Je cherche un invité pour une vidéo YouTube (débat/interview/concept). Durée : 1h.'
+    },
+    autre: {
+      title: 'Ex : Autre rôle',
+      description:
+        'Ex : Décrivez le rôle ou le profil recherché si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const emploiExamples: Record<string, { title: string; description: string }> = {
+    montage: {
+      title: 'Ex : Je cherche un monteur vidéo',
+      description:
+        'Ex : Je cherche un monteur pour des vidéos courtes/longues (montage, rythme, export).'
+    },
+    'micro-trottoir': {
+      title: 'Ex : Micro‑trottoir (thème)',
+      description:
+        'Ex : Je cherche une personne pour réaliser un micro‑trottoir sur un thème précis.'
+    },
+    'community-manager': {
+      title: 'Ex : Je cherche un community manager',
+      description:
+        'Ex : Je cherche un community manager pour gérer les réseaux (posts, réponses, animation).'
+    },
+    live: {
+      title: 'Ex : Je cherche un animateur live',
+      description:
+        'Ex : Je cherche quelqu’un pour animer des lives et présenter des produits/contenus.'
+    },
+    'ecriture-contenu': {
+      title: 'Ex : Je cherche un rédacteur contenu',
+      description:
+        'Ex : Je cherche une personne pour écrire des scripts, idées et captions.'
+    },
+    scenariste: {
+      title: 'Ex : Je cherche un scénariste',
+      description:
+        'Ex : Je cherche un scénariste pour écrire des scripts et scénarios de vidéos.'
+    },
+    autre: {
+      title: 'Ex : Autre poste',
+      description:
+        'Ex : Décrivez le poste recherché si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const servicesExamples: Record<string, { title: string; description: string }> = {
+    'coaching-contenu': {
+      title: 'Ex : Je propose un coaching contenu',
+      description:
+        'Ex : Je propose un coaching pour formats, idées, rythme et direction artistique.'
+    },
+    'strategie-editoriale': {
+      title: 'Ex : Je propose une stratégie éditoriale',
+      description:
+        'Ex : Je propose un plan de contenu avec thèmes, calendrier et fréquence.'
+    },
+    organisation: {
+      title: 'Ex : J’organise votre production',
+      description:
+        'Ex : Je propose une organisation du contenu (planning, workflow, priorités).'
+    },
+    agence: {
+      title: 'Ex : Je propose une agence créateur',
+      description:
+        'Ex : Je propose de gérer les collaborations et partenariats d’un créateur.'
+    },
+    branding: {
+      title: 'Ex : Je propose un branding créateur',
+      description:
+        'Ex : Je propose une identité visuelle et un positionnement clair.'
+    },
+    'analyse-profil': {
+      title: 'Ex : J’analyse votre profil',
+      description:
+        'Ex : Je propose un audit complet avec points forts et axes d’amélioration.'
+    },
+    'proposition-idees': {
+      title: 'Ex : Je propose des idées',
+      description:
+        'Ex : Je propose des idées de contenus adaptées à votre niche.'
+    },
+    'assistant-createur': {
+      title: 'Ex : Je suis assistant créateur',
+      description:
+        'Ex : Je propose d’assister un créateur dans la production et l’organisation.'
+    },
+    'monetisation-audience': {
+      title: 'Ex : Je propose la monétisation',
+      description:
+        'Ex : Je propose une stratégie pour monétiser votre audience.'
+    },
+    'aisance-camera': {
+      title: 'Ex : Je propose un coaching caméra',
+      description:
+        'Ex : Je propose un coaching pour être à l’aise face caméra (posture, voix).'
+    },
+    'setup-materiel': {
+      title: 'Ex : Je propose un setup créateur',
+      description:
+        'Ex : Je propose un setup de création (décor, éclairage, espace).'
+    },
+    autre: {
+      title: 'Ex : Autre service',
+      description:
+        'Ex : Décrivez le service proposé si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const venteExamples: Record<string, { title: string; description: string }> = {
+    comptes: {
+      title: 'Ex : Compte TikTok à vendre',
+      description:
+        'Ex : Je vends un compte niche sport avec audience et engagement stables.'
+    },
+    'noms-utilisateur': {
+      title: 'Ex : Nom d’utilisateur à vendre',
+      description:
+        'Ex : Je vends un nom d’utilisateur court et mémorable pour un nouveau projet.'
+    },
+    'concepts-niches': {
+      title: 'Ex : Concept de contenu à vendre',
+      description:
+        'Ex : Je vends une idée de concept + ligne éditoriale + formats.'
+    },
+    gorille: {
+      title: 'Ex : Matériel vidéo à vendre',
+      description:
+        'Ex : Je vends une caméra et un micro (état précisé, prix fixe).'
+    },
+    autre: {
+      title: 'Ex : Autre type de vente',
+      description:
+        'Ex : Si vous ne trouvez pas la sous‑catégorie, décrivez ce que vous vendez.'
+    }
+  }
+  const posteServiceExamples: Record<string, { title: string; description: string }> = {
+    prestation: {
+      title: 'Ex : Prestation beauté',
+      description:
+        'Ex : Ongles/maquillage/coiffure, précisez la prestation et la durée.'
+    },
+    food: {
+      title: 'Ex : Restaurant partenaire',
+      description:
+        'Ex : Restaurant/café/bar, précisez le type et ce qui est proposé.'
+    },
+    lieux: {
+      title: 'Ex : Lieu touristique',
+      description:
+        'Ex : Hôtel/loisir/boîte, précisez le type de lieu et ce qui est proposé.'
+    },
+    autre: {
+      title: 'Ex : Autre service',
+      description:
+        'Ex : Si vous ne trouvez pas la sous‑catégorie, décrivez votre service.'
+    }
+  }
+  const studioLieuExamples: Record<string, { title: string; description: string }> = {
+    'studio-creation': {
+      title: 'Ex : Studio équipé',
+      description:
+        'Ex : Studio pour photos/vidéos/interviews, durée et équipement disponibles.'
+    },
+    'lieux-residentiels': {
+      title: 'Ex : Appartement pour shooting',
+      description:
+        'Ex : Appartement lumineux pour créer du contenu, préciser la durée.'
+    },
+    'lieux-professionnels': {
+      title: 'Ex : Salle pro pour tournage',
+      description:
+        'Ex : Salle pro pour interviews/lives, préciser la durée.'
+    },
+    autre: {
+      title: 'Ex : Autre lieu',
+      description:
+        'Ex : Décrivez le lieu proposé si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const projetsExamples: Record<string, { title: string; description: string }> = {
+    'projet-emission': {
+      title: 'Ex : [Nom du projet émission]',
+      description:
+        'Ex : Je lance une émission (format, sujets, rythme). Je cherche montage/animation.'
+    },
+    'projet-newsletter': {
+      title: 'Ex : [Nom du projet newsletter]',
+      description:
+        'Ex : Je lance une newsletter (thème, fréquence). Je cherche rédaction/design.'
+    },
+    'projet-interview': {
+      title: 'Ex : [Nom du projet interview]',
+      description:
+        'Ex : Je prépare une série d’interviews. Je cherche préparation/tournage/montage.'
+    },
+    'projet-podcast': {
+      title: 'Ex : [Nom du projet podcast]',
+      description:
+        'Ex : Je lance un podcast (thème, format). Je cherche co‑animation/montage audio.'
+    },
+    'projet-documentaire': {
+      title: 'Ex : [Nom du projet documentaire]',
+      description:
+        'Ex : Je réalise un documentaire (sujet, angle). Je cherche tournage/montage.'
+    },
+    'projet-court-metrage': {
+      title: 'Ex : [Nom du projet court‑métrage]',
+      description:
+        'Ex : Je crée un court‑métrage (scénario prêt). Je cherche acteurs/montage.'
+    },
+    'projet-youtube': {
+      title: 'Ex : [Nom du projet chaîne YouTube]',
+      description:
+        'Ex : Je lance une chaîne YouTube (concept). Je cherche tournage/montage.'
+    },
+    'projet-magazine': {
+      title: 'Ex : [Nom du projet magazine]',
+      description:
+        'Ex : Je crée un magazine (thème). Je cherche rédaction/design/édition.'
+    },
+    'projet-blog': {
+      title: 'Ex : [Nom du projet blog]',
+      description:
+        'Ex : Je lance un blog (thème). Je cherche rédaction/SEO/visuels.'
+    },
+    'projet-media': {
+      title: 'Ex : [Nom du projet média]',
+      description:
+        'Ex : Je crée un média (ligne édito). Je cherche production/édition/diffusion.'
+    },
+    autre: {
+      title: 'Ex : [Nom du projet]',
+      description:
+        'Ex : Je décris le projet et les profils recherchés.'
+    }
+  }
+  const creationExample = creationContenuExamples[subcategorySlug]
+  const castingExample = castingRoleExamples[subcategorySlug]
+  const emploiExample = emploiExamples[subcategorySlug]
+  const servicesExample = servicesExamples[subcategorySlug]
+  const venteExample = venteExamples[subcategorySlug]
+  const posteServiceExample = posteServiceExamples[subcategorySlug]
+  const studioLieuExample = studioLieuExamples[subcategorySlug]
+  const projetsExample = projetsExamples[subcategorySlug]
+  const activeExample =
+    categorySlug === 'creation-contenu'
+      ? creationExample
+      : categorySlug === 'casting-role'
+        ? castingExample
+        : categorySlug === 'emploi'
+          ? emploiExample
+          : categorySlug === 'services'
+            ? servicesExample
+            : categorySlug === 'vente'
+              ? venteExample
+              : categorySlug === 'poste-service'
+                ? posteServiceExample
+                : categorySlug === 'studio-lieu'
+                  ? studioLieuExample
+                  : categorySlug === 'projets-equipe'
+                    ? projetsExample
+                : undefined
+  const titlePlaceholder = activeExample?.title ?? 'Ex: Développeur React recherché'
   const descriptionPlaceholder = isJobCategory
     ? 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.'
-    : 'Décrivez en détail votre annonce...'
+    : activeExample?.description ?? 'Décrivez en détail votre annonce...'
   
   // Synchroniser le moyen de paiement avec la catégorie sélectionnée
   useEffect(() => {
@@ -136,7 +476,7 @@ export const Step4Description = ({
         <input
           type="text"
           className="form-input"
-          placeholder="Ex: Développeur React recherché"
+          placeholder={titlePlaceholder}
           value={formData.title}
           onChange={(e) => onUpdateFormData({ title: e.target.value })}
         />
@@ -341,8 +681,8 @@ export const Step4Description = ({
             <label className="form-label">Horaires / temps de travail</label>
             <input
               type="text"
-              className="form-input"
-              placeholder="Ex: 35h/semaine, lundi-vendredi, 9h-17h"
+              className="form-input small-placeholder"
+              placeholder="Ex : 35h/semaine"
               value={formData.work_schedule || ''}
               onChange={(e) => onUpdateFormData({ work_schedule: e.target.value })}
             />

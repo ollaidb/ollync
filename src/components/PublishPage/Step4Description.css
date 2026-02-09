@@ -37,6 +37,10 @@
   box-sizing: border-box;
 }
 
+.form-input.small-placeholder::placeholder {
+  font-size: 13px;
+}
+
 .form-input:focus,
 .form-textarea:focus,
 .form-select:focus {

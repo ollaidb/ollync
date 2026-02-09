@@ -1,6 +1,7 @@
 import { publicationTypes } from '../../constants/publishData'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import './Step1Category.css'
 
 interface Step1CategoryProps {
@@ -9,6 +10,21 @@ interface Step1CategoryProps {
 
 export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
   const { t } = useTranslation(['publish', 'categories'])
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
+
+  const toggleDescription = (e: React.MouseEvent, categoryId: string) => {
+    e.stopPropagation()
+    setExpandedDescriptions((prev) => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }))
+  }
+
+  const getPreviewText = (text: string, wordLimit: number) => {
+    const words = text.trim().split(/\s+/)
+    if (words.length <= wordLimit) return { preview: text, hasMore: false }
+    return { preview: words.slice(0, wordLimit).join(' '), hasMore: true }
+  }
   return (
     <div className="step1-category">
       <h2 className="step-question">{t('publish:step1Title')}</h2>
@@ -20,6 +36,15 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
           const categoryDescription = t(`categories:descriptions.${category.slug}`, {
             defaultValue: category.description
           })
+          const isExpanded = !!expandedDescriptions[category.id]
+          const extraWordsMap: Record<string, number> = {
+            'emploi': 2,
+            'creation-contenu': 1,
+            'studio-lieu': 1,
+            'projets-equipe': 1
+          }
+          const extraWords = extraWordsMap[category.slug] ?? 0
+          const { preview, hasMore } = getPreviewText(categoryDescription, 6 + extraWords)
           return (
             <button
               key={category.id}
@@ -31,8 +56,34 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
                 <Icon size={20} />
               </div>
               <div className="category-content">
-              <span className="category-name">{categoryLabel}</span>
-                <span className="category-description">{categoryDescription}</span>
+                <span className="category-name">{categoryLabel}</span>
+                <div className="category-description-row">
+                  <span
+                    className={`category-description ${isExpanded || !hasMore ? 'is-expanded' : 'is-collapsed'}`}
+                  >
+                    {isExpanded || !hasMore ? categoryDescription : preview}
+                    {hasMore && !isExpanded && (
+                      <button
+                        type="button"
+                        className="category-more inline"
+                        onClick={(e) => toggleDescription(e, category.id)}
+                        aria-label="Afficher la description complète"
+                      >
+                        ...
+                      </button>
+                    )}
+                    {hasMore && isExpanded && (
+                      <button
+                        type="button"
+                        className="category-more inline"
+                        onClick={(e) => toggleDescription(e, category.id)}
+                        aria-label="Réduire la description"
+                      >
+                        Réduire
+                      </button>
+                    )}
+                  </span>
+                </div>
               </div>
               <ChevronRight size={18} className="category-arrow" />
             </button>
@@ -42,4 +93,3 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
     </div>
   )
 }
-
