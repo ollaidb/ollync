@@ -77,6 +77,22 @@ BEGIN
       NULL;
   END;
 
+  -- listing_type
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'posts'
+        AND column_name = 'listing_type'
+    ) THEN
+      ALTER TABLE posts ADD COLUMN listing_type VARCHAR(20);
+      RAISE NOTICE 'Colonne listing_type ajoutée';
+    END IF;
+  EXCEPTION
+    WHEN duplicate_column THEN
+      NULL;
+  END;
+
   -- description
   BEGIN
     IF NOT EXISTS (
@@ -377,4 +393,3 @@ FROM information_schema.columns
 WHERE table_schema = 'public' 
   AND table_name = 'posts'
 ORDER BY ordinal_position;
-

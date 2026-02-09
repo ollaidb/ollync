@@ -23,6 +23,7 @@ interface PostRow {
   id: string
   user_id: string
   category_id: string
+  listing_type?: string | null
   title: string
   description: string
   price?: number | null
@@ -112,6 +113,7 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
     // Ne pas charger tous les champs avec select('*')
     const fieldsToSelect = [
       'id',
+      'listing_type',
       'title',
       'description',
       'price',

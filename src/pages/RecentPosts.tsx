@@ -18,8 +18,10 @@ const RecentPosts = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [listingTypeFilter, setListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
   const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
   const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   const fetchPosts = async () => {
@@ -84,7 +86,10 @@ const RecentPosts = () => {
 
       const matchesOwner = user ? post.user_id !== user.id : true
 
-      return matchesQuery && matchesDate && matchesOwner
+      const matchesListingType =
+        listingTypeFilter === 'all' || post.listing_type === listingTypeFilter
+
+      return matchesQuery && matchesDate && matchesOwner && matchesListingType
     })
 
     return filtered.sort((a, b) => {
@@ -92,7 +97,7 @@ const RecentPosts = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [posts, searchQuery, dateFilter, sortOrder, user])
+  }, [posts, searchQuery, dateFilter, sortOrder, listingTypeFilter, user])
 
   const handlePostClick = (post: Post) => {
     navigate(`/post/${post.id}`)
@@ -138,6 +143,7 @@ const RecentPosts = () => {
               onClick={() => {
                 setPendingSortOrder(sortOrder)
                 setPendingDateFilter(dateFilter)
+                setPendingListingTypeFilter(listingTypeFilter)
                 setIsFilterOpen(true)
               }}
               aria-label="Filtrer"
@@ -349,12 +355,39 @@ const RecentPosts = () => {
                 </button>
               </div>
             </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Type d'annonce</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('offer')}
+                >
+                  Offre
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('request')}
+                >
+                  Demande
+                </button>
+              </div>
+            </div>
             <button
               type="button"
               className="swipe-filter-apply"
               onClick={() => {
                 setSortOrder(pendingSortOrder)
                 setDateFilter(pendingDateFilter)
+                setListingTypeFilter(pendingListingTypeFilter)
                 setIsFilterOpen(false)
               }}
             >

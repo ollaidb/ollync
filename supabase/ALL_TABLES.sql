@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   category_id UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
   sub_category_id UUID REFERENCES sub_categories(id) ON DELETE SET NULL,
+  listing_type VARCHAR(20),
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2),
@@ -298,4 +299,3 @@ CREATE TABLE IF NOT EXISTS transactions (
 -- Total: 23 tables
 -- - 15 tables principales (essentielles)
 -- - 8 tables supplémentaires (optionnelles mais recommandées)
-

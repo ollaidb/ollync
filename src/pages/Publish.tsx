@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { PublishGuideModal } from '../components/PublishPage/PublishGuideModal'
+import { Step0OfferDemand } from '../components/PublishPage/Step0OfferDemand'
 import { Step1Category } from '../components/PublishPage/Step1Category'
 import { Step2Subcategory } from '../components/PublishPage/Step2Subcategory'
 import { Step3Option } from '../components/PublishPage/Step3Option'
@@ -52,6 +53,7 @@ export default function Publish() {
     external_link?: string | null
     document_url?: string | null
     media_type?: string | null
+    listing_type?: string | null
     dateFrom?: string | null
     dateTo?: string | null
     tagged_post_id?: string | null
@@ -67,6 +69,7 @@ export default function Publish() {
   }, [])
 
   const initialFormData = useMemo(() => ({
+    listingType: '',
     category: null as string | null,
     subcategory: null as string | null,
     subSubCategory: null as string | null, // N3
@@ -163,14 +166,15 @@ export default function Publish() {
   }
 
   const getStepFromForm = useCallback((data: typeof formData) => {
-    if (!data.category) return 0
-    if (!data.subcategory) return 1
+    if (!data.listingType) return 0
+    if (!data.category) return 1
+    if (!data.subcategory) return 2
 
     const category = enrichedPublicationTypes.find((c) => c.id === data.category)
     const subcategory = category?.subcategories.find((s) => s.id === data.subcategory)
 
     if (subcategory?.options && subcategory.options.length > 0 && !data.subSubCategory && !data.option) {
-      return 2
+      return 3
     }
 
     const selectedOption = subcategory?.options?.find(
@@ -178,7 +182,7 @@ export default function Publish() {
     )
 
     if (selectedOption?.platforms && selectedOption.platforms.length > 0 && !data.subSubSubCategory && !data.platform) {
-      return 2.5
+      return 3.5
     }
 
     const showSocialNetwork = shouldShowSocialNetwork(category?.slug, subcategory?.slug)
@@ -203,8 +207,8 @@ export default function Publish() {
       (!requiresMaterialCondition || (data.materialCondition && data.materialCondition.trim().length > 0)) &&
       (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0))
 
-    if (!hasStep3Required) return 3
-    return 4
+    if (!hasStep3Required) return 4
+    return 5
   }, [enrichedPublicationTypes])
 
   useEffect(() => {
@@ -215,7 +219,7 @@ export default function Publish() {
       setIsLoadingEdit(true)
       const storedStepRaw = editPostId ? Number(localStorage.getItem(`publishDraftStep:${editPostId}`)) : null
       const validStoredStep =
-        storedStepRaw !== null && [0, 1, 2, 2.5, 3, 4].includes(storedStepRaw) ? (storedStepRaw as number) : null
+        storedStepRaw !== null && [0, 1, 2, 3, 3.5, 4, 5].includes(storedStepRaw) ? (storedStepRaw as number) : null
       if (validStoredStep !== null) {
         setStep(validStoredStep)
       }
@@ -269,6 +273,7 @@ export default function Publish() {
         const mediaTypeValue = postData.media_type || ''
 
         const nextFormData = {
+          listingType: (postData.listing_type as string | null) || 'offer',
           category: categorySlugValue,
           subcategory: subcategorySlugValue,
           subSubCategory: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
@@ -415,18 +420,28 @@ export default function Publish() {
         />
       </div>
 
-      <div className={`publish-content-wrapper ${step === 4 ? 'has-actions' : 'no-actions'}`}>
+      <div className={`publish-content-wrapper ${step === 5 ? 'has-actions' : 'no-actions'}`}>
         <div className="publish-content">
           {step === 0 && (
-            <Step1Category
-              onSelectCategory={(categoryId) => {
-                updateFormData({ category: categoryId })
+            <Step0OfferDemand
+              value={formData.listingType}
+              onSelect={(listingType) => {
+                updateFormData({ listingType })
                 setStep(1)
               }}
             />
           )}
 
           {step === 1 && (
+            <Step1Category
+              onSelectCategory={(categoryId) => {
+                updateFormData({ category: categoryId })
+                setStep(2)
+              }}
+            />
+          )}
+
+          {step === 2 && (
             <Step2Subcategory
               selectedCategory={selectedCategory ?? null}
               onSelectSubcategory={(subcategoryId) => {
@@ -442,10 +457,10 @@ export default function Publish() {
                 )
                 // Si cette sous-catégorie a des options (N3), aller à l'étape 2
                 if (subcategory?.options && subcategory.options.length > 0) {
-                  setStep(2)
+                  setStep(3)
                 } else {
                   // Sinon, aller directement à la description
-                  setStep(3)
+                  setStep(4)
                 }
               }}
               examplePosts={examplePosts}
@@ -453,7 +468,7 @@ export default function Publish() {
             />
           )}
 
-          {step === 2 && !formData.subSubCategory && (
+          {step === 3 && !formData.subSubCategory && (
             <Step3Option
               selectedSubcategory={selectedSubcategory ?? null}
               selectedCategory={selectedCategory ?? null}
@@ -466,10 +481,10 @@ export default function Publish() {
                 })
                 // Si cette option (N3) a des platforms (N4), aller à l'étape 2.5
                 if (opt.platforms && opt.platforms.length > 0) {
-                  setStep(2.5)
+                  setStep(3.5)
                 } else {
                   // Sinon, aller directement à la description
-                  setStep(3)
+                  setStep(4)
                 }
               }}
               examplePosts={examplePosts}
@@ -477,7 +492,7 @@ export default function Publish() {
             />
           )}
 
-          {step === 2.5 && (
+          {step === 3.5 && (
             <Step3Platform
               selectedOption={selectedSubSubCategory ?? null}
               onSelectPlatform={(platform) => {
@@ -485,22 +500,22 @@ export default function Publish() {
                   subSubSubCategory: platform,
                   platform: platform // Pour compatibilité
                 })
-                setStep(3)
+                setStep(4)
               }}
             />
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <Step4Description
               formData={formData}
               onUpdateFormData={updateFormData}
-              onContinue={() => setStep(4)}
+              onContinue={() => setStep(5)}
               selectedCategory={selectedCategory}
               selectedSubcategory={selectedSubcategory}
             />
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <Step5LocationMedia
               formData={formData}
               onUpdateFormData={updateFormData}
@@ -511,7 +526,7 @@ export default function Publish() {
       </div>
 
       {/* Action Buttons */}
-      {step === 4 && (
+      {step === 5 && (
         <PublishActions
           selectedCategory={selectedCategory ?? null}
           onSaveDraft={() => handlePublishPost('draft')}

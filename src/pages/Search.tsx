@@ -25,6 +25,7 @@ interface Post {
   needed_date?: string | null
   number_of_people?: number | null
   delivery_available: boolean
+  listing_type?: string | null
   user?: {
     username?: string | null
     full_name?: string | null
@@ -52,8 +53,10 @@ const Search = () => {
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFilter, setDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [listingTypeFilter, setListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
   const [pendingSortOrder, setPendingSortOrder] = useState<'desc' | 'asc'>('desc')
   const [pendingDateFilter, setPendingDateFilter] = useState<'all' | '1d' | '2d' | '7d' | '2w' | '3w' | '1m' | '2m'>('all')
+  const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const { t } = useTranslation(['categories'])
 
@@ -112,6 +115,7 @@ const Search = () => {
 
       const fieldsToSelect = [
         'id',
+        'listing_type',
         'title',
         'description',
         'price',
@@ -273,7 +277,9 @@ const Search = () => {
     const filtered = results.filter((post) => {
       const createdAt = new Date(post.created_at).getTime()
       const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
-      return matchesDate
+      const matchesListingType =
+        listingTypeFilter === 'all' || post.listing_type === listingTypeFilter
+      return matchesDate && matchesListingType
     })
 
     return filtered.sort((a, b) => {
@@ -281,7 +287,7 @@ const Search = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [results, dateFilter, sortOrder])
+  }, [results, dateFilter, sortOrder, listingTypeFilter])
 
   const handleLocationSelect = (location: {
     address: string
@@ -318,6 +324,7 @@ const Search = () => {
             onClick={() => {
               setPendingSortOrder(sortOrder)
               setPendingDateFilter(dateFilter)
+              setPendingListingTypeFilter(listingTypeFilter)
               setIsFilterOpen(true)
             }}
             aria-label="Filtrer"
@@ -466,12 +473,39 @@ const Search = () => {
                 </button>
               </div>
             </div>
+            <div className="swipe-filter-section">
+              <p className="swipe-filter-section-title">Type d'annonce</p>
+              <div className="swipe-filter-options">
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('all')}
+                >
+                  Toutes
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('offer')}
+                >
+                  Offre
+                </button>
+                <button
+                  type="button"
+                  className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
+                  onClick={() => setPendingListingTypeFilter('request')}
+                >
+                  Demande
+                </button>
+              </div>
+            </div>
             <button
               type="button"
               className="swipe-filter-apply"
               onClick={() => {
                 setSortOrder(pendingSortOrder)
                 setDateFilter(pendingDateFilter)
+                setListingTypeFilter(pendingListingTypeFilter)
                 setIsFilterOpen(false)
               }}
             >

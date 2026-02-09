@@ -18,7 +18,7 @@ export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _sel
   const navigate = useNavigate()
   const { getPreviousPath, markNavigatingBack, canGoBack } = useNavigationHistory()
   const { t } = useTranslation(['publish'])
-  const totalSteps = 5
+  const totalSteps = 6
   const progress = step > 0 ? ((step + 1) / totalSteps) * 100 : 0
 
   const handleBack = () => {
@@ -68,4 +68,3 @@ export const PublishHeader = ({ step, onBack, breadcrumb, selectedCategory: _sel
     </div>
   )
 }
-

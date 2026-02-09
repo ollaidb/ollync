@@ -38,22 +38,31 @@ export const usePublishNavigation = (
         option: null, 
         platform: null 
       })
-    } else if (step === 2.5) {
+    } else if (step === 3) {
       setStep(2)
+      setFormData({ 
+        subcategory: null,
+        subSubCategory: null,
+        subSubSubCategory: null,
+        option: null,
+        platform: null 
+      })
+    } else if (step === 3.5) {
+      setStep(3)
       setFormData({ 
         subSubSubCategory: null,
         platform: null 
       })
-    } else if (step === 3) {
+    } else if (step === 4) {
       if (formData.subSubCategory || formData.option) {
         const selectedCategory = publicationTypes.find(c => c.id === formData.category)
         const selectedSubcategory = selectedCategory?.subcategories.find(s => s.id === formData.subcategory)
         const selectedOption = selectedSubcategory?.options?.find(o => o.id === formData.subSubCategory || o.id === formData.option)
         
         if (selectedOption?.platforms && selectedOption.platforms.length > 0) {
-          setStep(2.5)
+          setStep(3.5)
         } else {
-          setStep(2)
+          setStep(3)
         }
       } else {
         // Si pas de subSubCategory/option, vérifier si la sous-catégorie a des options
@@ -62,15 +71,15 @@ export const usePublishNavigation = (
         const selectedSubcategory = selectedCategory?.subcategories.find(s => s.id === formData.subcategory)
         
         if (selectedSubcategory?.options && selectedSubcategory.options.length > 0) {
-          setStep(2)
+          setStep(3)
         } else {
           // La sous-catégorie n'a pas d'options, retourner directement aux sous-catégories
-          setStep(1)
+          setStep(2)
         }
       }
       setFormData({ title: '', description: '', socialNetwork: null })
-    } else if (step === 4) {
-      setStep(3)
+    } else if (step === 5) {
+      setStep(4)
     }
   }, [step, formData, setFormData])
 
@@ -105,4 +114,3 @@ export const usePublishNavigation = (
     getBreadcrumb
   }
 }
-

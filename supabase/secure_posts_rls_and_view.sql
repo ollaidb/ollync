@@ -61,6 +61,7 @@ SELECT
   p.user_id,
   p.category_id,
   p.sub_category_id,
+  p.listing_type,
   p.title,
   p.description,
   p.price,

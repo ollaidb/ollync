@@ -8,6 +8,7 @@ import i18n from '../i18n'
 export interface SupabasePost {
   id: string
   user_id?: string
+  listing_type?: string | null
   title: string
   description: string
   price?: number | null
@@ -36,6 +37,7 @@ export interface SupabasePost {
 export interface MappedPost {
   id: string
   user_id?: string
+  listing_type?: string | null
   title: string
   description: string
   price?: number | null

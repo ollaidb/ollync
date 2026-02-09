@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabaseClient'
 import { evaluateTextModeration } from './textModeration'
 
 interface FormData {
+  listingType?: 'offer' | 'request' | ''
   category: string | null
   subcategory: string | null
   option: string | null
@@ -164,6 +165,10 @@ export const validatePublishForm = (
 ): ValidationResult => {
   const errors: string[] = []
   const isJobCategory = formData.category === 'emploi'
+
+  if (!formData.listingType || (formData.listingType || '').trim().length === 0) {
+    errors.push('Vous devez choisir si vous proposez ou si vous cherchez')
+  }
 
   // Catégorie et sous-catégorie
   if (!formData.category) {
@@ -495,6 +500,7 @@ export const handlePublish = async (
 
   const postData: any = {
     user_id: user.id,
+    listing_type: formData.listingType || null,
     category_id: categoryId,
     sub_category_id: subCategoryId,
     title: formData.title.trim(),

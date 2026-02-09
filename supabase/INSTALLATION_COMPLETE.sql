@@ -74,6 +74,9 @@ BEGIN
   END IF;
 
   -- Autres colonnes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'listing_type') THEN
+    ALTER TABLE posts ADD COLUMN listing_type VARCHAR(20);
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'posts' AND column_name = 'title') THEN
     ALTER TABLE posts ADD COLUMN title VARCHAR(255);
   END IF;
@@ -862,4 +865,3 @@ BEGIN
   RAISE NOTICE 'Installation terminée avec succès!';
   RAISE NOTICE 'Toutes les tables, colonnes, triggers et policies ont été créés.';
 END $$;
-

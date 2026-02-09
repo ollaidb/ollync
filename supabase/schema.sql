@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   category_id UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
   sub_category_id UUID REFERENCES sub_categories(id) ON DELETE SET NULL,
+  listing_type VARCHAR(20), -- offer, request
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   price DECIMAL(10, 2),
@@ -548,4 +549,3 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_shares_count AFTER INSERT OR DELETE ON shares
   FOR EACH ROW EXECUTE FUNCTION update_post_shares_count();
-

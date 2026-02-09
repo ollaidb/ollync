@@ -14,6 +14,9 @@ CREATE INDEX IF NOT EXISTS idx_posts_category_created_at
 CREATE INDEX IF NOT EXISTS idx_posts_sub_category_created_at
   ON posts (sub_category_id, created_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_posts_listing_type_created_at
+  ON posts (listing_type, created_at DESC);
+
 CREATE INDEX IF NOT EXISTS idx_posts_user_created_at
   ON posts (user_id, created_at DESC);
 
