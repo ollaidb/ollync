@@ -186,8 +186,7 @@ const Home = () => {
         status: 'active',
         limit: 100,
         orderBy: 'created_at',
-        orderDirection: 'desc',
-        excludeUserId: user?.id
+        orderDirection: 'desc'
       })
 
       // Trier par engagement (likes + comments + views)

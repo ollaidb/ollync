@@ -880,9 +880,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
 
-  // Centres d'intérêt (uniquement skills, pas les services)
-  const interests = profile.skills || []
-
   // Services (objets avec name, description, payment_type, value)
   // Les services sont déjà parsés dans fetchProfile, on les utilise directement
   const services: Service[] = (() => {

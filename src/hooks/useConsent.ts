@@ -11,11 +11,6 @@ export type ConsentType =
   | 'cookies'
   | 'behavioral_data'
 
-interface ConsentMessages {
-  title: string
-  message: string
-}
-
 interface ConsentRecord {
   accepted: boolean
   ask_again: boolean
