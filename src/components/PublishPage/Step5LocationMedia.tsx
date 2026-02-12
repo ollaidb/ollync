@@ -20,7 +20,10 @@ interface FormData {
   dateFrom: string
   dateTo: string
   deadline: string
+  neededTime?: string
   maxParticipants: string
+  profileLevel?: string
+  profileRoles?: string[]
   duration_minutes: string
   visibility: string
   externalLink?: string
@@ -44,6 +47,37 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [loadingUserPosts, setLoadingUserPosts] = useState(false)
   const [isTaggedPostOpen, setIsTaggedPostOpen] = useState(false)
   const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
+  const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
+  const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
+
+  const profileLevelOptions = useMemo(() => ([
+    'Amateur',
+    'Professionnel'
+  ]), [])
+
+  const profileRoleOptions = useMemo(() => ([
+    'Scénariste',
+    'Rédacteur(rice)',
+    'Présentateur(rice) / Animateur(rice)',
+    'Journaliste / Intervieweur(se)',
+    'Vidéaste',
+    'Cadreur(se)',
+    'Monteur(euse)',
+    'Réalisateur(rice)',
+    'Producteur(rice) / Chef de projet',
+    'Ingé son',
+    'Graphiste / Designer',
+    'Directeur(rice) artistique',
+    'Community manager'
+  ]), [])
+
+  const maxParticipantsNumber = Number(formData.maxParticipants) || 0
+
+  useEffect(() => {
+    if (maxParticipantsNumber <= 1 && (formData.profileRoles?.length ?? 0) > 0) {
+      onUpdateFormData({ profileRoles: [] })
+    }
+  }, [maxParticipantsNumber, formData.profileRoles, onUpdateFormData])
 
   // Hooks de consentement
   const locationConsent = useConsent('location')
@@ -493,17 +527,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
 
 
       <div className="form-group">
-        <label className="form-label">Date de besoin *</label>
-        <input
-          type="date"
-          className="form-input"
-          value={formData.deadline}
-          onChange={(e) => onUpdateFormData({ deadline: e.target.value })}
-          min={new Date().toISOString().split('T')[0]}
-        />
-      </div>
-
-      <div className="form-group">
         <label className="form-label">Nombre maximum de participants</label>
         <input
           type="number"
@@ -515,16 +538,110 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         />
       </div>
 
-      <div className="form-group">
-        <label className="form-checkbox-label">
-          <input
-            type="checkbox"
-            checked={formData.urgent}
-            onChange={(e) => onUpdateFormData({ urgent: e.target.checked })}
-          />
-          <span>Marquer comme urgent</span>
-        </label>
+      <div className="form-group dropdown-field">
+        <label className="form-label">Niveau recherché (optionnel)</label>
+        <button
+          type="button"
+          className={`dropdown-trigger ${isProfileLevelOpen ? 'open' : ''}`}
+          onClick={() => setIsProfileLevelOpen((prev) => !prev)}
+        >
+          <span>{formData.profileLevel || 'Choisir un niveau'}</span>
+          <span className="dropdown-caret" aria-hidden="true" />
+        </button>
+        {isProfileLevelOpen && (
+          <div
+            className="dropdown-list profile-dropdown-list"
+            onMouseLeave={() => setIsProfileLevelOpen(false)}
+          >
+            {profileLevelOptions.map((level) => {
+              const isSelected = formData.profileLevel === level
+              return (
+              <button
+                key={level}
+                type="button"
+                className={`profile-dropdown-option ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  onUpdateFormData({ profileLevel: formData.profileLevel === level ? '' : level })
+                  setIsProfileLevelOpen(false)
+                }}
+              >
+                <span className="profile-option-text">{level}</span>
+                {isSelected && (
+                  <span
+                    className="profile-option-remove"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onUpdateFormData({ profileLevel: '' })
+                    }}
+                    role="button"
+                    aria-label="Supprimer"
+                  >
+                    <X size={12} />
+                  </span>
+                )}
+              </button>
+            )})}
+          </div>
+        )}
       </div>
+
+      {maxParticipantsNumber > 1 && (
+        <div className="form-group dropdown-field">
+          <label className="form-label">Rôle recherché (optionnel)</label>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isProfileRoleOpen ? 'open' : ''}`}
+            onClick={() => setIsProfileRoleOpen((prev) => !prev)}
+          >
+            <span>
+              {formData.profileRoles && formData.profileRoles.length > 0
+                ? formData.profileRoles.join(', ')
+                : 'Choisir un rôle'}
+            </span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {isProfileRoleOpen && (
+            <div
+              className="dropdown-list profile-dropdown-list"
+              onMouseLeave={() => setIsProfileRoleOpen(false)}
+            >
+              {profileRoleOptions.map((role) => {
+                const roles = formData.profileRoles || []
+                const isActive = roles.includes(role)
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    className={`profile-dropdown-option ${isActive ? 'selected' : ''}`}
+                    onClick={() => {
+                      const nextRoles = isActive
+                        ? roles.filter((item) => item !== role)
+                        : [...roles, role]
+                      onUpdateFormData({ profileRoles: nextRoles })
+                    }}
+                  >
+                    <span className="profile-option-text">{role}</span>
+                    {isActive && (
+                      <span
+                        className="profile-option-remove"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const nextRoles = roles.filter((item) => item !== role)
+                          onUpdateFormData({ profileRoles: nextRoles })
+                        }}
+                        role="button"
+                        aria-label="Supprimer"
+                      >
+                        <X size={12} />
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="form-group dropdown-field">
         <label className="form-label">Taguer une annonce (optionnel)</label>
@@ -634,6 +751,17 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             />
           </div>
         )}
+      </div>
+
+      <div className="form-group urgent-block">
+        <label className="form-checkbox-label">
+          <input
+            type="checkbox"
+            checked={formData.urgent}
+            onChange={(e) => onUpdateFormData({ urgent: e.target.checked })}
+          />
+          <span>Marquer comme urgent</span>
+        </label>
       </div>
 
       {/* Modals de consentement */}

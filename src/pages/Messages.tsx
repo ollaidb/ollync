@@ -68,6 +68,7 @@ interface MatchRequest {
   to_user_id: string
   related_post_id?: string | null
   request_message?: string | null
+  request_role?: string | null
   related_service_name?: string | null
   related_service_description?: string | null
   related_service_payment_type?: 'price' | 'exchange' | null
@@ -992,6 +993,7 @@ const Messages = () => {
         .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
         .in('status', ['pending', 'accepted', 'declined', 'cancelled'])
         .order('created_at', { ascending: false })
+        .limit(50)
 
       if (error) {
         console.error('Error loading match requests:', error)
@@ -1039,6 +1041,7 @@ const Messages = () => {
         to_user_id: string
         related_post_id?: string | null
         request_message?: string | null
+        request_role?: string | null
         related_service_name?: string | null
         related_service_description?: string | null
         related_service_payment_type?: 'price' | 'exchange' | null
@@ -1060,6 +1063,7 @@ const Messages = () => {
           to_user_id: req.to_user_id,
           related_post_id: req.related_post_id,
           request_message: req.request_message || null,
+          request_role: req.request_role || null,
           related_service_name: req.related_service_name || null,
           related_service_description: req.related_service_description || null,
           related_service_payment_type: req.related_service_payment_type || null,
@@ -1407,11 +1411,13 @@ const Messages = () => {
       let { data: convs, error } = await query
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
+        .limit(50)
 
       if (error) {
         const fallbackResult = await fallbackQuery
           .order('last_message_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false })
+          .limit(50)
         convs = fallbackResult.data
         error = fallbackResult.error
       }
@@ -3743,6 +3749,11 @@ const Messages = () => {
                     {request.related_post && (
                       <p className="conversation-post-title">
                         {request.related_post.title}
+                      </p>
+                    )}
+                    {request.request_role && (
+                      <p className="conversation-post-role">
+                        Poste : {request.request_role}
                       </p>
                     )}
                     {!request.related_post && request.related_service_name && (

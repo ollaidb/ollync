@@ -34,7 +34,10 @@ interface FormData {
   dateFrom: string
   dateTo: string
   deadline: string
+  neededTime?: string
   maxParticipants: string
+  profileLevel?: string
+  profileRoles?: string[]
   duration_minutes: string
   visibility: string
   externalLink?: string
@@ -206,6 +209,9 @@ export const validatePublishForm = (
   // Date de besoin
   if (!formData.deadline || formData.deadline.trim().length === 0) {
     errors.push('La date de besoin est obligatoire')
+  }
+  if (!formData.neededTime || formData.neededTime.trim().length === 0) {
+    errors.push("L'heure de besoin est obligatoire")
   }
 
   // Média (au moins une photo ou une vidéo)
@@ -526,7 +532,11 @@ export const handlePublish = async (
       || (formData.option && formData.option.trim()) 
       || null,
     needed_date: formData.deadline || null,
+    needed_time: formData.neededTime?.trim() || null,
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
+    duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null,
+    profile_level: formData.profileLevel?.trim() || null,
+    profile_roles: formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null,
     external_link: normalizeExternalLink(formData.externalLink),
     document_url: buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
     tagged_post_id: formData.taggedPostId || null,

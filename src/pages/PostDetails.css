@@ -776,6 +776,40 @@
   flex-wrap: wrap;
 }
 
+.post-info-value-nowrap {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.request-role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.request-role-option {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.request-role-option:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.request-role-option.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .post-info-value svg {
   flex-shrink: 0;
   color: var(--muted-foreground);

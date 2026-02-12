@@ -13,6 +13,7 @@ interface MatchRequestDetailProps {
     to_user_id: string
     related_post_id?: string | null
     request_message?: string | null
+    request_role?: string | null
     request_document_url?: string | null
     request_document_name?: string | null
     related_service_name?: string | null
@@ -288,6 +289,11 @@ const MatchRequestDetail = ({
             <div className="match-request-detail-post">
               <p className="match-request-detail-post-label">Annonce concernée :</p>
               <p className="match-request-detail-post-title">{request.related_post.title}</p>
+              {request.request_role && (
+                <p className="match-request-detail-post-subtitle">
+                  Poste demandé : {request.request_role}
+                </p>
+              )}
             </div>
           )}
 

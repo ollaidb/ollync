@@ -1533,6 +1533,15 @@
   white-space: nowrap;
 }
 
+.conversation-post-role {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0 0 6px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .conversation-preview {
   font-size: 14px;
   color: var(--muted-foreground);

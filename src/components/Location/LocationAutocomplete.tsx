@@ -49,6 +49,8 @@ export const LocationAutocomplete = ({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [hasSelected, setHasSelected] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const [userInitiated, setUserInitiated] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>()
@@ -59,7 +61,7 @@ export const LocationAutocomplete = ({
       clearTimeout(timeoutRef.current)
     }
 
-    if (!value.trim() || value.length < 2) {
+    if (!value.trim() || value.length < 2 || !isFocused || !userInitiated) {
       setSuggestions([])
       setShowSuggestions(false)
       setIsLoading(false)
@@ -81,7 +83,14 @@ export const LocationAutocomplete = ({
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [value])
+  }, [value, isFocused, userInitiated])
+
+  useEffect(() => {
+    if (value.trim().length > 0 && !isFocused && !userInitiated) {
+      setHasSelected(true)
+      setShowSuggestions(false)
+    }
+  }, [value, isFocused, userInitiated])
 
   const searchLocations = async (query: string) => {
     if (!query.trim() || query.length < 2) {
@@ -167,6 +176,7 @@ export const LocationAutocomplete = ({
     setShowSuggestions(false)
     setSuggestions([])
     setHasSelected(true)
+    setUserInitiated(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -200,6 +210,7 @@ export const LocationAutocomplete = ({
     setSuggestions([])
     setShowSuggestions(false)
     setHasSelected(false)
+    setUserInitiated(false)
     inputRef.current?.focus()
   }
 
@@ -231,12 +242,20 @@ export const LocationAutocomplete = ({
           className={`location-input ${hasSelected ? 'location-input-selected' : ''}`}
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            setUserInitiated(true)
+            onChange(e.target.value)
+          }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0 && !hasSelected) {
+            setIsFocused(true)
+            if (suggestions.length > 0 && !hasSelected && userInitiated) {
               setShowSuggestions(true)
             }
+          }}
+          onBlur={() => {
+            setIsFocused(false)
+            setShowSuggestions(false)
           }}
           disabled={disabled}
         />

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import type { MouseEvent, TouchEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FileText, Users, CheckCircle2, Download, AlertCircle } from 'lucide-react'
+import { FileText, Users, CheckCircle2, Download, AlertCircle, Eye, Trash2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { useToastContext } from '../../contexts/ToastContext'
 import type { Database } from '../../types/database'
 import './Contracts.css'
 
@@ -84,6 +85,7 @@ type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 const Contracts = () => {
   const { user } = useAuth()
+  const { showSuccess } = useToastContext()
   const [searchParams] = useSearchParams()
   const counterpartyParam = searchParams.get('counterparty')
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create')
@@ -101,12 +103,18 @@ const Contracts = () => {
   const [selectedOption, setSelectedOption] = useState<string>('')
   const [selectedApplicants, setSelectedApplicants] = useState<Record<string, boolean>>({})
   const [contractType, setContractType] = useState<string>('auto')
+  const [contractName, setContractName] = useState<string>('')
   const [priceValue, setPriceValue] = useState<string>('')
   const [revenueShare, setRevenueShare] = useState<string>('')
   const [exchangeService, setExchangeService] = useState<string>('')
   const [customClauses, setCustomClauses] = useState<string>('')
-  const [customArticles, setCustomArticles] = useState<string>('')
+  const [customArticles, setCustomArticles] = useState<string[]>([''])
+  const [defaultArticles, setDefaultArticles] = useState<{ title: string; content: string }[]>([])
+  const [hasDefaultArticlesCustom, setHasDefaultArticlesCustom] = useState(false)
+  const [showDefaultArticles, setShowDefaultArticles] = useState(false)
   const [agreementConfirmed, setAgreementConfirmed] = useState(false)
+  const [draftLoaded, setDraftLoaded] = useState(false)
+  const skipNextDraftSave = useRef(false)
 
   const [contracts, setContracts] = useState<ContractRecord[]>([])
   const [preferredCounterpartyId, setPreferredCounterpartyId] = useState<string | null>(null)
@@ -157,6 +165,11 @@ const Contracts = () => {
       (app) => app.post_id === selectedContext.post.id && selectedApplicants[app.id]
     )
   }, [acceptedApplications, selectedApplicants, selectedContext])
+
+  const canAddCustomArticle = useMemo(() => {
+    const last = customArticles[customArticles.length - 1]
+    return Boolean(last && last.trim().length > 0)
+  }, [customArticles])
 
   const resolvedPaymentType = selectedContext?.post.payment_type || null
   const resolvedContractType = contractType === 'auto' ? resolvedPaymentType || 'collaboration' : contractType
@@ -244,6 +257,117 @@ const Contracts = () => {
 
     return baseArticles
   }, [resolvedContractType])
+
+  useEffect(() => {
+    if (!hasDefaultArticlesCustom) {
+      setDefaultArticles(legalArticles)
+    }
+  }, [hasDefaultArticlesCustom, legalArticles])
+
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!user || draftLoaded || loading) return
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from('contract_drafts') as any)
+          .select('draft')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const draft = (data?.draft || null) as {
+          contract_name?: string
+          selected_option?: string
+          contract_type?: string
+          price_value?: string
+          revenue_share?: string
+          exchange_service?: string
+          custom_clauses?: string
+          custom_articles?: string[]
+          agreement_confirmed?: boolean
+          default_articles?: { title: string; content: string }[]
+          selected_applicants?: Record<string, boolean>
+        } | null
+
+        if (draft) {
+          skipNextDraftSave.current = true
+          setContractName(draft.contract_name || '')
+          setSelectedOption(draft.selected_option || '')
+          setContractType(draft.contract_type || 'auto')
+          setPriceValue(draft.price_value || '')
+          setRevenueShare(draft.revenue_share || '')
+          setExchangeService(draft.exchange_service || '')
+          setCustomClauses(draft.custom_clauses || '')
+          setCustomArticles(draft.custom_articles && draft.custom_articles.length > 0 ? draft.custom_articles : [''])
+          setAgreementConfirmed(Boolean(draft.agreement_confirmed))
+          if (Object.prototype.hasOwnProperty.call(draft, 'default_articles')) {
+            const incoming = Array.isArray(draft.default_articles) ? draft.default_articles : []
+            setDefaultArticles(incoming)
+            setHasDefaultArticlesCustom(true)
+          }
+          if (draft.selected_applicants) {
+            setSelectedApplicants(draft.selected_applicants)
+          }
+        }
+      } catch (err) {
+        console.error('Error loading contract draft:', err)
+      } finally {
+        setDraftLoaded(true)
+      }
+    }
+
+    loadDraft()
+  }, [draftLoaded, loading, user])
+
+  useEffect(() => {
+    if (!user || !draftLoaded) return
+    if (skipNextDraftSave.current) {
+      skipNextDraftSave.current = false
+      return
+    }
+
+    const payload = {
+      user_id: user.id,
+      draft: {
+        contract_name: contractName,
+        selected_option: selectedOption,
+        contract_type: contractType,
+        price_value: priceValue,
+        revenue_share: revenueShare,
+        exchange_service: exchangeService,
+        custom_clauses: customClauses,
+        custom_articles: customArticles,
+        agreement_confirmed: agreementConfirmed,
+        default_articles: defaultArticles,
+        selected_applicants: selectedApplicants
+      },
+      updated_at: new Date().toISOString()
+    }
+
+    const timer = window.setTimeout(async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('contract_drafts') as any).upsert(payload, { onConflict: 'user_id' })
+      } catch (err) {
+        console.error('Error saving contract draft:', err)
+      }
+    }, 800)
+
+    return () => window.clearTimeout(timer)
+  }, [
+    agreementConfirmed,
+    contractName,
+    contractType,
+    customArticles,
+    customClauses,
+    defaultArticles,
+    draftLoaded,
+    exchangeService,
+    priceValue,
+    revenueShare,
+    selectedApplicants,
+    selectedOption,
+    user
+  ])
 
   // loadData useEffect moved below loadContracts
 
@@ -577,6 +701,40 @@ const Contracts = () => {
   const resolveContractSignature = (profile?: ProfileSummary | null) =>
     resolveContractValue(profile?.contract_signature || '')
 
+  const resolveCreatorProfile = useCallback((): ProfileSummary | null => {
+    if (!user) return null
+    const baseProfile: ProfileSummary = currentUserProfile || {
+      id: user.id,
+      username: user.user_metadata?.username || null,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      avatar_url: user.user_metadata?.avatar_url || null,
+      email: user.email || null,
+      phone: null,
+      contract_full_name: null,
+      contract_email: null,
+      contract_phone: null,
+      contract_city: null,
+      contract_country: null,
+      contract_siren: null,
+      contract_signature: null,
+      contract_default_type: null
+    }
+
+    return {
+      ...baseProfile,
+      contract_full_name:
+        resolveContractValue(contractProfile.fullName) || baseProfile.contract_full_name || baseProfile.full_name,
+      contract_email:
+        resolveContractValue(contractProfile.email) || baseProfile.contract_email || baseProfile.email,
+      contract_phone:
+        resolveContractValue(contractProfile.phone) || baseProfile.contract_phone || baseProfile.phone,
+      contract_city: resolveContractValue(contractProfile.city) || baseProfile.contract_city,
+      contract_country: resolveContractValue(contractProfile.country) || baseProfile.contract_country,
+      contract_siren: resolveContractValue(contractProfile.siren) || baseProfile.contract_siren,
+      contract_signature: resolveContractValue(contractProfile.signature) || baseProfile.contract_signature
+    }
+  }, [contractProfile, currentUserProfile, resolveContractValue, user])
+
   const getSignaturePoint = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
     const canvas = signatureCanvasRef.current
     if (!canvas) return null
@@ -645,6 +803,7 @@ const Contracts = () => {
     const dataUrl = signatureHasData ? canvas.toDataURL('image/png') : ''
     setContractProfile((prev) => ({ ...prev, signature: dataUrl }))
     setIsSignatureModalOpen(false)
+    showSuccess('Signature enregistrée.')
   }
 
   const buildPartyBlock = (profile: ProfileSummary, roleLabel: string) => {
@@ -663,6 +822,32 @@ const Contracts = () => {
     return lines.join('\n')
   }
 
+  const getRemunerationText = () => {
+    const remunerationDetails: string[] = []
+    if (shouldShowPrice && priceValue) {
+      remunerationDetails.push(`Montant convenu : ${priceValue} €`)
+    }
+    if (shouldShowRevenueShare && revenueShare) {
+      remunerationDetails.push(`Partage de revenus : ${revenueShare}%`)
+    }
+    if (shouldShowExchange && exchangeService.trim()) {
+      remunerationDetails.push(`Échange de service : ${exchangeService.trim()}`)
+    }
+
+    return remunerationDetails.length > 0
+      ? remunerationDetails.join(' - ')
+      : 'Les modalités financières seront précisées entre les parties.'
+  }
+
+  const getCombinedArticles = () => {
+    const cleanedArticles = customArticles.map((item) => item.trim()).filter(Boolean)
+    const articleSource = defaultArticles
+    return [
+      ...articleSource.map((article) => ({ title: article.title, content: article.content })),
+      ...cleanedArticles.map((content) => ({ title: 'Article additionnel', content }))
+    ]
+  }
+
   const buildContractContent = ({
     creator,
     counterparty,
@@ -676,44 +861,31 @@ const Contracts = () => {
     paymentType: string | null
     contractKind: string
   }) => {
-    const title = `Contrat ${paymentLabels[contractKind] || 'Collaboration'}`
+    const title = contractName.trim() || `Contrat ${paymentLabels[contractKind] || 'Collaboration'}`
     const paymentLine = paymentType ? paymentLabels[paymentType] || paymentType : 'Non précisé'
     const today = formatDate(new Date().toISOString())
     const signatureDateLine = agreementConfirmed ? `Date de signature : ${today}` : null
 
-    const remunerationDetails: string[] = []
-    if (shouldShowPrice && priceValue) {
-      remunerationDetails.push(`Montant convenu : ${priceValue} €`)
-    }
-    if (shouldShowRevenueShare && revenueShare) {
-      remunerationDetails.push(`Partage de revenus : ${revenueShare}%`)
-    }
-    if (shouldShowExchange && exchangeService.trim()) {
-      remunerationDetails.push(`Échange de service : ${exchangeService.trim()}`)
-    }
-
-    const remunerationText =
-      remunerationDetails.length > 0
-        ? remunerationDetails.join(' - ')
-        : 'Les modalités financières seront précisées entre les parties.'
-
-    const customArticlesText = customArticles.trim()
-      ? `\nArticles additionnels :\n${customArticles.trim()}`
-      : ''
+    const remunerationText = getRemunerationText()
 
     const customClauseText = customClauses.trim()
       ? `\nClauses additionnelles :\n${customClauses.trim()}`
       : ''
 
-    const articleText = legalArticles
-      .map((article, index) => `Article ${index + 1} : ${article.title}\n${article.content}`)
-      .join('\n\n')
+    const combinedArticles = getCombinedArticles()
+
+    const articleText =
+      combinedArticles.length > 0
+        ? combinedArticles
+            .map((article, index) => `Article ${index + 1} : ${article.title}\n${article.content}`)
+            .join('\n\n')
+        : 'Aucun article défini.'
 
     const creatorSignature = resolveContractSignature(creator)
     const counterpartySignature = resolveContractSignature(counterparty)
 
     return [
-      `${title}`,
+      `Nom du contrat : ${title}`,
       `Date d'envoi : ${today}`,
       signatureDateLine,
       '',
@@ -729,7 +901,6 @@ const Contracts = () => {
       remunerationText,
       '',
       `${articleText}`,
-      customArticlesText,
       customClauseText,
       '',
       `Signatures :`,
@@ -742,23 +913,259 @@ const Contracts = () => {
       .join('\n\n')
   }
 
-  const downloadContractPdf = (content: string, fileName: string) => {
+  const buildContractPdfData = ({
+    creator,
+    counterparty,
+    post,
+    paymentType,
+    contractKind
+  }: {
+    creator: ProfileSummary
+    counterparty: ProfileSummary
+    post: PostSummary
+    paymentType: string | null
+    contractKind: string
+  }) => {
+    const title = contractName.trim() || `Contrat ${paymentLabels[contractKind] || 'Collaboration'}`
+    const paymentLine = paymentType ? paymentLabels[paymentType] || paymentType : 'Non précisé'
+    const today = formatDate(new Date().toISOString())
+    const signatureDateLine = agreementConfirmed ? `Date de signature : ${today}` : `Date d'envoi : ${today}`
+
+    const remunerationText = getRemunerationText()
+    const combinedArticles = getCombinedArticles()
+    const clausesText = customClauses.trim() || ''
+
+    const objectText = `Le présent contrat formalise la collaboration liée à l’annonce "${post.title}" et définit les engagements des parties.`
+
+    const parties = [
+      ...buildPartyBlock(creator, 'Créateur du contrat').split('\n'),
+      '',
+      ...buildPartyBlock(counterparty, 'Autre partie').split('\n')
+    ]
+
+    const signatures = [
+      `Créateur : ${resolveContractSignature(creator) ? 'Signature enregistrée' : 'À compléter'}`,
+      `Autre partie : ${resolveContractSignature(counterparty) ? 'Signature enregistrée' : 'À compléter'}`
+    ]
+
+    return {
+      title,
+      dateLine: signatureDateLine,
+      object: objectText,
+      parties,
+      postTitle: post.title,
+      paymentLine,
+      summary: post.description || 'Description non précisée.',
+      remuneration: remunerationText,
+      articles: combinedArticles,
+      clauses: clausesText,
+      signatures,
+      agreement: agreementConfirmed ? 'Confirmé par les parties' : 'En attente de confirmation'
+    }
+  }
+
+  const previewCounterparty = useMemo<ProfileSummary>(() => {
+    if (!selectedContext) {
+      return {
+        id: 'preview-counterparty',
+        full_name: 'Autre partie (non renseignée)',
+        username: null,
+        avatar_url: null,
+        email: null,
+        phone: null,
+        contract_full_name: null,
+        contract_email: null,
+        contract_phone: null,
+        contract_city: null,
+        contract_country: null,
+        contract_siren: null,
+        contract_signature: null,
+        contract_default_type: null
+      }
+    }
+    if (selectedContext.mode === 'owner') {
+      const selected = selectedApplicantsList[0]?.applicant
+      if (selected) return selected
+      const fallback = acceptedApplications.find(
+        (app) => app.post_id === selectedContext.post.id && app.applicant
+      )
+      return (
+        fallback?.applicant || {
+          id: 'preview-counterparty',
+          full_name: 'Participant non sélectionné',
+          username: null,
+          avatar_url: null,
+          email: null,
+          phone: null,
+          contract_full_name: null,
+          contract_email: null,
+          contract_phone: null,
+          contract_city: null,
+          contract_country: null,
+          contract_siren: null,
+          contract_signature: null,
+          contract_default_type: null
+        }
+      )
+    }
+    return selectedContext.owner
+  }, [acceptedApplications, selectedApplicantsList, selectedContext])
+
+  const previewContractContent = useMemo(() => {
+    const creatorProfile = resolveCreatorProfile()
+    if (!creatorProfile) return ''
+    const previewPost: PostSummary =
+      selectedContext?.post || {
+        id: 'preview-post',
+        title: 'Annonce non sélectionnée',
+        description: 'Description non précisée.',
+        payment_type: null,
+        price: null,
+        number_of_people: null,
+        user_id: creatorProfile.id,
+        created_at: undefined
+      }
+    return buildContractContent({
+      creator: creatorProfile,
+      counterparty: previewCounterparty,
+      post: previewPost,
+      paymentType: resolvedPaymentType,
+      contractKind: resolvedContractType
+    })
+  }, [
+    buildContractContent,
+    previewCounterparty,
+    resolvedContractType,
+    resolvedPaymentType,
+    resolveCreatorProfile,
+    selectedContext
+  ])
+
+  const previewCounterpartyLabel = useMemo(() => {
+    return `Aperçu pour : ${formatUserName(previewCounterparty)}`
+  }, [formatUserName, previewCounterparty])
+
+  const buildContractFileName = (postTitle: string, counterparty?: ProfileSummary | null) => {
+    const baseTitle = contractName.trim() || postTitle
+    const safeTitle = baseTitle.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')
+    if (!counterparty) return `contrat_${safeTitle}.pdf`
+    const safeName = formatUserName(counterparty).replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')
+    return `contrat_${safeTitle}_${safeName}.pdf`
+  }
+
+  const downloadContractPdf = (
+    content: string,
+    fileName: string,
+    data?: {
+      title: string
+      object: string
+      parties: string[]
+      postTitle: string
+      paymentLine: string
+      summary: string
+      remuneration: string
+      articles: { title: string; content: string }[]
+      clauses?: string
+      signatures: string[]
+      agreement: string
+      dateLine: string
+    }
+  ) => {
     const doc = new jsPDF({ format: 'a4', unit: 'pt' })
     const margin = 48
-    const lineHeight = 16
     const pageHeight = doc.internal.pageSize.height
     const maxWidth = doc.internal.pageSize.width - margin * 2
-    const lines = doc.splitTextToSize(content, maxWidth)
     let y = margin
 
-    lines.forEach((line: string) => {
+    const moveY = (amount: number) => {
+      y += amount
       if (y > pageHeight - margin) {
         doc.addPage()
         y = margin
       }
-      doc.text(line, margin, y)
-      y += lineHeight
-    })
+    }
+
+    const addLines = (lines: string[], fontSize: number, fontStyle: 'normal' | 'bold', lineHeight: number) => {
+      doc.setFont('helvetica', fontStyle)
+      doc.setFontSize(fontSize)
+      lines.forEach((line) => {
+        if (y > pageHeight - margin) {
+          doc.addPage()
+          y = margin
+        }
+        doc.text(line, margin, y)
+        y += lineHeight
+      })
+    }
+
+    const addParagraph = (text: string, fontSize = 11, fontStyle: 'normal' | 'bold' = 'normal') => {
+      if (!text) return
+      const lines = doc.splitTextToSize(text, maxWidth)
+      addLines(lines, fontSize, fontStyle, fontSize + 4)
+    }
+
+    const addSectionTitle = (text: string) => {
+      moveY(6)
+      addParagraph(text, 13, 'bold')
+      moveY(2)
+    }
+
+    if (data) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      const titleLines = doc.splitTextToSize(data.title, maxWidth)
+      titleLines.forEach((line) => {
+        const textWidth = doc.getTextWidth(line)
+        const x = Math.max(margin, (doc.internal.pageSize.width - textWidth) / 2)
+        if (y > pageHeight - margin) {
+          doc.addPage()
+          y = margin
+        }
+        doc.text(line, x, y)
+        y += 22
+      })
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const dateWidth = doc.getTextWidth(data.dateLine)
+      doc.text(data.dateLine, doc.internal.pageSize.width - margin - dateWidth, y)
+      moveY(18)
+
+      addSectionTitle('Objet du contrat')
+      addParagraph(data.object)
+
+      addSectionTitle('Parties')
+      addLines(data.parties, 11, 'normal', 16)
+
+      addSectionTitle('Annonce')
+      addParagraph(`Titre : ${data.postTitle}`)
+      addParagraph(`Type de paiement : ${data.paymentLine}`)
+      addParagraph(`Résumé : ${data.summary}`)
+
+      addSectionTitle('Conditions financières')
+      addParagraph(data.remuneration)
+
+      addSectionTitle('Articles')
+      data.articles.forEach((article, index) => {
+        addParagraph(`Article ${index + 1} — ${article.title}`, 12, 'bold')
+        addParagraph(article.content, 11, 'normal')
+        moveY(4)
+      })
+
+      if (data.clauses) {
+        addSectionTitle('Clauses additionnelles')
+        addParagraph(data.clauses)
+      }
+
+      addSectionTitle('Signatures')
+      addLines(data.signatures, 11, 'normal', 16)
+
+      addSectionTitle('Accord mutuel')
+      addParagraph(data.agreement)
+    } else {
+      const lines = doc.splitTextToSize(content, maxWidth)
+      addLines(lines, 11, 'normal', 16)
+    }
 
     doc.save(fileName)
   }
@@ -774,12 +1181,16 @@ const Contracts = () => {
     setSelectedApplicants({})
     setSelectedOption('')
     setContractType('auto')
+    setContractName('')
     setPriceValue('')
     setRevenueShare('')
     setExchangeService('')
-    setCustomArticles('')
+    setCustomArticles([''])
     setCustomClauses('')
     setAgreementConfirmed(false)
+    setHasDefaultArticlesCustom(false)
+    setDefaultArticles(legalArticles)
+    showSuccess('Formulaire réinitialisé.')
   }
 
   const handleSaveContractProfile = async () => {
@@ -804,6 +1215,7 @@ const Contracts = () => {
       if (updateError) throw updateError
       setCurrentUserProfile((prev) => (prev ? { ...prev, ...payload } : prev))
       setContractProfileSaved(true)
+      showSuccess('Informations contractuelles enregistrées.')
     } catch (err) {
       console.error('Error saving contract profile:', err)
       setError("Impossible d'enregistrer vos informations contractuelles.")
@@ -818,31 +1230,10 @@ const Contracts = () => {
     setError(null)
 
     try {
-      const creator: ProfileSummary = currentUserProfile || {
-        id: user.id,
-        username: user.user_metadata?.username || null,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
-        email: user.email || null,
-        phone: null,
-        contract_full_name: null,
-        contract_email: null,
-        contract_phone: null,
-        contract_city: null,
-        contract_country: null,
-        contract_siren: null,
-        contract_signature: null,
-        contract_default_type: null
-      }
-      const creatorWithContractDetails: ProfileSummary = {
-        ...creator,
-        contract_full_name: resolveContractValue(contractProfile.fullName) || creator.contract_full_name || creator.full_name,
-        contract_email: resolveContractValue(contractProfile.email) || creator.contract_email || creator.email,
-        contract_phone: resolveContractValue(contractProfile.phone) || creator.contract_phone || creator.phone,
-        contract_city: resolveContractValue(contractProfile.city) || creator.contract_city,
-        contract_country: resolveContractValue(contractProfile.country) || creator.contract_country,
-        contract_siren: resolveContractValue(contractProfile.siren) || creator.contract_siren,
-        contract_signature: resolveContractValue(contractProfile.signature) || creator.contract_signature
+      const creatorWithContractDetails = resolveCreatorProfile()
+      if (!creatorWithContractDetails) {
+        setSaving(false)
+        return
       }
 
       if (selectedContext.mode === 'owner') {
@@ -886,9 +1277,18 @@ const Contracts = () => {
           }
 
           const created = (createdContracts || [])[0] as ContractRecord | undefined
-          const safeName = formatUserName(application.applicant).replace(/\s+/g, '_')
-          const fileName = `contrat_${selectedContext.post.title}_${safeName}.pdf`
-          downloadContractPdf(contractContent, fileName)
+          const fileName = buildContractFileName(selectedContext.post.title, application.applicant)
+          downloadContractPdf(
+            contractContent,
+            fileName,
+            buildContractPdfData({
+              creator: creatorWithContractDetails,
+              counterparty: application.applicant,
+              post: selectedContext.post,
+              paymentType: resolvedPaymentType,
+              contractKind: resolvedContractType
+            })
+          )
 
           if (created) {
             setContracts((prev) => [created, ...prev])
@@ -929,7 +1329,17 @@ const Contracts = () => {
         }
 
         const created = (createdContracts || [])[0] as ContractRecord | undefined
-        downloadContractPdf(contractContent, `contrat_${selectedContext.post.title}.pdf`)
+        downloadContractPdf(
+          contractContent,
+          buildContractFileName(selectedContext.post.title, selectedContext.owner),
+          buildContractPdfData({
+            creator: creatorWithContractDetails,
+            counterparty: selectedContext.owner,
+            post: selectedContext.post,
+            paymentType: resolvedPaymentType,
+            contractKind: resolvedContractType
+          })
+        )
 
         if (created) {
           setContracts((prev) => [created, ...prev])
@@ -938,6 +1348,7 @@ const Contracts = () => {
 
       handleResetForm()
       setActiveTab('list')
+      showSuccess('Contrat généré et enregistré.')
     } catch (err) {
       console.error('Error generating contract:', err)
       setError('Impossible de générer le contrat pour le moment.')
@@ -1073,6 +1484,15 @@ const Contracts = () => {
             </p>
             <div className="contracts-grid">
               <label>
+                Nom du contrat
+                <input
+                  type="text"
+                  value={contractName}
+                  onChange={(event) => setContractName(event.target.value)}
+                  placeholder="Ex: Contrat de collaboration"
+                />
+              </label>
+              <label>
                 Nom et prénom
                 <input
                   type="text"
@@ -1154,6 +1574,118 @@ const Contracts = () => {
                   )}
                 </select>
               </label>
+              <div className="contracts-textarea-field">
+                <div className="contracts-field-title">
+                  <span>Voir les articles par défaut</span>
+                </div>
+                <button
+                  type="button"
+                  className="contracts-secondary-btn"
+                  onClick={() => setShowDefaultArticles((prev) => !prev)}
+                >
+                  {showDefaultArticles ? 'Masquer' : 'Afficher'}
+                </button>
+                {showDefaultArticles && (
+                  <div className="contracts-default-articles">
+                    {defaultArticles.length === 0 ? (
+                      <div className="contracts-empty-inline">Aucun article par défaut.</div>
+                    ) : (
+                      defaultArticles.map((article, index) => (
+                        <div key={`default-article-${index}`} className="contracts-default-article">
+                          <div className="contracts-default-article-header">
+                            <input
+                              className="contracts-input"
+                              type="text"
+                              value={article.title}
+                              onChange={(event) =>
+                                setDefaultArticles((prev) => {
+                                  setHasDefaultArticlesCustom(true)
+                                  return prev.map((item, itemIndex) =>
+                                    itemIndex === index ? { ...item, title: event.target.value } : item
+                                  )
+                                })
+                              }
+                              placeholder={`Titre de l'article ${index + 1}`}
+                            />
+                            <button
+                              type="button"
+                              className="contracts-remove-btn"
+                              onClick={() => {
+                                setDefaultArticles((prev) => {
+                                  setHasDefaultArticlesCustom(true)
+                                  return prev.filter((_, itemIndex) => itemIndex !== index)
+                                })
+                                showSuccess('Article supprimé.')
+                              }}
+                              aria-label="Supprimer l'article"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          <textarea
+                            className="contracts-textarea"
+                            value={article.content}
+                            onChange={(event) =>
+                              setDefaultArticles((prev) => {
+                                setHasDefaultArticlesCustom(true)
+                                return prev.map((item, itemIndex) =>
+                                  itemIndex === index ? { ...item, content: event.target.value } : item
+                                )
+                              })
+                            }
+                            placeholder="Contenu de l'article"
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="contracts-textarea-field">
+                <div className="contracts-field-title">
+                  <span>Ajouter des articles</span>
+                  {canAddCustomArticle && (
+                    <button
+                      type="button"
+                      className="contracts-add-btn"
+                      onClick={() => {
+                        setCustomArticles((prev) => [...prev, ''])
+                        showSuccess('Article ajouté.')
+                      }}
+                    >
+                      + Ajouter
+                    </button>
+                  )}
+                </div>
+                {customArticles.map((article, index) => (
+                  <div key={`article-${index}`} className="contracts-article-input">
+                    <input
+                      className="contracts-input"
+                      type="text"
+                      value={article}
+                      onChange={(event) =>
+                        setCustomArticles((prev) =>
+                          prev.map((item, itemIndex) => (itemIndex === index ? event.target.value : item))
+                        )
+                      }
+                      placeholder={`Article ${index + 1}`}
+                    />
+                    {customArticles.length > 1 && (
+                      <button
+                        type="button"
+                        className="contracts-remove-btn"
+                        onClick={() => {
+                          setCustomArticles((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
+                          showSuccess('Article supprimé.')
+                        }}
+                        aria-label="Supprimer l'article"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
               <label>
                 Signature
                 <button
@@ -1245,8 +1777,8 @@ const Contracts = () => {
               <div className="contracts-section">
                 <h3>Articles automatiques</h3>
                 <div className="contracts-articles">
-                  {legalArticles.map((article, index) => (
-                    <div key={article.title} className="contracts-article">
+                  {defaultArticles.map((article, index) => (
+                    <div key={`${article.title}-${index}`} className="contracts-article">
                       <CheckCircle2 size={18} />
                       <div>
                         <strong>
@@ -1257,16 +1789,6 @@ const Contracts = () => {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="contracts-section">
-                <h3>Ajouter des articles</h3>
-                <textarea
-                  className="contracts-textarea"
-                  value={customArticles}
-                  onChange={(event) => setCustomArticles(event.target.value)}
-                  placeholder="Ajoutez ici des articles supplémentaires (un par ligne)."
-                />
               </div>
 
               <div className="contracts-section">
@@ -1289,21 +1811,55 @@ const Contracts = () => {
                   Je confirme que ces clauses ont été validées avec l’autre partie.
                 </label>
               </div>
-
-              <div className="contracts-actions">
-                <button
-                  className="contracts-primary-btn"
-                  disabled={isGenerateDisabled() || saving}
-                  onClick={handleGenerateContracts}
-                >
-                  {saving ? 'Génération...' : 'Générer le contrat PDF'}
-                </button>
-                <button className="contracts-secondary-btn" onClick={handleResetForm}>
-                  Réinitialiser
-                </button>
-              </div>
             </>
           )}
+
+          <div className="contracts-section contracts-preview-section">
+            <div className="contracts-preview-title">
+              <Eye size={18} />
+              <h3>Aperçu du contrat</h3>
+            </div>
+            <p className="contracts-intro">
+              Le contrat ci-dessous est généré automatiquement avec les informations déjà remplies.
+            </p>
+            <div className="contracts-preview-meta">{previewCounterpartyLabel}</div>
+            <div className="contracts-preview">{previewContractContent}</div>
+            <div className="contracts-actions">
+              <button
+                className="contracts-secondary-btn"
+                onClick={() => {
+                  const postTitle = selectedContext?.post.title || 'contrat'
+                  const creatorProfile = resolveCreatorProfile()
+                  downloadContractPdf(
+                    previewContractContent,
+                    buildContractFileName(postTitle, previewCounterparty),
+                    creatorProfile && selectedContext
+                      ? buildContractPdfData({
+                          creator: creatorProfile,
+                          counterparty: previewCounterparty,
+                          post: selectedContext.post,
+                          paymentType: resolvedPaymentType,
+                          contractKind: resolvedContractType
+                        })
+                      : undefined
+                  )
+                }}
+              >
+                <Download size={16} />
+                Télécharger le contrat
+              </button>
+              <button
+                className="contracts-primary-btn"
+                disabled={isGenerateDisabled() || saving}
+                onClick={handleGenerateContracts}
+              >
+                {saving ? 'Envoi...' : 'Envoyer le contrat'}
+              </button>
+              <button className="contracts-secondary-btn" onClick={handleResetForm}>
+                Réinitialiser
+              </button>
+            </div>
+          </div>
 
           {selectedContext && selectedContext.mode === 'owner' && (
             <div className="contracts-section">

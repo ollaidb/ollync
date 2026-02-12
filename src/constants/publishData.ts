@@ -38,7 +38,8 @@ export const publicationTypes: PublicationType[] = [
     slug: 'creation-contenu',
     icon: Camera,
     color: '#667eea',
-    description: 'Créer du contenu à plusieurs : photos, vidéos, vlogs, sketchs, trends, lives ou événements.',
+    description:
+      'Créer du contenu ensemble ou se faire aider : photos, vidéos, vlogs, sketchs, trends, lives ou événements. Chercher, proposer ou collaborer à plusieurs.',
     subcategories: [
       {
         id: 'tout',
@@ -50,21 +51,21 @@ export const publicationTypes: PublicationType[] = [
         name: 'Photo',
         slug: 'photo',
         description:
-          'Trouver un partenaire pour faire des photos ensemble (photos Insta, lifestyle, souvenirs, créatif, photos sur un lieu ou un thème précis, pas forcément pro).'
+          'Se faire photographier ou photographier quelqu’un : photos naturelles, Insta, soirée, anniversaire, souvenirs, photos surprises. Chercher, proposer ou shooter à plusieurs.'
       },
       {
         id: 'video',
         name: 'Vidéo',
         slug: 'video',
         description:
-          'Collaborer pour créer du contenu ensemble et trouver son duo (playback, vidéos face-caméra, discussions, formats courts, duo/couple/amis, etc.).'
+          'Se faire filmer, filmer quelqu’un ou créer à plusieurs : contenus simples, face-cam, playback, duo, podcasts, interviews, événements, snap. Chercher, proposer ou collaborer.'
       },
       {
         id: 'vlog',
         name: 'Vlog',
         slug: 'vlog',
         description:
-          "Être filmé(e) ou filmer quelqu'un pour un vlog, comme un caméraman mobile (suivre la personne, filmage naturel, plans en mouvement)."
+          "Être filmé(e) ou filmer quelqu'un pour un vlog, comme un caméraman (suivre la personne, filmage naturel, plans en mouvement, soirée, anniversaire)."
       },
       {
         id: 'sketchs',
@@ -85,7 +86,7 @@ export const publicationTypes: PublicationType[] = [
         name: 'Événements',
         slug: 'evenements',
         description:
-          'Aller à un événement avec quelqu’un pour créer du contenu sur place (concert, expo, activité, reportage léger).'
+          'Réaliser du contenu pendant un événement (concert, expo, activité, reportage léger, souvenirs). Chercher, proposer ou collaborer.'
       },
       {
         id: 'live',
@@ -110,7 +111,7 @@ export const publicationTypes: PublicationType[] = [
     icon: Users,
     color: '#2196f3',
     description:
-      'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif).',
+      'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif). Chercher, proposer ou collaborer à plusieurs.',
     subcategories: [
       {
         id: 'tout',
@@ -122,56 +123,56 @@ export const publicationTypes: PublicationType[] = [
         name: 'Figurant',
         slug: 'figurant',
         description:
-          'Rechercher des figurants pour apparaître dans un projet (vidéo, comédie, clip, tournage, contenu créatif).'
+          'Rechercher des figurants pour apparaître dans un projet (vidéo, comédie, clip, tournage, contenu créatif). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'modele-photo',
         name: 'Modèle photo',
         slug: 'modele-photo',
         description:
-          'Trouver des modèles pour des photos de projet ou de mise en valeur (make-up, coiffure, ongles, skincare, vêtements, chaussures, sport, lifestyle, animaux, etc.).'
+          'Trouver des modèles pour des photos de projet ou de mise en valeur (make-up, coiffure, ongles, skincare, vêtements, chaussures, sport, lifestyle, animaux, etc.). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'modele-video',
         name: 'Modèle vidéo',
         slug: 'modele-video',
         description:
-          'Trouver des modèles pour apparaître dans des vidéos ou clips (présentation produit, mise en scène, contenu créatif, lookbook, sport, lifestyle, etc.).'
+          'Trouver des modèles pour apparaître dans des vidéos ou clips (présentation produit, mise en scène, contenu créatif, lookbook, sport, lifestyle, etc.). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'voix-off',
         name: 'Voix off',
         slug: 'voix-off',
         description:
-          'Rechercher une voix pour narrer, présenter ou poser un texte (pub, documentaire, story, vidéo explicative, intro, outro).'
+          'Rechercher une voix pour narrer, présenter ou poser un texte (pub, documentaire, story, vidéo explicative, intro, outro). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'invite-podcast',
         name: 'Invité podcast',
         slug: 'invite-podcast',
         description:
-          'Inviter une personne pour intervenir, partager son avis ou discuter d’un thème précis dans un podcast.'
+          'Inviter une personne pour intervenir, partager son avis ou discuter d’un thème précis dans un podcast. Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'invite-micro-trottoir',
         name: 'Invité micro-trottoir',
         slug: 'invite-micro-trottoir',
         description:
-          'Trouver des personnes à interviewer dehors pour des questions, réactions ou témoignages.'
+          'Trouver des personnes à interviewer dehors pour des questions, réactions ou témoignages. Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'youtube-video',
         name: 'YouTube vidéo',
         slug: 'youtube-video',
         description:
-          'Inviter quelqu’un pour une vidéo YouTube (débat, témoignage, concept, vlog, challenge, réaction, interview).'
+          'Inviter quelqu’un pour une vidéo YouTube (débat, témoignage, concept, vlog, challenge, réaction, interview). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'autre',
         name: 'Autre',
         slug: 'autre',
         description:
-          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories. Chercher, proposer ou collaborer à plusieurs.'
       }
     ]
   },
@@ -283,7 +284,8 @@ export const publicationTypes: PublicationType[] = [
     slug: 'projets-equipe',
     icon: Briefcase,
     color: '#4facfe',
-    description: 'Monter une équipe pour réaliser un vrai projet créatif de A à Z.',
+    description:
+      'Monter une équipe pour réaliser un vrai projet créatif de A à Z. Chercher, proposer ou collaborer à plusieurs.',
     subcategories: [
       {
         id: 'tout',
@@ -295,77 +297,77 @@ export const publicationTypes: PublicationType[] = [
         name: 'Émission',
         slug: 'projet-emission',
         description:
-          'Trouver des personnes pour créer une émission (concept, tournage, animation, montage, diffusion).'
+          'Trouver des personnes pour créer une émission (concept, tournage, animation, montage, diffusion). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-newsletter',
         name: 'Newsletter',
         slug: 'projet-newsletter',
         description:
-          'Monter une équipe pour lancer une newsletter (idées, écriture, design, diffusion, croissance).'
+          'Monter une équipe pour lancer une newsletter (idées, écriture, design, diffusion, croissance). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-interview',
         name: 'Interview',
         slug: 'projet-interview',
         description:
-          'Créer une série d’interviews avec une équipe (invités, préparation, tournage, montage).'
+          'Créer une série d’interviews avec une équipe (invités, préparation, tournage, montage). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-podcast',
         name: 'Podcast',
         slug: 'projet-podcast',
         description:
-          'Lancer un podcast avec des profils complémentaires (animation, technique, contenu, diffusion).'
+          'Lancer un podcast avec des profils complémentaires (animation, technique, contenu, diffusion). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-documentaire',
         name: 'Documentaire',
         slug: 'projet-documentaire',
         description:
-          'Monter une équipe pour réaliser un documentaire (recherche, tournage, montage, narration).'
+          'Monter une équipe pour réaliser un documentaire (recherche, tournage, montage, narration). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-court-metrage',
         name: 'Court-métrage',
         slug: 'projet-court-metrage',
         description:
-          'Créer un court-métrage avec une équipe (scénario, tournage, rôles, montage).'
+          'Créer un court-métrage avec une équipe (scénario, tournage, rôles, montage). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-youtube',
         name: 'Chaîne YouTube',
         slug: 'projet-youtube',
         description:
-          'Monter une équipe pour une chaîne YouTube (idées, tournage, montage, rôles).'
+          'Monter une équipe pour une chaîne YouTube (idées, tournage, montage, rôles). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-magazine',
         name: 'Magazine',
         slug: 'projet-magazine',
         description:
-          'Créer un magazine avec une équipe (rédaction, design, contenu, publication).'
+          'Créer un magazine avec une équipe (rédaction, design, contenu, publication). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-blog',
         name: 'Blog',
         slug: 'projet-blog',
         description:
-          'Lancer un blog avec des personnes complémentaires (écriture, contenu, stratégie, diffusion).'
+          'Lancer un blog avec des personnes complémentaires (écriture, contenu, stratégie, diffusion). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'projet-media',
         name: 'Média',
         slug: 'projet-media',
         description:
-          'Créer un média avec une équipe (ligne éditoriale, production, diffusion, croissance).'
+          'Créer un média avec une équipe (ligne éditoriale, production, diffusion, croissance). Chercher, proposer ou collaborer à plusieurs.'
       },
       {
         id: 'autre',
         name: 'Autre',
         slug: 'autre',
         description:
-          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories. Chercher, proposer ou collaborer à plusieurs.'
       }
     ]
   },

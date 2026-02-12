@@ -268,6 +268,10 @@ const Search = () => {
         .order('created_at', { ascending: false })
         .limit(50)
 
+      if (user?.id) {
+        postsQuery = postsQuery.neq('user_id', user.id)
+      }
+
       if (query.trim()) {
         postsQuery = postsQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,location.ilike.%${query}%`)
       }
@@ -378,7 +382,7 @@ const Search = () => {
 
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter])
+  }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter, user?.id])
 
   const filteredResults = useMemo(() => {
     const now = Date.now()
@@ -399,6 +403,7 @@ const Search = () => {
                   : null
 
     const filtered = results.filter((post) => {
+      if (user?.id && post.user_id === user.id) return false
       const createdAt = new Date(post.created_at).getTime()
       const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
       const matchesListingType =
@@ -411,7 +416,7 @@ const Search = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [results, dateFilter, sortOrder, listingTypeFilter])
+  }, [results, dateFilter, sortOrder, listingTypeFilter, user?.id])
 
   const handleLocationSelect = (location: {
     address: string

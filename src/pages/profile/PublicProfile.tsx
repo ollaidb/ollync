@@ -81,6 +81,7 @@ interface Review {
   created_at: string
   reviewer_name?: string
   reviewer_avatar?: string
+  reviewer_id?: string
   mission_type?: string
 }
 
@@ -631,7 +632,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       .from('ratings')
       .select(`
         *,
-        rater:profiles!ratings_rater_id_fkey(username, full_name, avatar_url)
+        rater:profiles!ratings_rater_id_fkey(id, username, full_name, avatar_url)
       `)
       .eq('rated_user_id', profileId)
       .order('created_at', { ascending: false })
@@ -648,6 +649,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         mission_type: string | null
         created_at: string
         rater: {
+          id: string | null
           username: string | null
           full_name: string | null
           avatar_url: string | null
@@ -655,6 +657,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       }
       const formattedReviews: Review[] = (data as ReviewData[] || []).map((review) => ({
         id: review.id,
+        reviewer_id: review.rater?.id || undefined,
         reviewer_name: review.rater?.full_name || review.rater?.username || undefined,
         reviewer_avatar: review.rater?.avatar_url || undefined,
         rating: review.rating,
@@ -1059,7 +1062,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               )}
             </div>
             {/* Bouton Suivre (icône + seulement) */}
-            {!isOwnProfile && user && !isFavorite && (
+            {!isOwnProfile && user && !isFavorite && userId !== user.id && profileId !== user.id && (
               <button
                 className="profile-follow-icon-btn"
                 onClick={handleToggleFavorite}
@@ -1339,26 +1342,37 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                 {reviews.map((review) => (
                   <div key={review.id} className="review-item">
                     <div className="review-header-item">
-                      {review.reviewer_avatar ? (
-                        <img src={review.reviewer_avatar} alt={review.reviewer_name || ''} className="review-avatar-img" />
-                      ) : (
-                        <div className="review-avatar-placeholder">
-                          {(review.reviewer_name?.[0] || 'U').toUpperCase()}
+                      <button
+                        type="button"
+                        className="review-author-link"
+                        onClick={() => {
+                          if (review.reviewer_id) {
+                            navigate(`/profile/public/${review.reviewer_id}`)
+                          }
+                        }}
+                        disabled={!review.reviewer_id}
+                      >
+                        {review.reviewer_avatar ? (
+                          <img src={review.reviewer_avatar} alt={review.reviewer_name || ''} className="review-avatar-img" />
+                        ) : (
+                          <div className="review-avatar-placeholder">
+                            {(review.reviewer_name?.[0] || 'U').toUpperCase()}
+                          </div>
+                        )}
+                        <div className="review-author-info">
+                          <div className="review-author-name">{review.reviewer_name || 'Anonyme'}</div>
+                          <div className="review-rating-stars">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                size={16}
+                                fill={star <= review.rating ? '#ffc107' : 'none'}
+                                stroke={star <= review.rating ? '#ffc107' : 'var(--muted-foreground)'}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      )}
-                      <div className="review-author-info">
-                        <div className="review-author-name">{review.reviewer_name || 'Anonyme'}</div>
-                        <div className="review-rating-stars">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              size={16} 
-                              fill={star <= review.rating ? '#ffc107' : 'none'}
-                              stroke={star <= review.rating ? '#ffc107' : 'var(--muted-foreground)'}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      </button>
                       <div className="review-date-text">
                         {new Date(review.created_at).toLocaleDateString('fr-FR')}
                       </div>

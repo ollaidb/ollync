@@ -28,7 +28,11 @@ interface Post {
   comments_count: number
   created_at: string
   needed_date?: string | null
+  needed_time?: string | null
   number_of_people?: number | null
+  duration_minutes?: number | null
+  profile_level?: string | null
+  profile_roles?: string[] | string | null
   delivery_available: boolean
   is_urgent?: boolean
   status: string
@@ -93,6 +97,7 @@ const PostDetails = () => {
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
+  const [requestRole, setRequestRole] = useState('')
   const [requestDocument, setRequestDocument] = useState<File | null>(null)
   const [requestDocumentName, setRequestDocumentName] = useState<string>('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -546,12 +551,21 @@ const PostDetails = () => {
     }
 
     // Sinon, afficher la modal d'envoi de demande
-    setRequestMessage('')
+    const reviewerName = post?.user?.full_name || post?.user?.username || ''
+    const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
+    setRequestMessage(`${greeting} votre annonce m'intéresse ! Est-elle toujours disponible ?`)
+    setRequestRole('')
     setShowSendRequestModal(true)
   }
 
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
+
+    const availableRoles = getProfileRolesList(post.profile_roles)
+    if (availableRoles.length > 0 && !requestRole.trim()) {
+      alert('Veuillez choisir le poste pour lequel vous postulez.')
+      return
+    }
 
     setLoadingRequest(true)
     try {
@@ -602,6 +616,7 @@ const PostDetails = () => {
           related_post_id: id,
           status: 'pending',
           request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
+          request_role: requestRole.trim() || null,
           request_document_url: documentUrl,
           request_document_name: documentName
         })
@@ -619,6 +634,7 @@ const PostDetails = () => {
         setMatchRequest({ id: data.id, status: data.status })
         setShowSendRequestModal(false)
         setRequestMessage('')
+        setRequestRole('')
         setRequestDocument(null)
         setRequestDocumentName('')
         showSuccess('Demande envoyée')
@@ -783,6 +799,33 @@ const PostDetails = () => {
     const cleanUrl = baseUrl.split('?')[0]
     const fileName = cleanUrl.split('/').pop()
     return fileName ? decodeURIComponent(fileName) : 'Document PDF'
+  }
+
+  const getProfileRolesList = (roles?: string[] | string | null) => {
+    if (!roles) return []
+    if (Array.isArray(roles)) return roles.filter(Boolean)
+    if (typeof roles !== 'string') return []
+    const trimmed = roles.trim()
+    if (!trimmed) return []
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) return parsed.filter(Boolean)
+    } catch {
+      // Ignore JSON parse errors and fall back to delimiter split
+    }
+    return trimmed
+      .split('||')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  const formatDuration = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return ''
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) return `${hours}h${String(mins).padStart(2, '0')}`
+    if (hours > 0) return `${hours}h`
+    return `${mins} min`
   }
 
   const hasAddress = post?.location_address || (post?.location_lat && post?.location_lng)
@@ -1110,10 +1153,12 @@ const PostDetails = () => {
               {post.needed_date && (
                 <span className="post-title-meta-item">
                   Pour le {new Date(post.needed_date).toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
+                    day: '2-digit',
+                    month: '2-digit',
                     year: 'numeric'
                   })}
+                  {post.needed_time ? ` à ${post.needed_time}` : ''}
+                  {post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
                 </span>
               )}
             </div>
@@ -1126,11 +1171,12 @@ const PostDetails = () => {
             {/* Informations secondaires */}
             <div className="post-meta-info">
               <span className="post-meta-item post-meta-item-date">
-                {new Date(post.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
+                Publié le {new Date(post.created_at).toLocaleDateString('fr-FR', {
+                  day: '2-digit',
+                  month: '2-digit',
                   year: 'numeric'
-                })}
+                })}{' '}
+                à {new Date(post.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
 
@@ -1262,6 +1308,39 @@ const PostDetails = () => {
                 <div className="post-info-item">
                   <span className="post-info-label">Nombre de personnes</span>
                   <span className="post-info-value post-info-value-right">{post.number_of_people}</span>
+                </div>
+              )}
+
+              {(post.needed_date || post.needed_time || post.duration_minutes) && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Date et heure</span>
+                  <span className="post-info-value post-info-value-nowrap">
+                    {post.needed_date
+                      ? new Date(post.needed_date).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })
+                      : ''}
+                    {post.needed_time ? ` à ${post.needed_time}` : ''}
+                    {post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
+                  </span>
+                </div>
+              )}
+
+              {post.profile_level && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Niveau recherché</span>
+                  <span className="post-info-value">{post.profile_level}</span>
+                </div>
+              )}
+
+              {getProfileRolesList(post.profile_roles).length > 0 && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Rôle recherché</span>
+                  <span className="post-info-value">
+                    {getProfileRolesList(post.profile_roles).join(', ')}
+                  </span>
                 </div>
               )}
 
@@ -1433,12 +1512,32 @@ const PostDetails = () => {
             onCancel={() => {
               setShowSendRequestModal(false)
               setRequestMessage('')
+              setRequestRole('')
               setRequestDocument(null)
               setRequestDocumentName('')
             }}
             confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
             cancelLabel="Annuler"
           >
+            {getProfileRolesList(post?.profile_roles).length > 0 && (
+              <div className="confirmation-modal-field">
+                <label className="confirmation-modal-label">
+                  Poste recherché
+                </label>
+                <div className="request-role-list">
+                  {getProfileRolesList(post?.profile_roles).map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      className={`request-role-option ${requestRole === role ? 'active' : ''}`}
+                      onClick={() => setRequestRole(role)}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="confirmation-modal-field">
               <label className="confirmation-modal-label" htmlFor="match-request-message">
                 Votre message

@@ -38,15 +38,16 @@ i18n.use(initReactI18next).init({
         },
         descriptions: {
           'creation-contenu':
-            'Créer du contenu à plusieurs : photos, vidéos, vlogs, sketchs, trends, lives ou événements.',
+            'Créer du contenu ensemble ou se faire aider : photos, vidéos, vlogs, sketchs, trends, lives ou événements. Chercher, proposer ou collaborer à plusieurs.',
           'casting-role':
-            'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif).',
+            'Trouver des personnes pour jouer dans un projet (figurants, rôles, comédie, tournage, contenu créatif). Chercher, proposer ou collaborer à plusieurs.',
           'emploi': 'Métiers liés à la création de contenu (vidéo, photo, montage, community, etc.).',
           'poste-service':
             'Échange service ↔ visibilité (prestataire propose un service, créateur offre la visibilité).',
           'studio-lieu':
             'Trouver des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
-          'projets-equipe': 'Monter une équipe pour réaliser un vrai projet créatif de A à Z.',
+          'projets-equipe':
+            'Monter une équipe pour réaliser un vrai projet créatif de A à Z. Chercher, proposer ou collaborer à plusieurs.',
           'services':
             'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel).',
           'vente': 'Acheter ou vendre (comptes, noms d\'utilisateur, concepts, matériel).'

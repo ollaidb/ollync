@@ -269,3 +269,37 @@
 .payment-options-list::-webkit-scrollbar-thumb:hover {
   background: var(--primary, #6366f1);
 }
+.time-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-input {
+  flex: 1;
+}
+
+.time-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.time-stepper-btn {
+  width: 22px;
+  height: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-stepper-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}

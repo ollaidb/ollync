@@ -80,13 +80,42 @@ const UsersPage = () => {
   }, [categories, t])
 
   const profileTypeLabelMap = useMemo(() => ({
-    creator: 'Créateur de contenu',
+    creator: 'Créateur(trice) de contenu',
     freelance: 'Prestataire / Freelance',
     company: 'Entreprise',
     studio: 'Studio / Lieu',
     institut: 'Institut / Beauté',
+    'community-manager': 'Community manager',
+    monteur: 'Monteur(euse)',
+    animateur: 'Animateur(rice)',
+    redacteur: 'Rédacteur(rice)',
+    scenariste: 'Scénariste',
+    coach: 'Coach',
+    agence: 'Agence',
+    branding: 'Branding',
+    'analyse-profil': 'Analyse de profil',
     other: 'Autre'
   }), [])
+
+  const parseProfileTypes = (value: unknown) => {
+    if (!value) return []
+    if (Array.isArray(value)) return value.map(v => String(v)).filter(Boolean)
+    if (typeof value !== 'string') return []
+    const trimmed = value.trim()
+    if (!trimmed) return []
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        return parsed.map(v => String(v)).filter(Boolean)
+      }
+    } catch {
+      // Ignore JSON parse errors and fall back to delimiter split
+    }
+    return trimmed
+      .split('||')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
 
   // Récupérer les catégories
   useEffect(() => {
@@ -388,11 +417,13 @@ const UsersPage = () => {
         ) : (
           <div className="users-masonry">
             {users.map((userItem) => {
-              const displayName = userItem.username || userItem.full_name || 'Utilisateur'
-              
-              const profileTypeLabel = userItem.profile_type
-                ? profileTypeLabelMap[userItem.profile_type as keyof typeof profileTypeLabelMap] || userItem.profile_type
-                : ''
+              const displayName = userItem.full_name?.trim() || 'Utilisateur'
+
+              const profileTypes = parseProfileTypes(userItem.profile_type)
+                .filter(type => type !== 'other')
+              const displayProfileTypes = profileTypes
+                .map(type => profileTypeLabelMap[type as keyof typeof profileTypeLabelMap] || type)
+                .slice(0, 2)
 
               return (
                 <div 
@@ -420,9 +451,9 @@ const UsersPage = () => {
 
                   {/* Nom de l'utilisateur */}
                   <div className="users-card-name">{displayName}</div>
-                  {profileTypeLabel && (
-                    <div className="users-card-type">{profileTypeLabel}</div>
-                  )}
+                  {displayProfileTypes.map((typeLabel, index) => (
+                    <div key={`${typeLabel}-${index}`} className="users-card-type">{typeLabel}</div>
+                  ))}
                   
                   {/* Bio de l'utilisateur */}
                   {userItem.bio && (

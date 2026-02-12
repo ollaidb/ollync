@@ -1,30 +1,31 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { Suspense, lazy } from 'react'
 import Footer from './components/Footer'
-import Home from './pages/Home'
-import Feed from './pages/Feed'
-import Favorites from './pages/Favorites'
-import Publish from './pages/Publish'
-import Messages from './pages/Messages'
-import Profile from './pages/Profile'
-import CreationContenu from './pages/CreationContenu'
-import Emploi from './pages/Emploi'
-import CastingRole from './pages/CastingRole'
-import StudioLieu from './pages/StudioLieu'
-import ProjetsEquipe from './pages/ProjetsEquipe'
-import Service from './pages/Service'
-import Vente from './pages/Vente'
-import PosteService from './pages/PosteService'
-import PostDetails from './pages/PostDetails'
-import SwipePage from './pages/SwipePage'
-import UsersPage from './pages/UsersPage'
-import Search from './pages/Search'
-import Notifications from './pages/Notifications'
-import Moderation from './pages/Moderation'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ResetPassword from './pages/ResetPassword'
-import UrgentPosts from './pages/UrgentPosts'
-import RecentPosts from './pages/RecentPosts'
+const Home = lazy(() => import('./pages/Home'))
+const Feed = lazy(() => import('./pages/Feed'))
+const Favorites = lazy(() => import('./pages/Favorites'))
+const Publish = lazy(() => import('./pages/Publish'))
+const Messages = lazy(() => import('./pages/Messages'))
+const Profile = lazy(() => import('./pages/Profile'))
+const CreationContenu = lazy(() => import('./pages/CreationContenu'))
+const Emploi = lazy(() => import('./pages/Emploi'))
+const CastingRole = lazy(() => import('./pages/CastingRole'))
+const StudioLieu = lazy(() => import('./pages/StudioLieu'))
+const ProjetsEquipe = lazy(() => import('./pages/ProjetsEquipe'))
+const Service = lazy(() => import('./pages/Service'))
+const Vente = lazy(() => import('./pages/Vente'))
+const PosteService = lazy(() => import('./pages/PosteService'))
+const PostDetails = lazy(() => import('./pages/PostDetails'))
+const SwipePage = lazy(() => import('./pages/SwipePage'))
+const UsersPage = lazy(() => import('./pages/UsersPage'))
+const Search = lazy(() => import('./pages/Search'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const Moderation = lazy(() => import('./pages/Moderation'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const UrgentPosts = lazy(() => import('./pages/UrgentPosts'))
+const RecentPosts = lazy(() => import('./pages/RecentPosts'))
 import { ToastProvider } from './contexts/ToastContext'
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import { useIsMobile } from './hooks/useIsMobile'
@@ -38,7 +39,15 @@ function AppContent() {
   const showFooter = !isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/')
 
   const routes = (
-    <Routes>
+    <Suspense
+      fallback={
+        <div className="route-loading">
+          <div className="route-loading-spinner" />
+          <div className="route-loading-text">Chargement...</div>
+        </div>
+      }
+    >
+      <Routes>
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/home" element={<Home />} />
       <Route path="/feed" element={<Feed />} />
@@ -134,7 +143,8 @@ function AppContent() {
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<Register />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 
   return (

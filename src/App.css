@@ -44,4 +44,32 @@
     padding-top: 0;
   }
 }
+/* Route loading (lazy pages) */
+.route-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted-foreground);
+}
 
+.route-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--muted-foreground) 20%, transparent);
+  border-top-color: var(--primary);
+  animation: routeSpin 0.8s linear infinite;
+}
+
+.route-loading-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@keyframes routeSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

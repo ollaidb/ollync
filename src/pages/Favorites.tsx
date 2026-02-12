@@ -55,7 +55,8 @@ const Favorites = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'profiles'>(getTabFromParams)
   const [favoritePosts, setFavoritePosts] = useState<Post[]>([])
   const [followedProfiles, setFollowedProfiles] = useState<FollowedProfile[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingPosts, setLoadingPosts] = useState(true)
+  const [loadingProfiles, setLoadingProfiles] = useState(true)
   const [networkError, setNetworkError] = useState(false)
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -64,6 +65,7 @@ const Favorites = () => {
     if (!user) return
 
     try {
+      setLoadingPosts(true)
       setNetworkError(false)
       // Récupérer les IDs des posts likés
       const { data: likes, error: likesError } = await supabase
@@ -172,6 +174,8 @@ const Favorites = () => {
            error.message.includes('ERR_'))) {
         setNetworkError(true)
       }
+    } finally {
+      setLoadingPosts(false)
     }
   }, [user])
 
@@ -179,6 +183,7 @@ const Favorites = () => {
     if (!user) return
 
     try {
+      setLoadingProfiles(true)
       setNetworkError(false)
       // Récupérer les profils suivis
       const { data: follows, error: followsError } = await supabase
@@ -275,28 +280,23 @@ const Favorites = () => {
            error.message.includes('ERR_'))) {
         setNetworkError(true)
       }
+    } finally {
+      setLoadingProfiles(false)
     }
   }, [user])
 
-  const loadFavorites = useCallback(async () => {
-    setLoading(true)
-    try {
-      await Promise.all([
-        fetchLikedPosts(),
-        fetchFollowedProfiles()
-      ])
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchLikedPosts, fetchFollowedProfiles])
-
   useEffect(() => {
     if (user) {
-      loadFavorites()
+      if (activeTab === 'posts') {
+        fetchLikedPosts()
+      } else {
+        fetchFollowedProfiles()
+      }
     } else {
-      setLoading(false)
+      setLoadingPosts(false)
+      setLoadingProfiles(false)
     }
-  }, [user, loadFavorites])
+  }, [user, activeTab, fetchLikedPosts, fetchFollowedProfiles])
 
   useEffect(() => {
     if (!headerRef.current || !containerRef.current) return
@@ -358,6 +358,8 @@ const Favorites = () => {
       alert('Erreur lors de la suppression du suivi')
     }
   }
+
+  const loading = activeTab === 'posts' ? loadingPosts : loadingProfiles
 
   if (!user) {
     return (

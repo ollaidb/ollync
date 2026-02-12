@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
 import { CustomList } from '../CustomList/CustomList'
@@ -11,6 +12,9 @@ interface FormData {
   socialNetwork?: string
   price: string
   exchange_type: string
+  deadline?: string
+  neededTime?: string
+  duration_minutes?: string
   materialCondition?: string
   contract_type?: string
   work_schedule?: string
@@ -58,6 +62,41 @@ export const Step4Description = ({
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
 
+  const normalizeTime = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, '')
+    const parts = cleaned.split(':')
+    if (parts.length === 1) {
+      const raw = parts[0]
+      if (raw.length <= 2) return raw
+      return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+    }
+    const [h, m] = parts
+    return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+  }
+
+  const formatTime = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const hh = String(h).padStart(2, '0')
+    const mm = String(m).padStart(2, '0')
+    return `${hh}:${mm}`
+  }
+
+  const stepTime = (deltaMinutes: number) => {
+    const base = formData.neededTime && formData.neededTime.trim().length > 0
+      ? formData.neededTime
+      : '01:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    onUpdateFormData({ neededTime: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}` })
+  }
+
   const contractOptions = [
     { id: 'cdi', name: 'CDI' },
     { id: 'cdd', name: 'CDD' },
@@ -74,6 +113,7 @@ export const Step4Description = ({
     { id: 'etat-moyen', name: 'État moyen' }
   ]
 
+
   const selectedSocialNetworkName =
     SOCIAL_NETWORKS_CONFIG.find((network) => network.id === formData.socialNetwork)?.name ??
     'Choisir un réseau'
@@ -86,6 +126,21 @@ export const Step4Description = ({
   const selectedMaterialConditionName =
     materialConditionOptions.find((option) => option.id === formData.materialCondition)?.name ??
     'Choisir un état du matériel'
+  const formatDurationValue = (value?: string) => {
+    const minutes = parseInt(value || '0', 10)
+    if (!Number.isFinite(minutes) || minutes <= 0) return ''
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) return `${hours}h${String(mins).padStart(2, '0')}`
+    if (hours > 0) return `${hours}h`
+    return `${mins} min`
+  }
+
+  const stepDuration = (deltaMinutes: number) => {
+    const base = parseInt(formData.duration_minutes || '0', 10) || 0
+    const next = Math.max(0, base + deltaMinutes)
+    onUpdateFormData({ duration_minutes: next > 0 ? String(next) : '' })
+  }
   const isMaterialSale =
     (selectedCategory?.slug ?? formData.category) === 'vente' &&
     (selectedSubcategory?.slug ?? formData.subcategory) === 'gorille'
@@ -645,6 +700,67 @@ export const Step4Description = ({
             </div>
           </>
         )}
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Date de besoin *</label>
+        <input
+          type="date"
+          className="form-input"
+          value={formData.deadline || ''}
+          onChange={(e) => onUpdateFormData({ deadline: e.target.value })}
+          min={new Date().toISOString().split('T')[0]}
+        />
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Heure de besoin *</label>
+        <div className="time-input-row">
+          <input
+            type="text"
+            className="form-input time-input"
+            value={formData.neededTime || '01:00'}
+            onChange={(e) => onUpdateFormData({ neededTime: normalizeTime(e.target.value) })}
+            onBlur={() => onUpdateFormData({ neededTime: formatTime(formData.neededTime || '01:00') })}
+            placeholder="HH:MM"
+            inputMode="numeric"
+            aria-label="Heure de besoin"
+          />
+          <div className="time-stepper">
+            <button type="button" className="time-stepper-btn" onClick={() => stepTime(30)} aria-label="Augmenter de 30 minutes">
+              <ChevronUp size={16} />
+            </button>
+            <button type="button" className="time-stepper-btn" onClick={() => stepTime(-30)} aria-label="Diminuer de 30 minutes">
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Durée estimée (optionnel)</label>
+        <div className="time-input-row">
+          <input
+            type="text"
+            className="form-input time-input"
+            value={formatDurationValue(formData.duration_minutes)}
+            onChange={(e) => {
+              const numeric = e.target.value.replace(/[^\d]/g, '')
+              onUpdateFormData({ duration_minutes: numeric })
+            }}
+            placeholder="Durée (en minutes)"
+            inputMode="numeric"
+            aria-label="Durée estimée"
+          />
+          <div className="time-stepper">
+            <button type="button" className="time-stepper-btn" onClick={() => stepDuration(30)} aria-label="Augmenter de 30 minutes">
+              <ChevronUp size={14} />
+            </button>
+            <button type="button" className="time-stepper-btn" onClick={() => stepDuration(-30)} aria-label="Diminuer de 30 minutes">
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {requiresPrice && (

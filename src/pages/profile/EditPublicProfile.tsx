@@ -33,7 +33,7 @@ const EditPublicProfile = () => {
     bio: '',
     skills: [] as string[],
     display_categories: [] as string[],
-    profile_type: '',
+    profile_types: [] as string[],
     services: [] as Array<{
       name: string
       description: string
@@ -41,10 +41,10 @@ const EditPublicProfile = () => {
       value: string
     }>,
     socialLinks: [] as string[],
-      phone: '',
-      email: '',
-      phone_verified: false,
-      email_verified: false
+    phone: '',
+    email: '',
+    phone_verified: false,
+    email_verified: false
   })
   const [displayCategorySearch, setDisplayCategorySearch] = useState('')
   const [showDisplayCategorySuggestions, setShowDisplayCategorySuggestions] = useState(false)
@@ -52,6 +52,8 @@ const EditPublicProfile = () => {
   const [profileTypeSearch, setProfileTypeSearch] = useState('')
   const [showProfileTypeSuggestions, setShowProfileTypeSuggestions] = useState(false)
   const profileTypeSearchRef = useRef<HTMLDivElement>(null)
+  const [showCustomProfileTypeInput, setShowCustomProfileTypeInput] = useState(false)
+  const [customProfileType, setCustomProfileType] = useState('')
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null)
   const [serviceForm, setServiceForm] = useState({
@@ -60,12 +62,13 @@ const EditPublicProfile = () => {
     payment_type: '',
     value: ''
   })
+  const [showServiceNameSuggestions, setShowServiceNameSuggestions] = useState(false)
   const [isServicePaymentOpen, setIsServicePaymentOpen] = useState(false)
 
   // Hook de consentement pour les données personnelles du profil
   const profileConsent = useConsent('profile_data')
   const confirmation = useConfirmation()
-  const { showSuccess } = useToastContext()
+  const { showSuccess, showError } = useToastContext()
   const { markNavigatingBack } = useNavigationHistory()
 
   // Gérer le refus : rediriger vers la page de profil
@@ -111,6 +114,29 @@ const EditPublicProfile = () => {
     if (socialLinksObj.facebook) socialLinksArray.push(socialLinksObj.facebook)
     if (socialLinksObj.website) socialLinksArray.push(socialLinksObj.website)
     
+    const parseProfileTypes = (value: unknown) => {
+      if (!value) return []
+      if (Array.isArray(value)) return value.map(v => String(v)).filter(Boolean)
+      if (typeof value !== 'string') return []
+      const trimmed = value.trim()
+      if (!trimmed) return []
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          return parsed.map(v => String(v)).filter(Boolean)
+        }
+      } catch {
+        // Ignore JSON parse errors and fall back to delimiter split
+      }
+      return trimmed
+        .split('||')
+        .map(item => item.trim())
+        .filter(Boolean)
+    }
+
+    const initialProfileTypes = parseProfileTypes((profileData as { profile_type?: string | null }).profile_type)
+      .filter(type => type !== 'other')
+
     setProfile({
       avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || '',
       username: authUsername || (profileData as { username?: string | null }).username || '',
@@ -119,7 +145,7 @@ const EditPublicProfile = () => {
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
       display_categories: (profileData as { display_categories?: string[] | null }).display_categories || [],
-      profile_type: (profileData as { profile_type?: string | null }).profile_type || '',
+      profile_types: initialProfileTypes,
       services: (() => {
         const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: string; value: string }> | string[] | null }).services
         if (!servicesData) {
@@ -315,13 +341,36 @@ const EditPublicProfile = () => {
 
 
   const profileTypeOptions = useMemo(() => ([
-    { id: 'creator', label: 'Créateur de contenu' },
+    { id: 'creator', label: 'Créateur(trice) de contenu' },
     { id: 'freelance', label: 'Prestataire / Freelance' },
     { id: 'company', label: 'Entreprise' },
     { id: 'studio', label: 'Studio / Lieu' },
     { id: 'institut', label: 'Institut / Beauté' },
+    { id: 'community-manager', label: 'Community manager' },
+    { id: 'monteur', label: 'Monteur(euse)' },
+    { id: 'animateur', label: 'Animateur(rice)' },
+    { id: 'redacteur', label: 'Rédacteur(rice)' },
+    { id: 'scenariste', label: 'Scénariste' },
+    { id: 'coach', label: 'Coach' },
+    { id: 'agence', label: 'Agence' },
+    { id: 'branding', label: 'Branding' },
+    { id: 'analyse-profil', label: 'Analyse de profil' },
     { id: 'other', label: 'Autre' }
   ]), [])
+
+  const serviceNameOptions = useMemo(() => {
+    const servicesCategory = publicationTypes.find(category => category.slug === 'services')
+    if (!servicesCategory) return []
+    return servicesCategory.subcategories
+      .filter(sub => sub.id !== 'tout' && sub.id !== 'autre')
+      .map(sub => sub.name)
+  }, [])
+
+  const filteredServiceNameOptions = useMemo(() => {
+    const search = serviceForm.name.trim().toLowerCase()
+    if (!search) return serviceNameOptions
+    return serviceNameOptions.filter(option => option.toLowerCase().includes(search))
+  }, [serviceForm.name, serviceNameOptions])
 
   const displayCategoryOptions = useMemo(() => (
     publicationTypes.map(category => ({
@@ -374,14 +423,57 @@ const EditPublicProfile = () => {
     }))
   }
 
-  const handleSelectProfileType = (typeId: string) => {
-    setProfile(prev => ({ ...prev, profile_type: typeId }))
+  const MAX_PROFILE_TYPES = 2
+
+  const formatProfileTypeLabel = (typeId: string) => {
+    return profileTypeOptions.find(option => option.id === typeId)?.label || typeId
+  }
+
+  const handleAddProfileType = (typeId: string) => {
+    if (!typeId) return
+    if (typeId === 'other') {
+      setShowCustomProfileTypeInput(true)
+      setCustomProfileType('')
+      setProfileTypeSearch('')
+      setShowProfileTypeSuggestions(false)
+      return
+    }
+    if (profile.profile_types.length >= MAX_PROFILE_TYPES) {
+      showError('Vous pouvez choisir 2 statuts maximum')
+      return
+    }
+    if (profile.profile_types.includes(typeId)) {
+      setProfileTypeSearch('')
+      setShowProfileTypeSuggestions(false)
+      return
+    }
+    setProfile(prev => ({ ...prev, profile_types: [...prev.profile_types, typeId] }))
     setProfileTypeSearch('')
     setShowProfileTypeSuggestions(false)
   }
 
-  const handleClearProfileType = () => {
-    setProfile(prev => ({ ...prev, profile_type: '' }))
+  const handleRemoveProfileType = (typeId: string) => {
+    setProfile(prev => ({
+      ...prev,
+      profile_types: prev.profile_types.filter(type => type !== typeId)
+    }))
+  }
+
+  const handleConfirmCustomProfileType = () => {
+    const trimmed = customProfileType.trim()
+    if (!trimmed) {
+      showError('Précisez votre statut')
+      return
+    }
+    if (profile.profile_types.length >= MAX_PROFILE_TYPES) {
+      showError('Vous pouvez choisir 2 statuts maximum')
+      return
+    }
+    if (!profile.profile_types.includes(trimmed)) {
+      setProfile(prev => ({ ...prev, profile_types: [...prev.profile_types, trimmed] }))
+    }
+    setCustomProfileType('')
+    setShowCustomProfileTypeInput(false)
   }
 
   const normalizeServicePaymentType = (value: string) => {
@@ -409,6 +501,7 @@ const EditPublicProfile = () => {
         value: ''
       })
     }
+    setShowServiceNameSuggestions(false)
     setIsServicePaymentOpen(false)
     setShowServiceModal(true)
   }
@@ -422,6 +515,7 @@ const EditPublicProfile = () => {
       payment_type: '',
       value: ''
     })
+    setShowServiceNameSuggestions(false)
     setIsServicePaymentOpen(false)
   }
 
@@ -614,6 +708,9 @@ const EditPublicProfile = () => {
       // Toujours sauvegarder les tableaux (même vides) pour écraser les valeurs existantes
       const servicesToSave = profile.services.length > 0 ? profile.services : []
       const skillsToSave = profile.skills.length > 0 ? profile.skills : []
+      const profileTypesToSave = profile.profile_types.length > 0
+        ? JSON.stringify(profile.profile_types)
+        : null
       console.log(`💾 Services à sauvegarder (${profile.services.length}):`, servicesToSave)
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -627,7 +724,7 @@ const EditPublicProfile = () => {
           avatar_url: profile.avatar_url || null,
           skills: skillsToSave,
           display_categories: profile.display_categories,
-          profile_type: profile.profile_type || null,
+          profile_type: profileTypesToSave,
           services: servicesToSave,
           social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
@@ -854,24 +951,24 @@ const EditPublicProfile = () => {
               </div>
             </div>
 
-            {/* Statut */}
+            {/* Statuts */}
             <div className="form-group">
-              <label>Statut</label>
-              <p className="form-hint compact">Indiquez votre type de profil pour aider les autres à mieux vous identifier.</p>
+              <label>Statuts</label>
+              <p className="form-hint compact">Choisissez jusqu’à 2 statuts pour aider les autres à mieux vous identifier.</p>
 
               <div className="tags-list">
-                {profile.profile_type && (
-                  <span className="tag">
-                    {profileTypeOptions.find(option => option.id === profile.profile_type)?.label || profile.profile_type}
+                {profile.profile_types.map((typeId) => (
+                  <span key={typeId} className="tag">
+                    {formatProfileTypeLabel(typeId)}
                     <button
                       type="button"
                       className="tag-remove"
-                      onClick={handleClearProfileType}
+                      onClick={() => handleRemoveProfileType(typeId)}
                     >
                       <X size={14} />
                     </button>
                   </span>
-                )}
+                ))}
               </div>
 
               <div className="interest-search-container" ref={profileTypeSearchRef}>
@@ -892,11 +989,11 @@ const EditPublicProfile = () => {
                           opt => opt.label.toLowerCase() === profileTypeSearch.toLowerCase()
                         )
                         if (exactMatch) {
-                          handleSelectProfileType(exactMatch.id)
+                          handleAddProfileType(exactMatch.id)
                         }
                       }
                     }}
-                    placeholder="Choisir un statut"
+                    placeholder="Choisir un statut (max 2)"
                   />
                 </div>
 
@@ -904,16 +1001,21 @@ const EditPublicProfile = () => {
                   <div className="interest-suggestions">
                     {filteredProfileTypeOptions().length > 0 ? (
                       <>
-                        {filteredProfileTypeOptions().map((option) => (
+                        {filteredProfileTypeOptions().map((option) => {
+                          const isAlreadyAdded = profile.profile_types.includes(option.id)
+                          const isLimitReached = profile.profile_types.length >= MAX_PROFILE_TYPES
+                          const isDisabled = isAlreadyAdded || isLimitReached
+                          return (
                           <button
                             key={option.id}
                             type="button"
-                            className="interest-suggestion-item"
-                            onClick={() => handleSelectProfileType(option.id)}
+                            className={`interest-suggestion-item ${isDisabled ? 'disabled' : ''}`}
+                            onClick={() => !isDisabled && handleAddProfileType(option.id)}
+                            disabled={isDisabled}
                           >
                             {option.label}
                           </button>
-                        ))}
+                        )})}
                       </>
                     ) : (
                       <div className="interest-suggestion-item no-results">
@@ -923,6 +1025,30 @@ const EditPublicProfile = () => {
                   </div>
                 )}
               </div>
+              {showCustomProfileTypeInput && (
+                <div className="custom-status-row">
+                  <input
+                    type="text"
+                    className="custom-status-input"
+                    value={customProfileType}
+                    onChange={(e) => setCustomProfileType(e.target.value)}
+                    placeholder="Précisez votre statut"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleConfirmCustomProfileType()
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="custom-status-button"
+                    onClick={handleConfirmCustomProfileType}
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Services */}
@@ -1012,16 +1138,52 @@ const EditPublicProfile = () => {
                     </button>
                   </div>
                   <div className="service-modal-body">
-            <div className="form-group">
+                    <div className="form-group">
                       <label htmlFor="service-name">Nom du service *</label>
-                  <input
-                    type="text"
-                        id="service-name"
-                        value={serviceForm.name}
-                        onChange={(e) => setServiceForm(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Ex: Photographie de mariage"
-                  />
-                </div>
+                      <p className="form-hint compact">
+                        Choisissez un service existant ou écrivez le vôtre.
+                      </p>
+                      <div className="service-name-field">
+                        <input
+                          type="text"
+                          id="service-name"
+                          value={serviceForm.name}
+                          onChange={(e) => {
+                            setServiceForm(prev => ({ ...prev, name: e.target.value }))
+                            setShowServiceNameSuggestions(true)
+                          }}
+                          onFocus={() => setShowServiceNameSuggestions(true)}
+                          onBlur={() => {
+                            setTimeout(() => setShowServiceNameSuggestions(false), 120)
+                          }}
+                          placeholder="Ex: Montage, Coaching contenu..."
+                        />
+                        {showServiceNameSuggestions && (
+                          <div className="service-name-suggestions">
+                            {filteredServiceNameOptions.length > 0 ? (
+                              filteredServiceNameOptions.map((option) => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  className="service-name-suggestion"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    setServiceForm(prev => ({ ...prev, name: option }))
+                                    setShowServiceNameSuggestions(false)
+                                  }}
+                                >
+                                  {option}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="service-name-suggestion empty">
+                                Aucun service trouvé
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="form-group">
                       <label htmlFor="service-description">Description courte (1 à 2 lignes maximum)</label>
                       <textarea

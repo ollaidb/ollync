@@ -844,6 +844,21 @@
   margin-bottom: 4px;
 }
 
+.review-author-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.review-author-link:disabled {
+  cursor: default;
+}
+
 .review-rating-stars {
   display: flex;
   gap: 2px;

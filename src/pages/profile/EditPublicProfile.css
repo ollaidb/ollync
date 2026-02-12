@@ -818,6 +818,44 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
+.custom-status-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.custom-status-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--input);
+  color: var(--foreground);
+}
+
+.custom-status-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.custom-status-button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.custom-status-button:hover {
+  background: var(--accent);
+}
+
 .status-suggestions {
   position: absolute;
   top: calc(100% + 8px);
@@ -1196,6 +1234,49 @@
 
 .service-modal-body .form-group {
   margin: 0;
+}
+
+.service-name-field {
+  position: relative;
+  width: 100%;
+}
+
+.service-name-field input {
+  width: 100%;
+}
+
+.service-name-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+  z-index: 20;
+}
+
+.service-name-suggestion {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.service-name-suggestion:hover {
+  background: var(--muted);
+}
+
+.service-name-suggestion.empty {
+  cursor: default;
+  color: var(--muted-foreground);
 }
 
 .service-modal-footer {

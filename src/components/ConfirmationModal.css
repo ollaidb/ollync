@@ -10,16 +10,12 @@
   align-items: center;
   justify-content: center;
   z-index: 2300;
-  animation: fadeIn 0.2s ease-out;
+  animation: searchOverlayFade 0.18s ease-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+@keyframes searchOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Contenu du modal - compact et centré */
@@ -31,18 +27,19 @@
   max-width: 460px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
-  animation: slideUp 0.25s ease-out;
+  animation: searchSheetUp 0.22s ease-out;
+  will-change: transform, opacity;
   text-align: center;
 }
 
-@keyframes slideUp {
+@keyframes searchSheetUp {
   from {
-    opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(16px);
+    opacity: 0.85;
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
@@ -245,5 +242,4 @@
   gap: 6px;
   word-break: break-word;
 }
-
 

@@ -229,6 +229,7 @@
   z-index: 9999;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
+  animation: searchOverlayFade 0.18s ease-out;
 }
 
 .search-location-sheet {
@@ -248,12 +249,30 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: searchSheetUp 0.22s ease-out;
+  will-change: transform, opacity;
 }
 
 .search-location-sheet--tall {
   top: calc(env(safe-area-inset-top, 0px) + 110px);
   height: auto;
   max-height: calc(100vh - (env(safe-area-inset-top, 0px) + 110px));
+}
+
+@keyframes searchOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes searchSheetUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .search-location-divider {
