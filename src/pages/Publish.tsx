@@ -47,8 +47,11 @@ export default function Publish() {
     images?: string[] | null
     video?: string | null
     needed_date?: string | null
+    needed_time?: string | null
     number_of_people?: number | null
-    duration_minutes?: string | null
+    duration_minutes?: number | null
+    profile_level?: string | null
+    profile_roles?: string[] | null
     visibility?: string | null
     external_link?: string | null
     document_url?: string | null

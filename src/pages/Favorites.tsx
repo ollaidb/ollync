@@ -451,12 +451,17 @@ const Favorites = () => {
              </div>
              <h2>Problème de connexion</h2>
              <p>Vérifiez votre connexion Internet et réessayez.</p>
-             <button 
-               className="btn-primary" 
+             <button
+               className="btn-primary"
                onClick={() => {
                  setNetworkError(false)
-                 setLoading(true)
-                 loadFavorites()
+                 if (activeTab === 'posts') {
+                   setLoadingPosts(true)
+                   fetchLikedPosts()
+                 } else {
+                   setLoadingProfiles(true)
+                   fetchFollowedProfiles()
+                 }
                }}
              >
                Réessayer

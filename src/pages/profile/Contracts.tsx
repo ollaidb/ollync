@@ -1113,8 +1113,8 @@ const Contracts = () => {
     if (data) {
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(18)
-      const titleLines = doc.splitTextToSize(data.title, maxWidth)
-      titleLines.forEach((line) => {
+      const titleLines = doc.splitTextToSize(data.title, maxWidth) as string[]
+      titleLines.forEach((line: string) => {
         const textWidth = doc.getTextWidth(line)
         const x = Math.max(margin, (doc.internal.pageSize.width - textWidth) / 2)
         if (y > pageHeight - margin) {
