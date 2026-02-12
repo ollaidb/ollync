@@ -316,7 +316,7 @@ export default function Publish() {
           maxParticipants: postData.number_of_people ? String(postData.number_of_people) : '1',
           profileLevel: postData.profile_level || '',
           profileRoles: postData.profile_roles || [],
-          duration_minutes: postData.duration_minutes || '',
+          duration_minutes: postData.duration_minutes != null ? String(postData.duration_minutes) : '',
           visibility: postData.visibility || 'public',
           externalLink: postData.external_link || '',
           documentUrl: postData.document_url || '',
