@@ -191,33 +191,34 @@ i18n.use(initReactI18next).init({
         actions: {
           accept: 'J\'accepte',
           decline: 'Refuser',
-          askAgain: 'Me redemander la prochaine fois'
+          askAgain: 'Me redemander la prochaine fois',
+          learnMore: 'En savoir plus'
         },
         blocked: 'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres de gestion des données.',
         types: {
           location: {
             title: 'Utilisation de la localisation',
-            message: 'Nous utilisons votre localisation pour afficher votre profil et vos annonces selon votre zone géographique. Acceptez-vous l\'utilisation de votre localisation ?'
+            message: 'Nous utilisons votre position pour afficher les annonces proches de vous.'
           },
           media: {
             title: 'Utilisation des médias',
-            message: 'Les photos et vidéos que vous ajoutez peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Acceptez-vous l\'utilisation et l\'affichage de vos médias ?'
+            message: 'Nous utilisons vos photos et vidéos pour publier votre annonce.'
           },
           profile_data: {
             title: 'Utilisation des données de profil',
-            message: 'Vos informations de profil peuvent être visibles par d\'autres utilisateurs selon vos paramètres. Acceptez-vous leur enregistrement et leur affichage ?'
+            message: 'Nous utilisons vos infos de profil pour identifier votre compte.'
           },
           messaging: {
             title: 'Utilisation de la messagerie',
-            message: 'La messagerie permet d\'échanger avec d\'autres utilisateurs. Acceptez-vous l\'activation de la messagerie ?'
+            message: 'Nous utilisons la messagerie pour envoyer, recevoir et garder l’historique des échanges.'
           },
           cookies: {
             title: 'Utilisation des cookies',
-            message: 'Nous utilisons des cookies pour améliorer votre expérience et personnaliser le contenu. Acceptez-vous l\'utilisation des cookies ?'
+            message: 'Nous utilisons des cookies nécessaires, et avec votre accord, des cookies de mesure.'
           },
           behavioral_data: {
             title: 'Analyse d\'utilisation',
-            message: 'Nous analysons votre utilisation pour vous proposer du contenu et des recommandations adaptés. Acceptez-vous cette analyse ?'
+            message: 'Nous analysons certaines actions pour améliorer les fonctionnalités.'
           }
         }
       },
@@ -522,33 +523,34 @@ i18n.use(initReactI18next).init({
         actions: {
           accept: 'I agree',
           decline: 'Decline',
-          askAgain: 'Ask me again next time'
+          askAgain: 'Ask me again next time',
+          learnMore: 'Learn more'
         },
         blocked: 'This action requires consent. You can update this choice in data management settings.',
         types: {
           location: {
             title: 'Location usage',
-            message: 'We use your location to display your profile and listings based on your area. Do you agree to the use of your location?'
+            message: 'We use your location to show nearby listings.'
           },
           media: {
             title: 'Media usage',
-            message: 'The photos and videos you add may be visible to other users based on your settings. Do you agree to the use and display of your media?'
+            message: 'We use your photos and videos to publish your listing.'
           },
           profile_data: {
             title: 'Profile data usage',
-            message: 'Your profile information may be visible to other users based on your settings. Do you agree to its storage and display?'
+            message: 'We use your profile info to identify your account.'
           },
           messaging: {
             title: 'Messaging usage',
-            message: 'Messaging lets you chat with other users. Do you agree to enable messaging?'
+            message: 'We use messaging to send, receive, and keep conversation history.'
           },
           cookies: {
             title: 'Cookies usage',
-            message: 'We use cookies to improve your experience and personalize content. Do you agree to the use of cookies?'
+            message: 'We use necessary cookies and, with your consent, analytics cookies.'
           },
           behavioral_data: {
             title: 'Usage analysis',
-            message: 'We analyze your usage to offer tailored content and recommendations. Do you agree to this analysis?'
+            message: 'We analyze some actions to improve features.'
           }
         }
       },
@@ -676,6 +678,7 @@ i18n.use(initReactI18next).init({
   fallbackLng: 'fr',
   ns: [
     'common',
+    'consent',
     'settings',
     'profile',
     'titles',

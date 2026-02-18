@@ -12,7 +12,6 @@ interface User {
   username?: string | null
   full_name?: string | null
   avatar_url?: string | null
-  bio?: string | null
   profile_type?: string | null
   email?: string | null
 }
@@ -205,7 +204,7 @@ const UsersPage = () => {
       if (!activeCategorySlug) {
         let query = supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, bio, profile_type, email', { count: 'exact' })
+          .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
           .order('updated_at', { ascending: false })
           .range(start, end)
 
@@ -244,7 +243,7 @@ const UsersPage = () => {
 
       let query = supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, profile_type, email', { count: 'exact' })
+        .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
         .contains('display_categories', [activeCategorySlug])
         .order('updated_at', { ascending: false })
         .range(start, end)
@@ -455,11 +454,6 @@ const UsersPage = () => {
                     <div key={`${typeLabel}-${index}`} className="users-card-type">{typeLabel}</div>
                   ))}
                   
-                  {/* Bio de l'utilisateur */}
-                  {userItem.bio && (
-                    <div className="users-card-bio">{userItem.bio}</div>
-                  )}
-
                   {/* Bouton Plus pour suivre */}
                   {followingMap[userItem.id] ? (
                     <button

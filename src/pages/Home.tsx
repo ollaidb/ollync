@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Bell, Search, Sparkles, Plus } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,7 @@ import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { publicationTypes } from '../constants/publishData'
 import { useAuth } from '../hooks/useSupabase'
+import { useConsent } from '../hooks/useConsent'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabaseClient'
 import './Home.css'
@@ -42,6 +43,7 @@ const Home = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const behavioralConsent = useConsent('behavioral_data')
   const { t } = useTranslation(['categories', 'home', 'common'])
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
@@ -62,6 +64,7 @@ const Home = () => {
   const [castingPosts, setCastingPosts] = useState<Post[]>([])
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
   const [studioLieuPosts, setStudioLieuPosts] = useState<Post[]>([])
+  const unavailableBehaviorTablesRef = useRef<Set<string>>(new Set())
 
 
   // Nombre d'annonces par section : mobile 5, web 4
@@ -121,18 +124,22 @@ const Home = () => {
   const fetchCategoryPosts = async (categorySlug: string) => {
     try {
       // Récupérer l'ID de la catégorie depuis le slug
-      const { data: category } = await supabase
+      const { data: categories, error: categoryError } = await supabase
         .from('categories')
         .select('id')
         .eq('slug', categorySlug)
-        .single()
+        .limit(1)
+      if (categoryError) {
+        throw categoryError
+      }
+      const category = categories?.[0] as { id?: string } | undefined
 
-      if (!category || !(category as { id: string }).id) {
+      if (!category?.id) {
         return []
       }
 
       const posts = await fetchPostsWithRelations({
-        categoryId: (category as { id: string }).id,
+        categoryId: category.id,
         status: 'active',
         limit: maxPostsPerSection,
         orderBy: 'created_at',
@@ -203,7 +210,63 @@ const Home = () => {
       return
     }
 
+    if (behavioralConsent.hasConsented === false) {
+      const allPosts = await fetchPostsWithRelations({
+        status: 'active',
+        limit: 100,
+        orderBy: 'created_at',
+        orderDirection: 'desc'
+      })
+
+      const popular = allPosts
+        .filter((post) => !excludePostIds.includes(post.id))
+        .map((post) => ({
+          ...post,
+          engagementScore: (post.likes_count || 0) + (post.comments_count || 0) * 2 + ((post as Post & { views_count?: number }).views_count || 0) * 0.1
+        }))
+        .sort((a, b) => (b as Post & { engagementScore: number }).engagementScore - (a as Post & { engagementScore: number }).engagementScore)
+        .slice(0, maxPostsPerSection)
+
+      setRecommendedPosts(popular)
+      return
+    }
+
+    if (behavioralConsent.hasConsented === null) {
+      const asked = behavioralConsent.requireConsent(() => {
+        void fetchRecommendedPosts(excludePostIds)
+      })
+      if (asked) {
+        return
+      }
+    }
+
     try {
+      const isMissingTableError = (error: unknown) => {
+        const err = error as { code?: string; message?: string } | null
+        if (!err) return false
+        return (
+          err.code === '42P01' ||
+          err.code === 'PGRST205' ||
+          (err.message || '').toLowerCase().includes('not found') ||
+          (err.message || '').toLowerCase().includes('does not exist')
+        )
+      }
+
+      const safeFetchPostIds = async (tableName: 'favorites' | 'likes' | 'interests') => {
+        if (unavailableBehaviorTablesRef.current.has(tableName)) {
+          return [] as string[]
+        }
+        const result = await supabase.from(tableName).select('post_id').eq('user_id', user.id).limit(50)
+        if (result.error) {
+          if (isMissingTableError(result.error)) {
+            unavailableBehaviorTablesRef.current.add(tableName)
+            return [] as string[]
+          }
+          throw result.error
+        }
+        return ((result.data || []) as Array<{ post_id: string }>).map((row) => row.post_id)
+      }
+
       // 1. Récupérer le profil utilisateur pour la localisation
       const { data: userProfile } = await supabase
         .from('profiles')
@@ -216,10 +279,10 @@ const Home = () => {
       // 2. Récupérer les données comportementales de l'utilisateur en parallèle
       // Limiter les requêtes pour améliorer les performances
       // Gérer l'erreur saved_searches gracieusement (peut ne pas exister)
-      const [favoritesResult, likesResult, interestsResult] = await Promise.all([
-        supabase.from('favorites').select('post_id').eq('user_id', user.id).limit(50),
-        supabase.from('likes').select('post_id').eq('user_id', user.id).limit(50),
-        supabase.from('interests').select('post_id').eq('user_id', user.id).limit(50)
+      const [favoritePostIds, likePostIds, interestPostIds] = await Promise.all([
+        safeFetchPostIds('favorites'),
+        safeFetchPostIds('likes'),
+        safeFetchPostIds('interests')
       ])
 
       // Récupérer saved_searches séparément pour gérer l'erreur 404 silencieusement
@@ -242,10 +305,6 @@ const Home = () => {
       }
 
       // Gérer les erreurs gracieusement
-      const favoritePostIds = favoritesResult.data?.map((f: { post_id: string }) => f.post_id) || []
-      const likePostIds = likesResult.data?.map((l: { post_id: string }) => l.post_id) || []
-      const interestPostIds = interestsResult.data?.map((i: { post_id: string }) => i.post_id) || []
-      
       // 3. Vérifier si l'utilisateur a assez de données comportementales
       // Si moins de 3 interactions (likes + favoris + intérêts + recherches), utiliser des recommandations aléatoires
       const totalInteractions = favoritePostIds.length + likePostIds.length + interestPostIds.length + (searchesData?.length || 0)

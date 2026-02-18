@@ -1338,6 +1338,8 @@ const EditPublicProfile = () => {
         message={profileConsent.messages.message}
         onAccept={profileConsent.handleAccept}
         onReject={handleRejectConsent}
+        onLearnMore={profileConsent.dismissModal}
+        learnMoreHref="/profile/legal/politique-confidentialite"
         askAgainChecked={profileConsent.askAgainNextTime}
         onAskAgainChange={profileConsent.setAskAgainNextTime}
       />

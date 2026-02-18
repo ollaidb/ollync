@@ -13,19 +13,19 @@ const MentionsLegales = () => {
         editorTitle: 'Publisher',
         editorLines: [
           'Ollync',
-          'Legal form: [To be completed]',
-          'Share capital: [To be completed]',
-          'Registered office: [To be completed]',
-          'SIRET: [To be completed]',
-          'Email: contact@ollync.com',
-          'Phone: +33 1 XX XX XX XX',
-          'Publication director: [To be completed]'
+          'Legal form: Auto-entrepreneur',
+          'Registered office: 6 allée de la Pelouse, 38100 Grenoble, France',
+          'SIREN: 922300355',
+          'SIRET: 92230035500018',
+          'Email: collabbinta@gmail.com',
+          'Publication director: Binta Diallo'
         ],
         hostingTitle: 'Hosting',
         hostingLines: [
-          'This site is hosted by Supabase',
-          'Address: [To be completed]',
-          'More information: https://supabase.com'
+          'This site is hosted by Supabase Inc.',
+          'Address: c/- Incorporating Services, Ltd., 3500 S. DuPont Highway, Dover, Kent 19901, Delaware, USA',
+          'This site is also hosted by Vercel Inc.',
+          'Address: 440 N Barranca Avenue #4133, Covina, CA 91723, United States'
         ],
         intellectualTitle: 'Intellectual property',
         intellectualParagraphs: [
@@ -40,7 +40,7 @@ const MentionsLegales = () => {
         cnilTitle: 'Data protection (CNIL)',
         cnilParagraphs: [
           'In accordance with the French “Informatique et Libertés” law of January 6, 1978 as amended, and the General Data Protection Regulation (GDPR), you have the right to access, modify, and delete data concerning you.',
-          'You can exercise this right by contacting us at: contact@ollync.com'
+          'You can exercise this right by contacting us at: collabbinta@gmail.com'
         ],
         lawTitle: 'Applicable law',
         lawParagraphs: [
@@ -53,19 +53,19 @@ const MentionsLegales = () => {
         editorTitle: 'Éditeur',
         editorLines: [
           'Ollync',
-          'Forme juridique : [À compléter]',
-          'Capital social : [À compléter]',
-          'Siège social : [À compléter]',
-          'SIRET : [À compléter]',
-          'Email : contact@ollync.com',
-          'Téléphone : +33 1 XX XX XX XX',
-          'Directeur de publication : [À compléter]'
+          'Forme juridique : Auto-entrepreneur',
+          'Siège social : 6 allée de la Pelouse, 38100 Grenoble, France',
+          'SIREN : 922300355',
+          'SIRET : 92230035500018',
+          'Email : collabbinta@gmail.com',
+          'Directeur de publication : Binta Diallo'
         ],
         hostingTitle: 'Hébergement',
         hostingLines: [
-          'Ce site est hébergé par Supabase',
-          'Adresse : [À compléter]',
-          "Pour plus d'informations : https://supabase.com"
+          'Ce site est hébergé par Supabase Inc.',
+          'Adresse : c/- Incorporating Services, Ltd., 3500 S. DuPont Highway, Dover, Kent 19901, Delaware, USA',
+          'Ce site est également hébergé par Vercel Inc.',
+          'Adresse : 440 N Barranca Avenue #4133, Covina, CA 91723, United States'
         ],
         intellectualTitle: 'Propriété intellectuelle',
         intellectualParagraphs: [
@@ -80,7 +80,7 @@ const MentionsLegales = () => {
         cnilTitle: 'CNIL',
         cnilParagraphs: [
           'Conformément à la loi "Informatique et Libertés" du 6 janvier 1978 modifiée et au Règlement Général sur la Protection des Données (RGPD), vous disposez d\'un droit d\'accès, de modification et de suppression des données qui vous concernent.',
-          "Vous pouvez exercer ce droit en nous contactant à l'adresse : contact@ollync.com"
+          "Vous pouvez exercer ce droit en nous contactant à l'adresse : collabbinta@gmail.com"
         ],
         lawTitle: 'Loi applicable',
         lawParagraphs: [
@@ -142,4 +142,3 @@ const MentionsLegales = () => {
 }
 
 export default MentionsLegales
-

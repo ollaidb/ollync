@@ -13,28 +13,22 @@ const Legal = () => {
         title: 'Legal information',
         pages: {
           mentions: {
-            title: 'Legal notice',
-            description: 'Publisher and hosting details'
+            title: 'Legal notice'
           },
           privacy: {
-            title: 'Privacy policy',
-            description: 'How we manage and protect your personal data'
+            title: 'Privacy policy'
           },
           cgu: {
-            title: 'Terms of use',
-            description: 'General terms of use'
+            title: 'Terms of use'
           },
           cgv: {
-            title: 'Terms of sale',
-            description: 'General terms of sale'
+            title: 'Terms of sale'
           },
           cookies: {
-            title: 'Cookie policy',
-            description: 'How cookies are used on our site'
+            title: 'Cookie policy'
           },
           security: {
-            title: 'Security page',
-            description: 'Security measures and data protection'
+            title: 'Security page'
           }
         }
       }
@@ -42,28 +36,22 @@ const Legal = () => {
         title: 'Informations légales',
         pages: {
           mentions: {
-            title: 'Mentions légales',
-            description: "Informations sur l'éditeur et l'hébergement"
+            title: 'Mentions légales'
           },
           privacy: {
-            title: 'Politique de confidentialité',
-            description: 'Gestion et protection de vos données personnelles'
+            title: 'Politique de confidentialité'
           },
           cgu: {
-            title: 'CGU',
-            description: "Conditions Générales d'Utilisation"
+            title: 'CGU'
           },
           cgv: {
-            title: 'CGV',
-            description: 'Conditions Générales de Vente'
+            title: 'CGV'
           },
           cookies: {
-            title: 'Politique cookies',
-            description: 'Utilisation des cookies sur notre site'
+            title: 'Politique cookies'
           },
           security: {
-            title: 'Page Sécurité',
-            description: 'Mesures de sécurité et protection des données'
+            title: 'Page Sécurité'
           }
         }
       }
@@ -72,42 +60,36 @@ const Legal = () => {
     {
       id: 'mentions-legales',
       title: labels.pages.mentions.title,
-      description: labels.pages.mentions.description,
       icon: Lock,
       path: '/profile/legal/mentions-legales'
     },
     {
       id: 'politique-confidentialite',
       title: labels.pages.privacy.title,
-      description: labels.pages.privacy.description,
       icon: Shield,
       path: '/profile/legal/politique-confidentialite'
     },
     {
       id: 'cgu',
       title: labels.pages.cgu.title,
-      description: labels.pages.cgu.description,
       icon: Scale,
       path: '/profile/legal/cgu'
     },
     {
       id: 'cgv',
       title: labels.pages.cgv.title,
-      description: labels.pages.cgv.description,
       icon: ShoppingBag,
       path: '/profile/legal/cgv'
     },
     {
       id: 'politique-cookies',
       title: labels.pages.cookies.title,
-      description: labels.pages.cookies.description,
       icon: Cookie,
       path: '/profile/legal/politique-cookies'
     },
     {
       id: 'securite',
       title: labels.pages.security.title,
-      description: labels.pages.security.description,
       icon: Shield,
       path: '/profile/legal/securite'
     }
@@ -131,8 +113,7 @@ const Legal = () => {
         </div>
                   <div className="legal-menu-text">
                     <h3>{page.title}</h3>
-                    <p>{page.description}</p>
-        </div>
+                  </div>
       </div>
                 <ChevronRight size={20} className="legal-menu-arrow" />
               </button>
@@ -145,4 +126,3 @@ const Legal = () => {
 }
 
 export default Legal
-

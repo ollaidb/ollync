@@ -99,6 +99,22 @@
   margin-top: 2px;
 }
 
+.consent-learn-more {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+}
+
+.consent-confirmation-modal .confirmation-modal-message {
+  font-size: 12px;
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.consent-confirmation-modal .confirmation-modal-title {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 768px) {
   .consent-modal-content {
     padding: 20px;

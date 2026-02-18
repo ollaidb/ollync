@@ -15,32 +15,63 @@ interface ConsentRecord {
   accepted: boolean
   ask_again: boolean
   updated_at?: string
+  version?: string
 }
 
 const STORAGE_KEY_PREFIX = 'consent_'
 const SESSION_KEY_PREFIX = 'consent_asked_'
+const CONSENT_VERSION: Record<ConsentType, string> = {
+  location: 'v1',
+  media: 'v1',
+  profile_data: 'v1',
+  messaging: 'v1',
+  cookies: 'v1',
+  behavioral_data: 'v1'
+}
 
 export const useConsent = (consentType: ConsentType) => {
   const { user } = useAuth()
-  const { t } = useTranslation()
+  const { t } = useTranslation('consent')
+  const isGuestConsent = !user && consentType === 'cookies'
   const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [askAgainNextTime, setAskAgainNextTime] = useState(false)
   const [loading, setLoading] = useState(true)
+  const consentVersion = CONSENT_VERSION[consentType]
 
-  const getStorageKey = () => (user ? `${STORAGE_KEY_PREFIX}${user.id}_${consentType}` : '')
-  const getSessionKey = () => (user ? `${SESSION_KEY_PREFIX}${user.id}_${consentType}` : '')
+  const getStorageKey = () => {
+    // Cookies consent is app-wide for the browser session/profile lifecycle
+    if (consentType === 'cookies') return `${STORAGE_KEY_PREFIX}global_${consentType}`
+    if (user) return `${STORAGE_KEY_PREFIX}${user.id}_${consentType}`
+    if (isGuestConsent) return `${STORAGE_KEY_PREFIX}guest_${consentType}`
+    return ''
+  }
+  const getSessionKey = () => {
+    if (user) return `${SESSION_KEY_PREFIX}${user.id}_${consentType}`
+    if (isGuestConsent) return `${SESSION_KEY_PREFIX}guest_${consentType}`
+    return ''
+  }
 
   const loadFromStorage = (): ConsentRecord | null => {
-    if (typeof window === 'undefined' || !user) return null
+    if (typeof window === 'undefined' || (!user && !isGuestConsent)) return null
     const storageKey = getStorageKey()
-    const stored = localStorage.getItem(storageKey)
+    let stored = localStorage.getItem(storageKey)
+    // Backward compatibility: migrate legacy cookies key to global key.
+    if (!stored && consentType === 'cookies') {
+      const legacyUserKey = user ? `${STORAGE_KEY_PREFIX}${user.id}_${consentType}` : null
+      const legacyGuestKey = `${STORAGE_KEY_PREFIX}guest_${consentType}`
+      stored = (legacyUserKey ? localStorage.getItem(legacyUserKey) : null) || localStorage.getItem(legacyGuestKey)
+      if (stored) {
+        localStorage.setItem(storageKey, stored)
+      }
+    }
     if (!stored) return null
     if (stored === 'true' || stored === 'false') {
       return {
         accepted: stored === 'true',
-        ask_again: false
+        ask_again: false,
+        version: consentVersion
       }
     }
     try {
@@ -49,7 +80,8 @@ export const useConsent = (consentType: ConsentType) => {
         return {
           accepted: parsed.accepted,
           ask_again: !!parsed.ask_again,
-          updated_at: parsed.updated_at
+          updated_at: parsed.updated_at,
+          version: parsed.version || consentVersion
         }
       }
     } catch (error) {
@@ -59,19 +91,19 @@ export const useConsent = (consentType: ConsentType) => {
   }
 
   const saveToStorage = (record: ConsentRecord) => {
-    if (typeof window === 'undefined' || !user) return
+    if (typeof window === 'undefined' || (!user && !isGuestConsent)) return
     const storageKey = getStorageKey()
     localStorage.setItem(storageKey, JSON.stringify(record))
   }
 
   const markAskedThisSession = () => {
-    if (typeof window === 'undefined' || !user) return
+    if (typeof window === 'undefined' || (!user && !isGuestConsent)) return
     const sessionKey = getSessionKey()
     sessionStorage.setItem(sessionKey, 'true')
   }
 
   const wasAskedThisSession = () => {
-    if (typeof window === 'undefined' || !user) return false
+    if (typeof window === 'undefined' || (!user && !isGuestConsent)) return false
     const sessionKey = getSessionKey()
     return sessionStorage.getItem(sessionKey) === 'true'
   }
@@ -96,7 +128,8 @@ export const useConsent = (consentType: ConsentType) => {
         const normalized: ConsentRecord = {
           accepted: !!record.accepted,
           ask_again: !!record.ask_again,
-          updated_at: record.updated_at
+          updated_at: record.updated_at,
+          version: record.version || consentVersion
         }
         setConsentRecord(normalized)
         saveToStorage(normalized)
@@ -144,7 +177,7 @@ export const useConsent = (consentType: ConsentType) => {
 
   // Récupérer le consentement depuis le stockage local + base de données
   useEffect(() => {
-    if (!user) {
+    if (!user && !isGuestConsent) {
       setConsentRecord(null)
       setLoading(false)
       return
@@ -155,14 +188,18 @@ export const useConsent = (consentType: ConsentType) => {
     if (stored) {
       setConsentRecord(stored)
     }
+    if (!user) {
+      setLoading(false)
+      return
+    }
     fetchConsent().finally(() => {
       setLoading(false)
     })
-  }, [user, consentType])
+  }, [user, consentType, isGuestConsent])
 
   // Vérifier si le consentement est nécessaire avant une action
   const requireConsent = (action: () => void): boolean => {
-    if (!user) {
+    if (!user && !isGuestConsent) {
       // Si l'utilisateur n'est pas connecté, on ne demande pas de consentement
       action()
       return false
@@ -170,18 +207,24 @@ export const useConsent = (consentType: ConsentType) => {
 
     const askedThisSession = wasAskedThisSession()
     const hasRecord = !!consentRecord
+    const versionMatches = consentRecord?.version === consentVersion
     const shouldAskAgain = consentRecord?.ask_again && !askedThisSession
 
     if (hasRecord) {
       if (consentRecord?.accepted) {
-        if (!shouldAskAgain) {
+        if (!shouldAskAgain && versionMatches) {
           action()
           return false
         }
       } else {
-        if (!shouldAskAgain) {
-          if (typeof window !== 'undefined') {
-            window.alert(t('consent.blocked'))
+        if (!shouldAskAgain && versionMatches) {
+          if (consentType !== 'cookies' && typeof window !== 'undefined') {
+            window.alert(
+              t('blocked', {
+                defaultValue:
+                  'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres.'
+              })
+            )
           }
           return false
         }
@@ -199,16 +242,19 @@ export const useConsent = (consentType: ConsentType) => {
 
   // Gérer l'acceptation du consentement
   const handleAccept = () => {
-    if (!user) return
+    if (!user && !isGuestConsent) return
 
     const record: ConsentRecord = {
       accepted: true,
       ask_again: askAgainNextTime,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      version: consentVersion
     }
     setConsentRecord(record)
     saveToStorage(record)
-    persistConsent(record)
+    if (user) {
+      persistConsent(record)
+    }
     markAskedThisSession()
     setShowModal(false)
 
@@ -224,28 +270,74 @@ export const useConsent = (consentType: ConsentType) => {
     const record: ConsentRecord = {
       accepted: false,
       ask_again: askAgainNextTime,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      version: consentVersion
     }
     setConsentRecord(record)
     saveToStorage(record)
-    persistConsent(record)
+    if (user) {
+      persistConsent(record)
+    }
     markAskedThisSession()
     setShowModal(false)
     setPendingAction(null)
     // L'action n'est pas exécutée, l'utilisateur reste sur la page actuelle
   }
 
+  // Ferme le modal sans accepter/refuser (utilisé pour "En savoir plus")
+  const dismissModal = () => {
+    setShowModal(false)
+    setPendingAction(null)
+  }
+
+  const consentFallbacks: Record<ConsentType, { title: string; message: string }> = {
+    location: {
+      title: 'Utilisation de la localisation',
+      message: 'Nous utilisons votre position pour afficher les annonces proches de vous.'
+    },
+    media: {
+      title: 'Utilisation des médias',
+      message: 'Nous utilisons vos photos et vidéos pour publier votre annonce.'
+    },
+    profile_data: {
+      title: 'Utilisation des données de profil',
+      message: 'Nous utilisons vos infos de profil pour identifier votre compte.'
+    },
+    messaging: {
+      title: 'Utilisation de la messagerie',
+      message: 'Nous utilisons la messagerie pour envoyer, recevoir et garder l’historique des échanges.'
+    },
+    cookies: {
+      title: 'Utilisation des cookies',
+      message: 'Nous utilisons des cookies nécessaires, et avec votre accord, des cookies de mesure.'
+    },
+    behavioral_data: {
+      title: 'Analyse d\'utilisation',
+      message: 'Nous analysons certaines actions pour améliorer les fonctionnalités.'
+    }
+  }
+
+  const safeTranslate = (key: string, fallback: string) => {
+    const value = t(key, { defaultValue: fallback })
+    if (!value) return fallback
+    if (value === key) return fallback
+    if (value.startsWith('consent.')) return fallback
+    return value
+  }
+
   const consentMessages = {
-    title: t(`consent.types.${consentType}.title`),
-    message: t(`consent.types.${consentType}.message`)
+    title: safeTranslate(`types.${consentType}.title`, consentFallbacks[consentType].title),
+    message: safeTranslate(`types.${consentType}.message`, consentFallbacks[consentType].message)
   }
 
   return {
     hasConsented: consentRecord?.accepted ?? null,
+    loading,
     showModal,
     requireConsent,
     handleAccept,
     handleReject,
+    dismissModal,
     askAgainNextTime,
     setAskAgainNextTime,
     messages: consentMessages

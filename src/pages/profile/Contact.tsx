@@ -140,7 +140,7 @@ const Contact = () => {
               <Mail size={24} />
             </div>
             <h3>{labels.emailTitle}</h3>
-            <p className="contact-detail">support@ollync.com</p>
+            <p className="contact-detail">collabbinta@gmail.com</p>
             <p className="contact-description">{labels.emailDescription}</p>
             <p className="contact-note">{labels.responseTime}</p>
           </div>
@@ -200,4 +200,3 @@ const Contact = () => {
 }
 
 export default Contact
-

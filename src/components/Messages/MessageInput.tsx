@@ -34,6 +34,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
+  const messagingConsent = useConsent('messaging')
 
   useEffect(() => {
     if (openCalendarOnMount) {
@@ -161,6 +162,12 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }
 
+  const sendMessageWithConsent = (type: MessageType = 'text', extraData?: Record<string, unknown>) => {
+    messagingConsent.requireConsent(() => {
+      void sendMessage(type, extraData)
+    })
+  }
+
   const performFileUpload = async (file: File, type: 'photo' | 'video' | 'document') => {
     if (disabled || sending) return
 
@@ -189,7 +196,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         if (fallbackError) throw fallbackError
 
         const { data } = supabase.storage.from('posts').getPublicUrl(fileName)
-        await sendMessage(type, {
+        await sendMessageWithConsent(type, {
           file_url: data.publicUrl,
           file_name: file.name,
           file_size: file.size,
@@ -197,7 +204,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         })
       } else {
         const { data } = supabase.storage.from(bucket).getPublicUrl(fileName)
-        await sendMessage(type, {
+        await sendMessageWithConsent(type, {
           file_url: data.publicUrl,
           file_name: file.name,
           file_size: file.size,
@@ -286,7 +293,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     if (disabled || sending) return
     setShowPostSelector(false)
     try {
-      await sendMessage('post_share', {
+      await sendMessageWithConsent('post_share', {
         shared_post_id: postId
       })
     } catch (error) {
@@ -303,7 +310,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage('text')
+      void sendMessageWithConsent('text')
     }
   }
 
@@ -324,7 +331,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       return
     }
 
-    await sendMessage('calendar_request', {
+    await sendMessageWithConsent('calendar_request', {
       calendar_request_data: {
         title: appointmentTitle.trim(),
         appointment_datetime: appointmentDateTime,
@@ -514,7 +521,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           className="message-input-field"
         />
         <button
-          onClick={() => sendMessage('text')}
+          onClick={() => void sendMessageWithConsent('text')}
           disabled={!message.trim() || disabled || sending}
           className="message-send-btn"
         >
@@ -541,8 +548,22 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={mediaConsent.handleReject}
+        onLearnMore={mediaConsent.dismissModal}
+        learnMoreHref="/profile/legal/politique-confidentialite"
         askAgainChecked={mediaConsent.askAgainNextTime}
         onAskAgainChange={mediaConsent.setAskAgainNextTime}
+      />
+
+      <ConsentModal
+        visible={messagingConsent.showModal}
+        title={messagingConsent.messages.title}
+        message={messagingConsent.messages.message}
+        onAccept={messagingConsent.handleAccept}
+        onReject={messagingConsent.handleReject}
+        onLearnMore={messagingConsent.dismissModal}
+        learnMoreHref="/profile/legal/politique-confidentialite"
+        askAgainChecked={messagingConsent.askAgainNextTime}
+        onAskAgainChange={messagingConsent.setAskAgainNextTime}
       />
 
 

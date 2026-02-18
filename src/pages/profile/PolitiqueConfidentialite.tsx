@@ -14,27 +14,27 @@ const PolitiqueConfidentialite = () => {
           'This privacy policy explains how Ollync collects, uses, and protects your personal information when you use our platform.',
         collection: {
           title: '1. Data collection',
-          intro: 'We collect information you provide directly, including when you:',
+          intro: 'We collect the following data:',
           items: [
-            'Create your user account',
-            'Publish listings',
-            'Use our messaging services',
-            'Contact our support team',
-            'Subscribe to our newsletters'
+            'Identity data (name, surname)',
+            'Contact details (email address, phone number)',
+            'Location (if enabled)',
+            'Messages exchanged via the messaging feature',
+            'Published content (listings, photos, videos, descriptions)',
+            'Connection and usage data (for example, login date/time, actions performed in the app)'
           ],
           note:
-            'Collected data may include: first and last name, email address, phone number, postal address, payment information, photos, and any other information you choose to share.'
+            'You provide some data directly, and other data is generated when you use the app.'
         },
         usage: {
           title: '2. Data use',
           intro: 'We use your personal data to:',
           items: [
-            'Provide, maintain, and improve our services',
-            'Process your transactions and manage your account',
-            'Send important information about your account or our services',
-            'Personalize your experience on the platform',
-            'Ensure platform security and prevent fraud',
-            'Comply with legal and regulatory obligations'
+            'Create and manage your user account',
+            'Allow you to publish and manage listings',
+            'Enable messaging between users',
+            'Improve the experience and security of the app',
+            'Comply with legal obligations'
           ]
         },
         sharing: {
@@ -43,13 +43,21 @@ const PolitiqueConfidentialite = () => {
             'We do not sell your personal data to third parties. We may share your information only in the following cases:',
           items: [
             'With your explicit consent',
-            'With service providers that help us operate the platform (hosting, payment processing, etc.) with appropriate safeguards',
-            'To comply with a legal obligation or respond to a request from a competent authority',
-            'In the event of a merger, acquisition, or sale of assets, subject to prior notification'
+            'With service providers needed to operate the app (hosting, storage, email delivery)',
+            'To comply with a legal obligation or respond to a request from a competent authority'
+          ]
+        },
+        legalBasis: {
+          title: '4. Legal basis',
+          intro: 'The processing is based on:',
+          items: [
+            'The execution of the service (account creation, listings, messaging)',
+            'Your consent (for example, location, media)',
+            'Our legitimate interest (security, fraud prevention)'
           ]
         },
         rights: {
-          title: '4. Your rights',
+          title: '5. Your rights',
           intro:
             'In accordance with the GDPR, you have the following rights regarding your personal data:',
           items: [
@@ -60,10 +68,10 @@ const PolitiqueConfidentialite = () => {
             { label: 'Right to portability:', text: 'You can retrieve your data in a structured format' },
             { label: 'Right to restriction:', text: 'You can request a limitation of processing' }
           ],
-          contact: 'To exercise these rights, contact us at: contact@ollync.com'
+          contact: 'To exercise these rights, contact us at: collabbinta@gmail.com'
         },
         security: {
-          title: '5. Security',
+          title: '6. Security',
           intro:
             'We implement appropriate technical and organizational security measures to protect your personal data from unauthorized access, alteration, disclosure, or destruction. These measures include:',
           items: [
@@ -74,20 +82,24 @@ const PolitiqueConfidentialite = () => {
           ]
         },
         retention: {
-          title: '6. Data retention',
+          title: '7. Data retention',
           text:
-            'We keep your personal data for as long as necessary for the purposes described in this policy, unless a longer retention period is required or permitted by law.'
+            'We keep your personal data for 2 years after your last account activity, unless a longer retention period is required by law.'
         },
         cookies: {
-          title: '7. Cookies',
+          title: '8. Cookies',
           textBefore: 'Our site uses cookies to improve your experience. For more information, see our ',
           linkText: 'Cookie policy',
           textAfter: '.'
         },
         changes: {
-          title: '8. Changes',
+          title: '9. Changes',
           text:
             'We reserve the right to modify this privacy policy at any time. Any change will be published on this page with an updated “Last updated” date.'
+        },
+        complaint: {
+          title: '10. Complaint',
+          text: 'You can lodge a complaint with your data protection authority (CNIL in France).'
         }
       }
     : {
@@ -97,27 +109,27 @@ const PolitiqueConfidentialite = () => {
           'La présente politique de confidentialité décrit la façon dont Ollync collecte, utilise et protège vos informations personnelles lorsque vous utilisez notre plateforme.',
         collection: {
           title: '1. Collecte des données',
-          intro: 'Nous collectons les informations que vous nous fournissez directement, notamment lors de :',
+          intro: 'Nous collectons les données suivantes :',
           items: [
-            'La création de votre compte utilisateur',
-            "La publication d'annonces",
-            "L'utilisation de nos services de messagerie",
-            'La communication avec notre service client',
-            "L'inscription à nos newsletters"
+            'Identité (nom, prénom)',
+            'Coordonnées (adresse email, numéro de téléphone)',
+            'Localisation (si activée)',
+            'Messages échangés via la messagerie',
+            'Contenus publiés (annonces, photos, vidéos, descriptions)',
+            "Données de connexion et d'usage (ex : date/heure de connexion, actions réalisées dans l’application)"
           ],
           note:
-            'Les données collectées peuvent inclure : nom, prénom, adresse email, numéro de téléphone, adresse postale, informations de paiement, photos, et autres informations que vous choisissez de partager.'
+            'Certaines données sont fournies par vous, d’autres sont générées lors de l’utilisation de l’application.'
         },
         usage: {
           title: '2. Utilisation des données',
           intro: 'Nous utilisons vos données personnelles pour :',
           items: [
-            'Fournir, maintenir et améliorer nos services',
-            'Traiter vos transactions et gérer votre compte',
-            'Vous communiquer des informations importantes concernant votre compte ou nos services',
-            "Personnaliser votre expérience sur la plateforme",
-            'Assurer la sécurité de la plateforme et prévenir la fraude',
-            'Respecter nos obligations légales et réglementaires'
+            'Créer et gérer votre compte utilisateur',
+            'Permettre la publication et la gestion des annonces',
+            'Assurer la messagerie entre utilisateurs',
+            'Améliorer l’expérience et la sécurité de l’application',
+            'Respecter les obligations légales'
           ]
         },
         sharing: {
@@ -126,13 +138,21 @@ const PolitiqueConfidentialite = () => {
             "Nous ne vendons pas vos données personnelles à des tiers. Nous pouvons partager vos informations uniquement dans les cas suivants :",
           items: [
             'Avec votre consentement explicite',
-            "Avec des prestataires de services qui nous aident à exploiter notre plateforme (hébergement, traitement des paiements, etc.) sous réserve de garanties appropriées",
-            "Pour se conformer à une obligation légale ou répondre à une demande d'autorité compétente",
-            "En cas de fusion, acquisition ou vente d'actifs, sous réserve de notification préalable"
+            "Avec des prestataires nécessaires au fonctionnement de l’application (hébergement, stockage, envoi d’emails)",
+            "Pour se conformer à une obligation légale ou répondre à une demande d'autorité compétente"
+          ]
+        },
+        legalBasis: {
+          title: '4. Base légale',
+          intro: 'Les traitements sont fondés sur :',
+          items: [
+            'L’exécution du service (création de compte, annonces, messagerie)',
+            'Votre consentement (ex : localisation, médias)',
+            'L’intérêt légitime (sécurité, prévention des fraudes)'
           ]
         },
         rights: {
-          title: '4. Vos droits',
+          title: '5. Vos droits',
           intro:
             'Conformément au RGPD, vous disposez des droits suivants concernant vos données personnelles :',
           items: [
@@ -143,10 +163,10 @@ const PolitiqueConfidentialite = () => {
             { label: 'Droit à la portabilité :', text: 'Vous pouvez récupérer vos données dans un format structuré' },
             { label: 'Droit à la limitation :', text: 'Vous pouvez demander la limitation du traitement' }
           ],
-          contact: 'Pour exercer ces droits, contactez-nous à : contact@ollync.com'
+          contact: 'Pour exercer ces droits, contactez-nous à : collabbinta@gmail.com'
         },
         security: {
-          title: '5. Sécurité',
+          title: '6. Sécurité',
           intro:
             'Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos données personnelles contre tout accès non autorisé, altération, divulgation ou destruction. Ces mesures incluent notamment :',
           items: [
@@ -157,21 +177,25 @@ const PolitiqueConfidentialite = () => {
           ]
         },
         retention: {
-          title: '6. Conservation des données',
+          title: '7. Conservation des données',
           text:
-            'Nous conservons vos données personnelles aussi longtemps que nécessaire pour les finalités décrites dans cette politique, sauf si une période de conservation plus longue est requise ou permise par la loi.'
+            'Nous conservons vos données personnelles pendant 2 ans à compter de la dernière activité du compte, sauf obligation légale de conservation plus longue.'
         },
         cookies: {
-          title: '7. Cookies',
+          title: '8. Cookies',
           textBefore:
             'Notre site utilise des cookies pour améliorer votre expérience. Pour plus d\'informations, consultez notre ',
           linkText: 'Politique cookies',
           textAfter: '.'
         },
         changes: {
-          title: '8. Modifications',
+          title: '9. Modifications',
           text:
             'Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment. Toute modification sera publiée sur cette page avec une mise à jour de la date de "Dernière mise à jour".'
+        },
+        complaint: {
+          title: '10. Réclamation',
+          text: 'Vous pouvez déposer une réclamation auprès de la CNIL.'
         }
       }
 
@@ -210,6 +234,14 @@ const PolitiqueConfidentialite = () => {
             ))}
           </ul>
 
+          <h4>{content.legalBasis.title}</h4>
+          <p>{content.legalBasis.intro}</p>
+          <ul>
+            {content.legalBasis.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+
           <h4>{content.rights.title}</h4>
           <p>{content.rights.intro}</p>
           <ul>
@@ -243,6 +275,9 @@ const PolitiqueConfidentialite = () => {
 
           <h4>{content.changes.title}</h4>
           <p>{content.changes.text}</p>
+
+          <h4>{content.complaint.title}</h4>
+          <p>{content.complaint.text}</p>
         </div>
       </div>
     </div>
@@ -250,4 +285,3 @@ const PolitiqueConfidentialite = () => {
 }
 
 export default PolitiqueConfidentialite
-

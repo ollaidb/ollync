@@ -771,6 +771,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         message={locationConsent.messages.message}
         onAccept={locationConsent.handleAccept}
         onReject={handleRejectLocation}
+        onLearnMore={locationConsent.dismissModal}
+        learnMoreHref="/profile/legal/politique-confidentialite"
         askAgainChecked={locationConsent.askAgainNextTime}
         onAskAgainChange={locationConsent.setAskAgainNextTime}
       />
@@ -781,6 +783,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         message={mediaConsent.messages.message}
         onAccept={mediaConsent.handleAccept}
         onReject={handleRejectMedia}
+        onLearnMore={mediaConsent.dismissModal}
+        learnMoreHref="/profile/legal/politique-confidentialite"
         askAgainChecked={mediaConsent.askAgainNextTime}
         onAskAgainChange={mediaConsent.setAskAgainNextTime}
       />

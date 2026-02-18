@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import Footer from './components/Footer'
 const Home = lazy(() => import('./pages/Home'))
 const Feed = lazy(() => import('./pages/Feed'))
@@ -29,14 +29,33 @@ const RecentPosts = lazy(() => import('./pages/RecentPosts'))
 import { ToastProvider } from './contexts/ToastContext'
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import { useIsMobile } from './hooks/useIsMobile'
+import { useConsent } from './hooks/useConsent'
 import WebLayout from './layouts/WebLayout'
+import ConsentModal from './components/ConsentModal'
 import './App.css'
 
 function AppContent() {
   const location = useLocation()
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
+  const isConsentInfoPage =
+    location.pathname === '/profile/legal/politique-cookies' ||
+    location.pathname === '/profile/legal/politique-confidentialite'
   const showFooter = !isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/')
+  const cookiesConsent = useConsent('cookies')
+  const cookiesAskedRef = useRef(false)
+
+  useEffect(() => {
+    if (isConsentInfoPage) return
+    if (cookiesAskedRef.current) return
+    if (cookiesConsent.loading) return
+    if (cookiesConsent.hasConsented === true) {
+      cookiesAskedRef.current = true
+      return
+    }
+    cookiesConsent.requireConsent(() => {})
+    cookiesAskedRef.current = true
+  }, [cookiesConsent.hasConsented, cookiesConsent.loading, cookiesConsent.requireConsent, isConsentInfoPage])
 
   const routes = (
     <Suspense
@@ -150,6 +169,17 @@ function AppContent() {
   return (
     <NavigationHistoryProvider>
       <ToastProvider>
+        <ConsentModal
+          visible={cookiesConsent.showModal && !isConsentInfoPage}
+          title={cookiesConsent.messages.title}
+          message={cookiesConsent.messages.message}
+          onAccept={cookiesConsent.handleAccept}
+          onReject={cookiesConsent.handleReject}
+          onLearnMore={cookiesConsent.dismissModal}
+          learnMoreHref="/profile/legal/politique-cookies"
+          askAgainChecked={cookiesConsent.askAgainNextTime}
+          onAskAgainChange={cookiesConsent.setAskAgainNextTime}
+        />
         <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
           {isMobile ? (
             <>

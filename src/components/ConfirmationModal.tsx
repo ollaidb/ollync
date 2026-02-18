@@ -11,6 +11,7 @@ export interface ConfirmationModalProps {
   cancelLabel?: string
   isDestructive?: boolean
   children?: ReactNode
+  contentClassName?: string
 }
 
 const ConfirmationModal = ({
@@ -22,7 +23,8 @@ const ConfirmationModal = ({
   confirmLabel = 'Accepter',
   cancelLabel = 'Annuler',
   isDestructive = false,
-  children
+  children,
+  contentClassName
 }: ConfirmationModalProps) => {
   const titleId = useId()
   const messageId = useId()
@@ -45,7 +47,7 @@ const ConfirmationModal = ({
   return (
     <div className="confirmation-modal-overlay">
       <div
-        className="confirmation-modal-content"
+        className={`confirmation-modal-content${contentClassName ? ` ${contentClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -74,4 +76,3 @@ const ConfirmationModal = ({
 }
 
 export default ConfirmationModal
-

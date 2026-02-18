@@ -18,19 +18,20 @@ const CGU = () => {
           ]
         },
         service: {
-          title: '2. Description of the service',
-          intro: 'Ollync is a matchmaking platform that allows users to:',
+          title: '2. Purpose of the service',
+          intro: 'Ollync is an application that allows users to:',
           items: [
             'Publish listings',
-            'Search for opportunities and services',
-            'Interact with other community members',
-            'Exchange messages via an integrated chat',
-            'Leave and view reviews'
+            'Browse content and profiles',
+            'Use the internal messaging feature',
+            'Respond to listings and interact with other users',
+            'Connect around services, projects, jobs, or collaborations'
           ]
         },
         account: {
-          title: '3. Registration and user account',
-          intro: 'To use our services, you must create an account. You agree to:',
+          title: '3. Access and account',
+          intro:
+            'The application is accessible free of charge. Some services may be offered for a fee, which will be specified at the time of purchase (see Terms of Sale). Access is reserved for users with an account. By creating an account, you agree to:',
           items: [
             'Provide accurate, complete, and up-to-date information',
             'Maintain the security of your account and password',
@@ -41,43 +42,43 @@ const CGU = () => {
         usage: {
           title: '4. Use of the service',
           intro:
-            'You agree to use Ollync legally and in compliance with these terms. You agree not to:',
+            'You agree to use Ollync legally and in compliance with these terms. It is prohibited to:',
           items: [
             'Use the service for illegal or unauthorized purposes',
-            'Violate the rights of others, including intellectual property rights',
-            'Post defamatory, offensive, obscene, or illegal content',
-            'Transmit viruses, malware, or any other harmful code',
-            'Attempt unauthorized access to Ollync systems or networks',
             'Impersonate others or provide false information',
-            'Collect personal data from other users without their consent'
+            'Collect personal data from other users without their consent',
+            'Post illegal, defamatory, hateful, violent, discriminatory, or inappropriate content',
+            'Send spam or unwanted solicitations',
+            'Attempt to access data or systems without authorization',
+            'Use the application for fraudulent or unlawful purposes'
           ]
         },
         userContent: {
-          title: '5. User content',
+          title: '5. User responsibility',
           paragraphs: [
-            'You retain ownership of any content you post on Ollync. By posting content, you grant Ollync a worldwide, non-exclusive, royalty-free, transferable license to use, reproduce, distribute, and display that content as part of operating the platform.',
-            'You are solely responsible for the content you publish and warrant that you have all necessary rights to publish it.'
+            'You are solely responsible for the content you publish, the exchanges you initiate, and the commitments you make through the application.',
+            'You guarantee that the information and content you share are accurate and that you have the rights to publish them.'
           ]
         },
         intellectual: {
           title: '6. Intellectual property',
           paragraph:
-            'All content on Ollync, including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and software, is the property of Ollync or its licensors and is protected by French and international copyright laws.'
+            'All elements of the application (texts, logo, design, interface) are protected. Any unauthorized reproduction is prohibited.'
         },
         liability: {
-          title: '7. Limitation of liability',
-          intro: 'Ollync acts as a matchmaking platform. We are not responsible for:',
+          title: '7. Publisher responsibility',
+          intro:
+            'Ollync implements reasonable means to ensure the proper functioning of the application but does not guarantee the absence of interruptions or errors. Ollync cannot be held liable for:',
           items: [
-            'The quality, safety, or legality of listings or services offered',
-            'Users’ ability to complete transactions',
+            'Exchanges, content, or commitments between users',
             'Direct or indirect damages resulting from use of or inability to use the service',
             'Disputes between users'
           ]
         },
         suspension: {
-          title: '8. Suspension and termination',
+          title: '8. Moderation and suspension',
           paragraph:
-            'We reserve the right to suspend or terminate your account and access to the service at any time, without notice, in case of violation of these terms or for any other legitimate reason.'
+            'Ollync reserves the right to remove or suspend any content or account in case of non-compliance with these Terms of Use, without prior notice.'
         },
         personalData: {
           title: '9. Personal data',
@@ -86,7 +87,7 @@ const CGU = () => {
           textAfter: '.'
         },
         law: {
-          title: '10. Applicable law and jurisdiction',
+          title: '10. Governing law',
           paragraph:
             'These Terms of Use are governed by French law. Any dispute relating to their interpretation and/or execution shall fall under the jurisdiction of French courts.'
         }
@@ -102,19 +103,20 @@ const CGU = () => {
           ]
         },
         service: {
-          title: '2. Description du service',
-          intro: 'Ollync est une plateforme de mise en relation permettant aux utilisateurs de :',
+          title: '2. Objet du service',
+          intro: 'Ollync est une application permettant aux utilisateurs de :',
           items: [
             'Publier des annonces',
-            'Rechercher des opportunités et services',
-            "Interagir avec d'autres membres de la communauté",
-            'Échanger via une messagerie intégrée',
-            'Laisser et consulter des avis'
+            'Consulter des contenus et des profils',
+            'Utiliser la messagerie interne',
+            'Répondre à des annonces et interagir avec d’autres utilisateurs',
+            'Entrer en relation autour de services, projets, emplois ou collaborations'
           ]
         },
         account: {
-          title: '3. Inscription et compte utilisateur',
-          intro: 'Pour utiliser nos services, vous devez créer un compte. Vous vous engagez à :',
+          title: '3. Accès et compte',
+          intro:
+            'L’application est accessible gratuitement. Certains services peuvent être proposés de façon payante, ce qui sera précisé au moment de l’achat (voir CGV). L’accès est réservé aux utilisateurs disposant d’un compte. En créant un compte, vous vous engagez à :',
           items: [
             'Fournir des informations exactes, complètes et à jour',
             'Maintenir la sécurité de votre compte et de votre mot de passe',
@@ -125,43 +127,43 @@ const CGU = () => {
         usage: {
           title: '4. Utilisation du service',
           intro:
-            'Vous vous engagez à utiliser Ollync de manière légale et conforme à ces conditions. Vous acceptez de ne pas :',
+            'Vous vous engagez à utiliser Ollync de manière légale et conforme à ces conditions. Il est interdit de :',
           items: [
             'Utiliser le service à des fins illégales ou non autorisées',
-            "Violer les droits d'autrui, y compris les droits de propriété intellectuelle",
-            'Publier du contenu diffamatoire, offensant, obscène ou illégal',
-            'Transmettre des virus, logiciels malveillants ou tout autre code nuisible',
-            "Tenter d'accéder non autorisé aux systèmes ou réseaux d'Ollync",
             "Usurper l'identité d'autrui ou fournir de fausses informations",
-            "Collecter des données personnelles d'autres utilisateurs sans leur consentement"
+            "Collecter des données personnelles d'autres utilisateurs sans leur consentement",
+            'Publier des contenus illégaux, diffamatoires, haineux, violents, discriminatoires ou inappropriés',
+            'Envoyer du spam ou des sollicitations non désirées',
+            "Tenter d'accéder aux données ou systèmes sans autorisation",
+            "Utiliser l’application à des fins frauduleuses ou contraires à la loi"
           ]
         },
         userContent: {
-          title: '5. Contenu utilisateur',
+          title: '5. Responsabilité de l’utilisateur',
           paragraphs: [
-            "Vous conservez la propriété de tout contenu que vous publiez sur Ollync. En publiant du contenu, vous accordez à Ollync une licence mondiale, non exclusive, gratuite et transférable pour utiliser, reproduire, distribuer et afficher ce contenu dans le cadre de l'exploitation de la plateforme.",
-            'Vous êtes seul responsable du contenu que vous publiez et garantissez que vous disposez de tous les droits nécessaires pour le publier.'
+            'L’utilisateur reste seul responsable des contenus qu’il publie, des échanges qu’il initie, et des engagements qu’il prend via l’application.',
+            'Il garantit que les informations et contenus partagés sont exacts et qu’il dispose des droits nécessaires pour les publier.'
           ]
         },
         intellectual: {
           title: '6. Propriété intellectuelle',
           paragraph:
-            "Tous les contenus présents sur Ollync, y compris mais sans s'y limiter, les textes, graphiques, logos, icônes, images, clips audio, téléchargements numériques, compilations de données et logiciels, sont la propriété d'Ollync ou de ses concédants de licence et sont protégés par les lois françaises et internationales sur le droit d'auteur."
+            'Tous les éléments de l’application (textes, logo, design, interface) sont protégés. Toute reproduction non autorisée est interdite.'
         },
         liability: {
-          title: '7. Limitation de responsabilité',
-          intro: 'Ollync agit en tant que plateforme de mise en relation. Nous ne sommes pas responsables :',
+          title: '7. Responsabilité de l’éditeur',
+          intro:
+            'Ollync met en œuvre des moyens raisonnables pour assurer le fonctionnement de l’application, mais ne garantit pas l’absence d’interruptions ou d’erreurs. Ollync ne saurait être tenue responsable :',
           items: [
-            'De la qualité, sécurité ou légalité des annonces ou services proposés',
-            'De la capacité des utilisateurs à effectuer des transactions',
+            'Des échanges, contenus ou engagements entre utilisateurs',
             "Des dommages directs ou indirects résultant de l'utilisation ou de l'impossibilité d'utiliser le service",
             'Des litiges entre utilisateurs'
           ]
         },
         suspension: {
-          title: '8. Suspension et résiliation',
+          title: '8. Modération et suspension',
           paragraph:
-            "Nous nous réservons le droit de suspendre ou résilier votre compte et votre accès au service à tout moment, sans préavis, en cas de violation de ces CGU ou pour toute autre raison légitime."
+            'Ollync se réserve le droit de supprimer ou suspendre tout contenu ou compte en cas de non-respect des CGU, sans préavis.'
         },
         personalData: {
           title: '9. Données personnelles',
@@ -170,7 +172,7 @@ const CGU = () => {
           textAfter: '.'
         },
         law: {
-          title: '10. Droit applicable et juridiction',
+          title: '10. Loi applicable',
           paragraph:
             "Les présentes CGU sont régies par le droit français. Tout litige relatif à leur interprétation et/ou à leur exécution relève des tribunaux français."
         }
@@ -250,4 +252,3 @@ const CGU = () => {
 }
 
 export default CGU
-

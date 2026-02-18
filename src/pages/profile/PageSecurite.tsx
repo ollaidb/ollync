@@ -18,42 +18,37 @@ const PageSecurite = () => {
         technical: {
           title: '2. Technical security measures',
           encryptionTitle: 'Data encryption',
-          encryptionText: 'All sensitive data is encrypted in transit and at rest:',
+          encryptionText: 'We protect data using encryption and secure communications:',
           encryptionItems: [
             'Secure connections via HTTPS/TLS for all communications',
             'Password hashing with secure algorithms',
-            'Payment data encryption in accordance with PCI DSS standards',
-            'Secure storage in encrypted databases'
+            'Secure storage on managed infrastructure'
           ],
           serversTitle: 'Server security',
-          serversText: 'Our infrastructure is secured by:',
+          serversText: 'Ollync is hosted on Supabase and Vercel infrastructure. These providers implement industry-standard security measures for hosting and data protection.',
           serversItems: [
-            '24/7 monitoring of our systems',
-            'Regular security updates',
-            'Protection against DDoS attacks',
-            'Regular and secure backups',
-            'Restricted server access with strong authentication'
+            'Managed hosting with security monitoring',
+            'Regular security updates by the providers',
+            'Protection against common web attacks',
+            'Controlled access to hosting systems'
           ],
           authTitle: 'Authentication',
-          authText: 'We offer multiple security levels for your account:',
+          authText: 'We implement account security measures such as:',
           authItems: [
-            'Mandatory strong passwords',
-            'Two-factor authentication (2FA) available',
-            'Email verification for sensitive actions',
-            'Detection of suspicious logins',
-            'Login attempt rate limiting'
+            'Strong password requirements',
+            'Secure session management',
+            'Email-based account verification'
           ]
         },
         organizational: {
           title: '3. Organizational measures',
           text:
-            'Beyond technical measures, we implement strict organizational procedures:',
+            'Beyond technical measures, Ollync applies organizational practices adapted to a solo-operated structure:',
           items: [
-            'Access to personal data limited to authorized staff only',
-            'Regular training on security and data protection',
-            'Regular security audits',
-            'Strict security incident management policy',
-            'Compliance with GDPR and other applicable regulations'
+            'Access to personal data is limited to the owner of the application',
+            'Data access is granted only when necessary',
+            'Security incidents are handled and documented',
+            'Commitment to GDPR principles'
           ]
         },
         account: {
@@ -83,7 +78,7 @@ const PageSecurite = () => {
         incidents: {
           title: '5. Reporting security incidents',
           intro:
-            'If you discover a security vulnerability or suspect unauthorized access to your account, contact us immediately at: security@ollync.com',
+            'If you discover a security vulnerability or suspect unauthorized access to your account, contact us immediately at: collabbinta@gmail.com',
           followUp: 'We take every report seriously and commit to:',
           items: [
             'Investigate the incident quickly',
@@ -95,21 +90,20 @@ const PageSecurite = () => {
         fraud: {
           title: '6. Fraud protection',
           intro:
-            'We use advanced fraud detection systems to protect our users:',
+            'We take fraud and scams seriously. The application provides safety tools and reporting mechanisms:',
           items: [
-            'Detection of suspicious behavior',
-            'Verification of suspicious transactions',
-            'Protection against phishing and identity theft',
-            'Proactive content moderation'
+            'Report a profile or a listing directly in the app',
+            'Block a user to stop contact immediately',
+            'Manual review and permanent blocking when fraud is confirmed',
+            'Safety reminders are shown in messaging to encourage caution'
           ]
         },
         compliance: {
           title: '7. Compliance and certifications',
-          intro: 'Ollync commits to complying with applicable standards and regulations:',
+          intro: 'Ollync commits to complying with applicable regulations and best practices:',
           items: [
             'GDPR (General Data Protection Regulation)',
-            'PCI DSS standards for payment data',
-            'ISO 27001 (certification in progress)'
+            'Security practices aligned with hosting providers'
           ]
         },
         transparency: {
@@ -120,7 +114,7 @@ const PageSecurite = () => {
         questions: {
           title: '9. Questions',
           text:
-            'If you have any questions about the security of your data or our platform, contact us at: security@ollync.com'
+            'If you have questions about the security of your data or our platform, we are here to help.'
         },
         safety: {
           title: '10. Meeting safety and emergencies',
@@ -160,42 +154,37 @@ const PageSecurite = () => {
         technical: {
           title: '2. Mesures techniques de sécurité',
           encryptionTitle: 'Chiffrement des données',
-          encryptionText: 'Toutes les données sensibles sont chiffrées en transit et au repos :',
+          encryptionText: 'Nous protégeons les données via le chiffrement et des communications sécurisées :',
           encryptionItems: [
             'Connexions sécurisées via HTTPS/TLS pour toutes les communications',
             'Chiffrement des mots de passe avec des algorithmes de hachage sécurisés',
-            'Chiffrement des données de paiement conformément aux standards PCI DSS',
-            'Stockage sécurisé des données dans des bases de données chiffrées'
+            'Stockage sécurisé sur une infrastructure gérée'
           ],
           serversTitle: 'Sécurité des serveurs',
-          serversText: 'Notre infrastructure est sécurisée par :',
+          serversText: "Ollync est hébergé sur l’infrastructure de Supabase et Vercel. Ces prestataires appliquent des mesures de sécurité reconnues pour l’hébergement et la protection des données.",
           serversItems: [
-            'Surveillance 24/7 de nos systèmes',
-            'Mises à jour régulières de sécurité',
-            'Protection contre les attaques DDoS',
-            'Sauvegardes régulières et sécurisées',
-            'Accès restreint aux serveurs avec authentification forte'
+            'Hébergement géré avec surveillance de sécurité',
+            'Mises à jour de sécurité régulières par les prestataires',
+            'Protection contre les attaques courantes',
+            'Accès contrôlé aux systèmes d’hébergement'
           ],
           authTitle: 'Authentification',
-          authText: 'Nous proposons plusieurs niveaux de sécurité pour votre compte :',
+          authText: 'Nous mettons en place des mesures de sécurité du compte :',
           authItems: [
-            'Mots de passe forts obligatoires',
-            'Authentification à deux facteurs (2FA) disponible',
-            'Vérification par email pour les actions sensibles',
-            'Détection des connexions suspectes',
-            'Limitation des tentatives de connexion'
+            'Exigences de mots de passe forts',
+            'Gestion sécurisée des sessions',
+            'Vérification du compte par email'
           ]
         },
         organizational: {
           title: '3. Mesures organisationnelles',
           text:
-            'Au-delà des mesures techniques, nous mettons en place des procédures organisationnelles strictes :',
+            'Au-delà des mesures techniques, Ollync applique des pratiques adaptées à une structure gérée par une seule personne :',
           items: [
-            'Accès limité aux données personnelles uniquement aux personnes autorisées',
-            'Formation régulière de notre équipe sur la sécurité et la protection des données',
-            'Audits de sécurité réguliers',
-            'Politique stricte de gestion des incidents de sécurité',
-            'Conformité avec le RGPD et autres réglementations applicables'
+            'Accès aux données personnelles limité à la responsable de l’application',
+            'Accès accordé uniquement lorsque nécessaire',
+            'Gestion et suivi des incidents de sécurité',
+            'Engagement de conformité aux principes du RGPD'
           ]
         },
         account: {
@@ -225,7 +214,7 @@ const PageSecurite = () => {
         incidents: {
           title: "5. Signalement d'incidents de sécurité",
           intro:
-            "Si vous découvrez une faille de sécurité ou suspectez un accès non autorisé à votre compte, contactez-nous immédiatement à : security@ollync.com",
+            "Si vous découvrez une faille de sécurité ou suspectez un accès non autorisé à votre compte, contactez-nous immédiatement à : collabbinta@gmail.com",
           followUp: 'Nous prenons très au sérieux tout signalement et nous nous engageons à :',
           items: [
             "Enquêter rapidement sur l'incident",
@@ -237,21 +226,20 @@ const PageSecurite = () => {
         fraud: {
           title: '6. Protection contre les fraudes',
           intro:
-            'Nous utilisons des systèmes de détection de fraude avancés pour protéger nos utilisateurs :',
+            'Nous prenons les fraudes et arnaques très au sérieux. L’application propose des outils de sécurité et de signalement :',
           items: [
-            'Détection des comportements suspects',
-            'Vérification des transactions suspectes',
-            "Protection contre le phishing et l'usurpation d'identité",
-            'Modération proactive du contenu'
+            'Signaler un compte ou une annonce directement dans l’application',
+            'Bloquer un utilisateur pour interrompre immédiatement les échanges',
+            'Vérification et blocage définitif des comptes frauduleux après contrôle',
+            'Messages de prévention affichés dans la messagerie pour encourager la prudence'
           ]
         },
         compliance: {
           title: '7. Conformité et certifications',
-          intro: "Ollync s'engage à respecter les normes et réglementations en vigueur :",
+          intro: "Ollync s'engage à respecter les réglementations et bonnes pratiques applicables :",
           items: [
             'RGPD (Règlement Général sur la Protection des Données)',
-            'Standards PCI DSS pour les données de paiement',
-            'ISO 27001 (en cours de certification)'
+            'Pratiques de sécurité alignées avec les prestataires d’hébergement'
           ]
         },
         transparency: {
@@ -262,7 +250,7 @@ const PageSecurite = () => {
         questions: {
           title: '9. Questions',
           text:
-            "Si vous avez des questions concernant la sécurité de vos données ou de notre plateforme, n'hésitez pas à nous contacter à : security@ollync.com"
+            "Si vous avez des questions concernant la sécurité de vos données ou de notre plateforme, nous sommes à votre écoute."
         },
         safety: {
           title: '10. Sécurité des rencontres et urgences',
@@ -384,7 +372,12 @@ const PageSecurite = () => {
           <p>{content.transparency.text}</p>
 
           <h4>{content.questions.title}</h4>
-          <p>{content.questions.text}</p>
+          <p>
+            {content.questions.text}{' '}
+            <a href="/profile/contact" style={{ color: 'var(--primary)' }}>
+              {isEnglish ? 'Contact us' : 'Contactez-nous'}
+            </a>
+          </p>
 
           <h4>{content.safety.title}</h4>
           <p>{content.safety.intro}</p>
@@ -416,4 +409,3 @@ const PageSecurite = () => {
 }
 
 export default PageSecurite
-

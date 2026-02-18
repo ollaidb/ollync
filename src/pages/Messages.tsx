@@ -3212,19 +3212,26 @@ const Messages = () => {
               {!isSystemConversation && (
                 <div className="conversation-safety-card">
                 <div className="conversation-safety-header">
-                  <div>
-                    <p className="conversation-safety-label">Attention aux arnaques</p>
-                    <p className="conversation-safety-summary">
-                      Protégez-vous : vérifiez l'annonce, le profil et les moyens de paiement.
-                    </p>
+                  <div className="conversation-safety-texts">
+                    <h3 className="conversation-safety-title">Conseils de sécurité</h3>
                   </div>
+                </div>
+                <div className="conversation-safety-actions">
                   <button
                     type="button"
                     className="conversation-safety-toggle"
-                    onClick={() => setShowScamPrevention((prev) => !prev)}
-                    aria-expanded={showScamPrevention}
+                    onClick={() => setShowScamPrevention(true)}
+                    disabled={showScamPrevention}
                   >
-                    {showScamPrevention ? 'Réduire' : 'Lire plus'}
+                    Voir les conseils
+                  </button>
+                  <button
+                    type="button"
+                    className="conversation-safety-toggle conversation-safety-toggle-secondary"
+                    onClick={() => setShowScamPrevention(false)}
+                    disabled={!showScamPrevention}
+                  >
+                    Masquer
                   </button>
                 </div>
                 {showScamPrevention && (
@@ -3299,13 +3306,6 @@ const Messages = () => {
                         <li>Aide aux victimes : 116 006.</li>
                       </ul>
                     </div>
-                    <button
-                      type="button"
-                      className="conversation-safety-toggle conversation-safety-toggle-bottom"
-                      onClick={() => setShowScamPrevention(false)}
-                    >
-                      Réduire
-                    </button>
                   </div>
                 )}
                 </div>
