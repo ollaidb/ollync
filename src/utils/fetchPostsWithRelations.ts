@@ -120,6 +120,7 @@ export async function fetchPostsWithRelations(options: FetchPostsOptions = {}) {
       'payment_type',
       'location',
       'images',
+      'video',
       'likes_count',
       'comments_count',
       'created_at',

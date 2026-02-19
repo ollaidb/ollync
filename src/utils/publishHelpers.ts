@@ -521,6 +521,7 @@ export const handlePublish = async (
     benefits: formData.benefits?.trim() || null,
     location: formData.location || null,
     images: formData.images.length > 0 ? formData.images : null,
+    video: formData.video || null,
     is_urgent: formData.urgent || false,
     status: finalStatus,
     payment_type: formData.exchange_type || null,

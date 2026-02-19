@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
+import InlineVideoPreview from './InlineVideoPreview'
 import './PostCard.css'
 
 interface PostCardProps {
@@ -278,8 +279,18 @@ const PostCard = ({
     return sentences.slice(0, 2).join(' ') + '...'
   }
 
-  const mainImage = post.images && post.images.length > 0 ? post.images[0] : null
-  const mainMedia = mainImage || post.video || null
+  const isValidMediaUrl = (value?: string | null) => {
+    if (!value) return false
+    const lower = value.toLowerCase()
+    if (!/^https?:\/\//i.test(value)) return false
+    if (lower.includes('ton-projet.supabase.co')) return false
+    if (lower.includes('ton user id')) return false
+    if (lower.includes('votre_')) return false
+    return true
+  }
+
+  const mainImage = post.images && post.images.length > 0 && isValidMediaUrl(post.images[0]) ? post.images[0] : null
+  const mainMedia = mainImage || (isValidMediaUrl(post.video) ? post.video : null)
   const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(mainMedia.split('?')[0].split('#')[0])
 
   const getPaymentDisplay = () => {
@@ -323,6 +334,7 @@ const PostCard = ({
         target.closest('button') || 
         target.tagName === 'BUTTON' ||
         target.closest('.post-card-action') ||
+        target.closest('.inline-video-preview') ||
         target.closest('svg') ||
         target.closest('path') ||
         target.closest('.post-card-profile')) {
@@ -350,13 +362,7 @@ const PostCard = ({
       <div className="post-card-image">
         {mainMedia ? (
           isVideo ? (
-            <video
-              src={mainMedia}
-              className="post-card-media"
-              playsInline
-              preload="metadata"
-              muted
-            />
+            <InlineVideoPreview src={mainMedia} className="post-card-media" />
           ) : (
             <img 
               src={mainMedia} 
@@ -442,13 +448,7 @@ const PostCard = ({
       <div className="post-card-image">
         {mainMedia ? (
           isVideo ? (
-            <video
-              src={mainMedia}
-              className="post-card-media"
-              playsInline
-              preload="metadata"
-              muted
-            />
+            <InlineVideoPreview src={mainMedia} className="post-card-media" />
           ) : (
             <img 
               src={mainMedia} 

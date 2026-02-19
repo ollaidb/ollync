@@ -630,7 +630,7 @@
   }
 
   .publish-content {
-    padding: 16px;
+    padding: 12px 14px 16px;
   }
 
   .publish-images-section {
@@ -683,6 +683,24 @@
 
   .publish-not-connected-link {
     font-size: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .publish-content-wrapper {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 74px);
+  }
+
+  .publish-content {
+    padding: 10px 12px 14px;
+  }
+
+  .publish-title {
+    font-size: 17px;
+  }
+
+  .publish-subtitle {
+    font-size: 13px;
   }
 }
 

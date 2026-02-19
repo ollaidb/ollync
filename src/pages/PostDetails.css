@@ -255,6 +255,13 @@
   object-fit: cover;
 }
 
+.post-hero-media {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
 .post-hero-image img {
   width: 100%;
   height: 100%;
@@ -370,9 +377,9 @@
 }
 
 .post-media-viewer-close {
-  position: absolute;
-  top: -8px;
-  right: -8px;
+  position: fixed;
+  top: 14px;
+  right: 14px;
   background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
@@ -385,6 +392,7 @@
   cursor: pointer;
   backdrop-filter: blur(6px);
   pointer-events: auto;
+  z-index: 2101;
 }
 
 .post-media-viewer-nav {

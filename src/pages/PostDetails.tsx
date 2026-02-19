@@ -780,11 +780,20 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const images = post?.images || []
+  const isValidMediaUrl = (value: string) => {
+    const lower = value.toLowerCase()
+    if (lower.includes('ton-projet.supabase.co')) return false
+    if (lower.includes('ton user id')) return false
+    if (lower.includes('votre_')) return false
+    return /^https?:\/\//i.test(value)
+  }
+
   const mediaItems = [post?.video, ...images].filter((item): item is string => {
     if (typeof item !== 'string') return false
     const trimmed = item.trim()
     if (!trimmed) return false
     if (trimmed === 'null' || trimmed === 'undefined') return false
+    if (!isValidMediaUrl(trimmed)) return false
     return true
   })
 
@@ -985,7 +994,7 @@ const PostDetails = () => {
           onTouchEnd={onTouchEnd}
           onClick={(event) => {
             const target = event.target as HTMLElement
-            if (target.closest('button') || target.closest('a') || target.closest('video')) return
+            if (target.closest('button') || target.closest('a')) return
             handleOpenViewer(currentImageIndex)
           }}
           role="button"
@@ -1008,10 +1017,14 @@ const PostDetails = () => {
                     {isVideoUrl(image) ? (
                       <video
                         src={image}
-                        controls
                         playsInline
+                        muted
+                        preload="metadata"
                         className="post-hero-media"
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleOpenViewer(index)
+                        }}
                       />
                     ) : (
                       <img src={image} alt={`${post.title} - Média ${index + 1}`} />
@@ -1076,7 +1089,10 @@ const PostDetails = () => {
               <button
                 type="button"
                 className="post-media-viewer-close"
-                onClick={handleCloseViewer}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleCloseViewer()
+                }}
                 aria-label="Fermer la galerie"
               >
                 <X size={20} />

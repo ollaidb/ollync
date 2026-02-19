@@ -5,6 +5,7 @@ import { Tag, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
+import InlineVideoPreview from '../components/InlineVideoPreview'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './SwipePage.css'
 
@@ -410,13 +411,7 @@ const SwipePage = () => {
                   <div className={`swipe-card-image-wrapper ${post.is_urgent ? 'swipe-card-urgent' : ''}`}>
                     {mainMedia ? (
                       isVideo ? (
-                        <video
-                          src={mainMedia}
-                          className="swipe-card-image"
-                          playsInline
-                          preload="metadata"
-                          muted
-                        />
+                        <InlineVideoPreview src={mainMedia} className="swipe-card-image" />
                       ) : (
                         <img 
                           src={mainMedia} 

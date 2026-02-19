@@ -128,12 +128,19 @@
 
 .home-notification-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
+  top: 3px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
   background-color: var(--destructive);
+  color: var(--destructive-foreground);
+  border: 1px solid var(--card);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
 }
 
 /* Section 2: Barre de recherche - Au milieu du header fixe */

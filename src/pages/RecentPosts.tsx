@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshCw, Tag, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
+import InlineVideoPreview from '../components/InlineVideoPreview'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
@@ -202,13 +203,7 @@ const RecentPosts = () => {
                   <div className={`swipe-card-image-wrapper ${post.is_urgent ? 'swipe-card-urgent' : ''}`}>
                     {mainMedia ? (
                       isVideo ? (
-                        <video
-                          src={mainMedia}
-                          className="swipe-card-image"
-                          playsInline
-                          preload="metadata"
-                          muted
-                        />
+                        <InlineVideoPreview src={mainMedia} className="swipe-card-image" />
                       ) : (
                         <img
                           src={mainMedia}

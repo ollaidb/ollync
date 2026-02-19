@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
 import { CustomList } from '../CustomList/CustomList'
@@ -61,6 +61,11 @@ export const Step4Description = ({
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
+    return new Date(base.getFullYear(), base.getMonth(), 1)
+  })
 
   const normalizeTime = (value: string) => {
     const cleaned = value.replace(/[^\d:]/g, '')
@@ -141,6 +146,49 @@ export const Step4Description = ({
     const next = Math.max(0, base + deltaMinutes)
     onUpdateFormData({ duration_minutes: next > 0 ? String(next) : '' })
   }
+
+  const toDateKey = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const today = new Date()
+  const todayKey = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
+  const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+  const formatDeadlineLabel = (value?: string) => {
+    if (!value) return 'Choisir une date'
+    const parsed = new Date(`${value}T12:00:00`)
+    if (Number.isNaN(parsed.getTime())) return 'Choisir une date'
+    return parsed.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  useEffect(() => {
+    if (!isDatePickerOpen) return
+    const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
+    setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1))
+  }, [isDatePickerOpen, formData.deadline])
+
+  const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+  const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate()
+  const startOffset = (firstDayOfMonth.getDay() + 6) % 7
+  const dayCells: Array<Date | null> = []
+  for (let i = 0; i < startOffset; i += 1) dayCells.push(null)
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    dayCells.push(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day))
+  }
+  while (dayCells.length % 7 !== 0) dayCells.push(null)
+
+  const monthLabel = calendarMonth.toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric'
+  })
   const isMaterialSale =
     (selectedCategory?.slug ?? formData.category) === 'vente' &&
     (selectedSubcategory?.slug ?? formData.subcategory) === 'gorille'
@@ -702,15 +750,142 @@ export const Step4Description = ({
         )}
       </div>
 
+      {/* Champs liés au moyen de paiement: affichés juste après la sélection */}
+      {requiresPrice && (
+        <div className="form-group">
+          <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
+          <input
+            type="number"
+            className="form-input"
+            placeholder="0"
+            value={formData.price}
+            onChange={(e) => onUpdateFormData({ price: e.target.value })}
+            min="0"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {requiresExchangeService && (
+        <div className="form-group">
+          <label className="form-label">Décrivez le service échangé *</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Ex: Je propose un échange de service de montage vidéo contre une séance photo..."
+            value={formData.exchange_service || ''}
+            onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
+            rows={4}
+          />
+        </div>
+      )}
+
+      {requiresRevenueShare && (
+        <div className="form-group">
+          <label className="form-label">Pourcentage de partage (%) *</label>
+          <input
+            type="number"
+            className="form-input"
+            placeholder="0"
+            value={formData.revenue_share_percentage || ''}
+            onChange={(e) => onUpdateFormData({ revenue_share_percentage: e.target.value })}
+            min="0"
+            max="100"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {showCoCreationDetails && (
+        <div className="form-group">
+          <label className="form-label">Détails de co-création (optionnel)</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Ajoutez une précision si besoin..."
+            value={formData.co_creation_details || ''}
+            onChange={(e) => onUpdateFormData({ co_creation_details: e.target.value })}
+            rows={3}
+          />
+        </div>
+      )}
+
       <div className="form-group">
         <label className="form-label">Date de besoin *</label>
-        <input
-          type="date"
-          className="form-input"
-          value={formData.deadline || ''}
-          onChange={(e) => onUpdateFormData({ deadline: e.target.value })}
-          min={new Date().toISOString().split('T')[0]}
-        />
+        <button
+          type="button"
+          className={`date-picker-trigger ${formData.deadline ? 'has-value' : ''}`}
+          onClick={() => setIsDatePickerOpen(true)}
+        >
+          <span>{formatDeadlineLabel(formData.deadline)}</span>
+          <CalendarDays size={18} />
+        </button>
+        {isDatePickerOpen && (
+          <>
+            <div
+              className="publish-dropdown-backdrop"
+              onClick={() => setIsDatePickerOpen(false)}
+            />
+            <div className="publish-dropdown-panel publish-calendar-panel">
+              <div className="publish-calendar-header">
+                <button
+                  type="button"
+                  className="publish-calendar-nav"
+                  onClick={() =>
+                    setCalendarMonth(
+                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                    )
+                  }
+                  aria-label="Mois précédent"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="publish-calendar-title">{monthLabel}</div>
+                <button
+                  type="button"
+                  className="publish-calendar-nav"
+                  onClick={() =>
+                    setCalendarMonth(
+                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                    )
+                  }
+                  aria-label="Mois suivant"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <div className="publish-calendar-grid">
+                {weekDays.map((day) => (
+                  <div key={`weekday-${day}`} className="publish-calendar-weekday">
+                    {day}
+                  </div>
+                ))}
+                {dayCells.map((dateValue, index) => {
+                  if (!dateValue) {
+                    return <div key={`empty-${index}`} className="publish-calendar-empty" />
+                  }
+
+                  const key = toDateKey(dateValue)
+                  const isSelected = formData.deadline === key
+                  const isPast = key < todayKey
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`publish-calendar-day ${isSelected ? 'selected' : ''}`}
+                      disabled={isPast}
+                      onClick={() => {
+                        onUpdateFormData({ deadline: key })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      {dateValue.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="form-group">
@@ -762,21 +937,6 @@ export const Step4Description = ({
           </div>
         </div>
       </div>
-
-      {requiresPrice && (
-        <div className="form-group">
-          <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
-          <input
-            type="number"
-            className="form-input"
-            placeholder="0"
-            value={formData.price}
-            onChange={(e) => onUpdateFormData({ price: e.target.value })}
-            min="0"
-            step="0.01"
-          />
-        </div>
-      )}
 
       {isJobCategory && (
         <div className="form-group">
@@ -837,48 +997,6 @@ export const Step4Description = ({
             />
           </div>
         </>
-      )}
-
-      {requiresExchangeService && (
-        <div className="form-group">
-          <label className="form-label">Décrivez le service échangé *</label>
-          <textarea
-            className="form-textarea"
-            placeholder="Ex: Je propose un échange de service de montage vidéo contre une séance photo..."
-            value={formData.exchange_service || ''}
-            onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
-            rows={4}
-          />
-        </div>
-      )}
-
-      {requiresRevenueShare && (
-        <div className="form-group">
-          <label className="form-label">Pourcentage de partage (%) *</label>
-          <input
-            type="number"
-            className="form-input"
-            placeholder="0"
-            value={formData.revenue_share_percentage || ''}
-            onChange={(e) => onUpdateFormData({ revenue_share_percentage: e.target.value })}
-            min="0"
-            max="100"
-            step="0.01"
-          />
-        </div>
-      )}
-
-      {showCoCreationDetails && (
-        <div className="form-group">
-          <label className="form-label">Détails de co-création (optionnel)</label>
-          <textarea
-            className="form-textarea"
-            placeholder="Ajoutez une précision si besoin..."
-            value={formData.co_creation_details || ''}
-            onChange={(e) => onUpdateFormData({ co_creation_details: e.target.value })}
-            rows={3}
-          />
-        </div>
       )}
 
       <button

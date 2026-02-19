@@ -83,7 +83,7 @@
 .dropdown-trigger:focus-visible {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .dropdown-caret {
@@ -106,8 +106,8 @@
   padding: 0;
   border: none;
   border-radius: 0;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--foreground) 10%, transparent);
   backdrop-filter: blur(6px);
   width: 100%;
   max-width: 520px;
@@ -154,7 +154,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   cursor: pointer;
   text-align: left;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
@@ -164,12 +164,12 @@
 .tagged-post-option:focus-visible {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .tagged-post-option.selected {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.08);
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
 }
 
 .tagged-post-thumb {
@@ -520,4 +520,21 @@
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   color: var(--primary);
   font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .step5-location-media .form-group {
+    margin-bottom: 18px;
+  }
+
+  .dropdown-trigger,
+  .form-input {
+    font-size: 15px;
+    padding: 11px 14px;
+  }
+
+  .tagged-post-option {
+    padding: 9px 10px;
+    gap: 10px;
+  }
 }

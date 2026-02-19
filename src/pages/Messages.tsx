@@ -2106,7 +2106,6 @@ const Messages = () => {
       : ((currentAlias || '').trim()
         ? (currentAlias || '').trim()
         : (otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')))
-    const groupedMessages = groupMessagesByDate(messages)
     const otherUserId = selectedConversation?.other_user?.id
     const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
     const headerName = isSystemConversation ? SYSTEM_SENDER_NAME : displayName
@@ -2133,6 +2132,39 @@ const Messages = () => {
         (request.to_user_id === user.id && request.from_user_id === otherUserId)
       )
     })
+    const messagesForDisplay = [...messages]
+
+    if (acceptedMatchForConversation?.related_post_id) {
+      const systemMessageId = `match-accepted-${acceptedMatchForConversation.id}`
+      const alreadyExists = messagesForDisplay.some((msg) => msg.id === systemMessageId)
+
+      if (!alreadyExists) {
+        const acceptedTimestamp = new Date(
+          acceptedMatchForConversation.accepted_at || acceptedMatchForConversation.created_at
+        ).getTime()
+
+        const acceptedSystemMessage: Message = {
+          id: systemMessageId,
+          sender_id: 'system',
+          created_at: acceptedMatchForConversation.accepted_at || acceptedMatchForConversation.created_at,
+          message_type: 'match_accepted',
+          content: acceptedMatchForConversation.related_post?.title || 'Voir l\'annonce'
+        }
+
+        const insertAt = messagesForDisplay.findIndex((msg) => {
+          return new Date(msg.created_at).getTime() > acceptedTimestamp
+        })
+
+        if (insertAt === -1) {
+          messagesForDisplay.push(acceptedSystemMessage)
+        } else {
+          messagesForDisplay.splice(insertAt, 0, acceptedSystemMessage)
+        }
+      }
+    }
+
+    const groupedMessages = groupMessagesByDate(messagesForDisplay)
+    const lastDisplayMessageId = messagesForDisplay[messagesForDisplay.length - 1]?.id
 
     if (isInfoView) {
       const isGroupOwner = !!user && selectedConversation?.group_creator_id === user.id
@@ -3366,11 +3398,32 @@ const Messages = () => {
                     {formatDateSeparator(group.messages[0].created_at)}
                   </div>
                   {group.messages.map((msg, msgIndex) => {
+                    if (msg.message_type === 'match_accepted' && acceptedMatchForConversation?.related_post_id) {
+                      const isLastMessage = msg.id === lastDisplayMessageId
+
+                      return (
+                        <div key={msg.id} ref={isLastMessage ? lastMessageRef : null}>
+                          <div className="conversation-match-message">
+                            <div className="conversation-match-bubble">
+                              <div className="conversation-match-label">Annonce acceptée</div>
+                              <button
+                                type="button"
+                                className="conversation-match-link-inline"
+                                onClick={() => navigate(`/post/${acceptedMatchForConversation.related_post_id}`)}
+                              >
+                                {acceptedMatchForConversation.related_post?.title || 'Voir l\'annonce'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
+
                     const isOwn = msg.sender_id === user?.id
                     const prevMsg = msgIndex > 0 ? group.messages[msgIndex - 1] : null
                     const showAvatar = !isOwn && (!prevMsg || prevMsg.sender_id !== msg.sender_id || 
                       new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000) // 5 minutes
-                    const isLastMessage = msg.id === messages[messages.length - 1]?.id
+                    const isLastMessage = msg.id === lastDisplayMessageId
 
                     return (
                       <div
@@ -3476,20 +3529,6 @@ const Messages = () => {
                   })}
                 </div>
               ))}
-              {acceptedMatchForConversation?.related_post_id && (
-                <div className="conversation-match-message">
-                  <div className="conversation-match-bubble">
-                    <div className="conversation-match-label">Annonce acceptée</div>
-                    <button
-                      type="button"
-                      className="conversation-match-link-inline"
-                      onClick={() => navigate(`/post/${acceptedMatchForConversation.related_post_id}`)}
-                    >
-                      {acceptedMatchForConversation.related_post?.title || 'Voir l\'annonce'}
-                    </button>
-                  </div>
-                </div>
-              )}
               <div ref={bottomAnchorRef} className="conversation-bottom-anchor" />
             </div>
           )}

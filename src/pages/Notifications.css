@@ -91,6 +91,21 @@
   flex-shrink: 0;
 }
 
+.notifications-filter-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .notifications-header {
   display: flex;
   justify-content: space-between;
@@ -747,4 +762,3 @@
     font-size: 12px;
   }
 }
-

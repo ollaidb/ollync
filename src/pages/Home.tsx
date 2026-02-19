@@ -54,6 +54,7 @@ const Home = () => {
     recent: t('home:recent')
   }
   const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   
   // Sections d'annonces
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
@@ -577,6 +578,58 @@ const Home = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotificationsCount(0)
+      return
+    }
+
+    let isMounted = true
+
+    const loadUnreadNotificationsCount = async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
+
+      if (error) {
+        console.error('Error loading unread notifications count:', error)
+        return
+      }
+
+      if (isMounted) {
+        setUnreadNotificationsCount(count || 0)
+      }
+    }
+
+    const channel = supabase
+      .channel(`home-unread-notifications-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          loadUnreadNotificationsCount()
+        }
+      )
+      .subscribe()
+
+    loadUnreadNotificationsCount()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  const formattedUnreadNotificationsCount =
+    unreadNotificationsCount > 99 ? '+99' : String(unreadNotificationsCount)
+
 
 
   if (loading) {
@@ -611,7 +664,9 @@ const Home = () => {
                   aria-label={t('nav.notifications')}
                 >
                   <Bell size={20} />
-                  <span className="home-notification-badge"></span>
+                  {unreadNotificationsCount > 0 && (
+                    <span className="home-notification-badge">{formattedUnreadNotificationsCount}</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -712,7 +767,9 @@ const Home = () => {
                 aria-label={t('nav.notifications')}
               >
                 <Bell size={20} />
-                <span className="home-notification-badge"></span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="home-notification-badge">{formattedUnreadNotificationsCount}</span>
+                )}
               </button>
             </div>
           </div>

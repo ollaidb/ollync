@@ -46,6 +46,41 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
 
+  const isInFilter = useCallback((notification: Notification, filter: FilterType) => {
+    if (filter === 'all') return true
+    if (filter === 'like') return notification.type === 'like'
+    if (filter === 'message') return notification.type === 'message'
+    if (filter === 'review') return notification.type === 'review' || notification.type === 'comment'
+    if (filter === 'match') return notification.type === 'match_request_accepted'
+    if (filter === 'appointment') return notification.type === 'appointment'
+    if (filter === 'request') {
+      return (
+        notification.type === 'match_request_received' ||
+        notification.type === 'match_request_sent' ||
+        notification.type === 'match_request_declined' ||
+        notification.type === 'application_received' ||
+        notification.type === 'application_accepted' ||
+        notification.type === 'application_declined' ||
+        notification.type === 'application_sent' ||
+        notification.type === 'contract_created' ||
+        notification.type === 'contract_signature_required' ||
+        notification.type === 'contract_signed'
+      )
+    }
+    if (filter === 'news') {
+      return (
+        notification.type === 'new_post' ||
+        notification.type === 'post_updated' ||
+        notification.type === 'post_closed'
+      )
+    }
+    return true
+  }, [])
+
+  const formatUnreadCount = useCallback((count: number) => {
+    return count > 99 ? '+99' : String(count)
+  }, [])
+
   useEffect(() => {
     if (!user) {
       setLoading(false)
@@ -276,42 +311,23 @@ const Notifications = () => {
 
   // Filtrer les notifications selon le filtre actif
   const filteredNotifications = useMemo(() => {
-    if (activeFilter === 'all') {
-      return notifications
-    } else if (activeFilter === 'like') {
-      return notifications.filter(n => n.type === 'like')
-    } else if (activeFilter === 'message') {
-      return notifications.filter(n => n.type === 'message')
-    } else if (activeFilter === 'review') {
-      return notifications.filter(n => n.type === 'review' || n.type === 'comment')
-    } else if (activeFilter === 'match') {
-      return notifications.filter(n => 
-        n.type === 'match_request_accepted'
-      )
-    } else if (activeFilter === 'appointment') {
-      return notifications.filter(n => n.type === 'appointment')
-    } else if (activeFilter === 'request') {
-      return notifications.filter(n =>
-        n.type === 'match_request_received' ||
-        n.type === 'match_request_sent' ||
-        n.type === 'match_request_declined' ||
-        n.type === 'application_received' ||
-        n.type === 'application_accepted' ||
-        n.type === 'application_declined' ||
-        n.type === 'application_sent' ||
-        n.type === 'contract_created' ||
-        n.type === 'contract_signature_required' ||
-        n.type === 'contract_signed'
-      )
-    } else if (activeFilter === 'news') {
-      return notifications.filter(n => 
-        n.type === 'new_post' || 
-        n.type === 'post_updated' || 
-        n.type === 'post_closed'
-      )
-    }
-    return notifications
-  }, [notifications, activeFilter])
+    return notifications.filter((notification) => isInFilter(notification, activeFilter))
+  }, [notifications, activeFilter, isInFilter])
+
+  const unreadCountsByFilter = useMemo(() => {
+    const filters: FilterType[] = ['all', 'like', 'message', 'request', 'match', 'appointment', 'review', 'news']
+    const entries = filters.map((filter) => {
+      const unreadCount = notifications.reduce((acc, notification) => {
+        if (!notification.read && isInFilter(notification, filter)) {
+          return acc + 1
+        }
+        return acc
+      }, 0)
+      return [filter, unreadCount] as const
+    })
+
+    return Object.fromEntries(entries) as Record<FilterType, number>
+  }, [notifications, isInFilter])
 
   // Grouper les notifications par date
   const groupedNotifications = useMemo(() => {
@@ -371,7 +387,7 @@ const Notifications = () => {
         {/* Header fixe */}
         <div className="notifications-header-fixed">
           <div className="notifications-header-content">
-            <BackButton />
+            <BackButton to="/home" />
             <h1 className="notifications-title">{t('notifications:title')}</h1>
             <div className="notifications-header-spacer"></div>
           </div>
@@ -383,6 +399,9 @@ const Notifications = () => {
               onClick={() => setActiveFilter('all')}
             >
               {t('notifications:filters.all')}
+              {unreadCountsByFilter.all > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.all)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'like' ? 'active' : ''}`}
@@ -390,6 +409,9 @@ const Notifications = () => {
             >
               <Heart size={16} />
               {t('notifications:filters.like')}
+              {unreadCountsByFilter.like > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.like)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'message' ? 'active' : ''}`}
@@ -397,6 +419,9 @@ const Notifications = () => {
             >
               <MessageCircle size={16} />
               {t('notifications:filters.message')}
+              {unreadCountsByFilter.message > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.message)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'request' ? 'active' : ''}`}
@@ -404,6 +429,9 @@ const Notifications = () => {
             >
               <Inbox size={16} />
               {t('notifications:filters.request')}
+              {unreadCountsByFilter.request > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.request)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'match' ? 'active' : ''}`}
@@ -411,6 +439,9 @@ const Notifications = () => {
             >
               <UserCheck size={16} />
               {t('notifications:filters.match')}
+              {unreadCountsByFilter.match > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.match)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'appointment' ? 'active' : ''}`}
@@ -418,6 +449,9 @@ const Notifications = () => {
             >
               <Calendar size={16} />
               {t('notifications:filters.appointment')}
+              {unreadCountsByFilter.appointment > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.appointment)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'review' ? 'active' : ''}`}
@@ -425,6 +459,9 @@ const Notifications = () => {
             >
               <Star size={16} />
               {t('notifications:filters.review')}
+              {unreadCountsByFilter.review > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.review)}</span>
+              )}
             </button>
             <button
               className={`notifications-filter-btn ${activeFilter === 'news' ? 'active' : ''}`}
@@ -432,6 +469,9 @@ const Notifications = () => {
             >
               <FileText size={16} />
               {t('notifications:filters.news')}
+              {unreadCountsByFilter.news > 0 && (
+                <span className="notifications-filter-count">{formatUnreadCount(unreadCountsByFilter.news)}</span>
+              )}
             </button>
           </div>
         </div>
@@ -482,4 +522,3 @@ const Notifications = () => {
 }
 
 export default Notifications
-
