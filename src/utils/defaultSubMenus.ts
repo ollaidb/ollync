@@ -9,7 +9,6 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Vlog', slug: 'vlog' },
     { name: 'Sketchs', slug: 'sketchs' },
     { name: 'Trends', slug: 'trends' },
-    { name: 'Événements', slug: 'evenements' },
     { name: 'Live', slug: 'live' },
     { name: 'Autre', slug: 'autre' }
   ],
@@ -69,6 +68,19 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Monétisation audience', slug: 'monetisation-audience' },
     { name: 'Aisance caméra', slug: 'aisance-camera' },
     { name: 'Setup matériel', slug: 'setup-materiel' },
+    { name: 'Autre', slug: 'autre' }
+  ],
+  evenements: [
+    { name: 'Masterclass', slug: 'masterclass' },
+    { name: 'Conférence', slug: 'conference' },
+    { name: 'Débat', slug: 'debat' },
+    { name: 'Atelier', slug: 'atelier' },
+    { name: 'Autre', slug: 'autre' }
+  ],
+  suivi: [
+    { name: 'Production sur place', slug: 'production-sur-place' },
+    { name: 'Voyage / déplacement', slug: 'voyage-deplacement' },
+    { name: 'Événement / sortie', slug: 'evenement-sortie' },
     { name: 'Autre', slug: 'autre' }
   ],
   vente: [

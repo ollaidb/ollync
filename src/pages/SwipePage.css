@@ -183,8 +183,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+  padding-bottom: 0;
   padding-left: 0;
   padding-right: 0;
   max-width: 100%;
@@ -282,7 +282,7 @@
   width: 100%;
   overflow: hidden;
   background: var(--muted);
-  min-height: 150px;
+  min-height: 0;
   margin-top: 0;
   border-radius: 8px;
   border: none;
@@ -304,13 +304,17 @@
 }
 
 .swipe-card-image.inline-video-preview {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: auto;
   height: auto;
   border-radius: 8px;
+  background: transparent;
 }
 
 .swipe-card-image.inline-video-preview .inline-video-preview__media {
-  object-fit: contain;
+  width: 100%;
+  height: auto;
+  object-fit: initial;
+  background: transparent;
 }
 
 .swipe-card-image-placeholder {
@@ -758,8 +762,8 @@
 
   /* Zone scrollable optimisée mobile */
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 110px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 55px);
+    padding-bottom: 0;
   }
 
   .swipe-masonry {
@@ -822,8 +826,8 @@
   }
 
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 105px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 53px);
+    padding-bottom: 0;
   }
 
   .swipe-masonry {

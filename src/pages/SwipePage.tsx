@@ -75,6 +75,8 @@ const SwipePage = () => {
     'studio-lieu',
     'projets-equipe',
     'services',
+    'evenements',
+    'suivi',
     'vente',
     'poste-service'
   ], [])

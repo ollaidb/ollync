@@ -63,7 +63,7 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
     // Pour les catégories, retourner directement vers /home
     const categorySlugs = [
       'creation-contenu', 'emploi', 'casting-role', 'projets-equipe', 
-      'services', 'vente', 'match', 'service', 'role', 'recrutement', 
+      'services', 'evenements', 'suivi', 'vente', 'match', 'service', 'role', 'recrutement', 
       'projet', 'mission', 'autre'
     ]
     
@@ -99,4 +99,3 @@ const HeaderSimple = ({ title, showBack = true }: HeaderSimpleProps) => {
 }
 
 export default HeaderSimple
-

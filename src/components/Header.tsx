@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, Building2, LucideIcon, ChevronRight } from 'lucide-react'
+import { Bell, Search, Camera, Users, Briefcase, Wrench, ShoppingBag, Scissors, Building2, Calendar, ClipboardList, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'
@@ -66,6 +66,20 @@ const Header = () => {
       path: '/services',
       subMenus: []
     },
+    {
+      id: 'evenements',
+      icon: Calendar,
+      label: translateCategoryLabel('evenements', 'Événement'),
+      path: '/evenements',
+      subMenus: []
+    },
+    {
+      id: 'suivi',
+      icon: ClipboardList,
+      label: translateCategoryLabel('suivi', 'Suivi'),
+      path: '/suivi',
+      subMenus: []
+    },
     { 
       id: 'vente', 
       icon: ShoppingBag, 
@@ -85,6 +99,8 @@ const Header = () => {
       { id: 'studio-lieu', icon: Building2, label: translateCategoryLabel('studio-lieu', 'Studio & lieu'), path: '/studio-lieu' },
         { id: 'projets-equipe', icon: Briefcase, label: translateCategoryLabel('projets-equipe', 'Projet'), path: '/projets-equipe' },
         { id: 'services', icon: Wrench, label: translateCategoryLabel('services', 'Services'), path: '/services' },
+        { id: 'evenements', icon: Calendar, label: translateCategoryLabel('evenements', 'Événement'), path: '/evenements' },
+        { id: 'suivi', icon: ClipboardList, label: translateCategoryLabel('suivi', 'Suivi'), path: '/suivi' },
         { id: 'vente', icon: ShoppingBag, label: translateCategoryLabel('vente', 'Vente'), path: '/vente' }
       ]
 
@@ -213,4 +229,3 @@ const Header = () => {
 }
 
 export default Header
-

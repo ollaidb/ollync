@@ -60,13 +60,21 @@ const CGU = () => {
             'You guarantee that the information and content you share are accurate and that you have the rights to publish them.'
           ]
         },
+        contracts: {
+          title: '6. Contracts between users',
+          paragraphs: [
+            'When users create a contract through Ollync, it is a direct agreement between those users only.',
+            'Ollync is not a party to the contract and does not provide legal advice.',
+            'Contract terms, execution, and legal compliance remain under the full responsibility of the users.'
+          ]
+        },
         intellectual: {
-          title: '6. Intellectual property',
+          title: '7. Intellectual property',
           paragraph:
             'All elements of the application (texts, logo, design, interface) are protected. Any unauthorized reproduction is prohibited.'
         },
         liability: {
-          title: '7. Publisher responsibility',
+          title: '8. Publisher responsibility',
           intro:
             'Ollync implements reasonable means to ensure the proper functioning of the application but does not guarantee the absence of interruptions or errors. Ollync cannot be held liable for:',
           items: [
@@ -76,18 +84,18 @@ const CGU = () => {
           ]
         },
         suspension: {
-          title: '8. Moderation and suspension',
+          title: '9. Moderation and suspension',
           paragraph:
             'Ollync reserves the right to remove or suspend any content or account in case of non-compliance with these Terms of Use, without prior notice.'
         },
         personalData: {
-          title: '9. Personal data',
+          title: '10. Personal data',
           textBefore: 'The processing of your personal data is governed by our ',
           linkText: 'Privacy policy',
           textAfter: '.'
         },
         law: {
-          title: '10. Governing law',
+          title: '11. Governing law',
           paragraph:
             'These Terms of Use are governed by French law. Any dispute relating to their interpretation and/or execution shall fall under the jurisdiction of French courts.'
         }
@@ -145,13 +153,21 @@ const CGU = () => {
             'Il garantit que les informations et contenus partagés sont exacts et qu’il dispose des droits nécessaires pour les publier.'
           ]
         },
+        contracts: {
+          title: '6. Contrats entre utilisateurs',
+          paragraphs: [
+            'Lorsqu’un contrat est créé via Ollync, il s’agit d’un accord direct entre les utilisateurs concernés.',
+            'Ollync n’est pas partie au contrat et ne fournit pas de conseil juridique.',
+            'Le contenu du contrat, son exécution et sa conformité légale relèvent de la responsabilité des utilisateurs.'
+          ]
+        },
         intellectual: {
-          title: '6. Propriété intellectuelle',
+          title: '7. Propriété intellectuelle',
           paragraph:
             'Tous les éléments de l’application (textes, logo, design, interface) sont protégés. Toute reproduction non autorisée est interdite.'
         },
         liability: {
-          title: '7. Responsabilité de l’éditeur',
+          title: '8. Responsabilité de l’éditeur',
           intro:
             'Ollync met en œuvre des moyens raisonnables pour assurer le fonctionnement de l’application, mais ne garantit pas l’absence d’interruptions ou d’erreurs. Ollync ne saurait être tenue responsable :',
           items: [
@@ -161,18 +177,18 @@ const CGU = () => {
           ]
         },
         suspension: {
-          title: '8. Modération et suspension',
+          title: '9. Modération et suspension',
           paragraph:
             'Ollync se réserve le droit de supprimer ou suspendre tout contenu ou compte en cas de non-respect des CGU, sans préavis.'
         },
         personalData: {
-          title: '9. Données personnelles',
+          title: '10. Données personnelles',
           textBefore: 'Le traitement de vos données personnelles est régi par notre ',
           linkText: 'Politique de confidentialité',
           textAfter: '.'
         },
         law: {
-          title: '10. Loi applicable',
+          title: '11. Loi applicable',
           paragraph:
             "Les présentes CGU sont régies par le droit français. Tout litige relatif à leur interprétation et/ou à leur exécution relève des tribunaux français."
         }
@@ -217,6 +233,11 @@ const CGU = () => {
 
           <h4>{content.userContent.title}</h4>
           {content.userContent.paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+
+          <h4>{content.contracts.title}</h4>
+          {content.contracts.paragraphs.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
 

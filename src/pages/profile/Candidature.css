@@ -1,0 +1,297 @@
+.candidature-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.candidature-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--muted);
+}
+
+.candidature-tab {
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.candidature-tab.active {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.candidature-error,
+.candidature-success {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.candidature-error {
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.candidature-success {
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.candidature-empty {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  text-align: center;
+  padding: 20px 12px;
+}
+
+.candidature-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.candidature-empty span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.candidature-sent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidature-sent-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 10px 12px;
+}
+
+.candidature-sent-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.candidature-sent-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.candidature-status {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--muted);
+  color: var(--foreground);
+  text-transform: lowercase;
+}
+
+.candidature-sent-date {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.candidature-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.candidature-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 12px;
+}
+
+.candidature-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.candidature-cv-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.candidature-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  background: var(--card);
+  cursor: pointer;
+}
+
+.candidature-cv-link {
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.candidature-skill-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.candidature-skill-input-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.candidature-skill-input-row button {
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.candidature-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.candidature-skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.candidature-skill-chip button {
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.candidature-field textarea {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 10px 12px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.candidature-save-btn {
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 46px;
+  width: calc(100% - 16px);
+  margin: 0 8px;
+}
+
+.candidature-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .candidature-page {
+    gap: 12px;
+  }
+
+  .candidature-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .candidature-tab {
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .candidature-cv-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .candidature-upload-btn,
+  .candidature-cv-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .candidature-skill-input-row {
+    flex-direction: column;
+  }
+
+  .candidature-skill-input-row button {
+    width: 100%;
+  }
+}

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import Footer from './components/Footer'
 const Home = lazy(() => import('./pages/Home'))
 const Feed = lazy(() => import('./pages/Feed'))
@@ -13,9 +13,12 @@ const CastingRole = lazy(() => import('./pages/CastingRole'))
 const StudioLieu = lazy(() => import('./pages/StudioLieu'))
 const ProjetsEquipe = lazy(() => import('./pages/ProjetsEquipe'))
 const Service = lazy(() => import('./pages/Service'))
+const Evenements = lazy(() => import('./pages/Evenements'))
+const Suivi = lazy(() => import('./pages/Suivi'))
 const Vente = lazy(() => import('./pages/Vente'))
 const PosteService = lazy(() => import('./pages/PosteService'))
 const PostDetails = lazy(() => import('./pages/PostDetails'))
+const PostRecommendations = lazy(() => import('./pages/PostRecommendations'))
 const SwipePage = lazy(() => import('./pages/SwipePage'))
 const UsersPage = lazy(() => import('./pages/UsersPage'))
 const Search = lazy(() => import('./pages/Search'))
@@ -43,19 +46,20 @@ function AppContent() {
     location.pathname === '/profile/legal/politique-confidentialite'
   const showFooter = !isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/')
   const cookiesConsent = useConsent('cookies')
-  const cookiesAskedRef = useRef(false)
 
   useEffect(() => {
     if (isConsentInfoPage) return
-    if (cookiesAskedRef.current) return
     if (cookiesConsent.loading) return
-    if (cookiesConsent.hasConsented === true) {
-      cookiesAskedRef.current = true
-      return
-    }
+    if (cookiesConsent.showModal) return
+    if (cookiesConsent.hasConsented === true) return
     cookiesConsent.requireConsent(() => {})
-    cookiesAskedRef.current = true
-  }, [cookiesConsent.hasConsented, cookiesConsent.loading, cookiesConsent.requireConsent, isConsentInfoPage])
+  }, [
+    cookiesConsent.hasConsented,
+    cookiesConsent.loading,
+    cookiesConsent.showModal,
+    cookiesConsent.requireConsent,
+    isConsentInfoPage
+  ])
 
   const routes = (
     <Suspense
@@ -116,6 +120,9 @@ function AppContent() {
       <Route path="/profile/contracts" element={<Profile />} />
       <Route path="/profile/wallet" element={<Profile />} />
       <Route path="/profile/transactions" element={<Profile />} />
+      <Route path="/profile/tickets" element={<Profile />} />
+      <Route path="/profile/candidature" element={<Profile />} />
+      <Route path="/profile/espace-candidat" element={<Profile />} />
       <Route path="/profile/:id" element={<Profile />} />
       {/* Nouvelles routes - Catégories principales */}
       <Route path="/creation-contenu" element={<CreationContenu />} />
@@ -142,6 +149,14 @@ function AppContent() {
       <Route path="/services/:submenu" element={<Service />} />
       <Route path="/services/:submenu/:subSubMenu" element={<Service />} />
       <Route path="/services/:submenu/:subSubMenu/:subSubSubMenu" element={<Service />} />
+      <Route path="/evenements" element={<Evenements />} />
+      <Route path="/evenements/:submenu" element={<Evenements />} />
+      <Route path="/evenements/:submenu/:subSubMenu" element={<Evenements />} />
+      <Route path="/evenements/:submenu/:subSubMenu/:subSubSubMenu" element={<Evenements />} />
+      <Route path="/suivi" element={<Suivi />} />
+      <Route path="/suivi/:submenu" element={<Suivi />} />
+      <Route path="/suivi/:submenu/:subSubMenu" element={<Suivi />} />
+      <Route path="/suivi/:submenu/:subSubMenu/:subSubSubMenu" element={<Suivi />} />
       <Route path="/vente" element={<Vente />} />
       <Route path="/vente/:submenu" element={<Vente />} />
       <Route path="/vente/:submenu/:subSubMenu" element={<Vente />} />
@@ -152,6 +167,7 @@ function AppContent() {
       <Route path="/poste-service/:submenu/:subSubMenu/:subSubSubMenu" element={<PosteService />} />
       <Route path="/publier-annonce" element={<Publish />} />
       <Route path="/post/:id" element={<PostDetails />} />
+      <Route path="/post/:id/recommendations" element={<PostRecommendations />} />
       <Route path="/swipe" element={<SwipePage />} />
       <Route path="/users" element={<UsersPage />} />
       <Route path="/search" element={<Search />} />

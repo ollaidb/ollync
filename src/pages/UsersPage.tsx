@@ -30,6 +30,8 @@ const categoryOrder = [
   'studio-lieu',
   'projets-equipe',
   'services',
+  'evenements',
+  'suivi',
   'vente',
   'poste-service'
 ]
@@ -213,6 +215,7 @@ const UsersPage = () => {
         }
 
         query = query.neq('email', MODERATOR_EMAIL)
+        query = query.or('show_in_users.is.null,show_in_users.eq.true')
 
         const { data: profilesData, error: profilesError, count } = await query
 
@@ -253,6 +256,7 @@ const UsersPage = () => {
       }
 
       query = query.neq('email', MODERATOR_EMAIL)
+      query = query.or('show_in_users.is.null,show_in_users.eq.true')
 
       const { data: profilesData, error: profilesError, count } = await query
 

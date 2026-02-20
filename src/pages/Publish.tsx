@@ -60,6 +60,8 @@ export default function Publish() {
     dateFrom?: string | null
     dateTo?: string | null
     tagged_post_id?: string | null
+    opening_hours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | null
+    billing_hours?: number | null
   }
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -114,7 +116,17 @@ export default function Publish() {
     externalLink: '',
     documentUrl: '',
     documentName: '',
-    taggedPostId: ''
+    taggedPostId: '',
+    businessOpeningHours: [
+      { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
+    ],
+    billingHours: ''
   }), [])
   const [formData, setFormData] = useState(initialFormData)
   const [isLoadingEdit, setIsLoadingEdit] = useState(false)
@@ -169,6 +181,14 @@ export default function Publish() {
     if (!description) return ''
     const match = description.match(/État du matériel\s*:\s*(.+)$/mi)
     return match?.[1]?.trim() || ''
+  }
+
+  const formatMinutesToTime = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) return ''
+    const normalized = Math.max(0, Math.floor(value))
+    const hours = Math.floor(normalized / 60)
+    const minutes = normalized % 60
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
   }
 
   const getStepFromForm = useCallback((data: typeof formData) => {
@@ -321,7 +341,11 @@ export default function Publish() {
           externalLink: postData.external_link || '',
           documentUrl: postData.document_url || '',
           documentName: parseDocumentNameFromUrl(postData.document_url),
-          taggedPostId: postData.tagged_post_id || ''
+          taggedPostId: postData.tagged_post_id || '',
+          businessOpeningHours: Array.isArray(postData.opening_hours) && postData.opening_hours.length > 0
+            ? postData.opening_hours
+            : initialFormData.businessOpeningHours,
+          billingHours: formatMinutesToTime(postData.billing_hours)
         }
 
         if (!isMounted) return

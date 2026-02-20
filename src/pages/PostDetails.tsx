@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
@@ -11,6 +11,7 @@ import { mapPost, type MappedPost } from '../utils/postMapper'
 import { GoogleMapComponent } from '../components/Maps/GoogleMap'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
+import { useNavigationHistory } from '../hooks/useNavigationHistory'
 import './PostDetails.css'
 
 interface Post {
@@ -33,6 +34,13 @@ interface Post {
   duration_minutes?: number | null
   profile_level?: string | null
   profile_roles?: string[] | string | null
+  opening_hours?: Array<{
+    day: string
+    enabled: boolean
+    start: string
+    end: string
+  }> | string | null
+  billing_hours?: number | null
   delivery_available: boolean
   is_urgent?: boolean
   status: string
@@ -77,10 +85,28 @@ interface Application {
   } | null
 }
 
+type ContactIntent = 'request' | 'apply' | 'buy' | 'reserve' | 'ticket'
+
+const EMPLOI_CATEGORY_SLUGS = new Set(['emploi'])
+const LIEU_CATEGORY_SLUGS = new Set(['studio-lieu', 'lieu'])
+const VENTE_CATEGORY_SLUGS = new Set(['vente'])
+const EVENEMENT_CATEGORY_SLUGS = new Set(['evenements', 'evenement'])
+
+const getContactIntent = (slug?: string | null): ContactIntent => {
+  const normalized = (slug || '').trim().toLowerCase()
+  if (EMPLOI_CATEGORY_SLUGS.has(normalized)) return 'apply'
+  if (LIEU_CATEGORY_SLUGS.has(normalized)) return 'reserve'
+  if (VENTE_CATEGORY_SLUGS.has(normalized)) return 'buy'
+  if (EVENEMENT_CATEGORY_SLUGS.has(normalized)) return 'ticket'
+  return 'request'
+}
+
 const PostDetails = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
+  const { getPreviousPath, markNavigatingBack, canGoBack, history } = useNavigationHistory()
   const isMobile = useIsMobile()
   const { showSuccess } = useToastContext()
   const [post, setPost] = useState<Post | null>(null)
@@ -98,8 +124,13 @@ const PostDetails = () => {
   const [loadingRequest, setLoadingRequest] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
   const [requestRole, setRequestRole] = useState('')
-  const [requestDocument, setRequestDocument] = useState<File | null>(null)
-  const [requestDocumentName, setRequestDocumentName] = useState<string>('')
+  const [requestCvDocument, setRequestCvDocument] = useState<File | null>(null)
+  const [requestCvDocumentName, setRequestCvDocumentName] = useState<string>('')
+  const [requestCoverLetterDocument, setRequestCoverLetterDocument] = useState<File | null>(null)
+  const [requestCoverLetterDocumentName, setRequestCoverLetterDocumentName] = useState<string>('')
+  const [reservationDate, setReservationDate] = useState('')
+  const [reservationTime, setReservationTime] = useState('')
+  const [reservationDurationMinutes, setReservationDurationMinutes] = useState<number>(60)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -133,6 +164,41 @@ const PostDetails = () => {
   const [taggedPost, setTaggedPost] = useState<MappedPost | null>(null)
   const [authorPostCount, setAuthorPostCount] = useState<number | null>(null)
   const maxPostsPerSection = isMobile ? 5 : 4
+  const currentPath = `${location.pathname}${location.search}`
+  const navState = (location.state || {}) as { originPath?: string }
+
+  const findNonPostOriginPath = () => {
+    const previousEntries = [...history].slice(0, -1).reverse()
+    const firstNonPost = previousEntries.find((entry) => !entry.startsWith('/post/'))
+    return firstNonPost || '/home'
+  }
+
+  const getOriginPath = () => {
+    if (navState.originPath) return navState.originPath
+    const previousPath = getPreviousPath()
+    if (previousPath && !previousPath.startsWith('/post/')) return previousPath
+    return findNonPostOriginPath()
+  }
+
+  const handleBackFromPost = () => {
+    const originPath = getOriginPath()
+    if (originPath && originPath !== currentPath) {
+      markNavigatingBack()
+      navigate(originPath)
+      return
+    }
+
+    const previousPath = getPreviousPath()
+    if (canGoBack() && previousPath && previousPath !== currentPath) {
+      markNavigatingBack()
+      navigate(previousPath)
+      return
+    }
+
+    markNavigatingBack()
+    navigate('/home')
+  }
+
   const recommendedPostsFull = useMemo(() => {
     const list: Array<any> = []
     if (taggedPost) list.push(taggedPost)
@@ -164,7 +230,7 @@ const PostDetails = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post])
+  }, [post, user?.id])
 
   // Réinitialiser l'index quand les médias changent
   useEffect(() => {
@@ -555,7 +621,87 @@ const PostDetails = () => {
     const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
     setRequestMessage(`${greeting} votre annonce m'intéresse ! Est-elle toujours disponible ?`)
     setRequestRole('')
+    setRequestCvDocument(null)
+    setRequestCvDocumentName('')
+    setRequestCoverLetterDocument(null)
+    setRequestCoverLetterDocumentName('')
+    setReservationDate(post?.needed_date || '')
+    setReservationTime(post?.needed_time || '')
+    setReservationDurationMinutes(post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60)
     setShowSendRequestModal(true)
+  }
+
+  const validateRequestFile = (file: File) => {
+    const allowedExtensions = ['pdf', 'doc', 'docx']
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (!allowedExtensions.includes(ext)) {
+      throw new Error('Format non supporté. Utilisez PDF, DOC ou DOCX.')
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('Le fichier ne doit pas dépasser 10MB.')
+    }
+  }
+
+  const uploadRequestFile = async (file: File, kind: 'cv' | 'cover_letter') => {
+    validateRequestFile(file)
+    const safeName = file.name.replace(/\s+/g, '_')
+    const fileName = `${user?.id}/${Date.now()}_${kind}_${safeName}`
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('match_request_documents')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (uploadError || !uploadData) {
+      throw new Error(uploadError?.message || 'Erreur lors de l’upload du document.')
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('match_request_documents')
+      .getPublicUrl(uploadData.path)
+
+    return {
+      url: publicUrlData?.publicUrl || null,
+      name: file.name
+    }
+  }
+
+  const hasAvailableSpots = async () => {
+    if (!id || !post?.number_of_people || post.number_of_people <= 0) return true
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count, error } = await (supabase.from('match_requests') as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('related_post_id', id)
+      .in('status', ['pending', 'accepted'])
+      .in('request_intent', ['reserve', 'ticket'])
+
+    if (error) {
+      console.error('Error checking availability:', error)
+      return true
+    }
+
+    const reservedCount = Number(count || 0)
+    return reservedCount < post.number_of_people
+  }
+
+  const createTicketForCurrentUser = async () => {
+    if (!user || !post) return
+    const baseDate = reservationDate || post.needed_date || new Date().toISOString().slice(0, 10)
+    const baseTime = reservationTime || post.needed_time || '10:00'
+    const eventDate = `${baseDate}T${baseTime}:00`
+    const now = new Date()
+    const ticketDate = new Date(eventDate)
+    const status = ticketDate.getTime() < now.getTime() ? 'past' : 'upcoming'
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('event_tickets') as any).insert({
+      user_id: user.id,
+      title: contactIntent === 'ticket' ? `Billet - ${post.title}` : `Réservation - ${post.title}`,
+      event_date: ticketDate.toISOString(),
+      location: post.location || null,
+      status
+    })
   }
 
   const handleSendRequest = async () => {
@@ -567,44 +713,47 @@ const PostDetails = () => {
       return
     }
 
+    if (contactIntent === 'apply' && !requestCvDocument) {
+      alert('Le CV est obligatoire pour postuler.')
+      return
+    }
+
+    if (contactIntent === 'reserve') {
+      if (!reservationDate || !reservationTime) {
+        alert('Choisissez une date et une heure pour réserver.')
+        return
+      }
+      if (!reservationDurationMinutes || reservationDurationMinutes <= 0) {
+        alert('Indiquez une durée valide.')
+        return
+      }
+    }
+
+    if (contactIntent === 'ticket' || contactIntent === 'reserve') {
+      const hasSpots = await hasAvailableSpots()
+      if (!hasSpots) {
+        alert('Il n’y a plus de place disponible pour cette annonce.')
+        return
+      }
+    }
+
     setLoadingRequest(true)
     try {
-      let documentUrl: string | null = null
-      let documentName: string | null = null
+      let cvUrl: string | null = null
+      let cvName: string | null = null
+      let coverLetterUrl: string | null = null
+      let coverLetterName: string | null = null
 
-      // Uploader le document si c'est un annonce d'emploi et qu'il y a un document
-      if (post.category?.slug === 'emploi' && requestDocument) {
-        try {
-          const fileName = `${user.id}/${Date.now()}_${requestDocument.name}`
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('match_request_documents')
-            .upload(fileName, requestDocument, {
-              cacheControl: '3600',
-              upsert: false
-            })
+      if (contactIntent === 'apply' && requestCvDocument) {
+        const uploadedCv = await uploadRequestFile(requestCvDocument, 'cv')
+        cvUrl = uploadedCv.url
+        cvName = uploadedCv.name
+      }
 
-          if (uploadError) {
-            console.error('Error uploading document:', uploadError)
-            alert(`Erreur lors de l'upload du document: ${uploadError.message}`)
-            setLoadingRequest(false)
-            return
-          }
-
-          if (uploadData) {
-            // Récupérer l'URL publique du document
-            const { data: publicUrlData } = supabase.storage
-              .from('match_request_documents')
-              .getPublicUrl(uploadData.path)
-
-            documentUrl = publicUrlData?.publicUrl || null
-            documentName = requestDocument.name
-          }
-        } catch (uploadErr) {
-          console.error('Error in document upload:', uploadErr)
-          alert('Erreur lors de l\'upload du document')
-          setLoadingRequest(false)
-          return
-        }
+      if (contactIntent === 'apply' && requestCoverLetterDocument) {
+        const uploadedCoverLetter = await uploadRequestFile(requestCoverLetterDocument, 'cover_letter')
+        coverLetterUrl = uploadedCoverLetter.url
+        coverLetterName = uploadedCoverLetter.name
       }
 
       const trimmedMessage = requestMessage.trim()
@@ -617,8 +766,14 @@ const PostDetails = () => {
           status: 'pending',
           request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
           request_role: requestRole.trim() || null,
-          request_document_url: documentUrl,
-          request_document_name: documentName
+          request_document_url: cvUrl,
+          request_document_name: cvName,
+          request_cover_letter_url: coverLetterUrl,
+          request_cover_letter_name: coverLetterName,
+          request_intent: contactIntent,
+          reservation_date: reservationDate || null,
+          reservation_time: reservationTime || null,
+          reservation_duration_minutes: contactIntent === 'reserve' ? reservationDurationMinutes : null
         })
         .select()
         .single()
@@ -631,13 +786,30 @@ const PostDetails = () => {
       }
 
       if (data) {
-        setMatchRequest({ id: data.id, status: data.status })
+        const shouldAutoValidateTicket = (contactIntent === 'ticket' || contactIntent === 'reserve') && !isPaidAction()
+
+        if (shouldAutoValidateTicket) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('match_requests') as any)
+            .update({ status: 'accepted' })
+            .eq('id', data.id)
+          await createTicketForCurrentUser()
+          setMatchRequest({ id: data.id, status: 'accepted' })
+        } else {
+          setMatchRequest({ id: data.id, status: data.status })
+        }
+
         setShowSendRequestModal(false)
         setRequestMessage('')
         setRequestRole('')
-        setRequestDocument(null)
-        setRequestDocumentName('')
-        showSuccess('Demande envoyée')
+        setRequestCvDocument(null)
+        setRequestCvDocumentName('')
+        setRequestCoverLetterDocument(null)
+        setRequestCoverLetterDocumentName('')
+        setReservationDate('')
+        setReservationTime('')
+        setReservationDurationMinutes(60)
+        showSuccess(shouldAutoValidateTicket ? 'Billet validé' : 'Demande envoyée')
       }
     } catch (error) {
       console.error('Error sending match request:', error)
@@ -754,7 +926,8 @@ const PostDetails = () => {
           status: 'active',
           limit: maxPostsPerSection * 2,
           orderBy: 'created_at',
-          orderDirection: 'desc'
+          orderDirection: 'desc',
+          excludeUserId: user?.id
         })
         // Filtrer pour exclure le post actuel
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -766,7 +939,8 @@ const PostDetails = () => {
           status: 'active',
           limit: maxPostsPerSection * 2,
           orderBy: 'created_at',
-          orderDirection: 'desc'
+          orderDirection: 'desc',
+          excludeUserId: user?.id
         })
         // Filtrer pour exclure le post actuel
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -779,6 +953,7 @@ const PostDetails = () => {
   }
 
   const isOwner = user && post && post.user_id === user.id
+  const contactIntent = getContactIntent(post?.category?.slug)
   const images = post?.images || []
   const isValidMediaUrl = (value: string) => {
     const lower = value.toLowerCase()
@@ -828,6 +1003,77 @@ const PostDetails = () => {
       .filter(Boolean)
   }
 
+  const getOpeningHoursList = (
+    openingHours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | string | null
+  ) => {
+    if (!openingHours) return []
+    let parsed: Array<{ day: string; enabled: boolean; start: string; end: string }> = []
+
+    if (Array.isArray(openingHours)) {
+      parsed = openingHours
+    } else if (typeof openingHours === 'string') {
+      const trimmed = openingHours.trim()
+      if (!trimmed) return []
+      try {
+        const jsonParsed = JSON.parse(trimmed)
+        if (Array.isArray(jsonParsed)) {
+          parsed = jsonParsed as Array<{ day: string; enabled: boolean; start: string; end: string }>
+        }
+      } catch {
+        return []
+      }
+    }
+
+    const dayLabelMap: Record<string, string> = {
+      lundi: 'Lundi',
+      mardi: 'Mardi',
+      mercredi: 'Mercredi',
+      jeudi: 'Jeudi',
+      vendredi: 'Vendredi',
+      samedi: 'Samedi',
+      dimanche: 'Dimanche'
+    }
+
+    return parsed
+      .filter((slot) => slot && slot.enabled && slot.start && slot.end)
+      .map((slot) => ({
+        ...slot,
+        day: dayLabelMap[slot.day] || slot.day
+      }))
+  }
+
+  const isPaidAction = () => {
+    if (!post) return false
+    const paymentType = String(post.payment_type || '').toLowerCase().trim()
+    const paidTypes = new Set(['remuneration', 'rémunération', 'price', 'paid', 'argent', 'money'])
+    if (paidTypes.has(paymentType)) return true
+    return Number(post.price || 0) > 0
+  }
+
+  const getActionButtonLabel = () => {
+    if (matchRequest?.status === 'pending') {
+      if (contactIntent === 'reserve') return 'Réservation envoyée'
+      if (contactIntent === 'ticket') return 'Demande de billet envoyée'
+      if (contactIntent === 'apply') return 'Candidature envoyée'
+      if (contactIntent === 'buy') return 'Achat en attente'
+      return 'Demande envoyée'
+    }
+
+    if (matchRequest?.status === 'accepted') {
+      if (contactIntent === 'reserve') return 'Réservation acceptée'
+      if (contactIntent === 'ticket') return 'Billet validé'
+      if (contactIntent === 'apply') return 'Candidature acceptée'
+      if (contactIntent === 'buy') return 'Achat validé'
+      return 'Demande acceptée'
+    }
+
+    if (contactIntent === 'reserve') return 'Réserver'
+    if (contactIntent === 'ticket') return 'Réserver un billet'
+    if (contactIntent === 'apply') return 'Postuler'
+    if (contactIntent === 'buy') return 'Acheter'
+    return 'Faire une demande'
+  }
+
   const formatDuration = (minutes?: number | null) => {
     if (!minutes || minutes <= 0) return ''
     const hours = Math.floor(minutes / 60)
@@ -838,6 +1084,8 @@ const PostDetails = () => {
   }
 
   const hasAddress = post?.location_address || (post?.location_lat && post?.location_lng)
+  const openingHoursList = getOpeningHoursList(post?.opening_hours)
+  const isStudioLieuPost = (post?.category?.slug || '').trim().toLowerCase() === 'studio-lieu'
 
   // Fonctions pour le swipe des images
   const minSwipeDistance = 50
@@ -970,7 +1218,7 @@ const PostDetails = () => {
         {/* Header fixe */}
         <div className="post-details-header-fixed">
           <div className="post-details-header-content">
-            <BackButton />
+            <BackButton onClick={handleBackFromPost} />
             <div className="post-details-header-spacer"></div>
             <div className="post-details-header-actions">
               <button className="post-header-action-btn" onClick={handleShare}>
@@ -1344,6 +1592,22 @@ const PostDetails = () => {
                 </div>
               )}
 
+              {isStudioLieuPost && openingHoursList.length > 0 && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Jours et horaires d'ouverture</span>
+                  <span className="post-info-value">
+                    {openingHoursList.map((slot) => `${slot.day}: ${slot.start} - ${slot.end}`).join(' | ')}
+                  </span>
+                </div>
+              )}
+
+              {isStudioLieuPost && post.billing_hours && post.billing_hours > 0 && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Temps facturé</span>
+                  <span className="post-info-value">{formatDuration(post.billing_hours)}</span>
+                </div>
+              )}
+
               {post.profile_level && (
                 <div className="post-info-item">
                   <span className="post-info-label">Niveau recherché</span>
@@ -1469,30 +1733,38 @@ const PostDetails = () => {
             {/* Autres annonces */}
             {recommendedPosts.length > 0 && (
               <div className="other-posts-section">
-                <h3>Annonces qui pourront vous intéresser</h3>
+                <button
+                  type="button"
+                  className="other-posts-header"
+                  onClick={() =>
+                    navigate(`/post/${id}/recommendations`, {
+                      state: {
+                        originPath: getOriginPath(),
+                        sourcePostPath: currentPath
+                      }
+                    })
+                  }
+                >
+                  <h3>Annonces similaires</h3>
+                  <ChevronRight size={18} />
+                </button>
                 <div className="other-posts-grid">
                   {recommendedPosts.map((relatedPost) => (
                     <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" hideCategoryBadge />
                   ))}
-                  {recommendedPostsFull.length >= maxPostsPerSection && (
-                    <button
-                      className="other-posts-plus-btn"
-                      onClick={() => {
-                        const slug = post?.category?.slug
-                        if (slug === 'creation-contenu') return navigate('/creation-contenu')
-                        if (slug === 'casting-role') return navigate('/casting-role')
-                        if (slug === 'emploi') return navigate('/emploi')
-                        if (slug === 'studio-lieu') return navigate('/studio-lieu')
-                        if (slug === 'projets-equipe') return navigate('/projets-equipe')
-                        if (slug === 'services') return navigate('/services')
-                        if (slug === 'vente') return navigate('/vente')
-                        if (slug === 'poste-service') return navigate('/poste-service')
-                        return navigate('/search')
-                      }}
-                    >
-                      <Plus size={32} />
-                    </button>
-                  )}
+                  <button
+                    className="other-posts-plus-btn"
+                    onClick={() =>
+                      navigate(`/post/${id}/recommendations`, {
+                        state: {
+                          originPath: getOriginPath(),
+                          sourcePostPath: currentPath
+                        }
+                      })
+                    }
+                  >
+                    <Plus size={32} />
+                  </button>
                 </div>
               </div>
             )}
@@ -1507,13 +1779,7 @@ const PostDetails = () => {
               onClick={handleApply}
               disabled={loadingRequest || matchRequest?.status === 'accepted'}
             >
-              {matchRequest?.status === 'pending' ? (
-                'Demande envoyée'
-              ) : matchRequest?.status === 'accepted' ? (
-                'Demande acceptée'
-              ) : (
-                'Faire une demande'
-              )}
+              {getActionButtonLabel()}
             </button>
           </div>
         )}
@@ -1522,17 +1788,42 @@ const PostDetails = () => {
         {showSendRequestModal && (
           <ConfirmationModal
             visible={showSendRequestModal}
-            title="Message personnalisé"
-            message="Ajoutez un message pour votre demande."
+            title={
+              contactIntent === 'apply'
+                ? 'Postuler'
+                : contactIntent === 'reserve'
+                  ? 'Réserver un lieu'
+                  : contactIntent === 'ticket'
+                    ? 'Réserver un billet'
+                    : contactIntent === 'buy'
+                      ? 'Acheter'
+                      : 'Message personnalisé'
+            }
+            message={
+              contactIntent === 'apply'
+                ? 'Envoyez votre candidature avec votre CV.'
+                : contactIntent === 'reserve'
+                  ? 'Renseignez la date, l’heure et la durée de réservation.'
+                  : contactIntent === 'ticket'
+                    ? 'Confirmez votre billet.'
+                    : contactIntent === 'buy'
+                      ? 'Confirmez votre demande d’achat.'
+                      : 'Ajoutez un message pour votre demande.'
+            }
             onConfirm={handleSendRequest}
             onCancel={() => {
               setShowSendRequestModal(false)
               setRequestMessage('')
               setRequestRole('')
-              setRequestDocument(null)
-              setRequestDocumentName('')
+              setRequestCvDocument(null)
+              setRequestCvDocumentName('')
+              setRequestCoverLetterDocument(null)
+              setRequestCoverLetterDocumentName('')
+              setReservationDate('')
+              setReservationTime('')
+              setReservationDurationMinutes(60)
             }}
-            confirmLabel={loadingRequest ? 'Envoi...' : 'Envoyer'}
+            confirmLabel={loadingRequest ? 'Envoi...' : contactIntent === 'ticket' ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet') : contactIntent === 'reserve' ? (isPaidAction() ? 'Payer la réservation' : 'Valider la réservation') : contactIntent === 'buy' ? 'Confirmer l’achat' : 'Envoyer'}
             cancelLabel="Annuler"
           >
             {getProfileRolesList(post?.profile_roles).length > 0 && (
@@ -1570,38 +1861,111 @@ const PostDetails = () => {
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
 
-            {/* Document upload pour la catégorie emploi */}
-            {post?.category?.slug === 'emploi' && (
-              <div className="confirmation-modal-field">
-                <label className="confirmation-modal-label" htmlFor="match-request-document">
-                  Joindre un document (CV, etc.)
-                </label>
-                <div className="confirmation-modal-file-input-wrapper">
-                  <input
-                    id="match-request-document"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="confirmation-modal-file-input"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      if (file) {
-                        // Vérifier la taille du fichier (max 10MB)
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('Le fichier ne doit pas dépasser 10MB')
-                          return
+            {contactIntent === 'apply' && (
+              <>
+                <div className="confirmation-modal-field">
+                  <label className="confirmation-modal-label" htmlFor="match-request-cv">
+                    CV (obligatoire)
+                  </label>
+                  <div className="confirmation-modal-file-input-wrapper">
+                    <input
+                      id="match-request-cv"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="confirmation-modal-file-input"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (!file) return
+                        try {
+                          validateRequestFile(file)
+                          setRequestCvDocument(file)
+                          setRequestCvDocumentName(file.name)
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : 'Fichier invalide')
                         }
-                        setRequestDocument(file)
-                        setRequestDocumentName(file.name)
-                      }
-                    }}
-                  />
-                  {requestDocumentName && (
-                    <div className="confirmation-modal-file-name">
-                      ✓ {requestDocumentName}
-                    </div>
-                  )}
+                      }}
+                    />
+                    {requestCvDocumentName && (
+                      <div className="confirmation-modal-file-name">
+                        ✓ {requestCvDocumentName}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+
+                <div className="confirmation-modal-field">
+                  <label className="confirmation-modal-label" htmlFor="match-request-cover-letter">
+                    Lettre de motivation (optionnel)
+                  </label>
+                  <div className="confirmation-modal-file-input-wrapper">
+                    <input
+                      id="match-request-cover-letter"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="confirmation-modal-file-input"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (!file) return
+                        try {
+                          validateRequestFile(file)
+                          setRequestCoverLetterDocument(file)
+                          setRequestCoverLetterDocumentName(file.name)
+                        } catch (error) {
+                          alert(error instanceof Error ? error.message : 'Fichier invalide')
+                        }
+                      }}
+                    />
+                    {requestCoverLetterDocumentName && (
+                      <div className="confirmation-modal-file-name">
+                        ✓ {requestCoverLetterDocumentName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {contactIntent === 'reserve' && (
+              <>
+                <div className="confirmation-modal-field">
+                  <label className="confirmation-modal-label" htmlFor="reservation-date">
+                    Date
+                  </label>
+                  <input
+                    id="reservation-date"
+                    type="date"
+                    className="confirmation-modal-input"
+                    value={reservationDate}
+                    onChange={(event) => setReservationDate(event.target.value)}
+                  />
+                </div>
+                <div className="confirmation-modal-field">
+                  <label className="confirmation-modal-label" htmlFor="reservation-time">
+                    Heure
+                  </label>
+                  <input
+                    id="reservation-time"
+                    type="time"
+                    className="confirmation-modal-input"
+                    value={reservationTime}
+                    onChange={(event) => setReservationTime(event.target.value)}
+                  />
+                </div>
+                <div className="confirmation-modal-field">
+                  <label className="confirmation-modal-label" htmlFor="reservation-duration">
+                    Durée (minutes)
+                  </label>
+                  <input
+                    id="reservation-duration"
+                    type="number"
+                    min={30}
+                    step={30}
+                    className="confirmation-modal-input"
+                    value={reservationDurationMinutes}
+                    onChange={(event) => setReservationDurationMinutes(Number(event.target.value) || 60)}
+                  />
+                </div>
+              </>
             )}
           </ConfirmationModal>
         )}

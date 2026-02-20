@@ -410,6 +410,187 @@
   color: var(--primary);
 }
 
+@keyframes searchOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes searchSheetUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.opening-hours-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  animation: searchOverlayFade 0.18s ease-out;
+}
+
+.opening-hours-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--card);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 12px 12px 18px;
+  max-height: 74vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: searchSheetUp 0.22s ease-out;
+}
+
+.opening-hours-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.opening-hours-sheet-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  text-align: center;
+  width: 100%;
+}
+
+.opening-hours-sheet-close {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+}
+
+.opening-hours-sheet-divider {
+  height: 1px;
+  background: var(--border);
+  width: 100%;
+}
+
+.opening-days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.opening-day-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.opening-day-item.selected {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.opening-day-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+}
+
+.opening-day-check {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.opening-day-check.muted {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.opening-day-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opening-day-remove {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.opening-day-hours-inline {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opening-day-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.opening-hours-time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opening-hours-time-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.opening-hours-time {
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.opening-hours-summary {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opening-hours-summary-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 12px;
+}
+
 @media (max-width: 640px) {
   .step4-description {
     max-width: 100%;
@@ -435,5 +616,9 @@
 
   .time-input-row {
     gap: 8px;
+  }
+
+  .opening-day-hours-grid {
+    grid-template-columns: 1fr;
   }
 }

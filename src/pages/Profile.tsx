@@ -11,7 +11,9 @@ import {
   FileEdit,
   FileText,
   Wallet,
-  Receipt
+  Receipt,
+  Ticket,
+  Briefcase
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
@@ -53,6 +55,8 @@ import Contracts from './profile/Contracts'
 import Moderation from './Moderation'
 import WalletPage from './profile/Wallet.tsx'
 import Transactions from './profile/Transactions.tsx'
+import Tickets from './profile/Tickets.tsx'
+import Candidature from './profile/Candidature.tsx'
 import ConfirmationModal from '../components/ConfirmationModal'
 import './Profile.css'
 
@@ -74,6 +78,7 @@ interface MenuItem {
 }
 
 const Profile = () => {
+  const appVersion = (import.meta.env.VITE_APP_VERSION as string | undefined) || '1.0.0'
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id?: string }>()
@@ -105,6 +110,8 @@ const Profile = () => {
     if (location.pathname === '/profile/annonces') return 'annonces'
     if (location.pathname === '/profile/contracts') return 'contracts'
     if (location.pathname === '/profile/transactions') return 'transactions'
+    if (location.pathname === '/profile/tickets') return 'tickets'
+    if (location.pathname === '/profile/candidature' || location.pathname === '/profile/espace-candidat') return 'candidature'
     return 'menu'
   }
   
@@ -308,6 +315,14 @@ const Profile = () => {
       return <Transactions />
     }
 
+    if (location.pathname === '/profile/tickets') {
+      return <Tickets />
+    }
+
+    if (location.pathname === '/profile/candidature' || location.pathname === '/profile/espace-candidat') {
+      return <Candidature />
+    }
+
     // Routes pour les pages légales individuelles
     if (location.pathname === '/profile/legal/mentions-legales') {
       return <MentionsLegales />
@@ -382,6 +397,8 @@ const Profile = () => {
     if (location.pathname === '/profile/contracts') return t('profile:contractsTitle')
     if (location.pathname === '/profile/wallet') return t('profile:walletTitle')
     if (location.pathname === '/profile/transactions') return t('profile:transactionsTitle')
+    if (location.pathname === '/profile/tickets') return t('profile:ticketsTitle')
+    if (location.pathname === '/profile/candidature' || location.pathname === '/profile/espace-candidat') return t('profile:candidatureTitle')
     if (location.pathname === '/profile/help' || location.pathname.startsWith('/profile/help/')) return t('profile:helpTitle')
     if (location.pathname === '/profile/contact') return t('profile:contactTitle')
     if (location.pathname === '/profile/resources') return t('profile:resourcesTitle')
@@ -456,6 +473,22 @@ const Profile = () => {
         label: t('profile:transactions'), 
         path: '/profile/transactions',
         onClick: () => navigate('/profile/transactions'),
+        requiresAuth: true
+      },
+      {
+        id: 'tickets',
+        icon: Ticket,
+        label: t('profile:tickets'),
+        path: '/profile/tickets',
+        onClick: () => navigate('/profile/tickets'),
+        requiresAuth: true
+      },
+      {
+        id: 'candidature',
+        icon: Briefcase,
+        label: t('profile:candidature'),
+        path: '/profile/espace-candidat',
+        onClick: () => navigate('/profile/espace-candidat'),
         requiresAuth: true
       },
       { 
@@ -556,6 +589,12 @@ const Profile = () => {
           </div>
           <span className="profile-menu-item-label">{t('profile:logout')}</span>
         </button>
+
+        <div className="profile-app-version">
+          <span className="profile-app-version-label">Version</span>
+          <span className="profile-app-version-value">{appVersion}</span>
+        </div>
+        <div className="profile-menu-end-spacer" />
       </div>
     )
   }
@@ -579,7 +618,7 @@ const Profile = () => {
         {/* Zone scrollable */}
         <div
           className={`profile-scrollable ${
-            ['wallet', 'annonces', 'contracts', 'transactions', 'settings', 'security', 'help', 'contact', 'resources', 'resources-page', 'legal', 'legal-page'].includes(
+            ['wallet', 'annonces', 'contracts', 'transactions', 'tickets', 'candidature', 'settings', 'security', 'help', 'contact', 'resources', 'resources-page', 'legal', 'legal-page'].includes(
               currentSection
             )
               ? 'profile-scrollable-increased-padding'

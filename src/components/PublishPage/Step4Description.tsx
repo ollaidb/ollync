@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
 import { CustomList } from '../CustomList/CustomList'
@@ -15,6 +15,13 @@ interface FormData {
   deadline?: string
   neededTime?: string
   duration_minutes?: string
+  businessOpeningHours?: Array<{
+    day: string
+    enabled: boolean
+    start: string
+    end: string
+  }>
+  billingHours?: string
   materialCondition?: string
   contract_type?: string
   work_schedule?: string
@@ -51,6 +58,7 @@ export const Step4Description = ({
     selectedSubcategory?.slug
   )
   const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'emploi'
+  const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
   const requiresPrice = !!paymentConfig?.requiresPrice
@@ -62,6 +70,8 @@ export const Step4Description = ({
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
+  const [activeOpeningDay, setActiveOpeningDay] = useState<string | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
     return new Date(base.getFullYear(), base.getMonth(), 1)
@@ -147,6 +157,20 @@ export const Step4Description = ({
     onUpdateFormData({ duration_minutes: next > 0 ? String(next) : '' })
   }
 
+  const stepBillingHours = (deltaMinutes: number) => {
+    const base = formData.billingHours && formData.billingHours.trim().length > 0
+      ? formData.billingHours
+      : '01:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    onUpdateFormData({ billingHours: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}` })
+  }
+
   const toDateKey = (date: Date) => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -157,6 +181,17 @@ export const Step4Description = ({
   const today = new Date()
   const todayKey = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+  const dayLabels: Record<string, string> = {
+    lundi: 'Lundi',
+    mardi: 'Mardi',
+    mercredi: 'Mercredi',
+    jeudi: 'Jeudi',
+    vendredi: 'Vendredi',
+    samedi: 'Samedi',
+    dimanche: 'Dimanche'
+  }
+  const openingDays = formData.businessOpeningHours || []
+  const selectedOpeningDays = openingDays.filter((slot) => slot.enabled)
 
   const formatDeadlineLabel = (value?: string) => {
     if (!value) return 'Choisir une date'
@@ -168,6 +203,53 @@ export const Step4Description = ({
       year: 'numeric'
     })
   }
+
+  const updateOpeningDay = (
+    day: string,
+    updates: Partial<{ enabled: boolean; start: string; end: string }>
+  ) => {
+    const next = openingDays.map((slot) =>
+      slot.day === day ? { ...slot, ...updates } : slot
+    )
+    onUpdateFormData({ businessOpeningHours: next })
+  }
+
+  const toggleOpeningDay = (day: string) => {
+    const target = openingDays.find((slot) => slot.day === day)
+    if (!target) return
+    updateOpeningDay(day, { enabled: !target.enabled })
+  }
+
+  const stepOpeningTime = (
+    day: string,
+    key: 'start' | 'end',
+    deltaMinutes: number
+  ) => {
+    const target = openingDays.find((slot) => slot.day === day)
+    if (!target) return
+    const base = target[key] || '09:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    updateOpeningDay(day, {
+      [key]: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}`
+    })
+  }
+
+  useEffect(() => {
+    if (!selectedOpeningDays.length) {
+      setActiveOpeningDay(null)
+      return
+    }
+    const isStillEnabled = selectedOpeningDays.some((slot) => slot.day === activeOpeningDay)
+    if (!isStillEnabled) {
+      setActiveOpeningDay(selectedOpeningDays[0].day)
+    }
+  }, [selectedOpeningDays, activeOpeningDay])
 
   useEffect(() => {
     if (!isDatePickerOpen) return
@@ -219,11 +301,6 @@ export const Step4Description = ({
       title: 'Ex : Trend (nom du trend)',
       description:
         'Ex : Trend [nom du trend] pour une durée de 1 heure et 3 vidéos + variantes.'
-    },
-    evenements: {
-      title: 'Ex : Événement (type d’événement)',
-      description:
-        'Ex : Type concert/expo/festival/soirée pour une durée de 2 heures et photos + vidéos.'
     },
     live: {
       title: 'Ex : Live (thème du live)',
@@ -568,7 +645,14 @@ export const Step4Description = ({
       parseFloat(formData.revenue_share_percentage) <= 100
     )) &&
     (!isMaterialSale || (formData.materialCondition && formData.materialCondition.trim().length > 0)) &&
-    (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0))
+    (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0)) &&
+    (!isStudioLieuCategory || (
+      !!formData.billingHours &&
+      /^\d{1,2}:\d{2}$/.test(formData.billingHours) &&
+      formData.billingHours !== '00:00' &&
+      Array.isArray(formData.businessOpeningHours) &&
+      formData.businessOpeningHours.some((slot) => slot.enabled && slot.start && slot.end && slot.start < slot.end)
+    ))
 
   return (
     <div className="step4-description">
@@ -751,6 +835,45 @@ export const Step4Description = ({
       </div>
 
       {/* Champs liés au moyen de paiement: affichés juste après la sélection */}
+      {isStudioLieuCategory && (
+        <div className="form-group">
+          <label className="form-label">
+            {formData.exchange_type === 'visibilite-contre-service'
+              ? "Temps (heures/minutes) pour service contre visibilité *"
+              : "Temps (heures/minutes) *"}
+          </label>
+          <div className="time-input-row">
+            <input
+              type="text"
+              className="form-input time-input"
+              placeholder="HH:MM"
+              value={formData.billingHours || '01:00'}
+              onChange={(e) => onUpdateFormData({ billingHours: normalizeTime(e.target.value) })}
+              onBlur={() => onUpdateFormData({ billingHours: formatTime(formData.billingHours || '01:00') })}
+              inputMode="numeric"
+            />
+            <div className="time-stepper">
+              <button
+                type="button"
+                className="time-stepper-btn"
+                onClick={() => stepBillingHours(30)}
+                aria-label="Augmenter de 30 minutes"
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                type="button"
+                className="time-stepper-btn"
+                onClick={() => stepBillingHours(-30)}
+                aria-label="Diminuer de 30 minutes"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {requiresPrice && (
         <div className="form-group">
           <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
@@ -808,6 +931,176 @@ export const Step4Description = ({
         </div>
       )}
 
+      {isStudioLieuCategory && (
+        <div className="form-group">
+          <label className="form-label">Jours et horaires d'ouverture *</label>
+          <div className="dropdown-field">
+            <button
+              type="button"
+              className={`dropdown-trigger ${isOpeningDaysOpen ? 'open' : ''}`}
+              onClick={() => setIsOpeningDaysOpen((prev) => !prev)}
+            >
+              <span>
+                {selectedOpeningDays.length > 0
+                  ? `${selectedOpeningDays.length} jour(s) sélectionné(s)`
+                  : 'Choisir les jours d’ouverture'}
+              </span>
+              <span className="dropdown-caret" aria-hidden="true" />
+            </button>
+            {isOpeningDaysOpen && (
+              <div
+                className="opening-hours-overlay"
+                onClick={() => setIsOpeningDaysOpen(false)}
+              >
+                <div
+                  className="opening-hours-sheet"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="opening-hours-sheet-header">
+                    <h3>Jours d’ouverture</h3>
+                    <button
+                      type="button"
+                      className="opening-hours-sheet-close"
+                      onClick={() => setIsOpeningDaysOpen(false)}
+                      aria-label="Fermer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="opening-hours-sheet-divider" />
+                  <div className="opening-days-list">
+                    {openingDays.map((slot) => (
+                      <div
+                        key={slot.day}
+                        className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="opening-day-row"
+                          onClick={() => {
+                            if (!slot.enabled) {
+                              toggleOpeningDay(slot.day)
+                              setActiveOpeningDay(slot.day)
+                              return
+                            }
+                            setActiveOpeningDay(slot.day)
+                          }}
+                        >
+                          <span>{dayLabels[slot.day] || slot.day}</span>
+                          {slot.enabled ? (
+                            <span className="opening-day-actions">
+                              <span className="opening-day-check">Sélectionné</span>
+                              <span
+                                className="opening-day-remove"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  toggleOpeningDay(slot.day)
+                                }}
+                              >
+                                Retirer
+                              </span>
+                            </span>
+                          ) : <span className="opening-day-check muted">Non</span>}
+                        </button>
+                        {slot.enabled && activeOpeningDay === slot.day && (
+                          <div className="opening-day-hours-inline">
+                            <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
+                            <div className="opening-day-hours-grid">
+                              <div className="opening-hours-time-block">
+                                <span className="opening-hours-time-label">De</span>
+                                <div className="time-input-row">
+                                  <input
+                                    type="text"
+                                    className="form-input opening-hours-time"
+                                    value={slot.start}
+                                    onChange={(event) =>
+                                      updateOpeningDay(slot.day, { start: normalizeTime(event.target.value) })
+                                    }
+                                    onBlur={() =>
+                                      updateOpeningDay(slot.day, { start: formatTime(slot.start || '09:00') })
+                                    }
+                                    placeholder="HH:MM"
+                                    inputMode="numeric"
+                                  />
+                                  <div className="time-stepper">
+                                    <button
+                                      type="button"
+                                      className="time-stepper-btn"
+                                      onClick={() => stepOpeningTime(slot.day, 'start', 30)}
+                                      aria-label="Augmenter de 30 minutes"
+                                    >
+                                      <ChevronUp size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="time-stepper-btn"
+                                      onClick={() => stepOpeningTime(slot.day, 'start', -30)}
+                                      aria-label="Diminuer de 30 minutes"
+                                    >
+                                      <ChevronDown size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="opening-hours-time-block">
+                                <span className="opening-hours-time-label">À</span>
+                                <div className="time-input-row">
+                                  <input
+                                    type="text"
+                                    className="form-input opening-hours-time"
+                                    value={slot.end}
+                                    onChange={(event) =>
+                                      updateOpeningDay(slot.day, { end: normalizeTime(event.target.value) })
+                                    }
+                                    onBlur={() =>
+                                      updateOpeningDay(slot.day, { end: formatTime(slot.end || '18:00') })
+                                    }
+                                    placeholder="HH:MM"
+                                    inputMode="numeric"
+                                  />
+                                  <div className="time-stepper">
+                                    <button
+                                      type="button"
+                                      className="time-stepper-btn"
+                                      onClick={() => stepOpeningTime(slot.day, 'end', 30)}
+                                      aria-label="Augmenter de 30 minutes"
+                                    >
+                                      <ChevronUp size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="time-stepper-btn"
+                                      onClick={() => stepOpeningTime(slot.day, 'end', -30)}
+                                      aria-label="Diminuer de 30 minutes"
+                                    >
+                                      <ChevronDown size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          {selectedOpeningDays.length > 0 && (
+            <div className="opening-hours-summary">
+              {selectedOpeningDays.map((slot) => (
+                <span key={slot.day} className="opening-hours-summary-chip">
+                  {dayLabels[slot.day] || slot.day}: {slot.start} - {slot.end}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isStudioLieuCategory && (
       <div className="form-group">
         <label className="form-label">Date de besoin *</label>
         <button
@@ -887,7 +1180,9 @@ export const Step4Description = ({
           </>
         )}
       </div>
+      )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group">
         <label className="form-label">Heure de besoin *</label>
         <div className="time-input-row">
@@ -911,7 +1206,9 @@ export const Step4Description = ({
           </div>
         </div>
       </div>
+      )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group">
         <label className="form-label">Durée estimée (optionnel)</label>
         <div className="time-input-row">
@@ -937,6 +1234,7 @@ export const Step4Description = ({
           </div>
         </div>
       </div>
+      )}
 
       {isJobCategory && (
         <div className="form-group">

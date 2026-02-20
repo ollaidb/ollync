@@ -582,6 +582,17 @@
   gap: 12px;
 }
 
+.search-page-container .post-card-list {
+  padding: 18px 16px;
+}
+
+.search-page-container .post-card-list .post-card-image {
+  width: 156px;
+  min-width: 156px;
+  max-width: 156px;
+  height: 156px;
+}
+
 .search-page-container .post-card-list .post-card-title {
   white-space: nowrap;
   overflow: hidden;
@@ -720,5 +731,16 @@
 
   .search-results-list {
     gap: 12px;
+  }
+
+  .search-page-container .post-card-list {
+    padding: 16px 14px;
+  }
+
+  .search-page-container .post-card-list .post-card-image {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+    height: 132px;
   }
 }

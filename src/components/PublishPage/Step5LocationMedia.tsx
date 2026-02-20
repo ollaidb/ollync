@@ -49,6 +49,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
   const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
   const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
+  const isStudioLieuCategory = formData.category === 'studio-lieu'
 
   const profileLevelOptions = useMemo(() => ([
     'Amateur',
@@ -78,6 +79,33 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       onUpdateFormData({ profileRoles: [] })
     }
   }, [maxParticipantsNumber, formData.profileRoles, onUpdateFormData])
+
+  useEffect(() => {
+    if (!isStudioLieuCategory) return
+    if (mediaPickerType !== 'photo') {
+      setMediaPickerType('photo')
+    }
+    const updates: Partial<FormData> = {}
+    if (formData.video) updates.video = null
+    if (formData.profileLevel) updates.profileLevel = ''
+    if (Array.isArray(formData.profileRoles) && formData.profileRoles.length > 0) updates.profileRoles = []
+    if (formData.documentUrl) updates.documentUrl = ''
+    if (formData.documentName) updates.documentName = ''
+    if (formData.urgent) updates.urgent = false
+    if (Object.keys(updates).length > 0) {
+      onUpdateFormData(updates)
+    }
+  }, [
+    isStudioLieuCategory,
+    mediaPickerType,
+    formData.video,
+    formData.profileLevel,
+    formData.profileRoles,
+    formData.documentUrl,
+    formData.documentName,
+    formData.urgent,
+    onUpdateFormData
+  ])
 
   // Hooks de consentement
   const locationConsent = useConsent('location')
@@ -449,7 +477,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
 
       <div className="form-group">
         <label className="form-label">Média *</label>
-        <p className="form-helper-text">1 vidéo maximum par publication</p>
+        {!isStudioLieuCategory && <p className="form-helper-text">1 vidéo maximum par publication</p>}
+        {!isStudioLieuCategory && (
         <div className="media-type-toggle" role="tablist" aria-label="Type de média">
           <button
             type="button"
@@ -471,6 +500,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             Vidéo
           </button>
         </div>
+        )}
         <div className="images-grid">
           {formData.images.map((url, index) => (
             <div key={index} className="image-preview">
@@ -484,7 +514,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             </div>
           ))}
 
-          {formData.video && (
+          {!isStudioLieuCategory && formData.video && (
             <div className="image-preview">
               <video src={formData.video} controls playsInline />
               <button
@@ -514,8 +544,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
               )}
               <input
                 type="file"
-                accept={mediaPickerType === 'photo' ? 'image/*' : 'video/*'}
-                multiple={mediaPickerType === 'photo'}
+                accept={isStudioLieuCategory ? 'image/*' : (mediaPickerType === 'photo' ? 'image/*' : 'video/*')}
+                multiple={isStudioLieuCategory ? true : mediaPickerType === 'photo'}
                 onChange={handleMediaUpload}
                 disabled={uploading}
                 style={{ display: 'none' }}
@@ -538,6 +568,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         />
       </div>
 
+      {!isStudioLieuCategory && (
       <div className="form-group dropdown-field">
         <label className="form-label">Niveau recherché (optionnel)</label>
         <button
@@ -584,8 +615,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           </div>
         )}
       </div>
+      )}
 
-      {maxParticipantsNumber > 1 && (
+      {!isStudioLieuCategory && maxParticipantsNumber > 1 && (
         <div className="form-group dropdown-field">
           <label className="form-label">Rôle recherché (optionnel)</label>
           <button
@@ -643,6 +675,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         </div>
       )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group dropdown-field">
         <label className="form-label">Taguer une annonce (optionnel)</label>
         <p className="form-helper-text">
@@ -689,7 +722,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           </>
         )}
       </div>
+      )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group">
         <label className="form-label">Lien (optionnel)</label>
         <input
@@ -700,7 +735,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           onChange={(e) => onUpdateFormData({ externalLink: e.target.value })}
         />
       </div>
+      )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group">
         <label className="form-label">Document PDF (optionnel)</label>
         {formData.documentUrl ? (
@@ -752,7 +789,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           </div>
         )}
       </div>
+      )}
 
+      {!isStudioLieuCategory && (
       <div className="form-group urgent-block">
         <label className="form-checkbox-label">
           <input
@@ -763,6 +802,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           <span>Marquer comme urgent</span>
         </label>
       </div>
+      )}
 
       {/* Modals de consentement */}
       <ConsentModal

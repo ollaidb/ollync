@@ -44,6 +44,13 @@ interface FormData {
   documentUrl?: string
   documentName?: string
   taggedPostId?: string
+  businessOpeningHours?: Array<{
+    day: string
+    enabled: boolean
+    start: string
+    end: string
+  }>
+  billingHours?: string
   [key: string]: any
 }
 
@@ -64,7 +71,8 @@ interface PaymentOptionConfig {
 const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   emploi: ['remuneration'],
   services: ['remuneration', 'echange'],
-  'poste-service': ['remuneration', 'visibilite-contre-service']
+  'poste-service': ['remuneration', 'visibilite-contre-service'],
+  'studio-lieu': ['remuneration', 'visibilite-contre-service']
 }
 
 const DEFAULT_PAYMENT_OPTIONS = [
@@ -122,8 +130,7 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
   'visibilite-contre-service': {
     id: 'visibilite-contre-service',
     name: 'Visibilité contre service',
-    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.',
-    requiresExchangeService: true
+    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.'
   }
 }
 
@@ -168,6 +175,18 @@ export const validatePublishForm = (
 ): ValidationResult => {
   const errors: string[] = []
   const isJobCategory = formData.category === 'emploi'
+  const isStudioLieuCategory = formData.category === 'studio-lieu'
+  const parseTimeToMinutes = (value?: string) => {
+    if (!value) return NaN
+    const trimmed = value.trim()
+    if (!trimmed) return NaN
+    const [hRaw, mRaw] = trimmed.split(':')
+    const h = parseInt(hRaw || '0', 10)
+    const m = parseInt(mRaw || '0', 10)
+    if (Number.isNaN(h) || Number.isNaN(m)) return NaN
+    if (h < 0 || h > 23 || m < 0 || m > 59) return NaN
+    return h * 60 + m
+  }
 
   if (!formData.listingType || (formData.listingType || '').trim().length === 0) {
     errors.push('Vous devez choisir si vous proposez ou si vous cherchez')
@@ -206,12 +225,14 @@ export const validatePublishForm = (
     errors.push('Le lieu est obligatoire')
   }
 
-  // Date de besoin
-  if (!formData.deadline || formData.deadline.trim().length === 0) {
-    errors.push('La date de besoin est obligatoire')
-  }
-  if (!formData.neededTime || formData.neededTime.trim().length === 0) {
-    errors.push("L'heure de besoin est obligatoire")
+  // Date/heure de besoin (non requis pour la catégorie lieu)
+  if (!isStudioLieuCategory) {
+    if (!formData.deadline || formData.deadline.trim().length === 0) {
+      errors.push('La date de besoin est obligatoire')
+    }
+    if (!formData.neededTime || formData.neededTime.trim().length === 0) {
+      errors.push("L'heure de besoin est obligatoire")
+    }
   }
 
   // Média (au moins une photo ou une vidéo)
@@ -244,6 +265,26 @@ export const validatePublishForm = (
     }
   }
 
+  if (isStudioLieuCategory) {
+    const billingMinutes = parseTimeToMinutes(formData.billingHours)
+    if (!formData.billingHours || Number.isNaN(billingMinutes) || billingMinutes <= 0) {
+      errors.push('Le nombre d’heures est obligatoire pour une annonce de lieu')
+    }
+
+    const openingHours = Array.isArray(formData.businessOpeningHours) ? formData.businessOpeningHours : []
+    const enabledDays = openingHours.filter((slot) => slot.enabled)
+    if (enabledDays.length === 0) {
+      errors.push('Sélectionnez au moins un jour d’ouverture')
+    } else {
+      const hasInvalidSlot = enabledDays.some(
+        (slot) => !slot.start || !slot.end || slot.start >= slot.end
+      )
+      if (hasInvalidSlot) {
+        errors.push('Chaque jour ouvert doit avoir des horaires valides')
+      }
+    }
+  }
+
   if (paymentConfig?.requiresPercentage) {
     const percentage = formData.revenue_share_percentage ? parseFloat(formData.revenue_share_percentage) : NaN
     if (!formData.revenue_share_percentage || Number.isNaN(percentage) || percentage <= 0 || percentage > 100) {
@@ -271,7 +312,7 @@ export const shouldShowSocialNetwork = (
 
   // Catégories où le réseau social est pertinent
   const relevantCategories: Record<string, string[]> = {
-    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends', 'evenements'],
+    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends'],
     'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
     'emploi': ['montage', 'live'],
     'services': ['coaching-contenu', 'strategie-editoriale'],
@@ -330,6 +371,17 @@ export const handlePublish = async (
   showToast?: (message: string) => void,
   existingPostId?: string | null
 ) => {
+  const parseTimeToMinutes = (value?: string) => {
+    if (!value) return null
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const [hRaw, mRaw] = trimmed.split(':')
+    const h = parseInt(hRaw || '0', 10)
+    const m = parseInt(mRaw || '0', 10)
+    if (Number.isNaN(h) || Number.isNaN(m)) return null
+    if (h < 0 || h > 23 || m < 0 || m > 59) return null
+    return h * 60 + m
+  }
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -532,8 +584,8 @@ export const handlePublish = async (
       || (formData.subSubCategory && formData.subSubCategory.trim()) 
       || (formData.option && formData.option.trim()) 
       || null,
-    needed_date: formData.deadline || null,
-    needed_time: formData.neededTime?.trim() || null,
+    needed_date: normalizedCategorySlug === 'studio-lieu' ? null : (formData.deadline || null),
+    needed_time: normalizedCategorySlug === 'studio-lieu' ? null : (formData.neededTime?.trim() || null),
     number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
     duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null,
     profile_level: formData.profileLevel?.trim() || null,
@@ -545,6 +597,14 @@ export const handlePublish = async (
     moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
     moderation_score: moderationResult.score || 0,
     moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null
+  }
+
+  if (normalizedCategorySlug === 'studio-lieu') {
+    postData.opening_hours =
+      formData.businessOpeningHours && formData.businessOpeningHours.length > 0
+        ? formData.businessOpeningHours
+        : null
+    postData.billing_hours = parseTimeToMinutes(formData.billingHours)
   }
 
   // Si N4 existe, on peut l'ajouter dans un champ JSON ou texte

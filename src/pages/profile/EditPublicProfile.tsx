@@ -44,7 +44,8 @@ const EditPublicProfile = () => {
     phone: '',
     email: '',
     phone_verified: false,
-    email_verified: false
+    email_verified: false,
+    show_in_users: true
   })
   const [displayCategorySearch, setDisplayCategorySearch] = useState('')
   const [showDisplayCategorySuggestions, setShowDisplayCategorySuggestions] = useState(false)
@@ -237,7 +238,8 @@ const EditPublicProfile = () => {
       phone: (profileData as { phone?: string | null }).phone || '',
       email: user.email || '',
       phone_verified: (profileData as { phone_verified?: boolean | null }).phone_verified || false,
-      email_verified: !!user.email_confirmed_at
+      email_verified: !!user.email_confirmed_at,
+      show_in_users: (profileData as { show_in_users?: boolean | null }).show_in_users ?? true
     })
     
     setLoading(false)
@@ -728,6 +730,7 @@ const EditPublicProfile = () => {
           services: servicesToSave,
           social_links: convertSocialLinksToObject(profile.socialLinks),
           phone_verified: profile.phone_verified,
+          show_in_users: profile.show_in_users,
           updated_at: new Date().toISOString()
         })
         .select()
@@ -1314,6 +1317,26 @@ const EditPublicProfile = () => {
                 }}
                 placeholder="https://..."
               />
+            </div>
+
+            <div className="form-group">
+              <div className="profile-visibility-row">
+                <div className="profile-visibility-content">
+                  <label htmlFor="show-in-users-toggle">Afficher mon profil dans Utilisateurs</label>
+                  <p className="form-hint compact">
+                    Activé par défaut. Désactivez pour masquer votre profil de la page Utilisateurs.
+                  </p>
+                </div>
+                <label className="profile-visibility-toggle">
+                  <input
+                    id="show-in-users-toggle"
+                    type="checkbox"
+                    checked={profile.show_in_users}
+                    onChange={(e) => setProfile(prev => ({ ...prev, show_in_users: e.target.checked }))}
+                  />
+                  <span className="profile-visibility-toggle-slider"></span>
+                </label>
+              </div>
             </div>
 
             {/* Actions */}

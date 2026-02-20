@@ -23,7 +23,6 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'vlog': [],
     'sketchs': [],
     'trends': [],
-    'evenements': [],
     'live': [],
     'autre': []
   },
@@ -72,6 +71,19 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'organisation': [],
     'agence': [],
     'setup-materiel': [],
+    'autre': []
+  },
+  'evenements': {
+    'masterclass': [],
+    'conference': [],
+    'debat': [],
+    'atelier': [],
+    'autre': []
+  },
+  'suivi': {
+    'production-sur-place': [],
+    'voyage-deplacement': [],
+    'evenement-sortie': [],
     'autre': []
   },
   'vente': {

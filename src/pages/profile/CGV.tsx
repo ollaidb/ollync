@@ -44,20 +44,30 @@ const CGV = () => {
             'If a payment is made outside the application, Ollync cannot manage refunds.'
           ]
         },
+        contracts: {
+          title: '6. Contracts between users',
+          paragraphs: [
+            'Ollync provides a contract module allowing users to formalize their collaboration terms (scope, price, deadlines, deliverables, usage rights, etc.).',
+            'Any contract created through the application is concluded exclusively between the concerned users.',
+            'Ollync only provides a technical tool for drafting and storing contracts. Ollync is not a party to the contract and does not intervene in negotiation or execution.',
+            'Users remain solely responsible for the legality, accuracy, and performance of contractual terms and applicable legal obligations.',
+            'In case of dispute, users must resolve it directly between themselves. Ollync cannot be held liable for non-performance, cancellation, or conflict related to user contracts.'
+          ]
+        },
         liability: {
-          title: '6. Responsibility',
+          title: '7. Responsibility',
           paragraphs: [
             'Ollync is not responsible for the quality of services or products offered, for the execution of exchanges, or for disputes between users.'
           ]
         },
         security: {
-          title: '7. Transaction security',
+          title: '8. Transaction security',
           paragraphs: [
             'Ollync implements measures to secure the platform but cannot guarantee the success or total security of transactions between users.'
           ]
         },
         law: {
-          title: '8. Governing law',
+          title: '9. Governing law',
           paragraph:
             'These Terms of Sale are governed by French law. Any dispute relating to their interpretation and/or execution falls under the jurisdiction of French courts.'
         }
@@ -99,20 +109,30 @@ const CGV = () => {
             "Si un paiement est effectué en dehors de l’application, Ollync ne peut pas gérer les remboursements."
           ]
         },
+        contracts: {
+          title: '6. Contrats entre utilisateurs',
+          paragraphs: [
+            'Ollync met à disposition un module Contrats permettant aux utilisateurs de formaliser les conditions de leur collaboration (mission, prix, délais, livrables, droits d’utilisation, etc.).',
+            'Tout contrat créé via l’application est conclu exclusivement entre les utilisateurs concernés.',
+            'Ollync fournit uniquement un outil technique de création et de conservation du contrat. Ollync n’est pas partie au contrat et n’intervient pas dans sa négociation ni son exécution.',
+            'Les utilisateurs restent seuls responsables de la légalité, de l’exactitude et de l’exécution des clauses convenues, ainsi que du respect des obligations légales applicables.',
+            'En cas de litige, les utilisateurs règlent directement leur différend. Ollync ne peut être tenue responsable en cas de non-exécution, annulation ou conflit lié à un contrat entre utilisateurs.'
+          ]
+        },
         liability: {
-          title: '6. Responsabilité',
+          title: '7. Responsabilité',
           paragraphs: [
             'Ollync n’est pas responsable de la qualité des services ou produits proposés, de la bonne exécution des échanges, ni des litiges entre utilisateurs.'
           ]
         },
         security: {
-          title: '7. Sécurité des échanges',
+          title: '8. Sécurité des échanges',
           paragraphs: [
             'Ollync met en œuvre des moyens pour sécuriser la plateforme, mais ne peut garantir la réussite ou la sécurité totale d’une transaction entre utilisateurs.'
           ]
         },
         law: {
-          title: '8. Droit applicable',
+          title: '9. Droit applicable',
           paragraph:
             "Les présentes CGV sont régies par le droit français. Tout litige relatif à leur interprétation et/ou à leur exécution relève des tribunaux français."
         }
@@ -148,6 +168,11 @@ const CGV = () => {
 
           <h4>{content.refunds.title}</h4>
           {content.refunds.paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+
+          <h4>{content.contracts.title}</h4>
+          {content.contracts.paragraphs.map((paragraph) => (
             <p key={paragraph}>{paragraph}</p>
           ))}
 

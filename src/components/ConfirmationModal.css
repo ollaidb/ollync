@@ -85,6 +85,22 @@
   color: var(--foreground);
 }
 
+.confirmation-modal-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 13px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.confirmation-modal-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
 .confirmation-modal-textarea:focus {
   outline: none;
   border-color: var(--primary);
@@ -242,4 +258,3 @@
   gap: 6px;
   word-break: break-word;
 }
-

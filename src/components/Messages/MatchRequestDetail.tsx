@@ -16,6 +16,12 @@ interface MatchRequestDetailProps {
     request_role?: string | null
     request_document_url?: string | null
     request_document_name?: string | null
+    request_cover_letter_url?: string | null
+    request_cover_letter_name?: string | null
+    request_intent?: 'request' | 'apply' | 'buy' | 'reserve' | 'ticket' | null
+    reservation_date?: string | null
+    reservation_time?: string | null
+    reservation_duration_minutes?: number | null
     related_service_name?: string | null
     related_service_description?: string | null
     related_service_payment_type?: 'price' | 'exchange' | null
@@ -64,6 +70,15 @@ const MatchRequestDetail = ({
   const isPending = request.status === 'pending'
   const isAccepted = request.status === 'accepted'
   const profileUserId = request.other_user?.id
+
+  const formatReservationDuration = (minutes?: number | null) => {
+    if (!minutes || minutes <= 0) return ''
+    const hours = Math.floor(minutes / 60)
+    const remaining = minutes % 60
+    if (hours > 0 && remaining > 0) return `${hours}h${String(remaining).padStart(2, '0')}`
+    if (hours > 0) return `${hours}h`
+    return `${remaining} min`
+  }
 
   const findOrCreateConversation = async (otherUserId: string) => {
     try {
@@ -353,7 +368,7 @@ const MatchRequestDetail = ({
 
           {request.request_document_url && (
             <div className="match-request-detail-document">
-              <p className="match-request-detail-document-label">Document :</p>
+              <p className="match-request-detail-document-label">CV :</p>
               <a
                 href={request.request_document_url}
                 target="_blank"
@@ -365,6 +380,36 @@ const MatchRequestDetail = ({
                 <span>{request.request_document_name || 'Document'}</span>
                 <Download size={16} />
               </a>
+            </div>
+          )}
+
+          {request.request_cover_letter_url && (
+            <div className="match-request-detail-document">
+              <p className="match-request-detail-document-label">Lettre de motivation :</p>
+              <a
+                href={request.request_cover_letter_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="match-request-detail-document-link"
+                download={request.request_cover_letter_name}
+              >
+                <FileText size={18} />
+                <span>{request.request_cover_letter_name || 'Lettre de motivation'}</span>
+                <Download size={16} />
+              </a>
+            </div>
+          )}
+
+          {(request.reservation_date || request.reservation_time || request.reservation_duration_minutes) && (
+            <div className="match-request-detail-message">
+              <p className="match-request-detail-message-label">Réservation :</p>
+              <p className="match-request-detail-message-text">
+                {request.reservation_date || 'Date non précisée'}
+                {request.reservation_time ? ` à ${request.reservation_time}` : ''}
+                {request.reservation_duration_minutes
+                  ? ` pour ${formatReservationDuration(request.reservation_duration_minutes)}`
+                  : ''}
+              </p>
             </div>
           )}
 

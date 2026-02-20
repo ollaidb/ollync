@@ -73,7 +73,6 @@ export const Step2Subcategory = ({
           const wordLimitMap: Record<string, Record<string, number>> = {
             'creation-contenu': {
               live: 8,
-              evenements: 7,
               sketchs: 7
             },
             'casting-role': {

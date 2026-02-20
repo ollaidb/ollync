@@ -696,7 +696,7 @@ const Home = () => {
                     onClick={() => navigate(`/${category.slug}`)}
                   >
                     <div className="home-category-icon">
-                      <Icon size={24} />
+                      <Icon size={22} />
                     </div>
                     <span className="home-category-name">
                       {t(`categories:titles.${category.slug}`, { defaultValue: category.name })}
@@ -800,7 +800,7 @@ const Home = () => {
                   onClick={() => navigate(`/${category.slug}`)}
                 >
                   <div className="home-category-icon">
-                    <Icon size={24} />
+                    <Icon size={22} />
                   </div>
                   <span className="home-category-name">
                     {t(`categories:titles.${category.slug}`, { defaultValue: category.name })}

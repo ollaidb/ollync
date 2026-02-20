@@ -1,0 +1,79 @@
+.tickets-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tickets-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--muted);
+}
+
+.tickets-tab {
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.tickets-tab.active {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 12px;
+}
+
+.ticket-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.ticket-meta {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.tickets-empty {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.tickets-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+.tickets-empty span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+

@@ -1542,6 +1542,29 @@
   color: var(--foreground);
 }
 
+.other-posts-header {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.other-posts-header h3 {
+  margin: 0;
+}
+
+.other-posts-header svg {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
 .other-posts-section .post-card-title {
   color: var(--foreground);
 }

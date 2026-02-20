@@ -1,4 +1,4 @@
-import { Camera, Scissors, Users, Briefcase, Wrench, ShoppingBag, Building2 } from 'lucide-react'
+import { Camera, Scissors, Users, Briefcase, Wrench, ShoppingBag, Building2, Calendar, ClipboardList } from 'lucide-react'
 
 export interface Platform {
   id: string
@@ -30,7 +30,7 @@ export interface PublicationType {
   subcategories: Subcategory[]
 }
 
-// Ordre des catégories : Création de contenu, Casting, Emploi, Studio & lieu, Projet, Services, Vente, Poste/Service
+// Ordre des catégories : Création de contenu, Casting, Emploi, Lieu, Projet, Service/Mission, Événement, Suivi, Vente, Poste/Service
 export const publicationTypes: PublicationType[] = [
   {
     id: 'creation-contenu',
@@ -82,13 +82,6 @@ export const publicationTypes: PublicationType[] = [
           'Réaliser des trends/défis qui nécessitent un partenaire (choré, duo, challenges, formats viraux).'
       },
       {
-        id: 'evenements',
-        name: 'Événements',
-        slug: 'evenements',
-        description:
-          'Réaliser du contenu pendant un événement (concert, expo, activité, reportage léger, souvenirs). Chercher, proposer ou collaborer.'
-      },
-      {
         id: 'live',
         name: 'Live',
         slug: 'live',
@@ -106,7 +99,7 @@ export const publicationTypes: PublicationType[] = [
   },
   {
     id: 'casting-role',
-    name: 'Casting/Roles',
+    name: 'Casting',
     slug: 'casting-role',
     icon: Users,
     color: '#2196f3',
@@ -242,7 +235,7 @@ export const publicationTypes: PublicationType[] = [
   },
   {
     id: 'studio-lieu',
-    name: 'Studio/Lieu',
+    name: 'Lieu',
     slug: 'studio-lieu',
     icon: Building2,
     color: '#f59e0b',
@@ -373,7 +366,7 @@ export const publicationTypes: PublicationType[] = [
   },
   {
     id: 'services',
-    name: 'Services',
+    name: 'Service/Mission',
     slug: 'services',
     icon: Wrench,
     color: '#43e97b',
@@ -461,6 +454,99 @@ export const publicationTypes: PublicationType[] = [
         slug: 'setup-materiel',
         description:
           'Accompagnement pour installer un setup de création (décor, éclairage, espace, optimisation du lieu).'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
+      }
+    ]
+  },
+  {
+    id: 'evenements',
+    name: 'Événement',
+    slug: 'evenements',
+    icon: Calendar,
+    color: '#06b6d4',
+    description: 'Participer ou proposer des événements créatifs (masterclass, conférence, débat, atelier).',
+    subcategories: [
+      {
+        id: 'tout',
+        name: 'Tout',
+        slug: 'tout'
+      },
+      {
+        id: 'masterclass',
+        name: 'Masterclass',
+        slug: 'masterclass',
+        description:
+          'Participer à une masterclass ou en proposer une autour de la création de contenu.'
+      },
+      {
+        id: 'conference',
+        name: 'Conférence',
+        slug: 'conference',
+        description:
+          'Trouver ou proposer une conférence autour des médias, réseaux sociaux et création de contenu.'
+      },
+      {
+        id: 'debat',
+        name: 'Débat',
+        slug: 'debat',
+        description:
+          'Organiser ou rejoindre un débat sur un sujet de création de contenu.'
+      },
+      {
+        id: 'atelier',
+        name: 'Atelier',
+        slug: 'atelier',
+        description:
+          'Proposer ou rejoindre un atelier pratique (tournage, montage, stratégie, storytelling, etc.).'
+      },
+      {
+        id: 'autre',
+        name: 'Autre',
+        slug: 'autre',
+        description:
+          'Choisir autre si vous ne trouvez pas ce que vous cherchez dans la liste des sous-catégories.'
+      }
+    ]
+  },
+  {
+    id: 'suivi',
+    name: 'Suivi',
+    slug: 'suivi',
+    icon: ClipboardList,
+    color: '#14b8a6',
+    description: 'Suivi terrain et accompagnement (production sur place, déplacement, événement/sortie).',
+    subcategories: [
+      {
+        id: 'tout',
+        name: 'Tout',
+        slug: 'tout'
+      },
+      {
+        id: 'production-sur-place',
+        name: 'Production sur place',
+        slug: 'production-sur-place',
+        description:
+          'Être accompagné(e) sur place pour produire du contenu pendant une activité ou un tournage.'
+      },
+      {
+        id: 'voyage-deplacement',
+        name: 'Voyage / déplacement',
+        slug: 'voyage-deplacement',
+        description:
+          'Trouver un accompagnement pour un voyage ou un déplacement lié à la création de contenu.'
+      },
+      {
+        id: 'evenement-sortie',
+        name: 'Événement / sortie',
+        slug: 'evenement-sortie',
+        description:
+          'Suivi pendant une sortie ou un événement pour capter et organiser la production de contenu.'
       },
       {
         id: 'autre',

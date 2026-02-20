@@ -6,7 +6,6 @@ export const interestCatalog: Record<string, string[]> = {
     'Vlog',
     'Sketchs',
     'Trends',
-    'Événements',
     'Live',
     'Autre'
   ],
@@ -49,6 +48,19 @@ export const interestCatalog: Record<string, string[]> = {
     'Organisation',
     'Agence',
     'Setup matériel',
+    'Autre'
+  ],
+  'evenements': [
+    'Masterclass',
+    'Conférence',
+    'Débat',
+    'Atelier',
+    'Autre'
+  ],
+  'suivi': [
+    'Production sur place',
+    'Voyage / déplacement',
+    'Événement / sortie',
     'Autre'
   ],
   'vente': [

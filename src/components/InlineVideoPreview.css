@@ -2,16 +2,23 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: #000;
+  background: var(--muted);
   overflow: hidden;
 }
 
 .inline-video-preview__media {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  background: #000;
+  background: transparent;
+}
+
+.inline-video-preview--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
 }
 
 .inline-video-preview__play,

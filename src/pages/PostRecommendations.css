@@ -1,0 +1,23 @@
+.post-recommendations-page .swipe-scrollable {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 35px);
+  padding-bottom: 0;
+}
+
+.post-recommendations-page .swipe-masonry {
+  padding-top: 12px;
+  padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .post-recommendations-page .swipe-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 32px);
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-recommendations-page .swipe-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 31px);
+    padding-bottom: 0;
+  }
+}

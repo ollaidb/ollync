@@ -69,6 +69,14 @@ interface MatchRequest {
   related_post_id?: string | null
   request_message?: string | null
   request_role?: string | null
+  request_document_url?: string | null
+  request_document_name?: string | null
+  request_cover_letter_url?: string | null
+  request_cover_letter_name?: string | null
+  request_intent?: 'request' | 'apply' | 'buy' | 'reserve' | 'ticket' | null
+  reservation_date?: string | null
+  reservation_time?: string | null
+  reservation_duration_minutes?: number | null
   related_service_name?: string | null
   related_service_description?: string | null
   related_service_payment_type?: 'price' | 'exchange' | null
@@ -1042,6 +1050,14 @@ const Messages = () => {
         related_post_id?: string | null
         request_message?: string | null
         request_role?: string | null
+        request_document_url?: string | null
+        request_document_name?: string | null
+        request_cover_letter_url?: string | null
+        request_cover_letter_name?: string | null
+        request_intent?: 'request' | 'apply' | 'buy' | 'reserve' | 'ticket' | null
+        reservation_date?: string | null
+        reservation_time?: string | null
+        reservation_duration_minutes?: number | null
         related_service_name?: string | null
         related_service_description?: string | null
         related_service_payment_type?: 'price' | 'exchange' | null
@@ -1064,6 +1080,14 @@ const Messages = () => {
           related_post_id: req.related_post_id,
           request_message: req.request_message || null,
           request_role: req.request_role || null,
+          request_document_url: req.request_document_url || null,
+          request_document_name: req.request_document_name || null,
+          request_cover_letter_url: req.request_cover_letter_url || null,
+          request_cover_letter_name: req.request_cover_letter_name || null,
+          request_intent: req.request_intent || null,
+          reservation_date: req.reservation_date || null,
+          reservation_time: req.reservation_time || null,
+          reservation_duration_minutes: req.reservation_duration_minutes || null,
           related_service_name: req.related_service_name || null,
           related_service_description: req.related_service_description || null,
           related_service_payment_type: req.related_service_payment_type || null,

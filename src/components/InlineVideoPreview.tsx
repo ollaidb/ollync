@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, ImageOff } from 'lucide-react'
 import './InlineVideoPreview.css'
 
 interface InlineVideoPreviewProps {
@@ -13,6 +13,8 @@ export default function InlineVideoPreview({ src, className = '' }: InlineVideoP
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [hasLoadedFrame, setHasLoadedFrame] = useState(false)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     const video = videoRef.current
@@ -22,15 +24,26 @@ export default function InlineVideoPreview({ src, className = '' }: InlineVideoP
       setIsPlaying(!video.paused)
       setIsMuted(video.muted)
     }
+    const onLoadedData = () => {
+      setHasLoadedFrame(true)
+      setHasError(false)
+    }
+    const onError = () => {
+      setHasError(true)
+    }
 
     video.addEventListener('play', syncState)
     video.addEventListener('pause', syncState)
     video.addEventListener('volumechange', syncState)
+    video.addEventListener('loadeddata', onLoadedData)
+    video.addEventListener('error', onError)
 
     return () => {
       video.removeEventListener('play', syncState)
       video.removeEventListener('pause', syncState)
       video.removeEventListener('volumechange', syncState)
+      video.removeEventListener('loadeddata', onLoadedData)
+      video.removeEventListener('error', onError)
       if (activeVideoElement === video) activeVideoElement = null
     }
   }, [])
@@ -62,8 +75,16 @@ export default function InlineVideoPreview({ src, className = '' }: InlineVideoP
     video.muted = !video.muted
   }
 
+  if (hasError) {
+    return (
+      <div className={`inline-video-preview inline-video-preview--fallback ${className}`}>
+        <ImageOff size={24} />
+      </div>
+    )
+  }
+
   return (
-    <div className={`inline-video-preview ${className}`}>
+    <div className={`inline-video-preview ${hasLoadedFrame ? 'is-loaded' : ''} ${className}`}>
       <video
         ref={videoRef}
         src={src}
