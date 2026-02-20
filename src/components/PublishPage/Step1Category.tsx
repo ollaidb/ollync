@@ -7,12 +7,17 @@ import './Step1Category.css'
 
 interface Step1CategoryProps {
   onSelectCategory: (categoryId: string) => void
+  listingType?: 'offer' | 'request' | ''
 }
 
-export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
+export const Step1Category = ({ onSelectCategory, listingType }: Step1CategoryProps) => {
   const { t } = useTranslation(['publish', 'categories'])
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
   const isMobile = useIsMobile()
+  const hiddenWhenRequest = new Set(['vente', 'studio-lieu', 'evenements', 'suivi'])
+  const visibleCategories = publicationTypes.filter((category) =>
+    listingType === 'request' ? !hiddenWhenRequest.has(category.slug) : true
+  )
 
   const toggleDescription = (e: React.MouseEvent, categoryId: string) => {
     e.stopPropagation()
@@ -47,7 +52,7 @@ export const Step1Category = ({ onSelectCategory }: Step1CategoryProps) => {
       <h2 className="step-question">{t('publish:step1Title')}</h2>
       <p className="step-instruction">{t('publish:step1Instruction')}</p>
       <div className="categories-list">
-        {publicationTypes.map((category) => {
+        {visibleCategories.map((category) => {
           const Icon = category.icon
           const categoryLabel = t(`categories:titles.${category.slug}`, { defaultValue: category.name })
           const categoryDescription = t(`categories:descriptions.${category.slug}`, {

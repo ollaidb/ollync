@@ -32,13 +32,17 @@ const CONSENT_VERSION: Record<ConsentType, string> = {
 export const useConsent = (consentType: ConsentType) => {
   const { user } = useAuth()
   const { t } = useTranslation('consent')
-  const isGuestConsent = !user && consentType === 'cookies'
+  const isGuestConsent = false
   const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
   const [askAgainNextTime, setAskAgainNextTime] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [cookiesProfileReady, setCookiesProfileReady] = useState(consentType !== 'cookies')
+  const [cookiesDelayElapsed, setCookiesDelayElapsed] = useState(consentType !== 'cookies')
   const consentVersion = CONSENT_VERSION[consentType]
+  const COOKIE_PROMPT_DELAY_MS = 5 * 60 * 1000
+  const getCookiesFirstSeenKey = () => (user ? `${STORAGE_KEY_PREFIX}cookies_first_seen_${user.id}` : '')
 
   const getStorageKey = () => {
     // Cookies consent is app-wide for the browser session/profile lifecycle
@@ -113,7 +117,7 @@ export const useConsent = (consentType: ConsentType) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('data_consent')
+        .select('data_consent, full_name, username')
         .eq('id', user.id)
         .single()
 
@@ -122,8 +126,17 @@ export const useConsent = (consentType: ConsentType) => {
         return
       }
 
-      const dataConsent = (data as { data_consent?: Record<string, ConsentRecord> | null } | null)?.data_consent || {}
+      const typedData = data as {
+        data_consent?: Record<string, ConsentRecord> | null
+        full_name?: string | null
+        username?: string | null
+      } | null
+      const dataConsent = typedData?.data_consent || {}
       const record = dataConsent?.[consentType]
+      if (consentType === 'cookies') {
+        const hasProfileIdentity = !!(typedData?.full_name?.trim() || typedData?.username?.trim())
+        setCookiesProfileReady(hasProfileIdentity)
+      }
       if (record && typeof record === 'object') {
         const normalized: ConsentRecord = {
           accepted: !!record.accepted,
@@ -179,6 +192,10 @@ export const useConsent = (consentType: ConsentType) => {
   useEffect(() => {
     if (!user && !isGuestConsent) {
       setConsentRecord(null)
+      if (consentType === 'cookies') {
+        setCookiesProfileReady(false)
+        setCookiesDelayElapsed(false)
+      }
       setLoading(false)
       return
     }
@@ -197,8 +214,46 @@ export const useConsent = (consentType: ConsentType) => {
     })
   }, [user, consentType, isGuestConsent])
 
+  useEffect(() => {
+    if (consentType !== 'cookies') return
+    if (!user || typeof window === 'undefined') {
+      setCookiesDelayElapsed(false)
+      return
+    }
+
+    const firstSeenKey = getCookiesFirstSeenKey()
+    const storedFirstSeen = localStorage.getItem(firstSeenKey)
+    const firstSeen = storedFirstSeen ? Number(storedFirstSeen) : Date.now()
+    if (!storedFirstSeen || Number.isNaN(firstSeen)) {
+      localStorage.setItem(firstSeenKey, String(Date.now()))
+    }
+
+    const elapsed = Date.now() - firstSeen
+    if (elapsed >= COOKIE_PROMPT_DELAY_MS) {
+      setCookiesDelayElapsed(true)
+      return
+    }
+
+    setCookiesDelayElapsed(false)
+    const timeout = window.setTimeout(() => {
+      setCookiesDelayElapsed(true)
+    }, COOKIE_PROMPT_DELAY_MS - elapsed)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [consentType, user])
+
+  const canPromptNow =
+    consentType !== 'cookies' || (!!user && cookiesProfileReady && cookiesDelayElapsed)
+
   // Vérifier si le consentement est nécessaire avant une action
   const requireConsent = (action: () => void): boolean => {
+    if (consentType === 'cookies' && !canPromptNow) {
+      action()
+      return false
+    }
+
     if (!user && !isGuestConsent) {
       // Si l'utilisateur n'est pas connecté, on ne demande pas de consentement
       action()
@@ -333,6 +388,7 @@ export const useConsent = (consentType: ConsentType) => {
   return {
     hasConsented: consentRecord?.accepted ?? null,
     loading,
+    canPromptNow,
     showModal,
     requireConsent,
     handleAccept,

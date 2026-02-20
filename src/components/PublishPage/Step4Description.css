@@ -105,6 +105,27 @@
   cursor: not-allowed;
 }
 
+.model-types-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.model-type-chip {
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--foreground);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.model-type-chip.selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--input));
+}
+
 /* Styles spécifiques pour les listes personnalisées */
 .payment-options-list {
   max-height: 500px;

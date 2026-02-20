@@ -101,6 +101,7 @@ export default function Publish() {
     revenue_share_percentage: '',
     co_creation_details: '',
     materialCondition: '',
+    modelTypes: [] as string[],
     urgent: false,
     images: [] as string[],
     video: null as string | null,
@@ -145,6 +146,8 @@ export default function Publish() {
   const selectedSubcategory = selectedCategory?.subcategories.find(
     (s) => s.id === formData.subcategory,
   )
+  const isVenteCategory = selectedCategory?.slug === 'vente'
+  const isEmploiCategory = selectedCategory?.slug === 'emploi'
 
   // N3 : Sous-sous-catégorie (option dans la structure actuelle)
   const selectedSubSubCategory = selectedSubcategory?.options?.find(
@@ -181,6 +184,16 @@ export default function Publish() {
     if (!description) return ''
     const match = description.match(/État du matériel\s*:\s*(.+)$/mi)
     return match?.[1]?.trim() || ''
+  }
+
+  const parseModelTypesFromDescription = (description?: string | null) => {
+    if (!description) return [] as string[]
+    const match = description.match(/Type de modèle recherché\s*:\s*(.+)$/mi)
+    if (!match?.[1]) return [] as string[]
+    return match[1]
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
   }
 
   const formatMinutesToTime = (value?: number | null) => {
@@ -236,6 +249,18 @@ export default function Publish() {
     if (!hasStep3Required) return 4
     return 5
   }, [enrichedPublicationTypes])
+
+  useEffect(() => {
+    if (!isVenteCategory && !isEmploiCategory) return
+    if (formData.exchange_type === 'remuneration') return
+    setFormData((prev) => ({
+      ...prev,
+      exchange_type: 'remuneration',
+      exchange_service: '',
+      revenue_share_percentage: '',
+      co_creation_details: ''
+    }))
+  }, [isVenteCategory, isEmploiCategory, formData.exchange_type])
 
   useEffect(() => {
     if (!editPostId || !user) return
@@ -326,6 +351,7 @@ export default function Publish() {
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
           co_creation_details: postData.co_creation_details || '',
           materialCondition: parseMaterialConditionFromDescription(postData.description),
+          modelTypes: parseModelTypesFromDescription(postData.description),
           urgent: postData.is_urgent || false,
           images: postData.images || [],
           video: postData.video || null,
@@ -467,6 +493,7 @@ export default function Publish() {
 
           {step === 1 && (
             <Step1Category
+              listingType={formData.listingType}
               onSelectCategory={(categoryId) => {
                 updateFormData({ category: categoryId })
                 setStep(2)

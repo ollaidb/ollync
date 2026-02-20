@@ -31,6 +31,7 @@ interface FormData {
   exchange_service?: string
   revenue_share_percentage?: string
   co_creation_details?: string
+  modelTypes?: string[]
   category?: string | null
   subcategory?: string | null
   subSubCategory?: string | null
@@ -53,12 +54,15 @@ export const Step4Description = ({
   selectedCategory,
   selectedSubcategory
 }: Step4DescriptionProps) => {
-  const showSocialNetwork = shouldShowSocialNetwork(
+  const isCastingCategory = (selectedCategory?.slug ?? formData.category) === 'casting-role'
+  const showSocialNetwork = !isCastingCategory && shouldShowSocialNetwork(
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
   const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'emploi'
   const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
+  const isVenteCategory = (selectedCategory?.slug ?? formData.category) === 'vente'
+  const isProjetsEquipeCategory = (selectedCategory?.slug ?? formData.category) === 'projets-equipe'
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
   const requiresPrice = !!paymentConfig?.requiresPrice
@@ -126,6 +130,18 @@ export const Step4Description = ({
     { id: 'neuf', name: 'État neuf' },
     { id: 'bon-etat', name: 'Bon état' },
     { id: 'etat-moyen', name: 'État moyen' }
+  ]
+  const modelTypeOptions = [
+    'Visage',
+    'Corps entier',
+    'Silhouette',
+    'Mains',
+    'Pieds',
+    'Cheveux',
+    'Ongles',
+    'Yeux',
+    'Lèvres',
+    'Peau'
   ]
 
 
@@ -629,6 +645,36 @@ export const Step4Description = ({
       })
     }
   }, [paymentOptions])
+
+  useEffect(() => {
+    if (isJobCategory && formData.exchange_type !== 'remuneration') {
+      onUpdateFormData({
+        exchange_type: 'remuneration',
+        exchange_service: '',
+        revenue_share_percentage: '',
+        co_creation_details: ''
+      })
+    }
+  }, [isJobCategory, formData.exchange_type, onUpdateFormData])
+
+  useEffect(() => {
+    if (!isVenteCategory) return
+    const updates: Partial<FormData> = {}
+    if (formData.exchange_type !== 'remuneration') updates.exchange_type = 'remuneration'
+    if (formData.exchange_service) updates.exchange_service = ''
+    if (formData.revenue_share_percentage) updates.revenue_share_percentage = ''
+    if (formData.co_creation_details) updates.co_creation_details = ''
+    if (Object.keys(updates).length > 0) {
+      onUpdateFormData(updates)
+    }
+  }, [
+    isVenteCategory,
+    formData.exchange_type,
+    formData.exchange_service,
+    formData.revenue_share_percentage,
+    formData.co_creation_details,
+    onUpdateFormData
+  ])
   
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
@@ -791,48 +837,77 @@ export const Step4Description = ({
         </div>
       )}
 
-      {/* Moyen de paiement - Visible pour toutes les catégories */}
-      <div className="form-group dropdown-field">
-        <label className="form-label">
-          {isJobCategory ? 'Type de rémunération *' : 'Moyen de paiement *'}
-        </label>
-        <button
-          type="button"
-          className={`dropdown-trigger ${isPaymentOpen ? 'open' : ''}`}
-          onClick={() => setIsPaymentOpen((prev) => !prev)}
-        >
-          <span>{selectedPaymentName}</span>
-          <span className="dropdown-caret" aria-hidden="true" />
-        </button>
-        {isPaymentOpen && (
-          <>
-            <div
-              className="publish-dropdown-backdrop"
-              onClick={() => setIsPaymentOpen(false)}
-            />
-            <div className="publish-dropdown-panel">
-              <div className="publish-dropdown-title">Choisissez un moyen de paiement</div>
-              <CustomList
-                items={paymentOptions}
-                selectedId={formData.exchange_type}
-                onSelectItem={(optionId) => {
-                  onUpdateFormData({
-                    exchange_type: optionId,
-                    price: optionId === 'remuneration' ? formData.price : '',
-                    exchange_service: optionId === 'echange' ? formData.exchange_service : '',
-                    revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
-                    co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
-                  })
-                  setIsPaymentOpen(false)
-                }}
-                className="payment-options-list publish-list"
-                showCheckbox={false}
-                showDescription={true}
+      {isCastingCategory && (
+        <div className="form-group">
+          <label className="form-label">Type de modèle recherché (optionnel)</label>
+          <div className="model-types-grid">
+            {modelTypeOptions.map((type) => {
+              const selected = (formData.modelTypes || []).includes(type)
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className={`model-type-chip ${selected ? 'selected' : ''}`}
+                  onClick={() => {
+                    const current = formData.modelTypes || []
+                    onUpdateFormData({
+                      modelTypes: selected
+                        ? current.filter((item) => item !== type)
+                        : [...current, type]
+                    })
+                  }}
+                >
+                  {type}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {!isVenteCategory && !isJobCategory && (
+        <div className="form-group dropdown-field">
+          <label className="form-label">
+            {isJobCategory ? 'Type de rémunération *' : 'Moyen de paiement *'}
+          </label>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isPaymentOpen ? 'open' : ''}`}
+            onClick={() => setIsPaymentOpen((prev) => !prev)}
+          >
+            <span>{selectedPaymentName}</span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {isPaymentOpen && (
+            <>
+              <div
+                className="publish-dropdown-backdrop"
+                onClick={() => setIsPaymentOpen(false)}
               />
-            </div>
-          </>
-        )}
-      </div>
+              <div className="publish-dropdown-panel">
+                <div className="publish-dropdown-title">Choisissez un moyen de paiement</div>
+                <CustomList
+                  items={paymentOptions}
+                  selectedId={formData.exchange_type}
+                  onSelectItem={(optionId) => {
+                    onUpdateFormData({
+                      exchange_type: optionId,
+                      price: optionId === 'remuneration' ? formData.price : '',
+                      exchange_service: optionId === 'echange' ? formData.exchange_service : '',
+                      revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
+                      co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
+                    })
+                    setIsPaymentOpen(false)
+                  }}
+                  className="payment-options-list publish-list"
+                  showCheckbox={false}
+                  showDescription={true}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Champs liés au moyen de paiement: affichés juste après la sélection */}
       {isStudioLieuCategory && (
@@ -876,7 +951,7 @@ export const Step4Description = ({
 
       {requiresPrice && (
         <div className="form-group">
-          <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
+          <label className="form-label">{isJobCategory ? 'Prix par heure *' : 'Prix *'}</label>
           <input
             type="number"
             className="form-input"
@@ -1100,9 +1175,9 @@ export const Step4Description = ({
         </div>
       )}
 
-      {!isStudioLieuCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && (
       <div className="form-group">
-        <label className="form-label">Date de besoin *</label>
+        <label className="form-label">Date *</label>
         <button
           type="button"
           className={`date-picker-trigger ${formData.deadline ? 'has-value' : ''}`}
@@ -1182,9 +1257,9 @@ export const Step4Description = ({
       </div>
       )}
 
-      {!isStudioLieuCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && (
       <div className="form-group">
-        <label className="form-label">Heure de besoin *</label>
+        <label className="form-label">Heure *</label>
         <div className="time-input-row">
           <input
             type="text"
@@ -1194,7 +1269,7 @@ export const Step4Description = ({
             onBlur={() => onUpdateFormData({ neededTime: formatTime(formData.neededTime || '01:00') })}
             placeholder="HH:MM"
             inputMode="numeric"
-            aria-label="Heure de besoin"
+            aria-label="Heure"
           />
           <div className="time-stepper">
             <button type="button" className="time-stepper-btn" onClick={() => stepTime(30)} aria-label="Augmenter de 30 minutes">
@@ -1208,7 +1283,7 @@ export const Step4Description = ({
       </div>
       )}
 
-      {!isStudioLieuCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && (
       <div className="form-group">
         <label className="form-label">Durée estimée (optionnel)</label>
         <div className="time-input-row">

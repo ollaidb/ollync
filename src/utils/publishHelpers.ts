@@ -72,7 +72,10 @@ const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   emploi: ['remuneration'],
   services: ['remuneration', 'echange'],
   'poste-service': ['remuneration', 'visibilite-contre-service'],
-  'studio-lieu': ['remuneration', 'visibilite-contre-service']
+  'studio-lieu': ['remuneration', 'visibilite-contre-service'],
+  vente: ['remuneration'],
+  'casting-role': ['remuneration', 'participation'],
+  evenements: ['remuneration', 'participation']
 }
 
 const DEFAULT_PAYMENT_OPTIONS = [
@@ -94,8 +97,7 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
   participation: {
     id: 'participation',
     name: 'Participation',
-    description:
-      'Engagement collectif où chaque participant contribue à la réussite du projet sans contrepartie monétaire.'
+    description: 'Rejoindre en tant que participant(e).'
   },
   association: {
     id: 'association',
@@ -176,6 +178,12 @@ export const validatePublishForm = (
   const errors: string[] = []
   const isJobCategory = formData.category === 'emploi'
   const isStudioLieuCategory = formData.category === 'studio-lieu'
+  const isVenteCategory = formData.category === 'vente'
+  const isPosteServiceCategory = formData.category === 'poste-service'
+  const isProjetsEquipeCategory = formData.category === 'projets-equipe'
+  const isServicesCategory = formData.category === 'services'
+  const isEvenementsCategory = formData.category === 'evenements'
+  const isSuiviCategory = formData.category === 'suivi'
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return NaN
     const trimmed = value.trim()
@@ -225,19 +233,27 @@ export const validatePublishForm = (
     errors.push('Le lieu est obligatoire')
   }
 
-  // Date/heure de besoin (non requis pour la catégorie lieu)
-  if (!isStudioLieuCategory) {
+  // Date/heure de besoin (non requis pour lieu et vente)
+  if (!isStudioLieuCategory && !isVenteCategory) {
     if (!formData.deadline || formData.deadline.trim().length === 0) {
       errors.push('La date de besoin est obligatoire')
     }
-    if (!formData.neededTime || formData.neededTime.trim().length === 0) {
+    if (!isJobCategory && !isProjetsEquipeCategory && (!formData.neededTime || formData.neededTime.trim().length === 0)) {
       errors.push("L'heure de besoin est obligatoire")
     }
   }
 
   // Média (au moins une photo ou une vidéo)
   const hasImages = formData.images && formData.images.length > 0
-  const hasVideo = !!formData.video
+  const hasVideo =
+    !!formData.video &&
+    !isVenteCategory &&
+    !isJobCategory &&
+    !isPosteServiceCategory &&
+    !isProjetsEquipeCategory &&
+    !isServicesCategory &&
+    !isEvenementsCategory &&
+    !isSuiviCategory
   if (!hasImages && !hasVideo) {
     errors.push('Au moins un média (photo ou vidéo) est obligatoire')
   }
@@ -313,7 +329,6 @@ export const shouldShowSocialNetwork = (
   // Catégories où le réseau social est pertinent
   const relevantCategories: Record<string, string[]> = {
     'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends'],
-    'casting-role': ['figurant', 'modele-photo', 'modele-video', 'invite-podcast'],
     'emploi': ['montage', 'live'],
     'services': ['coaching-contenu', 'strategie-editoriale'],
     'vente': ['comptes']
@@ -532,6 +547,14 @@ export const handlePublish = async (
     }
   }
 
+  if (normalizedCategorySlug === 'casting-role' && Array.isArray(formData.modelTypes) && formData.modelTypes.length > 0) {
+    const label = `Type de modèle recherché : ${formData.modelTypes.join(', ')}`
+    const hasModelTypes = /Type de modèle recherché\s*:/i.test(descriptionValue)
+    if (!hasModelTypes) {
+      descriptionValue += `\n\n${label}`
+    }
+  }
+
   const normalizeExternalLink = (link?: string) => {
     const trimmedLink = link?.trim()
     if (!trimmedLink) return null
@@ -573,7 +596,15 @@ export const handlePublish = async (
     benefits: formData.benefits?.trim() || null,
     location: formData.location || null,
     images: formData.images.length > 0 ? formData.images : null,
-    video: formData.video || null,
+    video:
+      normalizedCategorySlug === 'emploi' ||
+      normalizedCategorySlug === 'poste-service' ||
+      normalizedCategorySlug === 'projets-equipe' ||
+      normalizedCategorySlug === 'services' ||
+      normalizedCategorySlug === 'evenements' ||
+      normalizedCategorySlug === 'suivi'
+        ? null
+        : (formData.video || null),
     is_urgent: formData.urgent || false,
     status: finalStatus,
     payment_type: formData.exchange_type || null,
@@ -584,15 +615,58 @@ export const handlePublish = async (
       || (formData.subSubCategory && formData.subSubCategory.trim()) 
       || (formData.option && formData.option.trim()) 
       || null,
-    needed_date: normalizedCategorySlug === 'studio-lieu' ? null : (formData.deadline || null),
-    needed_time: normalizedCategorySlug === 'studio-lieu' ? null : (formData.neededTime?.trim() || null),
-    number_of_people: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null,
-    duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null,
-    profile_level: formData.profileLevel?.trim() || null,
-    profile_roles: formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null,
-    external_link: normalizeExternalLink(formData.externalLink),
-    document_url: buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
-    tagged_post_id: formData.taggedPostId || null,
+    needed_date:
+      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente'
+        ? null
+        : (formData.deadline || null),
+    needed_time:
+      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe'
+        ? null
+        : (formData.neededTime?.trim() || null),
+    number_of_people:
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'services'
+        ? null
+        : (formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null),
+    duration_minutes:
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe'
+        ? null
+        : (formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null),
+    profile_level:
+      normalizedCategorySlug === 'vente' ||
+      normalizedCategorySlug === 'creation-contenu' ||
+      normalizedCategorySlug === 'poste-service' ||
+      normalizedCategorySlug === 'services' ||
+      normalizedCategorySlug === 'evenements' ||
+      normalizedCategorySlug === 'suivi'
+        ? null
+        : (formData.profileLevel?.trim() || null),
+    profile_roles:
+      normalizedCategorySlug === 'vente' ||
+      normalizedCategorySlug === 'casting-role' ||
+      normalizedCategorySlug === 'creation-contenu' ||
+      normalizedCategorySlug === 'poste-service' ||
+      normalizedCategorySlug === 'services' ||
+      normalizedCategorySlug === 'evenements' ||
+      normalizedCategorySlug === 'suivi'
+        ? null
+        : (formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null),
+    external_link:
+      normalizedCategorySlug === 'vente' ||
+      normalizedCategorySlug === 'creation-contenu' ||
+      normalizedCategorySlug === 'poste-service' ||
+      normalizedCategorySlug === 'services' ||
+      normalizedCategorySlug === 'suivi'
+        ? null
+        : normalizeExternalLink(formData.externalLink),
+    document_url:
+      normalizedCategorySlug === 'vente' ||
+      normalizedCategorySlug === 'creation-contenu' ||
+      normalizedCategorySlug === 'poste-service' ||
+      normalizedCategorySlug === 'services' ||
+      normalizedCategorySlug === 'suivi'
+        ? null
+        : buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
+    tagged_post_id: normalizedCategorySlug === 'vente' ? null : (formData.taggedPostId || null),
     moderation_status: moderationResult.shouldBlock ? 'flagged' : 'clean',
     moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
     moderation_score: moderationResult.score || 0,

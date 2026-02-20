@@ -47,7 +47,7 @@ i18n.use(initReactI18next).init({
           'poste-service':
             'Échange service ↔ visibilité (prestataire propose un service, créateur offre la visibilité).',
           'studio-lieu':
-            'Trouver des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
+            'Des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
           'projets-equipe':
             'Monter une équipe pour réaliser un vrai projet créatif de A à Z. Chercher, proposer ou collaborer à plusieurs.',
           'services':

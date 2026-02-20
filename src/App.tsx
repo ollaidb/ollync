@@ -50,10 +50,12 @@ function AppContent() {
   useEffect(() => {
     if (isConsentInfoPage) return
     if (cookiesConsent.loading) return
+    if (!cookiesConsent.canPromptNow) return
     if (cookiesConsent.showModal) return
     if (cookiesConsent.hasConsented === true) return
     cookiesConsent.requireConsent(() => {})
   }, [
+    cookiesConsent.canPromptNow,
     cookiesConsent.hasConsented,
     cookiesConsent.loading,
     cookiesConsent.showModal,

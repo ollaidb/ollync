@@ -239,7 +239,7 @@ export const publicationTypes: PublicationType[] = [
     slug: 'studio-lieu',
     icon: Building2,
     color: '#f59e0b',
-    description: 'Trouver des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
+    description: 'Des lieux pour créer du contenu (shooting, tournage, décor, espaces adaptés).',
     subcategories: [
       {
         id: 'studio-creation',
