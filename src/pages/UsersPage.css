@@ -147,6 +147,12 @@
   display: none;
 }
 
+.users-scrollable:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Grille Masonry Pinterest */
 .users-masonry {
   column-count: 2;

@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { EmptyState } from '../../components/EmptyState'
 import './Transactions.css'
 
 const Transactions = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received')
 
   return (
@@ -24,18 +27,19 @@ const Transactions = () => {
       </div>
 
       <div className="transactions-list">
-        <div className="transactions-empty">
-          <p>
-            {activeTab === 'received'
-              ? 'Aucune transaction reçue pour le moment.'
-              : 'Aucune transaction envoyée pour le moment.'}
-          </p>
-          <span>
-            {activeTab === 'received'
-              ? 'Les paiements validés apparaîtront ici.'
-              : 'Les paiements envoyés apparaîtront ici.'}
-          </span>
-        </div>
+        <EmptyState
+          type="category"
+          customTitle={activeTab === 'received' ? 'Transforme tes actions en revenus.' : 'Lance tes actions et fais avancer tes projets.'}
+          customSubtext={
+            activeTab === 'received'
+              ? 'Tes transactions validées apparaîtront ici automatiquement.'
+              : 'Tes paiements envoyés seront visibles ici.'
+          }
+          actionLabel={activeTab === 'received' ? 'Publier une annonce' : 'Voir les annonces'}
+          onAction={() => navigate(activeTab === 'received' ? '/publish' : '/search')}
+          marketing
+          marketingTone={activeTab === 'received' ? 'teal' : 'purple'}
+        />
       </div>
     </div>
   )

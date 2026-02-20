@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import type { MouseEvent, TouchEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FileText, Users, CheckCircle2, Download, AlertCircle, Eye, Trash2 } from 'lucide-react'
+import { Users, CheckCircle2, Download, AlertCircle, Eye, Trash2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useToastContext } from '../../contexts/ToastContext'
+import { EmptyState } from '../../components/EmptyState'
 import type { Database } from '../../types/database'
 import './Contracts.css'
 
@@ -1371,10 +1372,16 @@ const Contracts = () => {
   const renderContractsList = () => {
     if (contracts.length === 0) {
       return (
-        <div className="contracts-empty">
-          <FileText size={44} />
-          <h4>Aucun contrat pour l’instant</h4>
-          <p>Créez votre premier contrat pour sécuriser vos collaborations.</p>
+        <div className="contracts-empty contracts-empty-marketing">
+          <EmptyState
+            type="category"
+            customTitle="Cadre tes collaborations dès le départ."
+            customSubtext="Crée un contrat en quelques minutes pour poser des règles claires."
+            actionLabel="Créer un contrat"
+            onAction={() => setActiveTab('create')}
+            marketing
+            marketingTone="blue"
+          />
         </div>
       )
     }

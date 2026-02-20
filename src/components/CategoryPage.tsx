@@ -652,11 +652,12 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         ) : postsSections.length === 0 ? (
           <EmptyState 
             type="category"
-            customTitle={
-              searchQuery
-                ? t('categories:ui.searchResults', { query: searchQuery })
-                : undefined
-            }
+            customTitle="Une annonce. Une rencontre. Un projet."
+            customSubtext="Publie en quelques minutes et trouve les bons profils."
+            actionLabel="Publier une annonce"
+            onAction={() => navigate('/publish')}
+            marketing
+            marketingTone="purple"
           />
         ) : (
           postsSections.map((sectionPosts, index) => (

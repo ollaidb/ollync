@@ -364,6 +364,12 @@
   display: none;
 }
 
+.notifications-scrollable:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Header pour utilisateur non connecté */
 .notifications-header-not-connected {
   position: fixed;

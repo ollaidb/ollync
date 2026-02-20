@@ -15,6 +15,7 @@ export interface CustomListProps {
   className?: string
   showCheckbox?: boolean
   showDescription?: boolean
+  truncateDescription?: boolean
 }
 
 export const CustomList = ({
@@ -23,7 +24,8 @@ export const CustomList = ({
   onSelectItem,
   className = '',
   showCheckbox = true,
-  showDescription = true
+  showDescription = true,
+  truncateDescription = true
 }: CustomListProps) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
@@ -76,7 +78,11 @@ export const CustomList = ({
                 <div
                   className={`custom-list-item-description ${isExpanded ? 'expanded' : 'collapsed'}`}
                 >
-                  {isExpanded ? (
+                  {!truncateDescription ? (
+                    <span className="custom-list-item-description-text expanded">
+                      {item.description}
+                    </span>
+                  ) : isExpanded ? (
                     <>
                       <span className="custom-list-item-description-text expanded">
                         {item.description}

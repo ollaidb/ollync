@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
+import { EmptyState } from '../components/EmptyState'
 import './UsersPage.css'
 
 interface User {
@@ -56,6 +57,7 @@ const UsersPage = () => {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({})
+  const [supportsShowInUsers, setSupportsShowInUsers] = useState<boolean | null>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const USERS_PER_PAGE = 20
@@ -202,6 +204,25 @@ const UsersPage = () => {
       const start = pageNum * USERS_PER_PAGE
       const end = start + USERS_PER_PAGE - 1
 
+      const executeProfilesQuery = async (baseQuery: any) => {
+        if (supportsShowInUsers === false) {
+          return await baseQuery
+        }
+        const withVisibility = baseQuery.or('show_in_users.is.null,show_in_users.eq.true')
+        const firstTry = await withVisibility
+        if (!firstTry.error) {
+          if (supportsShowInUsers !== true) setSupportsShowInUsers(true)
+          return firstTry
+        }
+        const errorCode = (firstTry.error as { code?: string } | null)?.code
+        const errorMessage = (firstTry.error as { message?: string } | null)?.message || ''
+        if (errorCode === '42703' || errorMessage.includes('show_in_users')) {
+          setSupportsShowInUsers(false)
+          return await baseQuery
+        }
+        return firstTry
+      }
+
       // Filtre "Tout" : afficher tous les utilisateurs
       if (!activeCategorySlug) {
         let query = supabase
@@ -215,9 +236,8 @@ const UsersPage = () => {
         }
 
         query = query.neq('email', MODERATOR_EMAIL)
-        query = query.or('show_in_users.is.null,show_in_users.eq.true')
 
-        const { data: profilesData, error: profilesError, count } = await query
+        const { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError)
@@ -256,9 +276,8 @@ const UsersPage = () => {
       }
 
       query = query.neq('email', MODERATOR_EMAIL)
-      query = query.or('show_in_users.is.null,show_in_users.eq.true')
 
-      const { data: profilesData, error: profilesError, count } = await query
+      const { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError)
@@ -288,7 +307,7 @@ const UsersPage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [selectedCategory, categories, categoryId, user, fetchFollowingStatus])
+  }, [selectedCategory, categories, categoryId, user, fetchFollowingStatus, supportsShowInUsers])
 
   useEffect(() => {
     // Reset when category changes
@@ -404,19 +423,15 @@ const UsersPage = () => {
             <p>Chargement des utilisateurs...</p>
           </div>
         ) : users.length === 0 ? (
-          <div className="users-empty">
-            <p>Aucun utilisateur disponible</p>
-            {user && (
-              <p style={{ fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '8px' }}>
-                {categoryId
-                  ? 'Aucun utilisateur dans cette catégorie'
-                  : 'Essayez de changer de catégorie ou vérifiez vos filtres'}
-              </p>
-            )}
-            <button onClick={() => navigate('/home')} className="users-btn-primary">
-              Retour à l'accueil
-            </button>
-          </div>
+          <EmptyState
+            type="profiles"
+            customTitle="Ta vision mérite une équipe."
+            customSubtext="Trouve des profils motivés pour lancer ton prochain projet."
+            actionLabel="Publier une annonce"
+            onAction={() => navigate('/publish')}
+            marketing
+            marketingTone="teal"
+          />
         ) : (
           <div className="users-masonry">
             {users.map((userItem) => {

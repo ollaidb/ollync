@@ -154,6 +154,12 @@
   display: none;
 }
 
+.favorites-content:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Posts Grid */
 .posts-grid {
   display: grid;

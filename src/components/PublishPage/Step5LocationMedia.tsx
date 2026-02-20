@@ -631,39 +631,46 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           <span className="dropdown-caret" aria-hidden="true" />
         </button>
         {isProfileLevelOpen && (
-          <div
-            className="dropdown-list profile-dropdown-list"
-            onMouseLeave={() => setIsProfileLevelOpen(false)}
-          >
-            {profileLevelOptions.map((level) => {
-              const isSelected = formData.profileLevel === level
-              return (
-              <button
-                key={level}
-                type="button"
-                className={`profile-dropdown-option ${isSelected ? 'selected' : ''}`}
-                onClick={() => {
-                  onUpdateFormData({ profileLevel: formData.profileLevel === level ? '' : level })
-                  setIsProfileLevelOpen(false)
-                }}
-              >
-                <span className="profile-option-text">{level}</span>
-                {isSelected && (
-                  <span
-                    className="profile-option-remove"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onUpdateFormData({ profileLevel: '' })
-                    }}
-                    role="button"
-                    aria-label="Supprimer"
-                  >
-                    <X size={12} />
-                  </span>
-                )}
-              </button>
-            )})}
-          </div>
+          <>
+            <div
+              className="publish-dropdown-backdrop"
+              onClick={() => setIsProfileLevelOpen(false)}
+            />
+            <div className="publish-dropdown-panel profile-dropdown-panel">
+              <div className="publish-dropdown-title">Choisissez un niveau</div>
+              <div className="profile-dropdown-list publish-list">
+                {profileLevelOptions.map((level) => {
+                  const isSelected = formData.profileLevel === level
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      className={`profile-dropdown-option ${isSelected ? 'selected' : ''}`}
+                      onClick={() => {
+                        onUpdateFormData({ profileLevel: formData.profileLevel === level ? '' : level })
+                        setIsProfileLevelOpen(false)
+                      }}
+                    >
+                      <span className="profile-option-text">{level}</span>
+                      {isSelected && (
+                        <span
+                          className="profile-option-remove"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onUpdateFormData({ profileLevel: '' })
+                          }}
+                          role="button"
+                          aria-label="Supprimer"
+                        >
+                          <X size={12} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>
         )}
       </div>
       )}
@@ -684,44 +691,50 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
           {isProfileRoleOpen && (
-            <div
-              className="dropdown-list profile-dropdown-list"
-              onMouseLeave={() => setIsProfileRoleOpen(false)}
-            >
-              {profileRoleOptions.map((role) => {
-                const roles = formData.profileRoles || []
-                const isActive = roles.includes(role)
-                return (
-                  <button
-                    key={role}
-                    type="button"
-                    className={`profile-dropdown-option ${isActive ? 'selected' : ''}`}
-                    onClick={() => {
-                      const nextRoles = isActive
-                        ? roles.filter((item) => item !== role)
-                        : [...roles, role]
-                      onUpdateFormData({ profileRoles: nextRoles })
-                    }}
-                  >
-                    <span className="profile-option-text">{role}</span>
-                    {isActive && (
-                      <span
-                        className="profile-option-remove"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const nextRoles = roles.filter((item) => item !== role)
+            <>
+              <div
+                className="publish-dropdown-backdrop"
+                onClick={() => setIsProfileRoleOpen(false)}
+              />
+              <div className="publish-dropdown-panel profile-dropdown-panel">
+                <div className="publish-dropdown-title">Choisissez un ou plusieurs rôles</div>
+                <div className="profile-dropdown-list publish-list">
+                  {profileRoleOptions.map((role) => {
+                    const roles = formData.profileRoles || []
+                    const isActive = roles.includes(role)
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        className={`profile-dropdown-option ${isActive ? 'selected' : ''}`}
+                        onClick={() => {
+                          const nextRoles = isActive
+                            ? roles.filter((item) => item !== role)
+                            : [...roles, role]
                           onUpdateFormData({ profileRoles: nextRoles })
                         }}
-                        role="button"
-                        aria-label="Supprimer"
                       >
-                        <X size={12} />
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+                        <span className="profile-option-text">{role}</span>
+                        {isActive && (
+                          <span
+                            className="profile-option-remove"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const nextRoles = roles.filter((item) => item !== role)
+                              onUpdateFormData({ profileRoles: nextRoles })
+                            }}
+                            role="button"
+                            aria-label="Supprimer"
+                          >
+                            <X size={12} />
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -747,28 +760,37 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
             {isTaggedPostOpen && (
-              <div className="dropdown-list tagged-post-list">
-                {userPosts.map((post) => (
-                  <button
-                    key={post.id}
-                    type="button"
-                    className={`tagged-post-option ${formData.taggedPostId === post.id ? 'selected' : ''}`}
-                    onClick={() => {
-                      onUpdateFormData({ taggedPostId: post.id })
-                      setIsTaggedPostOpen(false)
-                    }}
-                  >
-                    <div className="tagged-post-thumb">
-                      {post.image ? (
-                        <img src={post.image} alt={post.title} />
-                      ) : (
-                        <div className="tagged-post-thumb-placeholder" />
-                      )}
-                    </div>
-                    <span className="tagged-post-title">{post.title}</span>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div
+                  className="publish-dropdown-backdrop"
+                  onClick={() => setIsTaggedPostOpen(false)}
+                />
+                <div className="publish-dropdown-panel tagged-post-panel">
+                  <div className="publish-dropdown-title">Choisissez une annonce à taguer</div>
+                  <div className="tagged-post-list publish-list">
+                    {userPosts.map((post) => (
+                      <button
+                        key={post.id}
+                        type="button"
+                        className={`tagged-post-option ${formData.taggedPostId === post.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          onUpdateFormData({ taggedPostId: post.id })
+                          setIsTaggedPostOpen(false)
+                        }}
+                      >
+                        <div className="tagged-post-thumb">
+                          {post.image ? (
+                            <img src={post.image} alt={post.title} />
+                          ) : (
+                            <div className="tagged-post-thumb-placeholder" />
+                          )}
+                        </div>
+                        <span className="tagged-post-title">{post.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </>
         )}

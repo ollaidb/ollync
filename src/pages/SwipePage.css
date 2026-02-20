@@ -183,8 +183,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
-  padding-bottom: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 98px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   padding-left: 0;
   padding-right: 0;
   max-width: 100%;
@@ -199,6 +199,13 @@
 .swipe-scrollable::-webkit-scrollbar {
   display: none;
 }
+
+.swipe-scrollable:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 /* Grille Masonry Pinterest */
 .swipe-masonry {
@@ -499,20 +506,50 @@
 .swipe-filter-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 9999;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 0;
+  animation: swipeOverlayFade 0.18s ease-out;
 }
 
 .swipe-filter-modal {
   background: var(--card);
-  border-radius: 16px;
-  padding: 16px;
-  width: min(420px, 100%);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: 12px;
+  width: 100%;
+  max-height: 74vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-xl);
+  animation: swipeFilterUp 0.22s ease-out;
+  will-change: transform, opacity;
+}
+
+@keyframes swipeOverlayFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes swipeFilterUp {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .swipe-filter-modal-header {
@@ -603,8 +640,8 @@
 }
 
 .recent-posts-page .swipe-filter-modal {
-  width: min(300px, 90vw);
-  max-height: min(88vh, 760px);
+  width: 100%;
+  max-height: 74vh;
   overflow-y: auto;
   padding: 12px;
 }
@@ -762,9 +799,10 @@
 
   /* Zone scrollable optimisée mobile */
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 55px);
-    padding-bottom: 0;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 92px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
   }
+
 
   .swipe-masonry {
     column-gap: 8px;
@@ -826,9 +864,10 @@
   }
 
   .swipe-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 53px);
-    padding-bottom: 0;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 88px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
   }
+
 
   .swipe-masonry {
     column-gap: 8px;

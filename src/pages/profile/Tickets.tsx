@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useSupabase'
 import { supabase } from '../../lib/supabaseClient'
+import { EmptyState } from '../../components/EmptyState'
 import './Tickets.css'
 
 type TicketStatus = 'upcoming' | 'past'
@@ -14,6 +16,7 @@ interface TicketItem {
 }
 
 const Tickets = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TicketStatus>('upcoming')
   const [tickets, setTickets] = useState<TicketItem[]>([])
@@ -81,14 +84,19 @@ const Tickets = () => {
             <p>Chargement des billets...</p>
           </div>
         ) : filteredTickets.length === 0 ? (
-          <div className="tickets-empty">
-            <p>
-              {activeTab === 'upcoming'
-                ? 'Aucun billet à venir pour le moment.'
-                : 'Aucun billet passé pour le moment.'}
-            </p>
-            <span>Vos billets s’afficheront ici.</span>
-          </div>
+          <EmptyState
+            type="category"
+            customTitle={activeTab === 'upcoming' ? 'Ta prochaine place t’attend.' : 'Garde l’élan, vise le prochain billet.'}
+            customSubtext={
+              activeTab === 'upcoming'
+                ? 'Découvre les événements et réserve ton billet en quelques secondes.'
+                : 'Retrouve de nouveaux événements à rejoindre dès maintenant.'
+            }
+            actionLabel="Voir les événements"
+            onAction={() => navigate('/search?category=evenements')}
+            marketing
+            marketingTone={activeTab === 'upcoming' ? 'orange' : 'blue'}
+          />
         ) : (
           filteredTickets.map((ticket) => (
             <div className="ticket-card" key={ticket.id}>

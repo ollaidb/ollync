@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
+import { EmptyState } from '../components/EmptyState'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './SwipePage.css'
 
@@ -378,19 +379,15 @@ const SwipePage = () => {
             <p>Chargement des annonces...</p>
           </div>
         ) : posts.length === 0 ? (
-          <div className="swipe-empty">
-            <p>Aucune annonce disponible</p>
-            {user && (
-              <p style={{ fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '8px' }}>
-                {categoryId || subCategoryId 
-                  ? 'Aucune annonce dans cette catégorie'
-                  : 'Essayez de changer de catégorie ou vérifiez vos filtres'}
-              </p>
-            )}
-            <button onClick={() => navigate('/home')} className="swipe-btn-primary">
-              Retour à l'accueil
-            </button>
-          </div>
+          <EmptyState
+            type="category"
+            customTitle="Une annonce. Une rencontre. Un projet."
+            customSubtext="Publie en quelques minutes et trouve les bons profils."
+            actionLabel="Publier une annonce"
+            onAction={() => navigate('/publish')}
+            marketing
+            marketingTone="purple"
+          />
         ) : (
           <div className="swipe-masonry">
             {posts.map((post) => {

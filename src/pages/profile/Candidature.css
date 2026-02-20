@@ -4,6 +4,14 @@
   gap: 16px;
 }
 
+.candidature-page:has(.candidature-empty) {
+  min-height: 52vh;
+}
+
+.candidature-page:has(.candidature-empty) .candidature-empty {
+  margin: auto;
+}
+
 .candidature-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -53,22 +61,45 @@
   border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
   border-radius: 14px;
   text-align: center;
-  padding: 20px 12px;
+  width: min(90%, 340px);
+  margin: 0 auto;
+  padding: 16px 12px;
   background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
 }
 
 .candidature-empty p {
-  margin: 0;
+  margin: 0 0 6px 0;
   font-size: 14px;
   color: #ffffff;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .candidature-empty span {
   display: block;
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.35;
   color: rgba(255, 255, 255, 0.92);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.candidature-submit {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #111827;
+  background: #ffffff;
+  white-space: nowrap;
 }
 
 .candidature-sent-list {

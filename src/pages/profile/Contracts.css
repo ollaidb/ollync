@@ -546,6 +546,12 @@
   color: var(--muted-foreground);
 }
 
+.contracts-empty.contracts-empty-marketing {
+  min-height: 52vh;
+  justify-content: center;
+  padding: 0;
+}
+
 .contracts-empty-inline {
   color: var(--muted-foreground);
   font-weight: 600;

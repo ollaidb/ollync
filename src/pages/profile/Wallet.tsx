@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ExternalLink } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import './Wallet.css'
@@ -134,27 +133,22 @@ const WalletPage = () => {
             type="button"
             onClick={() => setActiveTab('received')}
           >
-            Paiements validés
+            Validés
           </button>
           <button
             className={`wallet-tab ${activeTab === 'sent' ? 'active' : ''}`}
             type="button"
             onClick={() => setActiveTab('sent')}
           >
-            Toutes les commandes
+            Historique
           </button>
         </div>
         <div className="wallet-list">
           {error && <div className="wallet-error">{error}</div>}
           {(activeTab === 'received' ? paidOrders : orders).length === 0 ? (
-            <div className="wallet-empty">
-              <p>
-                {activeTab === 'received'
-                  ? 'Aucun paiement validé pour le moment.'
-                  : 'Aucune commande pour le moment.'}
-              </p>
-              <span>Les paiements Stripe apparaîtront ici.</span>
-            </div>
+            <p className="wallet-muted">
+              {activeTab === 'received' ? 'Aucun paiement validé.' : 'Aucun paiement pour le moment.'}
+            </p>
           ) : (
             <div className="wallet-orders-list">
               {(activeTab === 'received' ? paidOrders : orders).map((order) => (
@@ -173,10 +167,6 @@ const WalletPage = () => {
           )}
         </div>
       </div>
-
-      <a className="wallet-doc-link" href="/profile/legal/cgv">
-        Voir les conditions de paiement <ExternalLink size={14} />
-      </a>
     </div>
   )
 }

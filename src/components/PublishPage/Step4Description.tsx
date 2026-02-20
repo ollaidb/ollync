@@ -73,6 +73,7 @@ export const Step4Description = ({
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
+  const [isModelTypeOpen, setIsModelTypeOpen] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
   const [activeOpeningDay, setActiveOpeningDay] = useState<string | null>(null)
@@ -157,6 +158,13 @@ export const Step4Description = ({
   const selectedMaterialConditionName =
     materialConditionOptions.find((option) => option.id === formData.materialCondition)?.name ??
     'Choisir un état du matériel'
+  const selectedModelTypes = formData.modelTypes || []
+  const selectedModelTypesLabel =
+    selectedModelTypes.length === 0
+      ? 'Choisir un type de modèle'
+      : selectedModelTypes.length === 1
+        ? selectedModelTypes[0]
+        : `${selectedModelTypes.length} types sélectionnés`
   const formatDurationValue = (value?: string) => {
     const minutes = parseInt(value || '0', 10)
     if (!Number.isFinite(minutes) || minutes <= 0) return ''
@@ -838,30 +846,49 @@ export const Step4Description = ({
       )}
 
       {isCastingCategory && (
-        <div className="form-group">
+        <div className="form-group dropdown-field">
           <label className="form-label">Type de modèle recherché (optionnel)</label>
-          <div className="model-types-grid">
-            {modelTypeOptions.map((type) => {
-              const selected = (formData.modelTypes || []).includes(type)
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  className={`model-type-chip ${selected ? 'selected' : ''}`}
-                  onClick={() => {
-                    const current = formData.modelTypes || []
-                    onUpdateFormData({
-                      modelTypes: selected
-                        ? current.filter((item) => item !== type)
-                        : [...current, type]
-                    })
-                  }}
-                >
-                  {type}
-                </button>
-              )
-            })}
-          </div>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isModelTypeOpen ? 'open' : ''}`}
+            onClick={() => setIsModelTypeOpen((prev) => !prev)}
+          >
+            <span>{selectedModelTypesLabel}</span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {isModelTypeOpen && (
+            <>
+              <div
+                className="publish-dropdown-backdrop"
+                onClick={() => setIsModelTypeOpen(false)}
+              />
+              <div className="publish-dropdown-panel">
+                <div className="publish-dropdown-title">Choisissez un type de modèle</div>
+                <div className="model-types-grid publish-list">
+                  {modelTypeOptions.map((type) => {
+                    const selected = selectedModelTypes.includes(type)
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`model-type-chip ${selected ? 'selected' : ''}`}
+                        onClick={() => {
+                          const current = formData.modelTypes || []
+                          onUpdateFormData({
+                            modelTypes: selected
+                              ? current.filter((item) => item !== type)
+                              : [...current, type]
+                          })
+                        }}
+                      >
+                        {type}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -902,6 +929,7 @@ export const Step4Description = ({
                   className="payment-options-list publish-list"
                   showCheckbox={false}
                   showDescription={true}
+                  truncateDescription={false}
                 />
               </div>
             </>

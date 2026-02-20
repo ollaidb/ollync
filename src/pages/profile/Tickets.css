@@ -35,6 +35,12 @@
   gap: 10px;
 }
 
+.tickets-list:has(> .empty-state-wrapper.marketing) {
+  min-height: 52vh;
+  align-items: center;
+  justify-content: center;
+}
+
 .ticket-card {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -76,4 +82,3 @@
   font-size: 13px;
   color: var(--muted-foreground);
 }
-

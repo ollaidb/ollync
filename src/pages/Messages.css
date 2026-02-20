@@ -192,6 +192,12 @@
   display: none;
 }
 
+.messages-content:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Page de conversation (1-1) */
 .conversation-page {
   height: 100vh;

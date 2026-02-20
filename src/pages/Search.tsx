@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useSupabase'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
+import { EmptyState } from '../components/EmptyState'
 import { publicationTypes } from '../constants/publishData'
 import { filterPaymentOptionsByCategory } from '../utils/paymentOptions'
 import './Search.css'
@@ -79,6 +80,7 @@ const Search = () => {
   const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false)
   const [selectedLocations, setSelectedLocations] = useState<Array<{ label: string; lat?: number; lng?: number }>>([])
   const [radiusKm, setRadiusKm] = useState<number>(50)
+  const [hasSearchedOnce, setHasSearchedOnce] = useState(false)
   const { t } = useTranslation(['categories'])
 
   const categoryOrder = useMemo(() => [
@@ -233,7 +235,19 @@ const Search = () => {
       let categoryId: string | undefined
       if (selectedCategory !== 'all') {
         const category = categories.find(c => c.slug === selectedCategory)
-        if (category) categoryId = category.id
+        if (category) {
+          categoryId = category.id
+        } else {
+          const { data: categoryRowRaw } = await supabase
+            .from('categories' as never)
+            .select('id')
+            .eq('slug', selectedCategory)
+            .single()
+          const categoryRow = categoryRowRaw as { id?: string } | null
+          if (categoryRow?.id) {
+            categoryId = categoryRow.id
+          }
+        }
       }
 
       let subCategoryId: string | undefined
@@ -241,6 +255,17 @@ const Search = () => {
         const subCategory = subCategories.find((item) => item.slug === selectedSubCategory)
         if (subCategory?.id) {
           subCategoryId = subCategory.id
+        } else if (categoryId) {
+          const { data: subCategoryRowRaw } = await supabase
+            .from('sub_categories' as never)
+            .select('id')
+            .eq('category_id', categoryId)
+            .eq('slug', selectedSubCategory)
+            .single()
+          const subCategoryRow = subCategoryRowRaw as { id?: string } | null
+          if (subCategoryRow?.id) {
+            subCategoryId = subCategoryRow.id
+          }
         }
       }
 
@@ -347,6 +372,7 @@ const Search = () => {
           likes_count: post.likes_count || 0,
           comments_count: post.comments_count || 0,
           created_at: post.created_at,
+          listing_type: post.listing_type || null,
           needed_date: post.needed_date,
           number_of_people: post.number_of_people,
           delivery_available: post.delivery_available || false,
@@ -368,6 +394,7 @@ const Search = () => {
       console.error('Error searching posts:', error)
       setResults([])
     } finally {
+      setHasSearchedOnce(true)
       setLoading(false)
     }
   }
@@ -384,7 +411,7 @@ const Search = () => {
 
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter, user?.id])
+  }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter, user?.id, categories, subCategories])
 
   const filteredResults = useMemo(() => {
     const now = Date.now()
@@ -404,13 +431,22 @@ const Search = () => {
                   ? 60 * 24 * 60 * 60 * 1000
                   : null
 
+    const normalizedSelectedLocations = selectedLocations
+      .map((item) => item.label.trim().toLowerCase())
+      .filter(Boolean)
+
     const filtered = results.filter((post) => {
       if (user?.id && post.user_id === user.id) return false
       const createdAt = new Date(post.created_at).getTime()
       const matchesDate = dateLimitMs ? createdAt >= now - dateLimitMs : true
       const matchesListingType =
         listingTypeFilter === 'all' || post.listing_type === listingTypeFilter
-      return matchesDate && matchesListingType
+      const postLocation = (post.location || '').trim().toLowerCase()
+      const matchesLocation =
+        normalizedSelectedLocations.length === 0
+          ? true
+          : normalizedSelectedLocations.some((loc) => postLocation.includes(loc) || loc.includes(postLocation))
+      return matchesDate && matchesListingType && matchesLocation
     })
 
     return filtered.sort((a, b) => {
@@ -418,7 +454,29 @@ const Search = () => {
       const bTime = new Date(b.created_at).getTime()
       return sortOrder === 'desc' ? bTime - aTime : aTime - bTime
     })
-  }, [results, dateFilter, sortOrder, listingTypeFilter, user?.id])
+  }, [results, dateFilter, sortOrder, listingTypeFilter, selectedLocations, user?.id])
+
+  const hasAnyFilterApplied = useMemo(() => {
+    return (
+      selectedCategory !== 'all' ||
+      selectedSubCategory !== 'all' ||
+      selectedLocations.length > 0 ||
+      dateFilter !== 'all' ||
+      listingTypeFilter !== 'all' ||
+      paymentTypeFilter !== 'all' ||
+      sortOrder !== 'desc' ||
+      searchQuery.trim().length > 0
+    )
+  }, [
+    selectedCategory,
+    selectedSubCategory,
+    selectedLocations.length,
+    dateFilter,
+    listingTypeFilter,
+    paymentTypeFilter,
+    sortOrder,
+    searchQuery
+  ])
 
   const handleLocationSelect = (location: {
     address: string
@@ -513,29 +571,57 @@ const Search = () => {
           <div className="search-loading">
             <p>{t('search:searching')}</p>
           </div>
-        ) : (searchQuery.trim().length > 0 || results.length > 0) ? (
+        ) : (filteredResults.length > 0 || hasSearchedOnce || hasAnyFilterApplied) ? (
           <>
-            <div className="search-results-header">
-              <p className="search-results-count">
-                {filteredResults.length} résultat{filteredResults.length > 1 ? 's' : ''}{searchQuery.trim().length > 0 ? ` pour "${searchQuery}"` : ''}
-              </p>
-            </div>
-
             {filteredResults.length > 0 ? (
-              <div className="search-results-list posts-list">
-                {filteredResults.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    viewMode="list"
-                    onLike={handleLike}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="search-results-header">
+                  <p className="search-results-count">
+                    {filteredResults.length} résultat{filteredResults.length > 1 ? 's' : ''}{searchQuery.trim().length > 0 ? ` pour "${searchQuery}"` : ''}
+                  </p>
+                </div>
+                <div className="search-results-list posts-list">
+                  {filteredResults.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      viewMode="list"
+                      onLike={handleLike}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
-              <div className="search-empty-state">
-                <p>Aucun résultat trouvé{searchQuery.trim().length > 0 ? ` pour "${searchQuery}"` : ''}</p>
-              </div>
+              <EmptyState
+                type="category"
+                customTitle="Aucun résultat pour cette recherche."
+                customSubtext="Essaie un autre mot-clé, une autre catégorie ou un autre lieu."
+                actionLabel="Réinitialiser les filtres"
+                onAction={() => {
+                  setSearchQuery('')
+                  setLocationFilter('')
+                  setLocationCoords(null)
+                  setSelectedLocations([])
+                  setRadiusKm(50)
+                  setSelectedCategory('all')
+                  setSelectedSubCategory('all')
+                  setSubCategories([])
+                  setSortOrder('desc')
+                  setDateFilter('all')
+                  setListingTypeFilter('all')
+                  setPaymentTypeFilter('all')
+                  setPendingCategory('all')
+                  setPendingSubCategory('all')
+                  setPendingSubCategories([])
+                  setPendingSortOrder('desc')
+                  setPendingDateFilter('all')
+                  setPendingListingTypeFilter('all')
+                  setPendingPaymentTypeFilter('all')
+                  searchPosts('')
+                }}
+                marketing
+                marketingTone="orange"
+              />
             )}
           </>
         ) : (

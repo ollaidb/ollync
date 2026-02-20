@@ -38,6 +38,16 @@
   padding: 14px;
 }
 
+.transactions-list:has(> .empty-state-wrapper.marketing) {
+  border: none;
+  background: transparent;
+  padding: 0;
+  min-height: 52vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .transactions-empty {
   border-style: dashed;
   background: var(--muted);

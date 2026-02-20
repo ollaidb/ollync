@@ -566,6 +566,12 @@
   display: none;
 }
 
+.search-content:has(> .empty-state-wrapper.marketing) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .search-results-header {
   margin-bottom: 12px;
 }
