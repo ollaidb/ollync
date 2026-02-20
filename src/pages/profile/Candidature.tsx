@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 import { Upload, Loader2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useSupabase'
 import { supabase } from '../../lib/supabaseClient'
 import './Candidature.css'
@@ -19,6 +20,7 @@ interface SentApplication {
 }
 
 const Candidature = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [candidate, setCandidate] = useState<CandidateData>({
@@ -200,8 +202,11 @@ const Candidature = () => {
       {activeTab === 'sent' ? (
         sentApplications.length === 0 ? (
           <div className="candidature-empty">
-            <p>Aucune candidature envoyée pour le moment.</p>
-            <span>Vos candidatures apparaîtront ici.</span>
+            <p>Ton profil candidat ouvre des portes.</p>
+            <span>Parcours les offres et envoie ta première candidature.</span>
+            <button type="button" className="candidature-submit" onClick={() => navigate('/emploi')}>
+              Voir les offres d’emploi
+            </button>
           </div>
         ) : (
           <div className="candidature-sent-list">

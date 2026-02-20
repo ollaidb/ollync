@@ -562,15 +562,11 @@ const Annonces = () => {
           <div className="annonces-loading">Chargement...</div>
         ) : filteredPosts.length === 0 ? (
           <div className="annonces-empty">
-            <p>
-              {activeTab === 'online'
-                ? 'Aucune annonce en ligne'
-                : activeTab === 'completed'
-                ? 'Aucune annonce réalisée'
-                : activeTab === 'archived'
-                ? 'Aucune annonce archivée'
-                : 'Aucun brouillon'}
-            </p>
+            <p>Une annonce. Une rencontre. Un projet.</p>
+            <span>Publie en quelques minutes et trouve les bons profils.</span>
+            <button type="button" className="annonces-empty-btn" onClick={() => navigate('/publish')}>
+              Publier une annonce
+            </button>
           </div>
         ) : (
           <div className="annonces-list">

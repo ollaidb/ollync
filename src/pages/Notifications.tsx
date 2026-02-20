@@ -485,7 +485,13 @@ const Notifications = () => {
               <p>{t('notifications:loading')}</p>
             </div>
           ) : filteredNotifications.length === 0 ? (
-            <EmptyState type="notifications" />
+            <EmptyState
+              type="notifications"
+              customTitle="Tout commence quand tu passes à l’action."
+              customSubtext="Publie, postule, échange : tes notifications arrivent ici."
+              actionLabel="Voir les annonces récentes"
+              onAction={() => navigate('/recent')}
+            />
           ) : (
             <div className="notifications-list">
               {groupedNotifications.map(([dateHeader, dateNotifications]) => (

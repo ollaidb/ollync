@@ -19,13 +19,17 @@ interface EmptyStateProps {
   customIcon?: LucideIcon
   customTitle?: string
   customSubtext?: string
+  actionLabel?: string
+  onAction?: () => void
 }
 
 export const EmptyState = ({ 
   type, 
   customIcon, 
   customTitle, 
-  customSubtext 
+  customSubtext,
+  actionLabel,
+  onAction
 }: EmptyStateProps) => {
   const { t } = useTranslation(['empty'])
   const emptyStateConfig: Record<EmptyStateType, {
@@ -94,7 +98,11 @@ export const EmptyState = ({
       <Icon className="empty-state-icon" strokeWidth={1.5} />
       <h2 className="empty-state-title">{title}</h2>
       <p className="empty-state-subtext">{subtext}</p>
+      {actionLabel && onAction && (
+        <button type="button" className="empty-state-action" onClick={onAction}>
+          {actionLabel}
+        </button>
+      )}
     </div>
   )
 }
-

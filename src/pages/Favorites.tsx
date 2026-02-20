@@ -485,7 +485,13 @@ const Favorites = () => {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState type="favorites" />
+                  <EmptyState
+                    type="favorites"
+                    customTitle="Repère les opportunités qui comptent."
+                    customSubtext="Ajoute tes annonces préférées pour les retrouver rapidement."
+                    actionLabel="Voir le Swipe"
+                    onAction={() => navigate('/swipe')}
+                  />
                 )}
               </>
             )}
@@ -527,7 +533,13 @@ const Favorites = () => {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState type="profiles" />
+                  <EmptyState
+                    type="profiles"
+                    customTitle="Repère les opportunités qui comptent."
+                    customSubtext="Suis des profils et retrouve-les facilement."
+                    actionLabel="Voir le Swipe"
+                    onAction={() => navigate('/swipe')}
+                  />
                 )}
               </>
             )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Search, Sparkles, Plus } from 'lucide-react'
+import { Bell, Search, Sparkles, Plus, ArrowRight } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Footer from '../components/Footer'
@@ -66,10 +66,74 @@ const Home = () => {
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
   const [studioLieuPosts, setStudioLieuPosts] = useState<Post[]>([])
   const unavailableBehaviorTablesRef = useRef<Set<string>>(new Set())
+  const heroPanels = [
+    {
+      id: 'hero-1',
+      title: 'Une annonce. Une rencontre. Un projet.',
+      description: 'Publie en quelques minutes et trouve les bons profils.',
+      button: 'Publier une annonce',
+      route: '/publish',
+      styleClass: 'home-hero-card--one'
+    },
+    {
+      id: 'hero-2',
+      title: 'Seul on crée, ensemble on construit.',
+      description: 'Photo, vidéo, casting, lieux, services : collabore plus vite.',
+      button: 'Découvrir les annonces',
+      route: '/search',
+      styleClass: 'home-hero-card--two'
+    },
+    {
+      id: 'hero-3',
+      title: 'Ta vision mérite une équipe.',
+      description: 'Cherche, trouve, crée avec des personnes motivées.',
+      button: 'Trouver des collaborateurs',
+      route: '/users',
+      styleClass: 'home-hero-card--three'
+    }
+  ]
 
 
   // Nombre d'annonces par section : mobile 5, web 4
   const maxPostsPerSection = isMobile ? 5 : 4
+
+  const renderHeroPanels = () => (
+    <div className="home-hero-section">
+      <div className="home-hero-track">
+        {heroPanels.map((panel) => (
+          <article
+            key={panel.id}
+            className={`home-hero-card ${panel.styleClass}`}
+            onClick={() => navigate(panel.route)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                navigate(panel.route)
+              }
+            }}
+          >
+            <div className="home-hero-text">
+              <span className="home-hero-title">{panel.title}</span>
+              <span className="home-hero-subtitle">{panel.description}</span>
+            </div>
+            <button
+              className="home-hero-cta"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                navigate(panel.route)
+              }}
+            >
+              {panel.button}
+              <ArrowRight size={14} />
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
 
   const fetchRecentPosts = async () => {
     const posts = await fetchPostsWithRelations({
@@ -705,15 +769,7 @@ const Home = () => {
                 )
               })}
             </div>
-            {/* Section Hero */}
-            <div className="home-hero-section">
-              <div className="home-hero-block">
-                <div className="home-hero-text">
-                  <span className="home-hero-title">{t('home:welcome')}</span>
-                  <span className="home-hero-subtitle">{t('home:welcomeSuffix')}</span>
-                </div>
-              </div>
-            </div>
+            {renderHeroPanels()}
 
             {/* Skeletons pour les sections de posts */}
             <div className="home-posts-section">
@@ -809,15 +865,7 @@ const Home = () => {
               )
             })}
           </div>
-          {/* Section Hero */}
-          <div className="home-hero-section">
-            <div className="home-hero-block">
-              <div className="home-hero-text">
-                <span className="home-hero-title">{t('home:welcome')}</span>
-                <span className="home-hero-subtitle">{t('home:welcomeSuffix')}</span>
-              </div>
-            </div>
-          </div>
+          {renderHeroPanels()}
 
           {/* Section Annonces urgentes - EN PREMIER */}
           {urgentPosts.length > 0 && (

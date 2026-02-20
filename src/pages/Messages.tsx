@@ -3780,7 +3780,13 @@ const Messages = () => {
         ) : activeFilter === 'match_requests' ? (
           // Afficher les match_requests pour l'onglet "Demandes"
           filteredMatchRequests.length === 0 ? (
-            <EmptyState type="requests" />
+            <EmptyState
+              type="requests"
+              customTitle="Les vraies collaborations commencent par un message."
+              customSubtext="Envoie une demande et démarre la conversation."
+              actionLabel="Voir les annonces récentes"
+              onAction={() => navigate('/recent')}
+            />
           ) : (
             <div className="conversations-list conversations-list--compact">
               {filteredMatchRequests.map((request) => (
@@ -3841,7 +3847,13 @@ const Messages = () => {
         ) : activeFilter === 'matches' ? (
           // Afficher les match_requests acceptées pour l'onglet "Match"
           filteredMatches.length === 0 ? (
-            <EmptyState type="matches" />
+            <EmptyState
+              type="matches"
+              customTitle="Les vraies collaborations commencent par un message."
+              customSubtext="Envoie une demande et démarre la conversation."
+              actionLabel="Voir les annonces récentes"
+              onAction={() => navigate('/recent')}
+            />
           ) : (
             <div className="conversations-list conversations-list--compact">
               {filteredMatches.map((request) => (
@@ -3976,8 +3988,22 @@ const Messages = () => {
               activeFilter === 'archived' ? 'archived' :
               'messages'
             }
-            customTitle={searchQuery ? 'Aucun résultat' : undefined}
-            customSubtext={searchQuery ? 'Aucune conversation ne correspond à votre recherche.' : undefined}
+            customTitle={
+              searchQuery
+                ? 'Aucun résultat'
+                : activeFilter === 'archived'
+                  ? undefined
+                  : 'Les vraies collaborations commencent par un message.'
+            }
+            customSubtext={
+              searchQuery
+                ? 'Aucune conversation ne correspond à votre recherche.'
+                : activeFilter === 'archived'
+                  ? undefined
+                  : 'Envoie une demande et démarre la conversation.'
+            }
+            actionLabel={!searchQuery && activeFilter !== 'archived' ? 'Voir les annonces récentes' : undefined}
+            onAction={!searchQuery && activeFilter !== 'archived' ? () => navigate('/recent') : undefined}
           />
         ) : (
           <div className="conversations-list">
