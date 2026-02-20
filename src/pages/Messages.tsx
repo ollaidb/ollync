@@ -3786,6 +3786,8 @@ const Messages = () => {
               customSubtext="Envoie une demande et démarre la conversation."
               actionLabel="Voir les annonces récentes"
               onAction={() => navigate('/recent')}
+              marketing
+              marketingTone="blue"
             />
           ) : (
             <div className="conversations-list conversations-list--compact">
@@ -3853,6 +3855,8 @@ const Messages = () => {
               customSubtext="Envoie une demande et démarre la conversation."
               actionLabel="Voir les annonces récentes"
               onAction={() => navigate('/recent')}
+              marketing
+              marketingTone="blue"
             />
           ) : (
             <div className="conversations-list conversations-list--compact">
@@ -4004,6 +4008,8 @@ const Messages = () => {
             }
             actionLabel={!searchQuery && activeFilter !== 'archived' ? 'Voir les annonces récentes' : undefined}
             onAction={!searchQuery && activeFilter !== 'archived' ? () => navigate('/recent') : undefined}
+            marketing={!searchQuery && activeFilter !== 'archived'}
+            marketingTone="blue"
           />
         ) : (
           <div className="conversations-list">

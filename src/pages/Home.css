@@ -338,22 +338,12 @@
   }
 }
 
-.home-hero-track {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-
-.home-hero-track::-webkit-scrollbar {
-  display: none;
+.home-hero-single {
+  position: relative;
 }
 
 .home-hero-card {
-  min-width: 88%;
-  scroll-snap-align: start;
+  width: 100%;
   border-radius: 16px;
   padding: 14px;
   display: flex;
@@ -361,6 +351,17 @@
   gap: 12px;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+
+.home-hero-card.hidden {
+  display: none;
+  opacity: 0;
+}
+
+.home-hero-card.active {
+  display: flex;
+  opacity: 1;
 }
 
 .home-hero-card--one {
@@ -414,10 +415,27 @@
   background: #ffffff;
 }
 
-@media (min-width: 769px) {
-  .home-hero-card {
-    min-width: calc((100% - 24px) / 3);
-  }
+.home-hero-dots {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.home-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: var(--muted-foreground);
+  opacity: 0.35;
+  cursor: pointer;
+}
+
+.home-hero-dot.active {
+  width: 18px;
+  opacity: 0.9;
+  background: var(--primary);
 }
 
 /* Sections d'annonces */

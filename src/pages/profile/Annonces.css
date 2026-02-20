@@ -86,10 +86,16 @@
   color: var(--muted-foreground);
 }
 
+.annonces-empty {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+
 .annonces-empty p {
   margin: 0 0 8px 0;
   font-size: 15px;
-  color: var(--foreground);
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -97,6 +103,7 @@
   display: block;
   font-size: 14px;
   margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .annonces-empty-btn {
@@ -106,8 +113,8 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  color: var(--primary-foreground);
-  background: var(--primary);
+  color: #111827;
+  background: #ffffff;
 }
 
 /* Liste des annonces */

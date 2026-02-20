@@ -66,6 +66,7 @@ const Home = () => {
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
   const [studioLieuPosts, setStudioLieuPosts] = useState<Post[]>([])
   const unavailableBehaviorTablesRef = useRef<Set<string>>(new Set())
+  const heroTouchStartXRef = useRef<number | null>(null)
   const heroPanels = [
     {
       id: 'hero-1',
@@ -92,25 +93,47 @@ const Home = () => {
       styleClass: 'home-hero-card--three'
     }
   ]
+  const [activeHeroPanel, setActiveHeroPanel] = useState(0)
 
 
   // Nombre d'annonces par section : mobile 5, web 4
   const maxPostsPerSection = isMobile ? 5 : 4
 
+  const goToNextHeroPanel = () => {
+    setActiveHeroPanel((prev) => (prev + 1) % heroPanels.length)
+  }
+
+  const goToPrevHeroPanel = () => {
+    setActiveHeroPanel((prev) => (prev - 1 + heroPanels.length) % heroPanels.length)
+  }
+
   const renderHeroPanels = () => (
     <div className="home-hero-section">
-      <div className="home-hero-track">
-        {heroPanels.map((panel) => (
+      <div className="home-hero-single">
+        {heroPanels.map((panel, index) => (
           <article
             key={panel.id}
-            className={`home-hero-card ${panel.styleClass}`}
-            onClick={() => navigate(panel.route)}
+            className={`home-hero-card ${panel.styleClass} ${activeHeroPanel === index ? 'active' : 'hidden'}`}
+            onClick={goToNextHeroPanel}
             role="button"
             tabIndex={0}
+            onTouchStart={(event) => {
+              heroTouchStartXRef.current = event.touches[0]?.clientX ?? null
+            }}
+            onTouchEnd={(event) => {
+              const startX = heroTouchStartXRef.current
+              const endX = event.changedTouches[0]?.clientX ?? null
+              heroTouchStartXRef.current = null
+              if (startX == null || endX == null) return
+              const diff = endX - startX
+              if (Math.abs(diff) < 30) return
+              if (diff < 0) goToNextHeroPanel()
+              else goToPrevHeroPanel()
+            }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
-                navigate(panel.route)
+                goToNextHeroPanel()
               }
             }}
           >
@@ -130,6 +153,17 @@ const Home = () => {
               <ArrowRight size={14} />
             </button>
           </article>
+        ))}
+      </div>
+      <div className="home-hero-dots">
+        {heroPanels.map((panel, index) => (
+          <button
+            key={`dot-${panel.id}`}
+            type="button"
+            className={`home-hero-dot ${activeHeroPanel === index ? 'active' : ''}`}
+            onClick={() => setActiveHeroPanel(index)}
+            aria-label={`Afficher le panneau ${index + 1}`}
+          />
         ))}
       </div>
     </div>

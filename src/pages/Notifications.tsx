@@ -491,6 +491,8 @@ const Notifications = () => {
               customSubtext="Publie, postule, échange : tes notifications arrivent ici."
               actionLabel="Voir les annonces récentes"
               onAction={() => navigate('/recent')}
+              marketing
+              marketingTone="orange"
             />
           ) : (
             <div className="notifications-list">

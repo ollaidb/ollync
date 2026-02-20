@@ -21,6 +21,8 @@ interface EmptyStateProps {
   customSubtext?: string
   actionLabel?: string
   onAction?: () => void
+  marketing?: boolean
+  marketingTone?: 'purple' | 'orange' | 'teal' | 'blue'
 }
 
 export const EmptyState = ({ 
@@ -29,7 +31,9 @@ export const EmptyState = ({
   customTitle, 
   customSubtext,
   actionLabel,
-  onAction
+  onAction,
+  marketing = false,
+  marketingTone = 'purple'
 }: EmptyStateProps) => {
   const { t } = useTranslation(['empty'])
   const emptyStateConfig: Record<EmptyStateType, {
@@ -94,7 +98,7 @@ export const EmptyState = ({
   const subtext = customSubtext || config.subtext
 
   return (
-    <div className="empty-state-wrapper">
+    <div className={`empty-state-wrapper ${marketing ? `marketing marketing-${marketingTone}` : ''}`}>
       <Icon className="empty-state-icon" strokeWidth={1.5} />
       <h2 className="empty-state-title">{title}</h2>
       <p className="empty-state-subtext">{subtext}</p>

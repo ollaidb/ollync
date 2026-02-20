@@ -491,6 +491,8 @@ const Favorites = () => {
                     customSubtext="Ajoute tes annonces préférées pour les retrouver rapidement."
                     actionLabel="Voir le Swipe"
                     onAction={() => navigate('/swipe')}
+                    marketing
+                    marketingTone="teal"
                   />
                 )}
               </>
@@ -539,6 +541,8 @@ const Favorites = () => {
                     customSubtext="Suis des profils et retrouve-les facilement."
                     actionLabel="Voir le Swipe"
                     onAction={() => navigate('/swipe')}
+                    marketing
+                    marketingTone="teal"
                   />
                 )}
               </>

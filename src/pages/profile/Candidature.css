@@ -50,23 +50,25 @@
 }
 
 .candidature-empty {
-  border: 1px dashed var(--border);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
   border-radius: 14px;
   text-align: center;
   padding: 20px 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
 }
 
 .candidature-empty p {
   margin: 0;
   font-size: 14px;
-  color: var(--foreground);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .candidature-empty span {
   display: block;
   margin-top: 6px;
   font-size: 13px;
-  color: var(--muted-foreground);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .candidature-sent-list {
