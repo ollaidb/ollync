@@ -21,6 +21,8 @@ import { supabase } from '../lib/supabaseClient'
 import './Publish.css'
 
 export default function Publish() {
+  const defaultToday = new Date().toISOString().slice(0, 10)
+
   type DraftPost = {
     id: string
     category_id?: string | null
@@ -43,6 +45,8 @@ export default function Publish() {
     event_platform?: string | null
     payment_type?: string | null
     exchange_service?: string | null
+    visibilite_offer_type?: 'visibilite' | 'service' | null
+    visibilite_service_details?: string | null
     revenue_share_percentage?: number | string | null
     co_creation_details?: string | null
     is_urgent?: boolean | null
@@ -102,6 +106,8 @@ export default function Publish() {
     event_platform: '',
     exchange_type: '',
     exchange_service: '',
+    visibilite_offer_type: '' as '' | 'visibilite' | 'service',
+    visibilite_service_details: '',
     revenue_share_percentage: '',
     co_creation_details: '',
     materialCondition: '',
@@ -110,12 +116,12 @@ export default function Publish() {
     video: null as string | null,
     dateFrom: '',
     dateTo: '',
-    deadline: '',
+    deadline: defaultToday,
     neededTime: '01:00',
     maxParticipants: '1',
     profileLevel: '',
     profileRoles: [] as string[],
-    duration_minutes: '',
+    duration_minutes: '60',
     visibility: 'public',
     externalLink: '',
     documentUrl: '',
@@ -319,7 +325,7 @@ export default function Publish() {
         const shouldUseSocialNetwork = shouldShowSocialNetwork(categorySlugValue, subcategorySlugValue)
         const mediaTypeValue = postData.media_type || ''
 
-        const nextFormData = {
+        const nextFormData: typeof initialFormData = {
           listingType: ((postData.listing_type as OfferDemandType | null) || 'offer') as OfferDemandType,
           category: categorySlugValue,
           subcategory: subcategorySlugValue,
@@ -350,6 +356,11 @@ export default function Publish() {
           event_platform: postData.event_platform || '',
           exchange_type: postData.payment_type || '',
           exchange_service: postData.exchange_service || '',
+          visibilite_offer_type:
+            postData.visibilite_offer_type === 'visibilite' || postData.visibilite_offer_type === 'service'
+              ? postData.visibilite_offer_type
+              : '',
+          visibilite_service_details: postData.visibilite_service_details || '',
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
           co_creation_details: postData.co_creation_details || '',
           materialCondition: parseMaterialConditionFromDescription(postData.description),

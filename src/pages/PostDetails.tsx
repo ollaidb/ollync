@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
+import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
@@ -1643,9 +1644,11 @@ const PostDetails = () => {
               )}
             </>
           ) : (
-            <div className="post-hero-image-placeholder">
-              <ImageOff size={64} />
-            </div>
+            <CategoryPlaceholderMedia
+              className="post-hero-image-placeholder"
+              categorySlug={post.category?.slug}
+              categoryName={post.category?.name}
+            />
           )}
           {/* Badge catégorie en haut à gauche */}
           {post.category && (

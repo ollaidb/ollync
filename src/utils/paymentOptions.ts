@@ -47,7 +47,7 @@ export const filterPaymentOptionsByCategory = (
   // Vous pouvez ajouter des filtres spécifiques par catégorie ici
   const categoryPaymentsMap: Record<string, string[]> = {
     emploi: ['remuneration'],
-    services: ['remuneration', 'echange', 'co-creation'],
+    services: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
     'poste-service': ['remuneration', 'visibilite-contre-service'],
     casting: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
     'casting-role': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],

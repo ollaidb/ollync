@@ -1,10 +1,11 @@
-import { Heart, MapPin, Calendar, Users, ImageOff } from 'lucide-react'
+import { Heart, MapPin, Calendar, Users } from 'lucide-react'
 import { useState, useEffect, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
 import InlineVideoPreview from './InlineVideoPreview'
+import CategoryPlaceholderMedia from './CategoryPlaceholderMedia'
 import './PostCard.css'
 
 interface PostCardProps {
@@ -372,9 +373,11 @@ const PostCard = ({
             />
           )
         ) : (
-          <div className="post-card-image-placeholder">
-            <ImageOff size={32} />
-          </div>
+          <CategoryPlaceholderMedia
+            className="post-card-image-placeholder"
+            categorySlug={post.category?.slug}
+            categoryName={post.category?.name}
+          />
         )}
           <button
             type="button"
@@ -458,9 +461,11 @@ const PostCard = ({
             />
           )
         ) : (
-          <div className="post-card-image-placeholder">
-            <ImageOff size={40} />
-          </div>
+          <CategoryPlaceholderMedia
+            className="post-card-image-placeholder"
+            categorySlug={post.category?.slug}
+            categoryName={post.category?.name}
+          />
         )}
         <button
           type="button"

@@ -28,6 +28,8 @@ interface FormData {
   event_platform?: string
   exchange_type: string
   exchange_service?: string
+  visibilite_offer_type?: 'visibilite' | 'service' | ''
+  visibilite_service_details?: string
   revenue_share_percentage?: string
   co_creation_details?: string
   urgent: boolean
@@ -72,7 +74,7 @@ interface PaymentOptionConfig {
 
 const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   emploi: ['remuneration'],
-  services: ['remuneration', 'echange'],
+  services: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
   'poste-service': ['remuneration', 'visibilite-contre-service'],
   'studio-lieu': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
   lieu: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
@@ -349,6 +351,18 @@ export const validatePublishForm = (
     if (paymentConfig?.requiresExchangeService) {
       if (!formData.exchange_service || formData.exchange_service.trim().length === 0) {
         errors.push('La description du service échangé est obligatoire lorsque vous choisissez "Échange de service"')
+      }
+    }
+
+    if (formData.exchange_type === 'visibilite-contre-service') {
+      if (!formData.visibilite_offer_type || formData.visibilite_offer_type.trim().length === 0) {
+        errors.push('Précisez si vous offrez la visibilité ou un service')
+      }
+      if (
+        formData.visibilite_offer_type === 'service' &&
+        (!formData.visibilite_service_details || formData.visibilite_service_details.trim().length === 0)
+      ) {
+        errors.push('La description du service offert est obligatoire pour "Visibilité contre service"')
       }
     }
   }
@@ -640,6 +654,14 @@ export const handlePublish = async (
   // Si c'est un échange de service, ajouter la description du service à la description
   if (formData.exchange_type === 'echange' && formData.exchange_service) {
     descriptionValue += `\n\nService échangé : ${formData.exchange_service.trim()}`
+  }
+
+  if (formData.exchange_type === 'visibilite-contre-service') {
+    if (formData.visibilite_offer_type === 'service' && formData.visibilite_service_details?.trim()) {
+      descriptionValue += `\n\nService offert : ${formData.visibilite_service_details.trim()}`
+    } else if (formData.visibilite_offer_type === 'visibilite') {
+      descriptionValue += '\n\nOffre : Visibilité'
+    }
   }
 
   if (formData.exchange_type === 'co-creation' && formData.co_creation_details) {

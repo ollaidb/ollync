@@ -347,8 +347,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 120px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 108px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   padding-left: 0;
   padding-right: 0;
   max-width: 100%;
@@ -536,8 +536,8 @@
   /* Zone scrollable optimisée - distance d'une ligne double mobile (20px) après le menu */
   /* Calcul mobile: header (~32px) + menu (~44px) + ligne double mobile (20px) = 96px */
   .notifications-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 100px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 92px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
     padding-left: 0;
     padding-right: 0;
   }
@@ -713,7 +713,8 @@
 
   /* Zone scrollable avec ligne double sur très petits écrans */
   .notifications-scrollable {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 112px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 102px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .notifications-date-group {

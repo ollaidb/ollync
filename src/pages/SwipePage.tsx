@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Tag, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
+import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import { EmptyState } from '../components/EmptyState'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import './SwipePage.css'
@@ -417,9 +418,11 @@ const SwipePage = () => {
                         />
                       )
                     ) : (
-                      <div className="swipe-card-image-placeholder">
-                        <Tag size={32} />
-                      </div>
+                      <CategoryPlaceholderMedia
+                        className="swipe-card-image-placeholder"
+                        categorySlug={post.category?.slug}
+                        categoryName={post.category?.name}
+                      />
                     )}
                     
                     {/* Catégorie en haut à gauche */}

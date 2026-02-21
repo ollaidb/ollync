@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, Tag, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
+import { RefreshCw, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
+import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import { useAuth } from '../hooks/useSupabase'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
@@ -213,9 +214,11 @@ const RecentPosts = () => {
                         />
                       )
                     ) : (
-                      <div className="swipe-card-image-placeholder">
-                        <Tag size={32} />
-                      </div>
+                      <CategoryPlaceholderMedia
+                        className="swipe-card-image-placeholder"
+                        categorySlug={post.category?.slug}
+                        categoryName={post.category?.name}
+                      />
                     )}
 
                     {post.category && (

@@ -31,6 +31,8 @@ interface FormData {
   required_skills?: string
   benefits?: string
   exchange_service?: string
+  visibilite_offer_type?: 'visibilite' | 'service' | ''
+  visibilite_service_details?: string
   revenue_share_percentage?: string
   co_creation_details?: string
   category?: string | null
@@ -106,11 +108,15 @@ export const Step4Description = ({
   const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
   const requiresExchangeService = !isJobRequest && !!paymentConfig?.requiresExchangeService
   const requiresRevenueShare = !isJobRequest && !!paymentConfig?.requiresPercentage
+  const isVisibiliteContreService = !isJobRequest && formData.exchange_type === 'visibilite-contre-service'
+  const requiresVisibiliteServiceDetails =
+    isVisibiliteContreService && formData.visibilite_offer_type === 'service'
   const showCoCreationDetails = !isJobRequest && formData.exchange_type === 'co-creation'
   const showPaymentSection = !isJobRequest && !isVenteCategory && !isJobCategory
   const [isSocialNetworkOpen, setIsSocialNetworkOpen] = useState(false)
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
+  const [isVisibiliteOfferTypeOpen, setIsVisibiliteOfferTypeOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
@@ -182,6 +188,13 @@ export const Step4Description = ({
   const selectedMaterialConditionName =
     materialConditionOptions.find((option) => option.id === formData.materialCondition)?.name ??
     'Choisir un état du matériel'
+  const visibiliteOfferTypeOptions = [
+    { id: 'visibilite', name: 'Visibilité' },
+    { id: 'service', name: 'Service' }
+  ]
+  const selectedVisibiliteOfferTypeName =
+    visibiliteOfferTypeOptions.find((option) => option.id === formData.visibilite_offer_type)?.name ??
+    'Choisir ce que vous offrez'
   const formatDurationValue = (value?: string) => {
     const minutes = parseInt(value || '0', 10)
     if (!Number.isFinite(minutes) || minutes <= 0) return ''
@@ -233,6 +246,24 @@ export const Step4Description = ({
   }
   const openingDays = formData.businessOpeningHours || []
   const selectedOpeningDays = openingDays.filter((slot) => slot.enabled)
+
+  useEffect(() => {
+    if (!formData.deadline || !formData.deadline.trim()) {
+      onUpdateFormData({ deadline: todayKey })
+    }
+  }, [formData.deadline, onUpdateFormData, todayKey])
+
+  useEffect(() => {
+    if (!formData.neededTime || !formData.neededTime.trim()) {
+      onUpdateFormData({ neededTime: '01:00' })
+    }
+  }, [formData.neededTime, onUpdateFormData])
+
+  useEffect(() => {
+    if (!formData.duration_minutes || !formData.duration_minutes.trim()) {
+      onUpdateFormData({ duration_minutes: '60' })
+    }
+  }, [formData.duration_minutes, onUpdateFormData])
 
   const formatDeadlineLabel = (value?: string) => {
     if (!value) return 'Choisir une date'
@@ -801,6 +832,8 @@ export const Step4Description = ({
         exchange_type: '',
         price: '',
         exchange_service: '',
+        visibilite_offer_type: '',
+        visibilite_service_details: '',
         revenue_share_percentage: '',
         co_creation_details: ''
       })
@@ -813,6 +846,8 @@ export const Step4Description = ({
       onUpdateFormData({
         exchange_type: 'remuneration',
         exchange_service: '',
+        visibilite_offer_type: '',
+        visibilite_service_details: '',
         revenue_share_percentage: '',
         co_creation_details: ''
       })
@@ -826,6 +861,8 @@ export const Step4Description = ({
     if (formData.exchange_type) updates.exchange_type = ''
     if (formData.price) updates.price = ''
     if (formData.exchange_service) updates.exchange_service = ''
+    if (formData.visibilite_offer_type) updates.visibilite_offer_type = ''
+    if (formData.visibilite_service_details) updates.visibilite_service_details = ''
     if (formData.revenue_share_percentage) updates.revenue_share_percentage = ''
     if (formData.co_creation_details) updates.co_creation_details = ''
     if (formData.responsibilities) updates.responsibilities = ''
@@ -840,6 +877,8 @@ export const Step4Description = ({
     formData.exchange_type,
     formData.price,
     formData.exchange_service,
+    formData.visibilite_offer_type,
+    formData.visibilite_service_details,
     formData.revenue_share_percentage,
     formData.co_creation_details,
     formData.responsibilities,
@@ -914,6 +953,8 @@ export const Step4Description = ({
     const updates: Partial<FormData> = {}
     if (formData.exchange_type !== 'remuneration') updates.exchange_type = 'remuneration'
     if (formData.exchange_service) updates.exchange_service = ''
+    if (formData.visibilite_offer_type) updates.visibilite_offer_type = ''
+    if (formData.visibilite_service_details) updates.visibilite_service_details = ''
     if (formData.revenue_share_percentage) updates.revenue_share_percentage = ''
     if (formData.co_creation_details) updates.co_creation_details = ''
     if (Object.keys(updates).length > 0) {
@@ -923,6 +964,8 @@ export const Step4Description = ({
     isVenteCategory,
     formData.exchange_type,
     formData.exchange_service,
+    formData.visibilite_offer_type,
+    formData.visibilite_service_details,
     formData.revenue_share_percentage,
     formData.co_creation_details,
     onUpdateFormData
@@ -954,6 +997,8 @@ export const Step4Description = ({
     (isJobRequest || formData.exchange_type.trim().length > 0) &&
     (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
     (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
+    (!isVisibiliteContreService || (!!formData.visibilite_offer_type && formData.visibilite_offer_type.trim().length > 0)) &&
+    (!requiresVisibiliteServiceDetails || (!!formData.visibilite_service_details && formData.visibilite_service_details.trim().length > 0)) &&
     (!requiresRevenueShare || (
       formData.revenue_share_percentage && 
       !Number.isNaN(parseFloat(formData.revenue_share_percentage)) &&
@@ -1147,6 +1192,10 @@ export const Step4Description = ({
                   exchange_type: optionId,
                   price: optionId === 'remuneration' ? formData.price : '',
                   exchange_service: optionId === 'echange' ? formData.exchange_service : '',
+                  visibilite_offer_type:
+                    optionId === 'visibilite-contre-service' ? (formData.visibilite_offer_type || '') : '',
+                  visibilite_service_details:
+                    optionId === 'visibilite-contre-service' ? (formData.visibilite_service_details || '') : '',
                   co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
                 })
                 setIsPaymentOpen(false)
@@ -1155,6 +1204,40 @@ export const Step4Description = ({
               showCheckbox={false}
               showDescription={true}
               truncateDescription={false}
+            />
+          )}
+        </div>
+      )}
+
+      {isVisibiliteContreService && (
+        <div className="form-group dropdown-field">
+          <label className="form-label">Tu offres quoi ? *</label>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isVisibiliteOfferTypeOpen ? 'open' : ''}`}
+            onClick={() => setIsVisibiliteOfferTypeOpen((prev) => !prev)}
+          >
+            <span>{selectedVisibiliteOfferTypeName}</span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {renderBottomSheet(
+            isVisibiliteOfferTypeOpen,
+            () => setIsVisibiliteOfferTypeOpen(false),
+            'Choisissez ce que vous offrez',
+            <CustomList
+              items={visibiliteOfferTypeOptions}
+              selectedId={formData.visibilite_offer_type}
+              onSelectItem={(optionId) => {
+                onUpdateFormData({
+                  visibilite_offer_type: optionId as 'visibilite' | 'service',
+                  visibilite_service_details:
+                    optionId === 'service' ? formData.visibilite_service_details || '' : ''
+                })
+                setIsVisibiliteOfferTypeOpen(false)
+              }}
+              className="publish-list"
+              showCheckbox={false}
+              showDescription={false}
             />
           )}
         </div>
@@ -1223,6 +1306,19 @@ export const Step4Description = ({
             placeholder="Ex: Je propose un échange de service de montage vidéo contre une séance photo..."
             value={formData.exchange_service || ''}
             onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
+            rows={4}
+          />
+        </div>
+      )}
+
+      {requiresVisibiliteServiceDetails && (
+        <div className="form-group">
+          <label className="form-label">Décrivez le service que vous offrez *</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Ex: 2h de montage, coaching contenu, animation de compte..."
+            value={formData.visibilite_service_details || ''}
+            onChange={(e) => onUpdateFormData({ visibilite_service_details: e.target.value })}
             rows={4}
           />
         </div>
