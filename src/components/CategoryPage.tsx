@@ -142,29 +142,27 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
   const fetchPosts = async () => {
     setLoading(true)
-    
+    let categoryId: string | undefined
+    let subCategoryId: string | undefined
+
     const { data: category } = await supabase
       .from('categories')
       .select('id')
       .eq('slug', categorySlug)
-      .single()
+      .maybeSingle()
 
-    if (!category || !(category as any).id) {
-      setLoading(false)
-      return
+    if (category && (category as any).id) {
+      categoryId = (category as any).id
     }
 
-    const categoryId = (category as any).id
-    let subCategoryId: string | undefined
-
     // Si "Tout" est sélectionné ou aucun sous-menu, on ne filtre pas par sous-catégorie
-    if (submenu && submenu !== 'tout') {
+    if (submenu && submenu !== 'tout' && categoryId) {
       const { data: subCategory } = await supabase
         .from('sub_categories')
         .select('id')
         .eq('slug', submenu)
         .eq('category_id', categoryId)
-        .single()
+        .maybeSingle()
 
       if (subCategory && (subCategory as any).id) {
         subCategoryId = (subCategory as any).id
@@ -181,6 +179,12 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       useCache: true,
       excludeUserId: user?.id
     })
+
+    // Fallback robuste si la catégorie n'est pas trouvée en base:
+    // on filtre via le slug de catégorie présent dans les relations du post.
+    if (!categoryId) {
+      posts = posts.filter((post) => post.category?.slug === categorySlug)
+    }
 
     // Exclure les posts de l'utilisateur connecté (fallback si besoin)
     if (user?.id) {

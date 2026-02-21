@@ -1130,7 +1130,7 @@ const PostDetails = () => {
         setReservationDurationMinutes(60)
         setReservationDurationText('01:00')
         setIsReservationDatePickerOpen(false)
-        showSuccess(shouldAutoValidateTicket ? 'Billet validé' : 'Demande envoyée')
+        showSuccess('Demande envoyée')
       }
     } catch (error) {
       console.error('Error sending match request:', error)
@@ -1384,24 +1384,24 @@ const PostDetails = () => {
 
     if (matchRequest?.status === 'pending') {
       if (contactIntent === 'reserve') return 'Demande envoyée'
-      if (contactIntent === 'ticket') return 'Demande de billet envoyée'
+      if (contactIntent === 'ticket') return 'Demande envoyée'
       if (contactIntent === 'apply') return 'Candidature envoyée'
-      if (contactIntent === 'buy') return 'Achat en attente'
+      if (contactIntent === 'buy') return 'Demande envoyée'
       return 'Demande envoyée'
     }
 
     if (matchRequest?.status === 'accepted') {
       if (contactIntent === 'reserve') return 'Demande acceptée'
-      if (contactIntent === 'ticket') return 'Billet validé'
+      if (contactIntent === 'ticket') return 'Demande acceptée'
       if (contactIntent === 'apply') return 'Candidature acceptée'
-      if (contactIntent === 'buy') return 'Achat validé'
+      if (contactIntent === 'buy') return 'Demande acceptée'
       return 'Demande acceptée'
     }
 
     if (contactIntent === 'reserve') return 'Envoyer ma demande'
-    if (contactIntent === 'ticket') return 'Réserver un billet'
+    if (contactIntent === 'ticket') return 'Envoyer ma demande'
     if (contactIntent === 'apply') return 'Postuler'
-    if (contactIntent === 'buy') return 'Acheter'
+    if (contactIntent === 'buy') return 'Envoyer ma demande'
     return 'Faire une demande'
   }
 
@@ -2163,9 +2163,9 @@ const PostDetails = () => {
                 : contactIntent === 'reserve'
                   ? 'Envoyer une demande'
                   : contactIntent === 'ticket'
-                    ? 'Réserver un billet'
+                    ? 'Envoyer une demande'
                     : contactIntent === 'buy'
-                      ? 'Acheter'
+                      ? 'Envoyer une demande'
                       : 'Message personnalisé'
             }
             message={
@@ -2176,9 +2176,9 @@ const PostDetails = () => {
                 : contactIntent === 'reserve'
                   ? 'Renseignez la date, l’heure et la durée, puis envoyez votre demande.'
                   : contactIntent === 'ticket'
-                    ? 'Confirmez votre billet.'
+                    ? 'Confirmez l’envoi de votre demande.'
                     : contactIntent === 'buy'
-                      ? 'Confirmez votre demande d’achat.'
+                      ? 'Confirmez l’envoi de votre demande.'
                       : 'Ajoutez un message pour votre demande.'
             }
             onConfirm={handleSendRequest}
@@ -2202,11 +2202,11 @@ const PostDetails = () => {
                 : isRequestListingPost
                   ? 'Envoyer le message'
                   : contactIntent === 'ticket'
-                    ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet')
+                    ? 'Envoyer ma demande'
                     : contactIntent === 'reserve'
                       ? 'Envoyer ma demande'
                       : contactIntent === 'buy'
-                        ? 'Confirmer l’achat'
+                        ? 'Envoyer ma demande'
                         : 'Envoyer'
             }
             cancelLabel="Annuler"
