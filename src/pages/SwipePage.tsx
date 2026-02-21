@@ -421,12 +421,11 @@ const SwipePage = () => {
                       <CategoryPlaceholderMedia
                         className="swipe-card-image-placeholder"
                         categorySlug={post.category?.slug}
-                        categoryName={post.category?.name}
                       />
                     )}
                     
                     {/* Catégorie en haut à gauche */}
-                    {post.category && (
+                    {mainMedia && post.category && (
                       <div className="swipe-card-category">
                         {post.category.name}
                       </div>

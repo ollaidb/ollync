@@ -376,7 +376,6 @@ const PostCard = ({
           <CategoryPlaceholderMedia
             className="post-card-image-placeholder"
             categorySlug={post.category?.slug}
-            categoryName={post.category?.name}
           />
         )}
           <button
@@ -391,7 +390,7 @@ const PostCard = ({
           >
             <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
-          {categoryLabel && !hideCategoryBadge && (
+          {mainMedia && categoryLabel && !hideCategoryBadge && (
             <div className="post-card-category-badge">{categoryLabel}</div>
           )}
         </div>
@@ -464,7 +463,6 @@ const PostCard = ({
           <CategoryPlaceholderMedia
             className="post-card-image-placeholder"
             categorySlug={post.category?.slug}
-            categoryName={post.category?.name}
           />
         )}
         <button
@@ -482,7 +480,7 @@ const PostCard = ({
         {getPaymentDisplay() && (
           <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
         )}
-        {categoryLabel && !hideCategoryBadge && (
+        {mainMedia && categoryLabel && !hideCategoryBadge && (
           <div className="post-card-category-badge">{categoryLabel}</div>
         )}
         {post.is_urgent && (

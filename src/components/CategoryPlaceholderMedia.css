@@ -69,23 +69,3 @@
   color: color-mix(in srgb, white 88%, var(--foreground));
   background: color-mix(in srgb, var(--card) 66%, transparent);
 }
-
-.category-placeholder-label {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  max-width: calc(100% - 20px);
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  color: color-mix(in srgb, var(--foreground) 88%, white);
-  background: color-mix(in srgb, var(--card) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
-  text-transform: uppercase;
-  letter-spacing: 0.35px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}

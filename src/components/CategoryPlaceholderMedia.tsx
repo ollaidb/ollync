@@ -35,18 +35,15 @@ const DEFAULT_VISUAL: CategoryVisual = {
 
 interface CategoryPlaceholderMediaProps {
   categorySlug?: string | null
-  categoryName?: string | null
   className?: string
 }
 
 export default function CategoryPlaceholderMedia({
   categorySlug,
-  categoryName,
   className
 }: CategoryPlaceholderMediaProps) {
   const visual = (categorySlug ? CATEGORY_VISUALS[categorySlug] : null) || DEFAULT_VISUAL
   const Icon = visual.icon
-  const label = (categoryName || visual.label || 'Annonce').trim()
 
   return (
     <div
@@ -59,7 +56,6 @@ export default function CategoryPlaceholderMedia({
       <div className="category-placeholder-icon-wrap">
         <Icon size={28} strokeWidth={2.1} />
       </div>
-      <div className="category-placeholder-label">{label}</div>
     </div>
   )
 }

@@ -217,11 +217,10 @@ const RecentPosts = () => {
                       <CategoryPlaceholderMedia
                         className="swipe-card-image-placeholder"
                         categorySlug={post.category?.slug}
-                        categoryName={post.category?.name}
                       />
                     )}
 
-                    {post.category && (
+                    {mainMedia && post.category && (
                       <div className="swipe-card-category">
                         {post.category.name}
                       </div>

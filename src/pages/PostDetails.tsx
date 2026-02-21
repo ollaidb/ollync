@@ -1647,11 +1647,10 @@ const PostDetails = () => {
             <CategoryPlaceholderMedia
               className="post-hero-image-placeholder"
               categorySlug={post.category?.slug}
-              categoryName={post.category?.name}
             />
           )}
           {/* Badge catégorie en haut à gauche */}
-          {post.category && (
+          {mediaItems.length > 0 && post.category && (
             <div className="post-hero-category-badge">{post.category.name}</div>
           )}
           {/* Badge URGENT en bas à gauche */}
