@@ -44,6 +44,7 @@ interface Post {
   delivery_available: boolean
   is_urgent?: boolean
   status: string
+  listing_type?: 'offer' | 'request' | string | null
   user_id: string
   payment_type?: string | null
   media_type?: string | null
@@ -707,7 +708,7 @@ const PostDetails = () => {
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
 
-    const availableRoles = getProfileRolesList(post.profile_roles)
+    const availableRoles = isEmploiRequestPost ? [] : getProfileRolesList(post.profile_roles)
     if (availableRoles.length > 0 && !requestRole.trim()) {
       alert('Veuillez choisir le poste pour lequel vous postulez.')
       return
@@ -1085,7 +1086,17 @@ const PostDetails = () => {
 
   const hasAddress = post?.location_address || (post?.location_lat && post?.location_lng)
   const openingHoursList = getOpeningHoursList(post?.opening_hours)
-  const isStudioLieuPost = (post?.category?.slug || '').trim().toLowerCase() === 'studio-lieu'
+  const categorySlug = (post?.category?.slug || '').trim().toLowerCase()
+  const subCategorySlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+  const isStudioLieuPost = categorySlug === 'studio-lieu'
+  const isEmploiRequestPost = EMPLOI_CATEGORY_SLUGS.has(categorySlug) && post?.listing_type === 'request'
+  const isCastingFigurantRequestPost =
+    (categorySlug === 'casting-role' || categorySlug === 'casting') &&
+    post?.listing_type === 'request' &&
+    subCategorySlug === 'figurant'
+  const isProjetsEquipeRequestPost =
+    (categorySlug === 'projets-equipe' || categorySlug === 'projet') &&
+    post?.listing_type === 'request'
 
   // Fonctions pour le swipe des images
   const minSwipeDistance = 50
@@ -1414,21 +1425,21 @@ const PostDetails = () => {
                   <MapPin size={16} /> {post.location}
                 </span>
               )}
-              {post.needed_date && (
+              {post.needed_date && !isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && (
                 <span className="post-title-meta-item">
                   Pour le {new Date(post.needed_date).toLocaleDateString('fr-FR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
                   })}
-                  {post.needed_time ? ` à ${post.needed_time}` : ''}
-                  {post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
+                  {!isEmploiRequestPost && post.needed_time ? ` à ${post.needed_time}` : ''}
+                  {!isEmploiRequestPost && post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
                 </span>
               )}
             </div>
 
             {/* Prix en grand */}
-            {post.price && (
+            {!isEmploiRequestPost && post.price && (
               <div className="post-price-main">{post.price} €</div>
             )}
 
@@ -1470,7 +1481,7 @@ const PostDetails = () => {
             <div className="post-description-section">
               <h3 className="post-description-title">Description</h3>
               <p className="post-description-text">{post.description}</p>
-              {(post.responsibilities || post.required_skills || post.benefits) && (
+              {!isEmploiRequestPost && (post.responsibilities || post.required_skills || post.benefits) && (
                 <div className="post-description-details">
                   {post.responsibilities && (
                     <div className="post-description-detail">
@@ -1534,7 +1545,7 @@ const PostDetails = () => {
               {/* Moyen de paiement et localisation retirés (déjà affichés en haut) */}
 
               {/* Lien externe */}
-              {post.external_link && (
+              {post.external_link && !isProjetsEquipeRequestPost && (
                 <div className="post-info-item">
                   <span className="post-info-label">Lien</span>
                   <span className="post-info-value">
@@ -1551,7 +1562,7 @@ const PostDetails = () => {
               )}
 
               {/* Document PDF */}
-              {post.document_url && (
+              {post.document_url && !isProjetsEquipeRequestPost && (
                 <div className="post-info-item">
                   <span className="post-info-label">Document</span>
                   <span className="post-info-value">
@@ -1568,16 +1579,16 @@ const PostDetails = () => {
               )}
 
               {/* Nombre de personnes */}
-              {post.number_of_people && (
+              {!isEmploiRequestPost && !isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && post.number_of_people && (
                 <div className="post-info-item">
                   <span className="post-info-label">Nombre de personnes</span>
                   <span className="post-info-value post-info-value-right">{post.number_of_people}</span>
                 </div>
               )}
 
-              {(post.needed_date || post.needed_time || post.duration_minutes) && (
+              {(!isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && (isEmploiRequestPost ? !!post.needed_date : (post.needed_date || post.needed_time || post.duration_minutes))) && (
                 <div className="post-info-item">
-                  <span className="post-info-label">Date et heure</span>
+                  <span className="post-info-label">{isEmploiRequestPost ? 'Date' : 'Date et heure'}</span>
                   <span className="post-info-value post-info-value-nowrap">
                     {post.needed_date
                       ? new Date(post.needed_date).toLocaleDateString('fr-FR', {
@@ -1586,8 +1597,8 @@ const PostDetails = () => {
                         year: 'numeric'
                       })
                       : ''}
-                    {post.needed_time ? ` à ${post.needed_time}` : ''}
-                    {post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
+                    {!isEmploiRequestPost && post.needed_time ? ` à ${post.needed_time}` : ''}
+                    {!isEmploiRequestPost && post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
                   </span>
                 </div>
               )}
@@ -1608,14 +1619,14 @@ const PostDetails = () => {
                 </div>
               )}
 
-              {post.profile_level && (
+              {!isEmploiRequestPost && !isProjetsEquipeRequestPost && post.profile_level && (
                 <div className="post-info-item">
                   <span className="post-info-label">Niveau recherché</span>
                   <span className="post-info-value">{post.profile_level}</span>
                 </div>
               )}
 
-              {getProfileRolesList(post.profile_roles).length > 0 && (
+              {!isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post.profile_roles).length > 0 && (
                 <div className="post-info-item">
                   <span className="post-info-label">Rôle recherché</span>
                   <span className="post-info-value">
@@ -1826,7 +1837,7 @@ const PostDetails = () => {
             confirmLabel={loadingRequest ? 'Envoi...' : contactIntent === 'ticket' ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet') : contactIntent === 'reserve' ? (isPaidAction() ? 'Payer la réservation' : 'Valider la réservation') : contactIntent === 'buy' ? 'Confirmer l’achat' : 'Envoyer'}
             cancelLabel="Annuler"
           >
-            {getProfileRolesList(post?.profile_roles).length > 0 && (
+            {!isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
               <div className="confirmation-modal-field">
                 <label className="confirmation-modal-label">
                   Poste recherché

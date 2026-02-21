@@ -175,8 +175,15 @@ export const validatePublishForm = (
   formData: FormData,
   requireSocialNetwork: boolean = false
 ): ValidationResult => {
+  const CASTING_SLUGS = new Set(['casting-role', 'casting'])
   const errors: string[] = []
-  const isJobCategory = formData.category === 'emploi'
+  const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
+  const isJobCategory = EMPLOI_SLUGS.has(formData.category || '')
+  const isJobRequest = isJobCategory && formData.listingType === 'request'
+  const isCastingFigurantRequest =
+    formData.listingType === 'request' &&
+    CASTING_SLUGS.has(formData.category || '') &&
+    (formData.subcategory || '').trim().toLowerCase() === 'figurant'
   const isStudioLieuCategory = formData.category === 'studio-lieu'
   const isVenteCategory = formData.category === 'vente'
   const isPosteServiceCategory = formData.category === 'poste-service'
@@ -184,6 +191,9 @@ export const validatePublishForm = (
   const isServicesCategory = formData.category === 'services'
   const isEvenementsCategory = formData.category === 'evenements'
   const isSuiviCategory = formData.category === 'suivi'
+  const isProjetsEquipeRequest =
+    formData.listingType === 'request' &&
+    (formData.category === 'projets-equipe' || formData.category === 'projet')
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return NaN
     const trimmed = value.trim()
@@ -234,11 +244,16 @@ export const validatePublishForm = (
   }
 
   // Date/heure de besoin (non requis pour lieu et vente)
-  if (!isStudioLieuCategory && !isVenteCategory) {
+  if (!isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest) {
     if (!formData.deadline || formData.deadline.trim().length === 0) {
       errors.push('La date de besoin est obligatoire')
     }
-    if (!isJobCategory && !isProjetsEquipeCategory && (!formData.neededTime || formData.neededTime.trim().length === 0)) {
+    if (
+      !isJobCategory &&
+      !isProjetsEquipeCategory &&
+      !isCastingFigurantRequest &&
+      (!formData.neededTime || formData.neededTime.trim().length === 0)
+    ) {
       errors.push("L'heure de besoin est obligatoire")
     }
   }
@@ -258,26 +273,29 @@ export const validatePublishForm = (
     errors.push('Au moins un média (photo ou vidéo) est obligatoire')
   }
 
-  // Moyen de paiement
-  if (!formData.exchange_type || formData.exchange_type.trim().length === 0) {
-    errors.push('Le moyen de paiement est obligatoire')
-  }
-  
-  const allowedPaymentOptions = getPaymentOptionsForCategory(formData.category).map((option) => option.id)
-  if (formData.exchange_type && !allowedPaymentOptions.includes(formData.exchange_type)) {
-    errors.push('Le moyen de paiement sélectionné n\'est pas disponible pour cette catégorie')
-  }
-
-  const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
-  if (paymentConfig?.requiresPrice) {
-    if (!formData.price || formData.price.trim().length === 0 || parseFloat(formData.price) <= 0) {
-      errors.push('Le prix est obligatoire pour ce moyen de paiement')
+  // Moyen de paiement (non requis pour une demande d'emploi)
+  let paymentConfig: PaymentOptionConfig | null = null
+  if (!isJobRequest) {
+    if (!formData.exchange_type || formData.exchange_type.trim().length === 0) {
+      errors.push('Le moyen de paiement est obligatoire')
     }
-  }
-  
-  if (paymentConfig?.requiresExchangeService) {
-    if (!formData.exchange_service || formData.exchange_service.trim().length === 0) {
-      errors.push('La description du service échangé est obligatoire lorsque vous choisissez "Échange de service"')
+    
+    const allowedPaymentOptions = getPaymentOptionsForCategory(formData.category).map((option) => option.id)
+    if (formData.exchange_type && !allowedPaymentOptions.includes(formData.exchange_type)) {
+      errors.push('Le moyen de paiement sélectionné n\'est pas disponible pour cette catégorie')
+    }
+
+    paymentConfig = getPaymentOptionConfig(formData.exchange_type)
+    if (paymentConfig?.requiresPrice) {
+      if (!formData.price || formData.price.trim().length === 0 || parseFloat(formData.price) <= 0) {
+        errors.push('Le prix est obligatoire pour ce moyen de paiement')
+      }
+    }
+    
+    if (paymentConfig?.requiresExchangeService) {
+      if (!formData.exchange_service || formData.exchange_service.trim().length === 0) {
+        errors.push('La description du service échangé est obligatoire lorsque vous choisissez "Échange de service"')
+      }
     }
   }
 
@@ -386,6 +404,8 @@ export const handlePublish = async (
   showToast?: (message: string) => void,
   existingPostId?: string | null
 ) => {
+  const CASTING_SLUGS = new Set(['casting-role', 'casting'])
+  const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return null
     const trimmed = value.trim()
@@ -499,6 +519,15 @@ export const handlePublish = async (
 
   const normalizedCategorySlug = categorySlug ?? formData.category
   const normalizedSubcategorySlug = subcategorySlug ?? formData.subcategory
+  const isJobRequest = EMPLOI_SLUGS.has(normalizedCategorySlug || '') && formData.listingType === 'request'
+  const isCastingFigurantRequest =
+    formData.listingType === 'request' &&
+    CASTING_SLUGS.has((normalizedCategorySlug || '').toLowerCase()) &&
+    (normalizedSubcategorySlug || '').toLowerCase() === 'figurant'
+  const isProjetsEquipeRequest =
+    formData.listingType === 'request' &&
+    ((normalizedCategorySlug || '').toLowerCase() === 'projets-equipe' ||
+      (normalizedCategorySlug || '').toLowerCase() === 'projet')
 
   // Déterminer si le réseau social est requis
   const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
@@ -616,19 +645,19 @@ export const handlePublish = async (
       || (formData.option && formData.option.trim()) 
       || null,
     needed_date:
-      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente'
+      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || isCastingFigurantRequest || isProjetsEquipeRequest
         ? null
         : (formData.deadline || null),
     needed_time:
-      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe'
+      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCastingFigurantRequest
         ? null
         : (formData.neededTime?.trim() || null),
     number_of_people:
-      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'services'
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'services' || isJobRequest || isCastingFigurantRequest || isProjetsEquipeRequest
         ? null
         : (formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null),
     duration_minutes:
-      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe'
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCastingFigurantRequest
         ? null
         : (formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null),
     profile_level:
@@ -637,7 +666,9 @@ export const handlePublish = async (
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
-      normalizedCategorySlug === 'suivi'
+      normalizedCategorySlug === 'suivi' ||
+      isJobRequest ||
+      isProjetsEquipeRequest
         ? null
         : (formData.profileLevel?.trim() || null),
     profile_roles:
@@ -647,7 +678,9 @@ export const handlePublish = async (
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
-      normalizedCategorySlug === 'suivi'
+      normalizedCategorySlug === 'suivi' ||
+      isJobRequest ||
+      isProjetsEquipeRequest
         ? null
         : (formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null),
     external_link:
@@ -655,7 +688,8 @@ export const handlePublish = async (
       normalizedCategorySlug === 'creation-contenu' ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
-      normalizedCategorySlug === 'suivi'
+      normalizedCategorySlug === 'suivi' ||
+      isProjetsEquipeRequest
         ? null
         : normalizeExternalLink(formData.externalLink),
     document_url:
@@ -663,7 +697,8 @@ export const handlePublish = async (
       normalizedCategorySlug === 'creation-contenu' ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
-      normalizedCategorySlug === 'suivi'
+      normalizedCategorySlug === 'suivi' ||
+      isProjetsEquipeRequest
         ? null
         : buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
     tagged_post_id: normalizedCategorySlug === 'vente' ? null : (formData.taggedPostId || null),

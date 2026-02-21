@@ -6,6 +6,7 @@ import { CustomList } from '../CustomList/CustomList'
 import './Step4Description.css'
 
 interface FormData {
+  listingType?: 'offer' | 'request' | ''
   title: string
   description: string
   shortDescription?: string
@@ -54,21 +55,34 @@ export const Step4Description = ({
   selectedCategory,
   selectedSubcategory
 }: Step4DescriptionProps) => {
-  const isCastingCategory = (selectedCategory?.slug ?? formData.category) === 'casting-role'
-  const showSocialNetwork = !isCastingCategory && shouldShowSocialNetwork(
+  const CASTING_SLUGS = new Set(['casting-role', 'casting'])
+  const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
+  const isRequestListing = formData.listingType === 'request'
+  const categorySlugValue = (selectedCategory?.slug ?? formData.category ?? '').toLowerCase()
+  const subcategorySlugValue = (selectedSubcategory?.slug ?? formData.subcategory ?? '').toLowerCase()
+  const isCastingCategory = CASTING_SLUGS.has(categorySlugValue)
+  const isJobCategory = EMPLOI_SLUGS.has(categorySlugValue)
+  const isJobRequest = isJobCategory && isRequestListing
+  const isCastingFigurantRequest =
+    isRequestListing && isCastingCategory && subcategorySlugValue === 'figurant'
+  const showSocialNetwork = !isCastingCategory && !isJobRequest && shouldShowSocialNetwork(
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
-  const isJobCategory = (selectedCategory?.slug ?? formData.category) === 'emploi'
   const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
   const isVenteCategory = (selectedCategory?.slug ?? formData.category) === 'vente'
   const isProjetsEquipeCategory = (selectedCategory?.slug ?? formData.category) === 'projets-equipe'
+  const isProjetsEquipeRequest =
+    isRequestListing &&
+    (selectedCategory?.slug ?? formData.category) &&
+    ['projets-equipe', 'projet'].includes(String(selectedCategory?.slug ?? formData.category))
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
-  const requiresPrice = !!paymentConfig?.requiresPrice
-  const requiresExchangeService = !!paymentConfig?.requiresExchangeService
-  const requiresRevenueShare = !!paymentConfig?.requiresPercentage
-  const showCoCreationDetails = formData.exchange_type === 'co-creation'
+  const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
+  const requiresExchangeService = !isJobRequest && !!paymentConfig?.requiresExchangeService
+  const requiresRevenueShare = !isJobRequest && !!paymentConfig?.requiresPercentage
+  const showCoCreationDetails = !isJobRequest && formData.exchange_type === 'co-creation'
+  const showPaymentSection = !isJobRequest && !isVenteCategory && !isJobCategory
   const [isSocialNetworkOpen, setIsSocialNetworkOpen] = useState(false)
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
@@ -337,6 +351,43 @@ export const Step4Description = ({
         'Ex : Décrivez le type de contenu recherché si vous ne trouvez pas la sous‑catégorie.'
     }
   }
+  const creationContenuRequestExamples: Record<string, { title: string; description: string }> = {
+    photo: {
+      title: 'Ex : Photographe contenu disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    video: {
+      title: 'Ex : Vidéaste contenu disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    vlog: {
+      title: 'Ex : Créateur vlog disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    sketchs: {
+      title: 'Ex : Créateur sketch disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    trends: {
+      title: 'Ex : Créateur trends disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    live: {
+      title: 'Ex : Animateur live disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    },
+    autre: {
+      title: 'Ex : Créateur contenu disponible',
+      description:
+        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
+    }
+  }
   const castingRoleExamples: Record<string, { title: string; description: string }> = {
     figurant: {
       title: 'Ex : Figurant pour vidéo comédie',
@@ -379,41 +430,85 @@ export const Step4Description = ({
         'Ex : Décrivez le rôle ou le profil recherché si vous ne trouvez pas la sous‑catégorie.'
     }
   }
+  const castingRequestExamples: Record<string, { title: string; description: string }> = {
+    figurant: {
+      title: 'Ex : Figurant pour vidéo comédie',
+      description:
+        'Ex : Indique le type de rôle, ton expérience, tes disponibilités et le format où tu veux intervenir.'
+    }
+  }
   const emploiExamples: Record<string, { title: string; description: string }> = {
     montage: {
-      title: 'Ex : Je cherche un monteur vidéo',
+      title: 'Ex : Monteur vidéo disponible',
       description:
-        'Ex : Je cherche un monteur pour des vidéos courtes/longues (montage, rythme, export).'
+        'Ex : Je propose le montage de vidéos courtes/longues (rythme, habillage, export).'
     },
     'micro-trottoir': {
-      title: 'Ex : Micro‑trottoir (thème)',
+      title: 'Ex : Réalisation de micro‑trottoir',
       description:
-        'Ex : Je cherche une personne pour réaliser un micro‑trottoir sur un thème précis.'
+        'Ex : Je propose de réaliser des micro‑trottoirs sur des thèmes précis.'
     },
     'community-manager': {
-      title: 'Ex : Je cherche un community manager',
+      title: 'Ex : Community manager disponible',
       description:
-        'Ex : Je cherche un community manager pour gérer les réseaux (posts, réponses, animation).'
+        'Ex : Je propose la gestion de vos réseaux (posts, réponses, animation).'
     },
     live: {
-      title: 'Ex : Je cherche un animateur live',
+      title: 'Ex : Animation de lives',
       description:
-        'Ex : Je cherche quelqu’un pour animer des lives et présenter des produits/contenus.'
+        'Ex : Je propose d’animer vos lives et de présenter vos produits/contenus.'
     },
     'ecriture-contenu': {
-      title: 'Ex : Je cherche un rédacteur contenu',
+      title: 'Ex : Rédaction de contenu',
       description:
-        'Ex : Je cherche une personne pour écrire des scripts, idées et captions.'
+        'Ex : Je propose la rédaction de scripts, idées et captions.'
     },
     scenariste: {
-      title: 'Ex : Je cherche un scénariste',
+      title: 'Ex : Scénariste disponible',
       description:
-        'Ex : Je cherche un scénariste pour écrire des scripts et scénarios de vidéos.'
+        'Ex : Je propose l’écriture de scripts et scénarios vidéo.'
     },
     autre: {
-      title: 'Ex : Autre poste',
+      title: 'Ex : Service emploi (autre)',
       description:
-        'Ex : Décrivez le poste recherché si vous ne trouvez pas la sous‑catégorie.'
+        'Ex : Décrivez le service que vous proposez si vous ne trouvez pas la sous‑catégorie.'
+    }
+  }
+  const emploiRequestExamples: Record<string, { title: string; description: string }> = {
+    montage: {
+      title: 'Ex : Je suis monteur vidéo',
+      description:
+        'Ex : Je réalise le montage de vidéos courtes/longues avec un style dynamique.'
+    },
+    'micro-trottoir': {
+      title: 'Ex : Je réalise des micro‑trottoirs',
+      description:
+        'Ex : Je peux réaliser des micro‑trottoirs sur des thèmes précis.'
+    },
+    'community-manager': {
+      title: 'Ex : Je suis community manager',
+      description:
+        'Ex : Je gère les réseaux sociaux, la planification éditoriale et l’animation de communauté.'
+    },
+    live: {
+      title: 'Ex : Je suis animateur live',
+      description:
+        'Ex : J’anime des lives et je présente du contenu/produits en direct.'
+    },
+    'ecriture-contenu': {
+      title: 'Ex : Je suis rédacteur de contenu',
+      description:
+        'Ex : Je rédige scripts, idées de contenu et descriptions adaptées aux réseaux.'
+    },
+    scenariste: {
+      title: 'Ex : Je suis scénariste',
+      description:
+        'Ex : Je construis des scripts et des scénarios vidéo.'
+    },
+    autre: {
+      title: 'Ex : Je propose mon profil',
+      description:
+        'Ex : Décrivez votre profil, vos compétences et ce que vous proposez.'
     }
   }
   const servicesExamples: Record<string, { title: string; description: string }> = {
@@ -527,6 +622,13 @@ export const Step4Description = ({
         'Ex : Si vous ne trouvez pas la sous‑catégorie, décrivez votre service.'
     }
   }
+  const posteServiceRequestExamples: Record<string, { title: string; description: string }> = {
+    autre: {
+      title: 'Ex : Community manager dispo',
+      description:
+        'Ex : Indique le poste/service, tes compétences clés, tes disponibilités et le type de collaboration souhaité.'
+    }
+  }
   const studioLieuExamples: Record<string, { title: string; description: string }> = {
     'studio-creation': {
       title: 'Ex : Studio équipé',
@@ -606,14 +708,74 @@ export const Step4Description = ({
         'Ex : Je décris le projet et les profils recherchés.'
     }
   }
-  const creationExample = creationContenuExamples[subcategorySlug]
-  const castingExample = castingRoleExamples[subcategorySlug]
-  const emploiExample = emploiExamples[subcategorySlug]
+  const projetsRequestExamples: Record<string, { title: string; description: string }> = {
+    'podcast-equipe': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'chaine-youtube': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'projet-tiktok': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'projet-formation': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'projet-blog': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'projet-media': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    autre: {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    }
+  }
+  const creationExample = isRequestListing
+    ? (creationContenuRequestExamples[subcategorySlug] || creationContenuExamples[subcategorySlug])
+    : creationContenuExamples[subcategorySlug]
+  const castingExample = isRequestListing
+    ? (castingRequestExamples[subcategorySlug] || castingRoleExamples[subcategorySlug])
+    : castingRoleExamples[subcategorySlug]
+  const emploiExample = isJobRequest
+    ? (emploiRequestExamples[subcategorySlug] || {
+        title: 'Ex : Je cherche un profil pour mon besoin',
+        description: 'Ex : Décrivez le poste recherché, le contexte et le résultat attendu.'
+      })
+    : (emploiExamples[subcategorySlug] || {
+        title: 'Ex : Je propose un service en emploi',
+        description: 'Ex : Décrivez clairement ce que vous proposez.'
+      })
   const servicesExample = servicesExamples[subcategorySlug]
+  const servicesRequestExample = {
+    title: 'Ex : Monteur vidéo dispo pour mission',
+    description: 'Ex : Indique le service proposé, les outils maîtrisés, les délais et le type de mission que tu acceptes.'
+  }
   const venteExample = venteExamples[subcategorySlug]
-  const posteServiceExample = posteServiceExamples[subcategorySlug]
+  const posteServiceExample = isRequestListing
+    ? (posteServiceRequestExamples[subcategorySlug] || posteServiceRequestExamples.autre)
+    : posteServiceExamples[subcategorySlug]
   const studioLieuExample = studioLieuExamples[subcategorySlug]
-  const projetsExample = projetsExamples[subcategorySlug]
+  const projetsExample = isRequestListing
+    ? (projetsRequestExamples[subcategorySlug] || {
+        title: 'Ex : Je candidate pour rejoindre une équipe',
+        description: 'Ex : Je présente mon profil, mes compétences et ce que je peux apporter au projet.'
+      })
+    : projetsExamples[subcategorySlug]
   const activeExample =
     categorySlug === 'creation-contenu'
       ? creationExample
@@ -622,19 +784,21 @@ export const Step4Description = ({
         : categorySlug === 'emploi'
           ? emploiExample
           : categorySlug === 'services'
-            ? servicesExample
+            ? (isRequestListing ? servicesRequestExample : servicesExample)
             : categorySlug === 'vente'
               ? venteExample
               : categorySlug === 'poste-service'
                 ? posteServiceExample
                 : categorySlug === 'studio-lieu'
                   ? studioLieuExample
-                  : categorySlug === 'projets-equipe'
+                  : (categorySlug === 'projets-equipe' || categorySlug === 'projet')
                     ? projetsExample
                 : undefined
   const titlePlaceholder = activeExample?.title ?? 'Ex: Développeur React recherché'
   const descriptionPlaceholder = isJobCategory
-    ? 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.'
+    ? (isJobRequest
+      ? 'Présente ton profil, tes compétences et le type de poste que tu recherches.'
+      : 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.')
     : activeExample?.description ?? 'Décrivez en détail votre annonce...'
   
   // Synchroniser le moyen de paiement avec la catégorie sélectionnée
@@ -655,6 +819,7 @@ export const Step4Description = ({
   }, [paymentOptions])
 
   useEffect(() => {
+    if (isJobRequest) return
     if (isJobCategory && formData.exchange_type !== 'remuneration') {
       onUpdateFormData({
         exchange_type: 'remuneration',
@@ -663,7 +828,53 @@ export const Step4Description = ({
         co_creation_details: ''
       })
     }
-  }, [isJobCategory, formData.exchange_type, onUpdateFormData])
+  }, [isJobCategory, isJobRequest, formData.exchange_type, onUpdateFormData])
+
+  useEffect(() => {
+    if (!isJobRequest) return
+    const updates: Partial<FormData> = {}
+    if (formData.socialNetwork) updates.socialNetwork = ''
+    if (formData.exchange_type) updates.exchange_type = ''
+    if (formData.price) updates.price = ''
+    if (formData.exchange_service) updates.exchange_service = ''
+    if (formData.revenue_share_percentage) updates.revenue_share_percentage = ''
+    if (formData.co_creation_details) updates.co_creation_details = ''
+    if (formData.responsibilities) updates.responsibilities = ''
+    if (formData.required_skills) updates.required_skills = ''
+    if (formData.benefits) updates.benefits = ''
+    if (Object.keys(updates).length > 0) {
+      onUpdateFormData(updates)
+    }
+  }, [
+    isJobRequest,
+    formData.socialNetwork,
+    formData.exchange_type,
+    formData.price,
+    formData.exchange_service,
+    formData.revenue_share_percentage,
+    formData.co_creation_details,
+    formData.responsibilities,
+    formData.required_skills,
+    formData.benefits,
+    onUpdateFormData
+  ])
+
+  useEffect(() => {
+    if (!isCastingFigurantRequest) return
+    const updates: Partial<FormData> = {}
+    if (formData.deadline) updates.deadline = ''
+    if (formData.neededTime) updates.neededTime = ''
+    if (formData.duration_minutes) updates.duration_minutes = ''
+    if (Object.keys(updates).length > 0) {
+      onUpdateFormData(updates)
+    }
+  }, [
+    isCastingFigurantRequest,
+    formData.deadline,
+    formData.neededTime,
+    formData.duration_minutes,
+    onUpdateFormData
+  ])
 
   useEffect(() => {
     if (!isVenteCategory) return
@@ -689,7 +900,7 @@ export const Step4Description = ({
     formData.title.trim().length > 0 && 
     formData.description.trim().length > 0 &&
     (!isJobCategory || (formData.contract_type && formData.contract_type.trim().length > 0)) &&
-    formData.exchange_type.trim().length > 0 &&
+    (isJobRequest || formData.exchange_type.trim().length > 0) &&
     (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
     (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
     (!requiresRevenueShare || (
@@ -710,10 +921,10 @@ export const Step4Description = ({
 
   return (
     <div className="step4-description">
-      <h2 className="step-title">Décrivez votre annonce</h2>
+      <h2 className="step-title">{isJobRequest ? 'Présentez votre candidature' : 'Décrivez votre annonce'}</h2>
       
       <div className="form-group">
-        <label className="form-label">Titre *</label>
+        <label className="form-label">{isJobRequest ? 'Titre de votre candidature *' : 'Titre *'}</label>
         <input
           type="text"
           className="form-input"
@@ -726,7 +937,7 @@ export const Step4Description = ({
       {isJobCategory && (
         <>
           <div className="form-group dropdown-field">
-            <label className="form-label">Type de contrat *</label>
+            <label className="form-label">{isJobRequest ? 'Type de contrat souhaité *' : 'Type de contrat *'}</label>
             <button
               type="button"
               className={`dropdown-trigger ${isContractOpen ? 'open' : ''}`}
@@ -847,7 +1058,9 @@ export const Step4Description = ({
 
       {isCastingCategory && (
         <div className="form-group dropdown-field">
-          <label className="form-label">Type de modèle recherché (optionnel)</label>
+          <label className="form-label">
+            {isCastingFigurantRequest ? 'Type de profil (optionnel)' : 'Type de modèle recherché (optionnel)'}
+          </label>
           <button
             type="button"
             className={`dropdown-trigger ${isModelTypeOpen ? 'open' : ''}`}
@@ -892,7 +1105,7 @@ export const Step4Description = ({
         </div>
       )}
 
-      {!isVenteCategory && !isJobCategory && (
+      {showPaymentSection && (
         <div className="form-group dropdown-field">
           <label className="form-label">
             {isJobCategory ? 'Type de rémunération *' : 'Moyen de paiement *'}
@@ -1203,7 +1416,7 @@ export const Step4Description = ({
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
       <div className="form-group">
         <label className="form-label">Date *</label>
         <button
@@ -1285,7 +1498,7 @@ export const Step4Description = ({
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest && (
       <div className="form-group">
         <label className="form-label">Heure *</label>
         <div className="time-input-row">
@@ -1311,7 +1524,7 @@ export const Step4Description = ({
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest && (
       <div className="form-group">
         <label className="form-label">Durée estimée (optionnel)</label>
         <div className="time-input-row">
@@ -1341,7 +1554,7 @@ export const Step4Description = ({
 
       {isJobCategory && (
         <div className="form-group">
-          <label className="form-label">Description du poste *</label>
+          <label className="form-label">{isJobRequest ? 'Description de votre profil *' : 'Description du poste *'}</label>
           <textarea
             className="form-textarea"
             placeholder={descriptionPlaceholder}
@@ -1352,14 +1565,14 @@ export const Step4Description = ({
         </div>
       )}
 
-      {isJobCategory && (
+      {isJobCategory && !isJobRequest && (
         <>
           <div className="form-group">
-            <label className="form-label">Horaires / temps de travail</label>
+            <label className="form-label">{isJobRequest ? 'Disponibilités' : 'Horaires / temps de travail'}</label>
             <input
               type="text"
               className="form-input small-placeholder"
-              placeholder="Ex : 35h/semaine"
+              placeholder={isJobRequest ? 'Ex : 20h/semaine, soirs, week-end...' : 'Ex : 35h/semaine'}
               value={formData.work_schedule || ''}
               onChange={(e) => onUpdateFormData({ work_schedule: e.target.value })}
             />

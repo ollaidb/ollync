@@ -226,16 +226,17 @@ export default function Publish() {
 
     const showSocialNetwork = shouldShowSocialNetwork(category?.slug, subcategory?.slug)
     const paymentConfig = getPaymentOptionConfig(data.exchange_type)
-    const requiresPrice = !!paymentConfig?.requiresPrice
-    const requiresExchangeService = !!paymentConfig?.requiresExchangeService
-    const requiresRevenueShare = !!paymentConfig?.requiresPercentage
+    const isJobRequest = category?.slug === 'emploi' && data.listingType === 'request'
+    const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
+    const requiresExchangeService = !isJobRequest && !!paymentConfig?.requiresExchangeService
+    const requiresRevenueShare = !isJobRequest && !!paymentConfig?.requiresPercentage
     const requiresMaterialCondition =
       category?.slug === 'vente' && subcategory?.slug === 'gorille'
 
     const hasStep3Required =
       data.title.trim().length > 0 &&
       data.description.trim().length > 0 &&
-      data.exchange_type.trim().length > 0 &&
+      (isJobRequest || data.exchange_type.trim().length > 0) &&
       (!requiresPrice || (data.price && parseFloat(data.price) > 0)) &&
       (!requiresExchangeService || (data.exchange_service && data.exchange_service.trim().length > 0)) &&
       (!requiresRevenueShare ||
@@ -251,6 +252,8 @@ export default function Publish() {
   }, [enrichedPublicationTypes])
 
   useEffect(() => {
+    const isJobRequest = isEmploiCategory && formData.listingType === 'request'
+    if (isJobRequest) return
     if (!isVenteCategory && !isEmploiCategory) return
     if (formData.exchange_type === 'remuneration') return
     setFormData((prev) => ({
@@ -260,7 +263,7 @@ export default function Publish() {
       revenue_share_percentage: '',
       co_creation_details: ''
     }))
-  }, [isVenteCategory, isEmploiCategory, formData.exchange_type])
+  }, [isVenteCategory, isEmploiCategory, formData.listingType, formData.exchange_type])
 
   useEffect(() => {
     if (!editPostId || !user) return

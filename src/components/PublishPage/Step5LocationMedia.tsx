@@ -8,6 +8,7 @@ import ConsentModal from '../ConsentModal'
 import './Step5LocationMedia.css'
 
 interface FormData {
+  listingType?: 'offer' | 'request' | ''
   location: string
   location_city: string
   location_lat: number | null
@@ -49,16 +50,22 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
   const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
   const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
-  const isStudioLieuCategory = formData.category === 'studio-lieu'
-  const isVenteCategory = formData.category === 'vente'
-  const isCreationContenuCategory = formData.category === 'creation-contenu'
-  const isCastingCategory = formData.category === 'casting-role'
-  const isEmploiCategory = formData.category === 'emploi'
-  const isPosteServiceCategory = formData.category === 'poste-service'
-  const isProjetsEquipeCategory = formData.category === 'projets-equipe'
-  const isServicesCategory = formData.category === 'services'
-  const isEvenementsCategory = formData.category === 'evenements'
-  const isSuiviCategory = formData.category === 'suivi'
+  const categorySlug = String(formData.category || '').toLowerCase()
+  const subcategorySlug = String(formData.subcategory || '').toLowerCase()
+  const isStudioLieuCategory = categorySlug === 'studio-lieu'
+  const isVenteCategory = categorySlug === 'vente'
+  const isCreationContenuCategory = categorySlug === 'creation-contenu'
+  const isCastingCategory = categorySlug === 'casting-role' || categorySlug === 'casting'
+  const isEmploiCategory = categorySlug === 'emploi' || categorySlug === 'montage' || categorySlug === 'recrutement'
+  const isPosteServiceCategory = categorySlug === 'poste-service'
+  const isProjetsEquipeCategory = categorySlug === 'projets-equipe'
+  const isServicesCategory = categorySlug === 'services'
+  const isEvenementsCategory = categorySlug === 'evenements'
+  const isSuiviCategory = categorySlug === 'suivi'
+  const isRequestListing = formData.listingType === 'request'
+  const isEmploiRequest = isEmploiCategory && isRequestListing
+  const isCastingFigurantRequest = isCastingCategory && isRequestListing && subcategorySlug === 'figurant'
+  const isProjetsEquipeRequest = isProjetsEquipeCategory && isRequestListing
   const isPhotoOnlyMediaCategory =
     isStudioLieuCategory || isVenteCategory || isEmploiCategory || isPosteServiceCategory || isProjetsEquipeCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory
 
@@ -116,18 +123,25 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       if (Array.isArray(formData.profileRoles) && formData.profileRoles.length > 0) updates.profileRoles = []
     }
     if (isServicesCategory && formData.maxParticipants !== '1') updates.maxParticipants = '1'
-    if (isStudioLieuCategory || isVenteCategory) {
+    if (isStudioLieuCategory || isVenteCategory || isEmploiRequest || isCastingFigurantRequest || isProjetsEquipeRequest) {
       if (formData.maxParticipants !== '1') updates.maxParticipants = '1'
     }
-    if (isStudioLieuCategory || isVenteCategory || isCreationContenuCategory || isCastingCategory || isPosteServiceCategory || isServicesCategory || isSuiviCategory) {
+    if (isProjetsEquipeRequest) {
+      if (formData.profileLevel) updates.profileLevel = ''
+      if (Array.isArray(formData.profileRoles) && formData.profileRoles.length > 0) updates.profileRoles = []
+      if (formData.externalLink) updates.externalLink = ''
+      if (formData.documentUrl) updates.documentUrl = ''
+      if (formData.documentName) updates.documentName = ''
+    }
+    if (isStudioLieuCategory || isVenteCategory || isCreationContenuCategory || isPosteServiceCategory || isServicesCategory || isSuiviCategory || (isCastingCategory && !isCastingFigurantRequest)) {
       if (formData.documentUrl) updates.documentUrl = ''
       if (formData.documentName) updates.documentName = ''
     }
     if (isStudioLieuCategory && formData.urgent) updates.urgent = false
-    if (isVenteCategory || isCreationContenuCategory || isCastingCategory || isPosteServiceCategory || isSuiviCategory) {
+    if (isVenteCategory || isCreationContenuCategory || isPosteServiceCategory || isSuiviCategory || (isCastingCategory && !isCastingFigurantRequest)) {
       if (formData.externalLink) updates.externalLink = ''
     }
-    if (isVenteCategory) {
+    if (isVenteCategory || isEmploiRequest) {
       if (formData.taggedPostId) updates.taggedPostId = ''
     }
     if (Object.keys(updates).length > 0) {
@@ -144,6 +158,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     isServicesCategory,
     isEvenementsCategory,
     isSuiviCategory,
+    isEmploiRequest,
+    isCastingFigurantRequest,
+    isProjetsEquipeRequest,
     mediaPickerType,
     formData.video,
     formData.profileLevel,
@@ -605,7 +622,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         </div>
       </div>
 
-      {!isVenteCategory && !isServicesCategory && (
+      {!isVenteCategory && !isServicesCategory && !isEmploiRequest && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
         <div className="form-group">
           <label className="form-label">Nombre maximum de participants</label>
           <input
@@ -619,7 +636,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
       <div className="form-group dropdown-field">
         <label className="form-label">Niveau recherché (optionnel)</label>
         <button
@@ -739,7 +756,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
       <div className="form-group dropdown-field">
         <label className="form-label">Taguer une annonce (optionnel)</label>
         <p className="form-helper-text">
@@ -797,7 +814,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
       <div className="form-group">
         <label className="form-label">Lien (optionnel)</label>
         <input
@@ -810,7 +827,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
       <div className="form-group">
         <label className="form-label">Document PDF (optionnel)</label>
         {formData.documentUrl ? (

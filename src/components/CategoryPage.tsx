@@ -15,8 +15,7 @@ import {
   getSubSubCategories, 
   hasSubSubCategories,
   getSubSubSubCategories,
-  hasSubSubSubCategories,
-  subSubCategoriesMap
+  hasSubSubSubCategories
 } from '../utils/subSubCategories'
 import '../pages/SwipePage.css'
 import './CategoryPage.css'
@@ -136,11 +135,9 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
 
   const fetchSubMenus = async () => {
     const subMenusData = await fetchSubMenusForCategory(categorySlug)
-    console.log(`[CategoryPage] Sous-catégories chargées pour ${categorySlug}:`, subMenusData)
     // Ajouter "Tout" en premier
     const allSubMenus = [{ name: 'Tout', slug: 'tout' }, ...subMenusData]
     setSubMenus(allSubMenus)
-    console.log(`[CategoryPage] Sous-menus finaux:`, allSubMenus)
   }
 
   const fetchPosts = async () => {
@@ -280,30 +277,31 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
     }
   }
 
-  const handleSubSubCategoryClick = (subSubSlug: string) => {
-    if (submenu) {
-      // Si cette sous-sous-catégorie (N3) a un niveau 4, ouvrir la colonne N4 à droite sans naviguer
-      if (hasSubSubSubCategories(categorySlug, submenu, subSubSlug)) {
-        // Ouvrir le menu N4 mais ne pas naviguer encore
-        setOpenNestedDropdown(subSubSlug)
-        // Ne pas naviguer, juste ouvrir le menu N4 pour que l'utilisateur choisisse N4
-      } else {
-        // Sinon, filtrer directement et naviguer
-        navigate(`/${categorySlug}/${submenu}/${subSubSlug}`)
-        setOpenNestedDropdown(null)
-        // On peut garder le menu N3 ouvert pour montrer la sélection
-      }
+  const handleSubSubCategoryClick = (parentSubMenuSlug: string, subSubSlug: string) => {
+    if (hasSubSubSubCategories(categorySlug, parentSubMenuSlug, subSubSlug)) {
+      // Ouvrir le menu N4 mais ne pas naviguer encore
+      setOpenNestedDropdown(`${parentSubMenuSlug}::${subSubSlug}`)
+      return
     }
+
+    // Sinon, filtrer directement et naviguer
+    navigate(`/${categorySlug}/${parentSubMenuSlug}/${subSubSlug}`)
+    setOpenDropdown(null)
+    setOpenNestedDropdown(null)
+    setDropdownPosition(null)
+    setNestedDropdownPosition(null)
   }
 
-  const handleSubSubSubCategoryClick = (subSubSubSlug: string) => {
-    if (submenu && subSubMenu) {
-      // Naviguer vers le niveau 4 et fermer les menus
-      navigate(`/${categorySlug}/${submenu}/${subSubMenu}/${subSubSubSlug}`)
-      // Garder les menus ouverts pour montrer la sélection, mais on peut les fermer si nécessaire
-      // setOpenDropdown(null)
-      // setOpenNestedDropdown(null)
-    }
+  const handleSubSubSubCategoryClick = (
+    parentSubMenuSlug: string,
+    parentSubSubSlug: string,
+    subSubSubSlug: string
+  ) => {
+    navigate(`/${categorySlug}/${parentSubMenuSlug}/${parentSubSubSlug}/${subSubSubSlug}`)
+    setOpenDropdown(null)
+    setOpenNestedDropdown(null)
+    setDropdownPosition(null)
+    setNestedDropdownPosition(null)
   }
 
   // Fonctions toggle supprimées car non utilisées - la logique est directement dans les onClick
@@ -316,7 +314,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       
       // Si une sous-sous-catégorie N3 est sélectionnée et a un niveau 4, ouvrir la colonne N4
       if (subSubMenu && hasSubSubSubCategories(categorySlug, submenu, subSubMenu)) {
-        setOpenNestedDropdown(subSubMenu)
+        setOpenNestedDropdown(`${submenu}::${subSubMenu}`)
       } else {
         setOpenNestedDropdown(null)
       }
@@ -404,21 +402,6 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             const subSubCategories = getSubSubCategories(categorySlug, subMenu.slug)
             const subMenuLabel = getSubMenuLabel(subMenu.slug, subMenu.name)
             
-            // Log pour déboguer - toujours afficher pour diagnostiquer
-            if (subMenu.slug !== 'tout') {
-              console.log(`[CategoryPage] Rendu bouton ${subMenu.slug} (${subMenuLabel}):`, {
-                categorySlug,
-                subMenuSlug: subMenu.slug,
-                hasSubSub,
-                subSubCategoriesCount: subSubCategories.length,
-                subSubCategories,
-                isDropdownOpen,
-                'subSubCategoriesMap[categorySlug]': subSubCategoriesMap[categorySlug],
-                'subSubCategoriesMap[categorySlug]?.[subMenu.slug]': subSubCategoriesMap[categorySlug]?.[subMenu.slug],
-                'getSubSubCategories result': getSubSubCategories(categorySlug, subMenu.slug)
-              })
-            }
-
             return (
               <div
                 key={subMenu.slug}
@@ -430,18 +413,15 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 <button
                   className={`swipe-filter-btn category-filter-button ${isActive ? 'active' : ''} ${hasSubSub ? 'has-dropdown' : ''}`}
                   onClick={() => {
-                    console.log(`[CategoryPage] Clic sur N2: ${subMenuLabel}, hasSubSub: ${hasSubSub}, isDropdownOpen: ${isDropdownOpen}`)
                     if (hasSubSub) {
                       // Si le bouton a des enfants N3, ouvrir/fermer le menu
                       if (isDropdownOpen && openDropdown === subMenu.slug) {
                         // Si le menu est déjà ouvert, le fermer
-                        console.log(`[CategoryPage] Fermeture du menu N3 pour ${subMenu.slug}`)
                         setOpenDropdown(null)
                         setOpenNestedDropdown(null)
                         setDropdownPosition(null)
                       } else {
                         // Sinon, ouvrir le menu N3 (sans naviguer encore)
-                        console.log(`[CategoryPage] Ouverture du menu N3 pour ${subMenu.slug}, sous-catégories:`, subSubCategories)
                         // Calculer la position du menu de manière synchrone
                         const buttonElement = dropdownRefs.current[subMenu.slug]?.querySelector('button')
                         if (buttonElement) {
@@ -468,7 +448,6 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                           })
                         } else {
                           // Si le bouton n'est pas trouvé, utiliser une position par défaut
-                          console.warn(`[CategoryPage] Bouton non trouvé pour ${subMenu.slug}, utilisation position par défaut`)
                           setDropdownPosition({
                             top: 200,
                             left: 20
@@ -495,20 +474,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                 </button>
 
                 {/* Menu déroulant pour les sous-sous-catégories (N3) */}
-                {(() => {
-                  const shouldShow = isDropdownOpen && hasSubSub && subSubCategories.length > 0
-                  if (isDropdownOpen) {
-                    console.log(`[CategoryPage] Affichage menu N3 pour ${subMenu.slug}:`, {
-                      isDropdownOpen,
-                      hasSubSub,
-                      subSubCategoriesLength: subSubCategories.length,
-                      subSubCategories,
-                      shouldShow,
-                      dropdownPosition
-                    })
-                  }
-                  return shouldShow
-                })() && (
+                {isDropdownOpen && hasSubSub && subSubCategories.length > 0 && (
                   <div 
                     className="category-dropdown-menu"
                     style={dropdownPosition ? {
@@ -520,7 +486,8 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                     {subSubCategories.map((subSub) => {
                       const isSubSubActive = subSubMenu === subSub.slug
                       const hasNested = hasSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
-                      const isNestedOpen = openNestedDropdown === subSub.slug
+                      const nestedKey = `${subMenu.slug}::${subSub.slug}`
+                      const isNestedOpen = openNestedDropdown === nestedKey
                       const nestedCategories = getSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
                       const subSubLabel = getSubMenuLabel(subSub.slug, subSub.name)
                       
@@ -535,18 +502,14 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                           <button
                             className={`category-dropdown-item ${isSubSubActive ? 'active' : ''} ${hasNested ? 'has-nested' : ''}`}
                             onClick={() => {
-                              console.log(`[CategoryPage] Clic sur N3: ${subSub.name}, hasNested: ${hasNested}, isNestedOpen: ${isNestedOpen}`)
                               if (hasNested) {
                                 // Si l'élément N3 a des enfants N4, ouvrir/fermer la colonne N4
-                                if (isNestedOpen && openNestedDropdown === subSub.slug) {
+                                if (isNestedOpen && openNestedDropdown === nestedKey) {
                                   // Si le menu N4 est déjà ouvert, le fermer
-                                  console.log(`[CategoryPage] Fermeture du menu N4 pour ${subSub.slug}`)
                                   setOpenNestedDropdown(null)
-                                  setNestedDropdownPosition(null)
                                   setNestedDropdownPosition(null)
                                 } else {
                                   // Sinon, ouvrir le menu N4 (sans naviguer encore)
-                                  console.log(`[CategoryPage] Ouverture du menu N4 pour ${subSub.slug}, catégories N4:`, nestedCategories)
                                   // Calculer la position du menu N4
                                   const itemElement = nestedDropdownRefs.current[subSub.slug]?.querySelector('button')
                                   if (itemElement && dropdownPosition) {
@@ -570,7 +533,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                                             top: nestedTop,
                                             left: left
                                           })
-                                          setOpenNestedDropdown(subSub.slug)
+                                          setOpenNestedDropdown(nestedKey)
                                           return
                                         }
                                       }
@@ -585,12 +548,12 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                                       left: left
                                     })
                                   }
-                                  setOpenNestedDropdown(subSub.slug)
+                                  setOpenNestedDropdown(nestedKey)
                                   // Ne pas naviguer, juste ouvrir le menu pour que l'utilisateur choisisse N4
                                 }
                               } else {
                                 // Sinon, filtrer directement et naviguer
-                                handleSubSubCategoryClick(subSub.slug)
+                                handleSubSubCategoryClick(subMenu.slug, subSub.slug)
                               }
                             }}
                           >
@@ -620,7 +583,9 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                                   <button
                                     key={subSubSub.id}
                                     className={`category-nested-dropdown-item ${isSubSubSubActive ? 'active' : ''}`}
-                                    onClick={() => handleSubSubSubCategoryClick(subSubSub.slug)}
+                                    onClick={() =>
+                                      handleSubSubSubCategoryClick(subMenu.slug, subSub.slug, subSubSub.slug)
+                                    }
                                   >
                                     {subSubSubLabel}
                                   </button>
@@ -642,7 +607,10 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       {/* Contenu scrollable */}
       <div className="swipe-scrollable category-scrollable">
         <div className="category-header-spacer" aria-hidden="true" />
-        <div className="category-content-section">
+        <div
+          key={`${submenu || 'tout'}:${subSubMenu || ''}:${subSubSubMenu || ''}`}
+          className="category-content-section category-content-transition"
+        >
         {loading ? (
           <div className="category-posts-section">
             <div className="category-posts-grid">
