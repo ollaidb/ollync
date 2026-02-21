@@ -29,12 +29,9 @@ const categoryOrder = [
   'casting-role',
   'emploi',
   'studio-lieu',
-  'projets-equipe',
   'services',
   'evenements',
-  'suivi',
-  'vente',
-  'poste-service'
+  'vente'
 ]
 
 const MODERATOR_EMAIL = 'binta22116@gmail.com'

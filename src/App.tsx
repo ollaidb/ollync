@@ -11,12 +11,9 @@ const CreationContenu = lazy(() => import('./pages/CreationContenu'))
 const Emploi = lazy(() => import('./pages/Emploi'))
 const CastingRole = lazy(() => import('./pages/CastingRole'))
 const StudioLieu = lazy(() => import('./pages/StudioLieu'))
-const ProjetsEquipe = lazy(() => import('./pages/ProjetsEquipe'))
 const Service = lazy(() => import('./pages/Service'))
 const Evenements = lazy(() => import('./pages/Evenements'))
-const Suivi = lazy(() => import('./pages/Suivi'))
 const Vente = lazy(() => import('./pages/Vente'))
-const PosteService = lazy(() => import('./pages/PosteService'))
 const PostDetails = lazy(() => import('./pages/PostDetails'))
 const PostRecommendations = lazy(() => import('./pages/PostRecommendations'))
 const SwipePage = lazy(() => import('./pages/SwipePage'))
@@ -143,10 +140,6 @@ function AppContent() {
       <Route path="/casting-role/:submenu" element={<CastingRole />} />
       <Route path="/casting-role/:submenu/:subSubMenu" element={<CastingRole />} />
       <Route path="/casting-role/:submenu/:subSubMenu/:subSubSubMenu" element={<CastingRole />} />
-      <Route path="/projets-equipe" element={<ProjetsEquipe />} />
-      <Route path="/projets-equipe/:submenu" element={<ProjetsEquipe />} />
-      <Route path="/projets-equipe/:submenu/:subSubMenu" element={<ProjetsEquipe />} />
-      <Route path="/projets-equipe/:submenu/:subSubMenu/:subSubSubMenu" element={<ProjetsEquipe />} />
       <Route path="/services" element={<Service />} />
       <Route path="/services/:submenu" element={<Service />} />
       <Route path="/services/:submenu/:subSubMenu" element={<Service />} />
@@ -155,18 +148,10 @@ function AppContent() {
       <Route path="/evenements/:submenu" element={<Evenements />} />
       <Route path="/evenements/:submenu/:subSubMenu" element={<Evenements />} />
       <Route path="/evenements/:submenu/:subSubMenu/:subSubSubMenu" element={<Evenements />} />
-      <Route path="/suivi" element={<Suivi />} />
-      <Route path="/suivi/:submenu" element={<Suivi />} />
-      <Route path="/suivi/:submenu/:subSubMenu" element={<Suivi />} />
-      <Route path="/suivi/:submenu/:subSubMenu/:subSubSubMenu" element={<Suivi />} />
       <Route path="/vente" element={<Vente />} />
       <Route path="/vente/:submenu" element={<Vente />} />
       <Route path="/vente/:submenu/:subSubMenu" element={<Vente />} />
       <Route path="/vente/:submenu/:subSubMenu/:subSubSubMenu" element={<Vente />} />
-      <Route path="/poste-service" element={<PosteService />} />
-      <Route path="/poste-service/:submenu" element={<PosteService />} />
-      <Route path="/poste-service/:submenu/:subSubMenu" element={<PosteService />} />
-      <Route path="/poste-service/:submenu/:subSubMenu/:subSubSubMenu" element={<PosteService />} />
       <Route path="/publier-annonce" element={<Publish />} />
       <Route path="/post/:id" element={<PostDetails />} />
       <Route path="/post/:id/recommendations" element={<PostRecommendations />} />

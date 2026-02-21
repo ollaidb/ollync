@@ -65,17 +65,42 @@ export const Step4Description = ({
   const isJobRequest = isJobCategory && isRequestListing
   const isCastingFigurantRequest =
     isRequestListing && isCastingCategory && subcategorySlugValue === 'figurant'
+  const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
+    'interview-emission',
+    'podcast',
+    'court-metrage',
+    'magazine-blog',
+    'media',
+    'newsletter',
+    'chaine-youtube',
+    // Compatibilité avec anciens slugs
+    'projet-emission',
+    'projet-interview',
+    'projet-podcast',
+    'projet-court-metrage',
+    'projet-magazine',
+    'projet-blog',
+    'projet-media'
+  ])
+  const isCreationContenuProjectSubcategory =
+    categorySlugValue === 'creation-contenu' &&
+    CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has(subcategorySlugValue)
   const showSocialNetwork = !isCastingCategory && !isJobRequest && shouldShowSocialNetwork(
     selectedCategory?.slug,
     selectedSubcategory?.slug
   )
   const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
   const isVenteCategory = (selectedCategory?.slug ?? formData.category) === 'vente'
-  const isProjetsEquipeCategory = (selectedCategory?.slug ?? formData.category) === 'projets-equipe'
+  const isProjetsEquipeCategory =
+    (selectedCategory?.slug ?? formData.category) === 'projets-equipe' ||
+    isCreationContenuProjectSubcategory
   const isProjetsEquipeRequest =
     isRequestListing &&
     (selectedCategory?.slug ?? formData.category) &&
-    ['projets-equipe', 'projet'].includes(String(selectedCategory?.slug ?? formData.category))
+    (
+      ['projets-equipe', 'projet'].includes(String(selectedCategory?.slug ?? formData.category)) ||
+      isCreationContenuProjectSubcategory
+    )
   const paymentOptions = getPaymentOptionsForCategory(selectedCategory?.slug ?? formData.category)
   const paymentConfig = getPaymentOptionConfig(formData.exchange_type)
   const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
@@ -292,21 +317,6 @@ export const Step4Description = ({
       description:
         'Ex : Je veux filmer une vidéo face-caméra type discussion pour une durée de 1h30 et 3 vidéos courtes.'
     },
-    vlog: {
-      title: 'Ex : Vlog (journée)',
-      description:
-        'Ex : Je veux filmer un vlog de journée pour une durée de 3 heures et un vlog complet (plans + moments clés).'
-    },
-    sketchs: {
-      title: 'Ex : Sketch (titre du sketch)',
-      description:
-        'Ex : Type comédie/duo/personnages pour une durée de 2 heures et un sketch complet.'
-    },
-    trends: {
-      title: 'Ex : Trend (nom du trend)',
-      description:
-        'Ex : Trend [nom du trend] pour une durée de 1 heure et 3 vidéos + variantes.'
-    },
     live: {
       title: 'Ex : Live (thème du live)',
       description:
@@ -326,21 +336,6 @@ export const Step4Description = ({
     },
     video: {
       title: 'Ex : Vidéaste contenu disponible',
-      description:
-        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
-    },
-    vlog: {
-      title: 'Ex : Créateur vlog disponible',
-      description:
-        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
-    },
-    sketchs: {
-      title: 'Ex : Créateur sketch disponible',
-      description:
-        'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
-    },
-    trends: {
-      title: 'Ex : Créateur trends disponible',
       description:
         'Ex : Indique le type de contenu, ton style, tes disponibilités et le format que tu peux réaliser.'
     },
@@ -369,27 +364,17 @@ export const Step4Description = ({
     'modele-video': {
       title: 'À la recherche d’un modèle homme pour apparaître dans un clip.',
       description:
-        'Ex : Je cherche un modèle vidéo pour apparaître dans un clip/vidéo créative. Durée : 3h.'
+        'Ex : Je cherche un modèle vidéo pour un clip, un visage de marque ou l’animation de compte. Durée : 3h.'
     },
     'voix-off': {
       title: 'À la recherche de voix off grave pour une vidéo de promotion.',
       description:
         'Ex : Je cherche une voix off pour une vidéo promo (1 à 2 minutes).'
     },
-    'invite-podcast': {
+    invite: {
       title: 'Recherche personne pour discuter autour d’un livre.',
       description:
         'Ex : Je cherche un invité pour parler d’un thème précis dans un podcast. Durée : 45 min.'
-    },
-    'invite-micro-trottoir': {
-      title: 'À la recherche de 3 hommes pour poser des questions sur le thème du voyage.',
-      description:
-        'Ex : Je cherche des personnes à interviewer dans la rue sur un thème précis. Durée : 10 min.'
-    },
-    'youtube-video': {
-      title: 'Recherche 4 personnes pour participer à un concept YouTube.',
-      description:
-        'Ex : Je cherche un invité pour une vidéo YouTube (débat/interview/concept). Durée : 1h.'
     },
     autre: {
       title: 'Ex : Autre rôle',
@@ -411,27 +396,17 @@ export const Step4Description = ({
     'modele-video': {
       title: 'Comédienne depuis 5 ans je propose mes services.',
       description:
-        'Ex : Précise ton expérience, ton style et le format de vidéos recherché.'
+        'Ex : Précise ton expérience, ton style et les formats (clip, visage de marque, animation de compte).'
     },
     'voix-off': {
       title: 'Après des études de journalisme, je cherche à m’exercer sur des vidéos.',
       description:
         'Ex : Décris ton type de voix, ton expérience et les formats qui te conviennent.'
     },
-    'invite-podcast': {
+    invite: {
       title: 'J’ai toujours rêvé d’être dans un podcast !',
       description:
         'Ex : Indique les thèmes sur lesquels tu peux intervenir et ton format préféré.'
-    },
-    'invite-micro-trottoir': {
-      title: 'Avec la copine on propose de participer à un micro-trottoir !',
-      description:
-        'Ex : Précise le thème, le style d’intervention et ta disponibilité.'
-    },
-    'youtube-video': {
-      title: 'Je suis motivé pour participer à un jeu YouTube.',
-      description:
-        'Ex : Indique le type de concept YouTube et le rôle que tu peux tenir.'
     }
   }
   const emploiExamples: Record<string, { title: string; description: string }> = {
@@ -459,11 +434,6 @@ export const Step4Description = ({
       title: 'Ex : Rédaction de contenu',
       description:
         'Ex : Je propose la rédaction de scripts, idées et captions.'
-    },
-    scenariste: {
-      title: 'Ex : Scénariste disponible',
-      description:
-        'Ex : Je propose l’écriture de scripts et scénarios vidéo.'
     },
     autre: {
       title: 'Ex : Service emploi (autre)',
@@ -497,11 +467,6 @@ export const Step4Description = ({
       description:
         'Ex : Je rédige scripts, idées de contenu et descriptions adaptées aux réseaux.'
     },
-    scenariste: {
-      title: 'Ex : Je suis scénariste',
-      description:
-        'Ex : Je construis des scripts et des scénarios vidéo.'
-    },
     autre: {
       title: 'Ex : Je propose mon profil',
       description:
@@ -512,67 +477,22 @@ export const Step4Description = ({
     'coaching-contenu': {
       title: 'Ex : Je propose un coaching contenu',
       description:
-        'Ex : Je propose un coaching pour formats, idées, rythme et direction artistique.'
-    },
-    'strategie-editoriale': {
-      title: 'Ex : Je propose une stratégie éditoriale',
-      description:
-        'Ex : Je propose un plan de contenu avec thèmes, calendrier et fréquence.'
-    },
-    organisation: {
-      title: 'Ex : J’organise votre production',
-      description:
-        'Ex : Je propose une organisation du contenu (planning, workflow, priorités).'
+        'Ex : Je propose un coaching pour formats, idées, rythme, direction artistique, organisation, analyse de profil, setup matériel et aisance caméra.'
     },
     agence: {
-      title: 'Ex : Je propose une agence créateur',
+      title: 'Ex : Je propose du développement business',
       description:
-        'Ex : Je propose de gérer les collaborations et partenariats d’un créateur.'
+        'Ex : Je propose des partenariats et des solutions de monétisation.'
     },
     branding: {
       title: 'Ex : Je propose un branding créateur',
       description:
-        'Ex : Je propose une identité visuelle et un positionnement clair.'
-    },
-    'analyse-profil': {
-      title: 'Ex : J’analyse votre profil',
-      description:
-        'Ex : Je propose un audit complet avec points forts et axes d’amélioration.'
-    },
-    'proposition-idees': {
-      title: 'Ex : Je propose des idées',
-      description:
-        'Ex : Je propose des idées de contenus adaptées à votre niche.'
-    },
-    'assistant-createur': {
-      title: 'Ex : Je suis assistant créateur',
-      description:
-        'Ex : Je propose d’assister un créateur dans la production et l’organisation.'
-    },
-    'monetisation-audience': {
-      title: 'Ex : Je propose la monétisation',
-      description:
-        'Ex : Je propose une stratégie pour monétiser votre audience.'
-    },
-    'aisance-camera': {
-      title: 'Ex : Je propose un coaching caméra',
-      description:
-        'Ex : Je propose un coaching pour être à l’aise face caméra (posture, voix).'
-    },
-    'setup-materiel': {
-      title: 'Ex : Je propose un setup créateur',
-      description:
-        'Ex : Je propose un setup de création (décor, éclairage, espace).'
-    },
-    'visage-marque': {
-      title: 'Ex : Je deviens visage de marque',
-      description:
-        'Ex : J’incarne une marque de manière régulière à travers des vidéos, photos et contenus publiés sur les réseaux.'
+        'Ex : Je propose une identité visuelle, un positionnement clair, une stratégie éditoriale et des idées de contenu.'
     },
     'animation-compte': {
       title: 'Ex : Je gère l’animation du compte',
       description:
-        'Ex : Je gère et publie du contenu régulièrement sur le compte pour garder une présence active.'
+        'Ex : Je gère et publie du contenu régulièrement sur le compte, avec un rôle de visage de marque.'
     },
     autre: {
       title: 'Ex : Autre service',
@@ -585,16 +505,6 @@ export const Step4Description = ({
       title: 'Ex : Compte TikTok à vendre',
       description:
         'Ex : Je vends un compte niche sport avec audience et engagement stables.'
-    },
-    'noms-utilisateur': {
-      title: 'Ex : Nom d’utilisateur à vendre',
-      description:
-        'Ex : Je vends un nom d’utilisateur court et mémorable pour un nouveau projet.'
-    },
-    'concepts-niches': {
-      title: 'Ex : Concept de contenu à vendre',
-      description:
-        'Ex : Je vends une idée de concept + ligne éditoriale + formats.'
     },
     gorille: {
       title: 'Ex : Matériel vidéo à vendre',
@@ -637,10 +547,15 @@ export const Step4Description = ({
     }
   }
   const studioLieuExamples: Record<string, { title: string; description: string }> = {
-    'studio-creation': {
-      title: 'Ex : Studio équipé',
+    'lieu-loisirs': {
+      title: 'Ex : Lieu de loisirs',
       description:
-        'Ex : Studio pour photos/vidéos/interviews, durée et équipement disponibles.'
+        'Ex : Restaurant/cinema/hotel/boite de nuit, preciser le type de lieu et la durée.'
+    },
+    'lieu-bien-etre': {
+      title: 'Ex : Lieu de bien-etre',
+      description:
+        'Ex : Prestation de service (ongles, maquillage, coiffure, massage), preciser le service et la durée.'
     },
     'lieux-residentiels': {
       title: 'Ex : Appartement pour shooting',
@@ -659,6 +574,41 @@ export const Step4Description = ({
     }
   }
   const projetsExamples: Record<string, { title: string; description: string }> = {
+    'interview-emission': {
+      title: 'Ex : [Nom du projet interview/émission]',
+      description:
+        'Ex : Je prépare une série d’interviews / émission. Je cherche préparation, tournage, animation et montage.'
+    },
+    podcast: {
+      title: 'Ex : [Nom du projet podcast]',
+      description:
+        'Ex : Je lance un podcast (thème, format). Je cherche co‑animation/montage audio.'
+    },
+    'court-metrage': {
+      title: 'Ex : [Nom du projet court‑métrage]',
+      description:
+        'Ex : Je crée un court‑métrage (scénario prêt). Je cherche acteurs/montage.'
+    },
+    'magazine-blog': {
+      title: 'Ex : [Nom du projet magazine/blog]',
+      description:
+        'Ex : Je crée un magazine/blog (thème). Je cherche rédaction/design/édition.'
+    },
+    media: {
+      title: 'Ex : [Nom du projet média]',
+      description:
+        'Ex : Je crée un média (ligne édito). Je cherche production/édition/diffusion.'
+    },
+    newsletter: {
+      title: 'Ex : [Nom du projet newsletter]',
+      description:
+        'Ex : Je lance une newsletter (thème, fréquence). Je cherche rédaction/design.'
+    },
+    'chaine-youtube': {
+      title: 'Ex : [Nom du projet chaîne YouTube]',
+      description:
+        'Ex : Je lance une chaîne YouTube (concept). Je cherche tournage/montage.'
+    },
     'projet-emission': {
       title: 'Ex : [Nom du projet émission]',
       description:
@@ -716,6 +666,36 @@ export const Step4Description = ({
     }
   }
   const projetsRequestExamples: Record<string, { title: string; description: string }> = {
+    'interview-emission': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    podcast: {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'court-metrage': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    'magazine-blog': {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    media: {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
+    newsletter: {
+      title: 'Ex : Profil créatif pour projet en équipe',
+      description:
+        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+    },
     'podcast-equipe': {
       title: 'Ex : Profil créatif pour projet en équipe',
       description:
@@ -784,8 +764,10 @@ export const Step4Description = ({
       })
     : projetsExamples[subcategorySlug]
   const activeExample =
-    categorySlug === 'creation-contenu'
+    categorySlug === 'creation-contenu' && !isCreationContenuProjectSubcategory
       ? creationExample
+      : isCreationContenuProjectSubcategory
+        ? projetsExample
       : categorySlug === 'casting-role'
         ? castingExample
         : categorySlug === 'emploi'
@@ -1160,12 +1142,11 @@ export const Step4Description = ({
             <CustomList
               items={paymentOptions}
               selectedId={formData.exchange_type}
-              onSelectItem={(optionId) => {
+                onSelectItem={(optionId) => {
                 onUpdateFormData({
                   exchange_type: optionId,
                   price: optionId === 'remuneration' ? formData.price : '',
                   exchange_service: optionId === 'echange' ? formData.exchange_service : '',
-                  revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
                   co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
                 })
                 setIsPaymentOpen(false)

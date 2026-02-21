@@ -190,9 +190,11 @@ DELETE FROM sub_categories;
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Photo', 'photo'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Vidéo', 'video'),
-  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Vlog', 'vlog'),
-  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Sketchs', 'sketchs'),
-  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Trends', 'trends'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Interview/Émission', 'interview-emission'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Podcast', 'podcast'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Court-métrage', 'court-metrage'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Magazine/Blog', 'magazine-blog'),
+  ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Média', 'media'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Événements', 'evenements'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Live', 'live'),
   ((SELECT id FROM categories WHERE slug = 'creation-contenu'), 'Autre', 'autre')
@@ -236,14 +238,9 @@ SET name = EXCLUDED.name;
 
 -- 5. Projet (projets-equipe)
 INSERT INTO sub_categories (category_id, name, slug) VALUES
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Émission', 'projet-emission'),
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Newsletter', 'projet-newsletter'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Interview', 'projet-interview'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Podcast', 'projet-podcast'),
+  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Documentaire', 'projet-documentaire'),
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Chaîne YouTube', 'projet-youtube'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Magazine', 'projet-magazine'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Blog', 'projet-blog'),
-  ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Média', 'projet-media'),
   ((SELECT id FROM categories WHERE slug = 'projets-equipe'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
 SET name = EXCLUDED.name;
@@ -262,8 +259,6 @@ SET name = EXCLUDED.name;
 -- 7. Vente
 INSERT INTO sub_categories (category_id, name, slug) VALUES
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Comptes', 'comptes'),
-  ((SELECT id FROM categories WHERE slug = 'vente'), 'Noms d''utilisateur', 'noms-utilisateur'),
-  ((SELECT id FROM categories WHERE slug = 'vente'), 'Concepts / Niches', 'concepts-niches'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Matériel', 'gorille'),
   ((SELECT id FROM categories WHERE slug = 'vente'), 'Autre', 'autre')
 ON CONFLICT (category_id, slug) DO UPDATE
@@ -319,4 +314,3 @@ FROM categories c
 LEFT JOIN posts p ON p.category_id = c.id
 GROUP BY c.id, c.name, c.slug
 ORDER BY total_posts DESC;
-

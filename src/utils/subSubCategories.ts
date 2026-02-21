@@ -20,10 +20,14 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
   'creation-contenu': {
     'photo': [],
     'video': [],
-    'vlog': [],
-    'sketchs': [],
-    'trends': [],
     'live': [],
+    'interview-emission': [],
+    'podcast': [],
+    'court-metrage': [],
+    'magazine-blog': [],
+    'media': [],
+    'newsletter': [],
+    'chaine-youtube': [],
     'autre': []
   },
   'casting-role': {
@@ -31,9 +35,7 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'modele-photo': [],
     'modele-video': [],
     'voix-off': [],
-    'invite-podcast': [],
-    'invite-micro-trottoir': [],
-    'youtube-video': [],
+    'invite': [],
     'autre': []
   },
   'emploi': {
@@ -43,35 +45,16 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'ecriture-contenu': [],
     'autre': []
   },
-  'poste-service': {
-    'prestation': [],
-    'food': [],
-    'lieux': [],
-    'autre': []
-  },
   'studio-lieu': {
-    'studio-creation': [],
+    'lieu-loisirs': [],
+    'lieu-bien-etre': [],
     'lieux-residentiels': [],
-    'lieux-professionnels': []
-  },
-  'projets-equipe': {
-    'projet-emission': [],
-    'projet-newsletter': [],
-    'projet-interview': [],
-    'projet-youtube': [],
-    'projet-podcast': [],
-    'projet-magazine': [],
-    'projet-blog': [],
-    'projet-media': [],
+    'lieux-professionnels': [],
     'autre': []
   },
   'services': {
     'coaching-contenu': [],
-    'strategie-editoriale': [],
-    'organisation': [],
     'agence': [],
-    'setup-materiel': [],
-    'visage-marque': [],
     'animation-compte': [],
     'autre': []
   },
@@ -82,16 +65,8 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'atelier': [],
     'autre': []
   },
-  'suivi': {
-    'production-sur-place': [],
-    'voyage-deplacement': [],
-    'evenement-sortie': [],
-    'autre': []
-  },
   'vente': {
     'comptes': [],
-    'noms-utilisateur': [],
-    'concepts-niches': [],
     'gorille': [],
     'autre': []
   },

@@ -10,24 +10,14 @@ export interface PaymentOption {
 
 export const PAYMENT_OPTIONS_CONFIG: PaymentOption[] = [
   {
-    id: 'co-creation',
-    name: 'Co-création',
-    description: 'Collaboration créative où les résultats sont partagés.'
-  },
-  {
     id: 'participation',
     name: 'Participation',
     description: 'Parce que tu as envie de vivre une belle expérience!'
   },
   {
-    id: 'association',
-    name: 'Association',
-    description: 'Regroupement de ressources et compétences pour un objectif commun.'
-  },
-  {
-    id: 'partage-revenus',
-    name: 'Partage de revenus',
-    description: 'Selon les gains générés par le contenu.'
+    id: 'co-creation',
+    name: 'Co-création',
+    description: 'Collaboration créative où les résultats sont partagés.'
   },
   {
     id: 'remuneration',
@@ -58,7 +48,13 @@ export const filterPaymentOptionsByCategory = (
   const categoryPaymentsMap: Record<string, string[]> = {
     emploi: ['remuneration'],
     services: ['remuneration', 'echange', 'co-creation'],
-    'poste-service': ['remuneration', 'visibilite-contre-service']
+    'poste-service': ['remuneration', 'visibilite-contre-service'],
+    casting: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+    'casting-role': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+    evenement: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+    evenements: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+    lieu: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+    'studio-lieu': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service']
   }
 
   const allowedIds = categoryPaymentsMap[categorySlug ?? '']

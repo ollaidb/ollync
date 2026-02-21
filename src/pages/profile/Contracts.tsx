@@ -189,14 +189,12 @@ const Contracts = () => {
 
   const contractTypeOptions = [
     { id: 'auto', label: 'Auto (selon le paiement)' },
-    { id: 'partage-revenus', label: 'Partage de revenus' },
     { id: 'remuneration', label: 'Rémunération' },
     { id: 'prix', label: 'Prix' },
     { id: 'echange', label: 'Échange de service' },
     { id: 'visibilite-contre-service', label: 'Visibilité contre service' },
     { id: 'co-creation', label: 'Co-création' },
     { id: 'participation', label: 'Participation' },
-    { id: 'association', label: 'Association' },
     { id: 'collaboration', label: 'Collaboration' }
   ]
 

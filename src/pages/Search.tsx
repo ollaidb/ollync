@@ -88,12 +88,9 @@ const Search = () => {
     'casting-role',
     'emploi',
     'studio-lieu',
-    'projets-equipe',
     'services',
     'evenements',
-    'suivi',
-    'vente',
-    'poste-service'
+    'vente'
   ], [])
 
   const filters = useMemo(() => {

@@ -78,119 +78,89 @@ export const Step2Subcategory = ({
       'creation-contenu': {
         photo: {
           offer:
-            'Photographier quelqu’un : photos naturelles, Insta, soirée, anniversaire... Proposer ou shooter à plusieurs.',
+            'Photographier quelqu’un : photos naturelles, Insta, soirée, anniversaire.',
           request:
-            'Se faire photographier : photos naturelles, Insta, soirée, anniversaire... Chercher ou shooter à plusieurs.'
+            'Se faire photographier : photos naturelles, Insta, soirée, anniversaire.'
         },
         video: {
           offer:
-            'Filmer quelqu’un : face-cam, playback, interview, événement... Proposer ou collaborer.',
+            'Filmer quelqu’un (vlog, trends, sketchs) : face-cam, playback, interview, événement.',
           request:
-            'Se faire filmer : face-cam, playback, interview, événement... Chercher ou collaborer.'
-        },
-        vlog: {
-          offer:
-            'Filmer un vlog : suivi, filmage naturel, plans en mouvement, moments clés... Proposer ou collaborer.',
-          request:
-            'Se faire filmer pour un vlog : suivi, filmage naturel, plans en mouvement, moments clés... Chercher ou collaborer.'
-        },
-        sketchs: {
-          offer:
-            'Jouer des rôles dans un sketch : comédie, duo, personnages, mise en scène... Proposer ou collaborer.',
-          request:
-            'Chercher des personnes pour un sketch : comédie, duo, personnages, mise en scène... Chercher ou collaborer.'
-        },
-        trends: {
-          offer:
-            'Réaliser des trends/défis : choré, duo, challenge, format viral... Proposer ou collaborer.',
-          request:
-            'Chercher un partenaire pour des trends/défis : choré, duo, challenge, format viral... Chercher ou collaborer.'
+            'Se faire filmer (vlog, trends, sketchs) : face-cam, playback, interview, événement.'
         },
         live: {
           offer:
-            'Animer un live à deux : débat, discussion, partage d’avis, co-animation... Proposer ou collaborer.',
+            'Animer un live à deux : débat, discussion, partage d’avis, co-animation.',
           request:
-            'Chercher quelqu’un pour un live à deux : débat, discussion, partage d’avis, co-animation... Chercher ou collaborer.'
+            'Chercher quelqu’un pour un live à deux : débat, discussion, partage d’avis, co-animation.'
+        },
+        'interview-emission': {
+          offer:
+            'Créer une série d’interviews ou une émission en collaboration.',
+          request:
+            'Créer une série d’interviews ou une émission en collaboration.'
+        },
+        podcast: {
+          offer:
+            'Lancer un podcast avec des profils complémentaires.',
+          request:
+            'Lancer un podcast avec des profils complémentaires.'
+        },
+        'court-metrage': {
+          offer:
+            'Créer un court-métrage en collaboration.',
+          request:
+            'Créer un court-métrage en collaboration.'
+        },
+        'magazine-blog': {
+          offer:
+            'Créer un magazine/blog en collaboration.',
+          request:
+            'Créer un magazine/blog en collaboration.'
+        },
+        media: {
+          offer:
+            'Créer un média en collaboration.',
+          request:
+            'Créer un média en collaboration.'
+        },
+        newsletter: {
+          offer:
+            'Collaborer pour lancer une newsletter.',
+          request:
+            'Collaborer pour lancer une newsletter.'
+        },
+        'chaine-youtube': {
+          offer:
+            'Collaborer pour une chaîne YouTube.',
+          request:
+            'Collaborer pour une chaîne YouTube.'
         }
       },
       services: {
         'coaching-contenu': {
           offer:
-            'Coacher la création de contenu : idées, formats, rythme, direction artistique... Proposer ou collaborer.',
+            'Idées, formats, rythme, direction artistique, organisation, analyse de profil, setup matériel, aisance caméra.',
           request:
-            'Chercher un coaching en création de contenu : idées, formats, rythme, direction artistique... Chercher ou collaborer.'
-        },
-        'strategie-editoriale': {
-          offer:
-            'Définir une stratégie éditoriale : thèmes, calendrier, fréquence, réseau principal... Proposer ou collaborer.',
-          request:
-            'Chercher une stratégie éditoriale : thèmes, calendrier, fréquence, réseau principal... Chercher ou collaborer.'
-        },
-        organisation: {
-          offer:
-            'Organiser la production de contenu : planning, workflow, priorités, suivi des posts... Proposer ou collaborer.',
-          request:
-            'Chercher de l’aide pour organiser la production : planning, workflow, priorités, suivi des posts... Chercher ou collaborer.'
+            'Idées, formats, rythme, direction artistique, organisation, analyse de profil, setup matériel, aisance caméra.'
         },
         agence: {
           offer:
-            'Gérer les collaborations créateur : partenariats, négociation, suivi, opportunités... Proposer ou collaborer.',
+            'Partenariats, monétisation, opportunités.',
           request:
-            'Chercher une agence pour gérer les collaborations : partenariats, négociation, suivi, opportunités... Chercher ou collaborer.'
+            'Partenariats, monétisation, opportunités.'
         },
         branding: {
           offer:
-            'Construire une image de marque créateur : identité visuelle, positionnement, cohérence, ligne de ton... Proposer ou collaborer.',
+            'Identité visuelle, positionnement, cohérence, stratégie éditoriale, proposition d’idées.',
           request:
-            'Chercher un accompagnement branding : identité visuelle, positionnement, cohérence, ligne de ton... Chercher ou collaborer.'
-        },
-        'analyse-profil': {
-          offer:
-            'Analyser un profil créateur : points forts, axes d’amélioration, performance, opportunités... Proposer ou collaborer.',
-          request:
-            'Chercher une analyse de profil : points forts, axes d’amélioration, performance, opportunités... Chercher ou collaborer.'
-        },
-        'proposition-idees': {
-          offer:
-            'Proposer des idées de contenu : concepts, angles, formats, séries... Proposer ou collaborer.',
-          request:
-            'Chercher des idées de contenu : concepts, angles, formats, séries... Chercher ou collaborer.'
-        },
-        'assistant-createur': {
-          offer:
-            'Assister un créateur au quotidien : préparation, tournage, organisation, publication... Proposer ou collaborer.',
-          request:
-            'Chercher un assistant créateur : préparation, tournage, organisation, publication... Chercher ou collaborer.'
-        },
-        'monetisation-audience': {
-          offer:
-            'Accompagner la monétisation d’audience : offres, partenariats, produits, stratégie... Proposer ou collaborer.',
-          request:
-            'Chercher un accompagnement monétisation : offres, partenariats, produits, stratégie... Chercher ou collaborer.'
-        },
-        'aisance-camera': {
-          offer:
-            'Coacher l’aisance caméra : posture, voix, présence, confiance... Proposer ou collaborer.',
-          request:
-            'Chercher un coaching aisance caméra : posture, voix, présence, confiance... Chercher ou collaborer.'
-        },
-        'setup-materiel': {
-          offer:
-            'Installer un setup de création : décor, éclairage, espace, optimisation... Proposer ou collaborer.',
-          request:
-            'Chercher de l’aide pour un setup de création : décor, éclairage, espace, optimisation... Chercher ou collaborer.'
-        },
-        'visage-marque': {
-          offer:
-            'Incarner une marque régulièrement : vidéos, photos, stories, contenus réseaux... Proposer ou collaborer.',
-          request:
-            'Chercher un visage de marque régulier : vidéos, photos, stories, contenus réseaux... Chercher ou collaborer.'
+            'Identité visuelle, positionnement, cohérence, stratégie éditoriale, proposition d’idées.'
         },
         'animation-compte': {
           offer:
-            'Animer un compte de marque : publication, calendrier, engagement, suivi... Proposer ou collaborer.',
+            'Visage de marque, publication, calendrier, engagement, suivi.',
           request:
-            'Chercher un profil pour animer un compte : publication, calendrier, engagement, suivi... Chercher ou collaborer.'
+            'Visage de marque, publication, calendrier, engagement, suivi.'
         }
       },
       'casting-role': {
@@ -203,24 +173,16 @@ export const Step2Subcategory = ({
           request: 'Trouvez modèles pour projet, publicité, contenu...'
         },
         'modele-video': {
-          offer: 'Fiction, documentaire, art. Présentation produit, mise en scène, contenu créatif...',
-          request: 'Trouvez vos figurant(e)s. Présentation produit, mise en scène, contenu créatif...'
+          offer: 'Fiction, documentaire, art. Présentation produit, mise en scène, contenu créatif, visage de marque, animation de compte...',
+          request: 'Trouvez vos figurant(e)s. Présentation produit, mise en scène, contenu créatif, visage de marque, animation de compte...'
         },
         'voix-off': {
           offer: 'Fiction, documentaire, animation. Pub, story, vidéo explicative...',
           request: 'Trouvez des voix pour contenu. Pub, story, vidéo explicative...'
         },
-        'invite-podcast': {
-          offer: 'Interview, fiction audio, jeu...',
-          request: 'Trouvez vos invités...'
-        },
-        'invite-micro-trottoir': {
-          offer: 'Jeu, interview, sketch...',
-          request: 'Trouvez des partenaires à interviewer...'
-        },
-        'youtube-video': {
-          offer: 'Débat, témoignage, jeux...',
-          request: 'Trouvez des profils pour du contenu...'
+        invite: {
+          offer: 'Invités disponibles : podcast, documentaire, émission, YouTube, micro-trottoir.',
+          request: 'Trouvez vos invités : podcast, documentaire, émission, YouTube, micro-trottoir.'
         }
       }
     }
@@ -246,16 +208,18 @@ export const Step2Subcategory = ({
           const wordLimitMap: Record<string, Record<string, number>> = {
             'creation-contenu': {
               live: 8,
-              sketchs: 7
+              'interview-emission': 7,
+              podcast: 6,
+              'court-metrage': 6,
+              'magazine-blog': 6,
+              media: 7
             },
             'casting-role': {
               figurant: 5,
               'modele-photo': 6,
               'modele-video': 6,
               'voix-off': 6,
-              'invite-podcast': 6,
-              'invite-micro-trottoir': 6,
-              'youtube-video': 6
+              invite: 6
             },
             emploi: {
               montage: 6,
@@ -264,33 +228,23 @@ export const Step2Subcategory = ({
               'ecriture-contenu': 6
             },
             'studio-lieu': {
-              'studio-creation': 7,
+              'lieu-loisirs': 7,
+              'lieu-bien-etre': 6,
               'lieux-residentiels': 7,
               'lieux-professionnels': 6
             },
             'projets-equipe': {
-              'projet-emission': 6,
               'projet-newsletter': 6,
-              'projet-interview': 6,
-              'projet-podcast': 6,
               'projet-youtube': 6,
-              'projet-magazine': 6,
-              'projet-blog': 6,
-              'projet-media': 7
+              'projet-documentaire': 6
             },
             services: {
               'coaching-contenu': 8,
-              'strategie-editoriale': 7,
-              organisation: 7,
               agence: 6,
-              'setup-materiel': 5,
-              'aisance-camera': 8,
-              'monetisation-audience': 7
+              branding: 7
             },
             vente: {
               comptes: 7,
-              'noms-utilisateur': 5,
-              'concepts-niches': 7,
               gorille: 7
             },
             'poste-service': {

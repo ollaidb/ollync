@@ -6,10 +6,14 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
   'creation-contenu': [
     { name: 'Photo', slug: 'photo' },
     { name: 'Vidéo', slug: 'video' },
-    { name: 'Vlog', slug: 'vlog' },
-    { name: 'Sketchs', slug: 'sketchs' },
-    { name: 'Trends', slug: 'trends' },
     { name: 'Live', slug: 'live' },
+    { name: 'Interview/Émission', slug: 'interview-emission' },
+    { name: 'Podcast', slug: 'podcast' },
+    { name: 'Court-métrage', slug: 'court-metrage' },
+    { name: 'Magazine/Blog', slug: 'magazine-blog' },
+    { name: 'Média', slug: 'media' },
+    { name: 'Newsletter', slug: 'newsletter' },
+    { name: 'Chaîne YouTube', slug: 'chaine-youtube' },
     { name: 'Autre', slug: 'autre' }
   ],
   emploi: [
@@ -18,13 +22,6 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Community manager', slug: 'community-manager' },
     { name: 'live', slug: 'live' },
     { name: 'Écriture de contenu', slug: 'ecriture-contenu' },
-    { name: 'Scénariste', slug: 'scenariste' },
-    { name: 'Autre', slug: 'autre' }
-  ],
-  'poste-service': [
-    { name: 'Prestation', slug: 'prestation' },
-    { name: 'Food', slug: 'food' },
-    { name: 'Lieux', slug: 'lieux' },
     { name: 'Autre', slug: 'autre' }
   ],
   'casting-role': [
@@ -32,43 +29,20 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Modèle photo', slug: 'modele-photo' },
     { name: 'Modèle vidéo', slug: 'modele-video' },
     { name: 'Voix off', slug: 'voix-off' },
-    { name: 'Invité podcast', slug: 'invite-podcast' },
-    { name: 'Invité micro-trottoir', slug: 'invite-micro-trottoir' },
-    { name: 'YouTube vidéo', slug: 'youtube-video' },
+    { name: 'Invité', slug: 'invite' },
     { name: 'Autre', slug: 'autre' }
   ],
   'studio-lieu': [
-    { name: 'Studio de création', slug: 'studio-creation' },
+    { name: 'Lieu de loisirs', slug: 'lieu-loisirs' },
+    { name: 'Lieu de bien-etre', slug: 'lieu-bien-etre' },
     { name: 'Lieux résidentiels', slug: 'lieux-residentiels' },
     { name: 'Lieux professionnels', slug: 'lieux-professionnels' },
     { name: 'Autre', slug: 'autre' }
   ],
-  'projets-equipe': [
-    { name: 'Émission', slug: 'projet-emission' },
-    { name: 'Newsletter', slug: 'projet-newsletter' },
-    { name: 'Interview', slug: 'projet-interview' },
-    { name: 'Podcast', slug: 'projet-podcast' },
-    { name: 'Documentaire', slug: 'projet-documentaire' },
-    { name: 'Court-métrage', slug: 'projet-court-metrage' },
-    { name: 'Chaîne YouTube', slug: 'projet-youtube' },
-    { name: 'Magazine', slug: 'projet-magazine' },
-    { name: 'Blog', slug: 'projet-blog' },
-    { name: 'Média', slug: 'projet-media' },
-    { name: 'Autre', slug: 'autre' }
-  ],
   services: [
     { name: 'Coaching contenu', slug: 'coaching-contenu' },
-    { name: 'Stratégie éditoriale', slug: 'strategie-editoriale' },
-    { name: 'Organisation', slug: 'organisation' },
-    { name: 'Agence', slug: 'agence' },
+    { name: 'Développement business', slug: 'agence' },
     { name: 'Branding', slug: 'branding' },
-    { name: 'Analyse de profil', slug: 'analyse-profil' },
-    { name: 'Proposition d’idées', slug: 'proposition-idees' },
-    { name: 'Assistant créateur', slug: 'assistant-createur' },
-    { name: 'Monétisation audience', slug: 'monetisation-audience' },
-    { name: 'Aisance caméra', slug: 'aisance-camera' },
-    { name: 'Setup matériel', slug: 'setup-materiel' },
-    { name: 'Visage de marque', slug: 'visage-marque' },
     { name: 'Animation de compte', slug: 'animation-compte' },
     { name: 'Autre', slug: 'autre' }
   ],
@@ -79,16 +53,8 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Atelier', slug: 'atelier' },
     { name: 'Autre', slug: 'autre' }
   ],
-  suivi: [
-    { name: 'Production sur place', slug: 'production-sur-place' },
-    { name: 'Voyage / déplacement', slug: 'voyage-deplacement' },
-    { name: 'Événement / sortie', slug: 'evenement-sortie' },
-    { name: 'Autre', slug: 'autre' }
-  ],
   vente: [
     { name: 'Comptes', slug: 'comptes' },
-    { name: "Noms d'utilisateur", slug: 'noms-utilisateur' },
-    { name: 'Concepts / Niches', slug: 'concepts-niches' },
     { name: 'Matériel', slug: 'gorille' },
     { name: 'Autre', slug: 'autre' }
   ]

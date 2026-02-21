@@ -50,7 +50,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [userPosts, setUserPosts] = useState<Array<{ id: string; title: string; image?: string | null }>>([])
   const [loadingUserPosts, setLoadingUserPosts] = useState(false)
   const [isTaggedPostOpen, setIsTaggedPostOpen] = useState(false)
-  const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
   const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
   const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
   const [isEventModeOpen, setIsEventModeOpen] = useState(false)
@@ -60,10 +59,33 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const isStudioLieuCategory = categorySlug === 'studio-lieu'
   const isVenteCategory = categorySlug === 'vente'
   const isCreationContenuCategory = categorySlug === 'creation-contenu'
+  const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
+    'interview-emission',
+    'podcast',
+    'court-metrage',
+    'magazine-blog',
+    'media',
+    'newsletter',
+    'chaine-youtube',
+    // Compatibilité avec anciens slugs
+    'projet-emission',
+    'projet-interview',
+    'projet-podcast',
+    'projet-court-metrage',
+    'projet-magazine',
+    'projet-blog',
+    'projet-media'
+  ])
+  const isCreationContenuProjectSubcategory =
+    isCreationContenuCategory && CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has(subcategorySlug)
+  const isCreationContenuStandardCategory =
+    isCreationContenuCategory && !isCreationContenuProjectSubcategory
+  const isCreationContenuLinkSubcategory =
+    isCreationContenuStandardCategory && ['photo', 'video', 'live'].includes(subcategorySlug)
   const isCastingCategory = categorySlug === 'casting-role' || categorySlug === 'casting'
   const isEmploiCategory = categorySlug === 'emploi' || categorySlug === 'montage' || categorySlug === 'recrutement'
   const isPosteServiceCategory = categorySlug === 'poste-service'
-  const isProjetsEquipeCategory = categorySlug === 'projets-equipe'
+  const isProjetsEquipeCategory = categorySlug === 'projets-equipe' || isCreationContenuProjectSubcategory
   const isServicesCategory = categorySlug === 'services'
   const isEvenementsCategory = categorySlug === 'evenements'
   const isSuiviCategory = categorySlug === 'suivi'
@@ -71,8 +93,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const isEmploiRequest = isEmploiCategory && isRequestListing
   const isCastingFigurantRequest = isCastingCategory && isRequestListing && subcategorySlug === 'figurant'
   const isProjetsEquipeRequest = isProjetsEquipeCategory && isRequestListing
-  const isPhotoOnlyMediaCategory =
-    isStudioLieuCategory || isVenteCategory || isEmploiCategory || isPosteServiceCategory || isProjetsEquipeCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory
   const eventMode = ((formData.event_mode || '') as 'in_person' | 'remote' | '')
   const isEventInPerson = eventMode === 'in_person'
   const isEventRemote = eventMode === 'remote'
@@ -110,7 +130,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     if (
       !isStudioLieuCategory &&
       !isVenteCategory &&
-      !isCreationContenuCategory &&
+      !isCreationContenuStandardCategory &&
       !isCastingCategory &&
       !isEmploiCategory &&
       !isPosteServiceCategory &&
@@ -119,15 +139,12 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       !isEvenementsCategory &&
       !isSuiviCategory
     ) return
-    if (mediaPickerType !== 'photo') {
-      setMediaPickerType('photo')
-    }
     const updates: Partial<FormData> = {}
     if (formData.video) updates.video = null
-    if (isStudioLieuCategory || isVenteCategory || isCreationContenuCategory || isCastingCategory || isPosteServiceCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory) {
+    if (isStudioLieuCategory || isVenteCategory || isCreationContenuStandardCategory || isCastingCategory || isPosteServiceCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory) {
       if (formData.profileLevel) updates.profileLevel = ''
     }
-    if (isStudioLieuCategory || isVenteCategory || isCreationContenuCategory || isCastingCategory || isEmploiCategory || isPosteServiceCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory) {
+    if (isStudioLieuCategory || isVenteCategory || isCreationContenuStandardCategory || isCastingCategory || isEmploiCategory || isPosteServiceCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory) {
       if (Array.isArray(formData.profileRoles) && formData.profileRoles.length > 0) updates.profileRoles = []
     }
     if (isServicesCategory && formData.maxParticipants !== '1') updates.maxParticipants = '1'
@@ -141,12 +158,18 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       if (formData.documentUrl) updates.documentUrl = ''
       if (formData.documentName) updates.documentName = ''
     }
-    if (isStudioLieuCategory || isVenteCategory || isCreationContenuCategory || isPosteServiceCategory || isServicesCategory || isSuiviCategory || (isCastingCategory && !isCastingFigurantRequest)) {
+    if (isStudioLieuCategory || isVenteCategory || isCreationContenuStandardCategory || isPosteServiceCategory || isServicesCategory || isSuiviCategory || (isCastingCategory && !isCastingFigurantRequest)) {
       if (formData.documentUrl) updates.documentUrl = ''
       if (formData.documentName) updates.documentName = ''
     }
     if (isStudioLieuCategory && formData.urgent) updates.urgent = false
-    if (isVenteCategory || isCreationContenuCategory || isPosteServiceCategory || isSuiviCategory || (isCastingCategory && !isCastingFigurantRequest)) {
+    if (
+      isVenteCategory ||
+      (isCreationContenuStandardCategory && !isCreationContenuLinkSubcategory) ||
+      isPosteServiceCategory ||
+      isSuiviCategory ||
+      (isCastingCategory && !isCastingFigurantRequest)
+    ) {
       if (formData.externalLink) updates.externalLink = ''
     }
     if (isVenteCategory || isEmploiRequest) {
@@ -172,7 +195,8 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   }, [
     isStudioLieuCategory,
     isVenteCategory,
-    isCreationContenuCategory,
+    isCreationContenuStandardCategory,
+    isCreationContenuLinkSubcategory,
     isCastingCategory,
     isEmploiCategory,
     isPosteServiceCategory,
@@ -183,7 +207,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     isEmploiRequest,
     isCastingFigurantRequest,
     isProjetsEquipeRequest,
-    mediaPickerType,
     formData.video,
     formData.profileLevel,
     formData.profileRoles,
@@ -331,22 +354,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     return `${baseUrl}#${params.toString()}`
   }
 
-  const getVideoDuration = (file: File) =>
-    new Promise<number>((resolve, reject) => {
-      const video = document.createElement('video')
-      const url = URL.createObjectURL(file)
-      video.preload = 'metadata'
-      video.onloadedmetadata = () => {
-        URL.revokeObjectURL(url)
-        resolve(video.duration)
-      }
-      video.onerror = () => {
-        URL.revokeObjectURL(url)
-        reject(new Error('Impossible de lire la durée de la vidéo.'))
-      }
-      video.src = url
-    })
-
   const performMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -357,7 +364,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
 
     setUploading(true)
     const uploadedImages: string[] = []
-    let uploadedVideo: string | null = null
     let remainingImageSlots = 7 - formData.images.length
     const selectedFiles = Array.from(files)
 
@@ -368,49 +374,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           continue
         }
 
-        if (file.type.startsWith('video/')) {
-          if (formData.video || uploadedVideo) {
-            alert('Vous ne pouvez ajouter qu\'une seule vidéo.')
-            continue
-          }
-
-          const duration = await getVideoDuration(file)
-          if (duration > 10) {
-            alert('La vidéo ne doit pas dépasser 10 secondes')
-            continue
-          }
-
-          const fileExt = file.name.split('.').pop()
-          const fileName = `${user.id}/videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-
-          const { error: uploadError } = await supabase.storage
-            .from('videos')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: false
-            })
-
-          if (uploadError) {
-            console.error('Error uploading video:', uploadError)
-            if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
-              alert('Le bucket de stockage n\'existe pas. Veuillez exécuter le script SQL de création du bucket.')
-            } else {
-              alert(`Erreur lors du téléchargement de ${file.name}: ${uploadError.message}`)
-            }
-            continue
-          }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('videos')
-            .getPublicUrl(fileName)
-
-          if (publicUrl) {
-            uploadedVideo = publicUrl
-          } else {
-            console.error('Impossible de récupérer l\'URL publique de la vidéo')
-            alert(`Erreur lors de la récupération de l'URL de ${file.name}`)
-          }
-        } else {
+        {
           if (remainingImageSlots <= 0) continue
 
           const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
@@ -459,10 +423,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       }
     }
 
-    if (uploadedImages.length > 0 || uploadedVideo) {
+    if (uploadedImages.length > 0) {
       onUpdateFormData({
-        images: uploadedImages.length > 0 ? [...formData.images, ...uploadedImages] : formData.images,
-        video: uploadedVideo ?? formData.video
+        images: [...formData.images, ...uploadedImages]
       })
     }
     setUploading(false)
@@ -481,10 +444,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const removeImage = (index: number) => {
     const newImages = formData.images.filter((_, i) => i !== index)
     onUpdateFormData({ images: newImages })
-  }
-
-  const removeVideo = () => {
-    onUpdateFormData({ video: null })
   }
 
   const performDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -720,31 +679,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       )}
 
       <div className="form-group">
-        <label className="form-label">Média *</label>
-        {!isPhotoOnlyMediaCategory && <p className="form-helper-text">1 vidéo maximum par publication</p>}
-        {!isPhotoOnlyMediaCategory && (
-        <div className="media-type-toggle" role="tablist" aria-label="Type de média">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mediaPickerType === 'photo'}
-            className={`media-type-toggle-btn ${mediaPickerType === 'photo' ? 'active' : ''}`}
-            onClick={() => setMediaPickerType('photo')}
-          >
-            Photos
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mediaPickerType === 'video'}
-            className={`media-type-toggle-btn ${mediaPickerType === 'video' ? 'active' : ''}`}
-            onClick={() => setMediaPickerType('video')}
-            disabled={!!formData.video}
-          >
-            Vidéo
-          </button>
-        </div>
-        )}
+        <label className="form-label">Média (optionnel)</label>
         <div className="images-grid">
           {formData.images.map((url, index) => (
             <div key={index} className="image-preview">
@@ -758,19 +693,6 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             </div>
           ))}
 
-          {!isPhotoOnlyMediaCategory && formData.video && (
-            <div className="image-preview">
-              <video src={formData.video} controls playsInline />
-              <button
-                className="remove-image-button"
-                onClick={removeVideo}
-                type="button"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
-          
           {formData.images.length < 7 && (
             <label className="upload-area" style={{ opacity: uploading ? 0.6 : 1 }}>
               {uploading ? (
@@ -781,15 +703,13 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
               ) : (
                 <>
                   <Upload size={40} />
-                  <span className="upload-text">
-                    {mediaPickerType === 'photo' ? 'Ajouter des photos' : 'Ajouter une vidéo'}
-                  </span>
+                  <span className="upload-text">Ajouter des photos</span>
                 </>
               )}
               <input
                 type="file"
-                accept={isPhotoOnlyMediaCategory ? 'image/*' : (mediaPickerType === 'photo' ? 'image/*' : 'video/*')}
-                multiple={isPhotoOnlyMediaCategory ? true : mediaPickerType === 'photo'}
+                accept="image/*"
+                multiple
                 onChange={handleMediaUpload}
                 disabled={uploading}
                 style={{ display: 'none' }}
@@ -813,7 +733,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuStandardCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
       <div className="form-group dropdown-field">
         <label className="form-label">Niveau recherché (optionnel)</label>
         <button
@@ -864,7 +784,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && !isCastingCategory && !isEmploiCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && maxParticipantsNumber > 1 && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuStandardCategory && !isCastingCategory && !isEmploiCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && maxParticipantsNumber > 1 && (
         <div className="form-group dropdown-field">
           <label className="form-label">Rôle recherché (optionnel)</label>
           <button
@@ -976,7 +896,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
+      {!isStudioLieuCategory && !isVenteCategory && (!isCreationContenuStandardCategory || isCreationContenuLinkSubcategory) && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
       <div className="form-group">
         <label className="form-label">Lien (optionnel)</label>
         <input
@@ -989,7 +909,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
       </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuCategory && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuStandardCategory && (!isCastingCategory || isCastingFigurantRequest) && !isPosteServiceCategory && !isServicesCategory && !isSuiviCategory && !isProjetsEquipeRequest && (
       <div className="form-group">
         <label className="form-label">Document PDF (optionnel)</label>
         {formData.documentUrl ? (

@@ -74,20 +74,21 @@ const PAYMENT_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   emploi: ['remuneration'],
   services: ['remuneration', 'echange'],
   'poste-service': ['remuneration', 'visibilite-contre-service'],
-  'studio-lieu': ['remuneration', 'visibilite-contre-service'],
+  'studio-lieu': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+  lieu: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
   vente: ['remuneration'],
-  'casting-role': ['remuneration', 'participation'],
-  evenements: ['remuneration', 'participation']
+  'casting-role': ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+  casting: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+  evenements: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service'],
+  evenement: ['participation', 'co-creation', 'remuneration', 'echange', 'visibilite-contre-service']
 }
 
 const DEFAULT_PAYMENT_OPTIONS = [
-  'remuneration',
-  'partage-revenus',
-  'echange',
-  'visibilite-contre-service',
-  'co-creation',
   'participation',
-  'association'
+  'co-creation',
+  'remuneration',
+  'echange',
+  'visibilite-contre-service'
 ]
 
 const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
@@ -100,17 +101,6 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
     id: 'participation',
     name: 'Participation',
     description: 'Parce que tu as envie de vivre une belle expérience!'
-  },
-  association: {
-    id: 'association',
-    name: 'Association',
-    description: 'Regroupement de ressources et compétences pour un objectif commun.'
-  },
-  'partage-revenus': {
-    id: 'partage-revenus',
-    name: 'Partage de revenus',
-    description: 'Selon les gains générés par le contenu.',
-    requiresPercentage: true
   },
   remuneration: {
     id: 'remuneration',
@@ -146,13 +136,11 @@ export const getPaymentOptionsForCategory = (
 
 export const getAllPaymentOptions = (): PaymentOptionConfig[] => {
   const optionOrder = [
+    'participation',
+    'co-creation',
     'remuneration',
-    'partage-revenus',
     'echange',
     'visibilite-contre-service',
-    'co-creation',
-    'participation',
-    'association',
     'prix'
   ]
 
@@ -184,6 +172,23 @@ export const validatePublishForm = (
   const MIN_BENEFITS_CHARS = 30
 
   const CASTING_SLUGS = new Set(['casting-role', 'casting'])
+  const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
+    'interview-emission',
+    'podcast',
+    'court-metrage',
+    'magazine-blog',
+    'media',
+    'newsletter',
+    'chaine-youtube',
+    // Compatibilité anciens slugs
+    'projet-emission',
+    'projet-interview',
+    'projet-podcast',
+    'projet-court-metrage',
+    'projet-magazine',
+    'projet-blog',
+    'projet-media'
+  ])
   const errors: string[] = []
   const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const isJobCategory = EMPLOI_SLUGS.has(formData.category || '')
@@ -195,14 +200,14 @@ export const validatePublishForm = (
     (formData.subcategory || '').trim().toLowerCase() === 'figurant'
   const isStudioLieuCategory = formData.category === 'studio-lieu'
   const isVenteCategory = formData.category === 'vente'
-  const isPosteServiceCategory = formData.category === 'poste-service'
-  const isProjetsEquipeCategory = formData.category === 'projets-equipe'
-  const isServicesCategory = formData.category === 'services'
+  const isCreationContenuProjectSubcategory =
+    formData.category === 'creation-contenu' &&
+    CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has((formData.subcategory || '').trim().toLowerCase())
+  const isProjetsEquipeCategory = formData.category === 'projets-equipe' || isCreationContenuProjectSubcategory
   const isEvenementsCategory = formData.category === 'evenements'
-  const isSuiviCategory = formData.category === 'suivi'
   const isProjetsEquipeRequest =
     formData.listingType === 'request' &&
-    (formData.category === 'projets-equipe' || formData.category === 'projet')
+    (formData.category === 'projets-equipe' || formData.category === 'projet' || isCreationContenuProjectSubcategory)
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return NaN
     const trimmed = value.trim()
@@ -320,20 +325,7 @@ export const validatePublishForm = (
     }
   }
 
-  // Média (au moins une photo ou une vidéo)
-  const hasImages = formData.images && formData.images.length > 0
-  const hasVideo =
-    !!formData.video &&
-    !isVenteCategory &&
-    !isJobCategory &&
-    !isPosteServiceCategory &&
-    !isProjetsEquipeCategory &&
-    !isServicesCategory &&
-    !isEvenementsCategory &&
-    !isSuiviCategory
-  if (!hasImages && !hasVideo) {
-    errors.push('Au moins un média (photo ou vidéo) est obligatoire')
-  }
+  // Média optionnel (plus de vidéo côté publication)
 
   // Moyen de paiement (non requis pour une demande d'emploi)
   let paymentConfig: PaymentOptionConfig | null = null
@@ -408,9 +400,9 @@ export const shouldShowSocialNetwork = (
 
   // Catégories où le réseau social est pertinent
   const relevantCategories: Record<string, string[]> = {
-    'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends'],
+    'creation-contenu': ['photo', 'video'],
     'emploi': ['montage', 'live'],
-    'services': ['coaching-contenu', 'strategie-editoriale', 'visage-marque', 'animation-compte'],
+    'services': ['coaching-contenu', 'branding', 'animation-compte'],
     'vente': ['comptes']
   }
 
@@ -467,6 +459,23 @@ export const handlePublish = async (
   existingPostId?: string | null
 ) => {
   const CASTING_SLUGS = new Set(['casting-role', 'casting'])
+  const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
+    'interview-emission',
+    'podcast',
+    'court-metrage',
+    'magazine-blog',
+    'media',
+    'newsletter',
+    'chaine-youtube',
+    // Compatibilité anciens slugs
+    'projet-emission',
+    'projet-interview',
+    'projet-podcast',
+    'projet-court-metrage',
+    'projet-magazine',
+    'projet-blog',
+    'projet-media'
+  ])
   const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return null
@@ -589,7 +598,17 @@ export const handlePublish = async (
   const isProjetsEquipeRequest =
     formData.listingType === 'request' &&
     ((normalizedCategorySlug || '').toLowerCase() === 'projets-equipe' ||
-      (normalizedCategorySlug || '').toLowerCase() === 'projet')
+      (normalizedCategorySlug || '').toLowerCase() === 'projet' ||
+      (
+        (normalizedCategorySlug || '').toLowerCase() === 'creation-contenu' &&
+        CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has((normalizedSubcategorySlug || '').toLowerCase())
+      ))
+  const isCreationContenuProjectSubcategory =
+    (normalizedCategorySlug || '').toLowerCase() === 'creation-contenu' &&
+    CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has((normalizedSubcategorySlug || '').toLowerCase())
+  const isCreationContenuLinkSubcategory =
+    (normalizedCategorySlug || '').toLowerCase() === 'creation-contenu' &&
+    ['photo', 'video', 'live'].includes((normalizedSubcategorySlug || '').toLowerCase())
 
   // Déterminer si le réseau social est requis
   const requireSocialNetwork = shouldShowSocialNetwork(formData.category, formData.subcategory)
@@ -621,10 +640,6 @@ export const handlePublish = async (
   // Si c'est un échange de service, ajouter la description du service à la description
   if (formData.exchange_type === 'echange' && formData.exchange_service) {
     descriptionValue += `\n\nService échangé : ${formData.exchange_service.trim()}`
-  }
-
-  if (formData.exchange_type === 'partage-revenus' && formData.revenue_share_percentage) {
-    descriptionValue += `\n\nPartage de revenus : ${formData.revenue_share_percentage.trim()}%`
   }
 
   if (formData.exchange_type === 'co-creation' && formData.co_creation_details) {
@@ -688,15 +703,7 @@ export const handlePublish = async (
     event_mode: isEvenementCategory ? (eventMode || null) : null,
     event_platform: isEventRemote ? (formData.event_platform?.trim() || null) : null,
     images: formData.images.length > 0 ? formData.images : null,
-    video:
-      normalizedCategorySlug === 'emploi' ||
-      normalizedCategorySlug === 'poste-service' ||
-      normalizedCategorySlug === 'projets-equipe' ||
-      normalizedCategorySlug === 'services' ||
-      normalizedCategorySlug === 'evenements' ||
-      normalizedCategorySlug === 'suivi'
-        ? null
-        : (formData.video || null),
+    video: null,
     is_urgent: formData.urgent || false,
     status: finalStatus,
     payment_type: formData.exchange_type || null,
@@ -712,7 +719,7 @@ export const handlePublish = async (
         ? null
         : (formData.deadline || null),
     needed_time:
-      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCastingFigurantRequest
+      normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCreationContenuProjectSubcategory || isCastingFigurantRequest
         ? null
         : (formData.neededTime?.trim() || null),
     number_of_people:
@@ -720,12 +727,12 @@ export const handlePublish = async (
         ? null
         : (formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null),
     duration_minutes:
-      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCastingFigurantRequest
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'emploi' || normalizedCategorySlug === 'projets-equipe' || isCreationContenuProjectSubcategory || isCastingFigurantRequest
         ? null
         : (formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : null),
     profile_level:
       normalizedCategorySlug === 'vente' ||
-      normalizedCategorySlug === 'creation-contenu' ||
+      (normalizedCategorySlug === 'creation-contenu' && !isCreationContenuProjectSubcategory) ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
@@ -737,7 +744,7 @@ export const handlePublish = async (
     profile_roles:
       normalizedCategorySlug === 'vente' ||
       normalizedCategorySlug === 'casting-role' ||
-      normalizedCategorySlug === 'creation-contenu' ||
+      (normalizedCategorySlug === 'creation-contenu' && !isCreationContenuProjectSubcategory) ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
@@ -748,7 +755,7 @@ export const handlePublish = async (
         : (formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null),
     external_link:
       normalizedCategorySlug === 'vente' ||
-      normalizedCategorySlug === 'creation-contenu' ||
+      (normalizedCategorySlug === 'creation-contenu' && !isCreationContenuProjectSubcategory && !isCreationContenuLinkSubcategory) ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'suivi' ||
@@ -757,7 +764,7 @@ export const handlePublish = async (
         : normalizeExternalLink(formData.externalLink),
     document_url:
       normalizedCategorySlug === 'vente' ||
-      normalizedCategorySlug === 'creation-contenu' ||
+      (normalizedCategorySlug === 'creation-contenu' && !isCreationContenuProjectSubcategory) ||
       normalizedCategorySlug === 'poste-service' ||
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'suivi' ||

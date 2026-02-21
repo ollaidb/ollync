@@ -3,10 +3,14 @@ export const interestCatalog: Record<string, string[]> = {
     'Création de contenu',
     'Photo',
     'Vidéo',
-    'Vlog',
-    'Sketchs',
-    'Trends',
     'Live',
+    'Interview/Émission',
+    'Podcast',
+    'Court-métrage',
+    'Magazine/Blog',
+    'Média',
+    'Newsletter',
+    'Chaîne YouTube',
     'Autre'
   ],
   'casting-role': [
@@ -14,9 +18,7 @@ export const interestCatalog: Record<string, string[]> = {
     'Modèle photo',
     'Modèle vidéo',
     'Voix off',
-    'Invité podcast',
-    'Invité micro-trottoir',
-    'YouTube vidéo',
+    'Invité',
     'Autre'
   ],
   'emploi': [
@@ -27,28 +29,16 @@ export const interestCatalog: Record<string, string[]> = {
     'Autre'
   ],
   'studio-lieu': [
-    'Studio de création',
+    'Lieu de loisirs',
+    'Lieu de bien-etre',
     'Lieux résidentiels',
-    'Lieux professionnels'
-  ],
-  'projets-equipe': [
-    'Émission',
-    'Newsletter',
-    'Interview',
-    'Podcast',
-    'Chaîne YouTube',
-    'Magazine',
-    'Blog',
-    'Média',
+    'Lieux professionnels',
     'Autre'
   ],
   'services': [
     'Coaching contenu',
-    'Stratégie éditoriale',
-    'Organisation',
-    'Agence',
-    'Setup matériel',
-    'Visage de marque',
+    'Développement business',
+    'Branding',
     'Animation de compte',
     'Autre'
   ],
@@ -59,23 +49,9 @@ export const interestCatalog: Record<string, string[]> = {
     'Atelier',
     'Autre'
   ],
-  'suivi': [
-    'Production sur place',
-    'Voyage / déplacement',
-    'Événement / sortie',
-    'Autre'
-  ],
   'vente': [
     'Comptes',
-    "Noms d'utilisateur",
-    'Concepts / Niches',
     'Matériel',
-    'Autre'
-  ],
-  'poste-service': [
-    'Prestation',
-    'Food',
-    'Lieux',
     'Autre'
   ]
 }
