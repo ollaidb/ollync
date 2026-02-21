@@ -755,16 +755,44 @@ export const handlePublish = async (
     }
   })
 
-  try {
-    const postsTable = supabase.from('posts') as any
-    const query = existingPostId
-      ? postsTable.update(postData).eq('id', existingPostId).eq('user_id', user.id)
-      : postsTable.insert(postData)
+  const executePublishWithSchemaFallback = async () => {
+    const payload = { ...postData }
+    const maxAttempts = 8
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (query as any)
-      .select()
-      .single()
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const postsTable = supabase.from('posts') as any
+      const query = existingPostId
+        ? postsTable.update(payload).eq('id', existingPostId).eq('user_id', user.id)
+        : postsTable.insert(payload)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (query as any).select().single()
+
+      if (!error) {
+        return { data, error: null as any }
+      }
+
+      const errorMessage = String((error as { message?: string } | null)?.message || '')
+      const missingColumnMatch = errorMessage.match(/Could not find the '([^']+)' column of 'posts'/i)
+      const missingColumn = missingColumnMatch?.[1]
+
+      if ((error as { code?: string } | null)?.code === 'PGRST204' && missingColumn && missingColumn in payload) {
+        console.warn(`[publish] Colonne absente dans la base, fallback sans "${missingColumn}"`)
+        delete payload[missingColumn]
+        continue
+      }
+
+      return { data: null, error }
+    }
+
+    return {
+      data: null,
+      error: { message: 'Impossible de publier: trop de colonnes manquantes dans la table posts.' }
+    }
+  }
+
+  try {
+    const { data, error } = await executePublishWithSchemaFallback()
 
     if (error) {
       console.error('Error publishing post:', error)
