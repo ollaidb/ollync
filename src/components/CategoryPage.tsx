@@ -680,14 +680,14 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                   className={`swipe-filter-option ${pendingListingTypeFilter === 'offer' ? 'active' : ''}`}
                   onClick={() => setPendingListingTypeFilter('offer')}
                 >
-                  Offre
+                  Demande
                 </button>
                 <button
                   type="button"
                   className={`swipe-filter-option ${pendingListingTypeFilter === 'request' ? 'active' : ''}`}
                   onClick={() => setPendingListingTypeFilter('request')}
                 >
-                  Demande
+                  Offre
                 </button>
               </div>
             </div>

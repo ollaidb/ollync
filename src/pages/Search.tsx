@@ -689,7 +689,7 @@ const Search = () => {
                   onClick={() => setPendingListingTypeFilter('offer')}
                 >
                   {pendingListingTypeFilter === 'offer' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                  Offre
+                  Demande
                 </button>
                 <button
                   type="button"
@@ -697,7 +697,7 @@ const Search = () => {
                   onClick={() => setPendingListingTypeFilter('request')}
                 >
                   {pendingListingTypeFilter === 'request' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
-                  Demande
+                  Offre
                 </button>
               </div>
             </div>
