@@ -68,6 +68,8 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Monétisation audience', slug: 'monetisation-audience' },
     { name: 'Aisance caméra', slug: 'aisance-camera' },
     { name: 'Setup matériel', slug: 'setup-materiel' },
+    { name: 'Visage de marque', slug: 'visage-marque' },
+    { name: 'Animation de compte', slug: 'animation-compte' },
     { name: 'Autre', slug: 'autre' }
   ],
   evenements: [

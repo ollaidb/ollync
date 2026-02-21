@@ -24,6 +24,8 @@ interface FormData {
   location_lng: number | null
   location_address: string
   location_visible_to_participants_only: boolean
+  event_mode?: 'in_person' | 'remote' | ''
+  event_platform?: string
   exchange_type: string
   exchange_service?: string
   revenue_share_percentage?: string
@@ -238,8 +240,26 @@ export const validatePublishForm = (
     errors.push('Le type de contrat est obligatoire pour un emploi')
   }
 
-  // Lieu
-  if (!formData.location || formData.location.trim().length === 0) {
+  const eventMode = (formData.event_mode || '').trim()
+  const isEventRemote = isEvenementsCategory && eventMode === 'remote'
+  const isEventInPerson = isEvenementsCategory && eventMode === 'in_person'
+
+  // Lieu / mode évènement
+  if (isEvenementsCategory) {
+    if (!eventMode) {
+      errors.push('Le type de présence est obligatoire pour un événement')
+    } else if (!isEventRemote && !isEventInPerson) {
+      errors.push('Le type de présence de l’événement est invalide')
+    }
+
+    if (isEventInPerson && (!formData.location || formData.location.trim().length === 0)) {
+      errors.push('L’adresse est obligatoire pour un événement en présentiel')
+    }
+
+    if (isEventRemote && (!formData.event_platform || formData.event_platform.trim().length === 0)) {
+      errors.push('La plateforme est obligatoire pour un événement à distance')
+    }
+  } else if (!formData.location || formData.location.trim().length === 0) {
     errors.push('Le lieu est obligatoire')
   }
 
@@ -348,7 +368,7 @@ export const shouldShowSocialNetwork = (
   const relevantCategories: Record<string, string[]> = {
     'creation-contenu': ['photo', 'video', 'vlog', 'sketchs', 'trends'],
     'emploi': ['montage', 'live'],
-    'services': ['coaching-contenu', 'strategie-editoriale'],
+    'services': ['coaching-contenu', 'strategie-editoriale', 'visage-marque', 'animation-compte'],
     'vente': ['comptes']
   }
 
@@ -607,6 +627,9 @@ export const handlePublish = async (
     ? evaluateTextModeration(moderationText)
     : { score: 0, reasons: [], shouldBlock: false }
   const finalStatus = moderationResult.shouldBlock ? 'pending' : status
+  const isEvenementCategory = (normalizedCategorySlug || '').toLowerCase() === 'evenements'
+  const eventMode = ((formData.event_mode || '').trim() as 'in_person' | 'remote' | '')
+  const isEventRemote = isEvenementCategory && eventMode === 'remote'
 
   const postData: any = {
     user_id: user.id,
@@ -623,7 +646,13 @@ export const handlePublish = async (
     responsibilities: formData.responsibilities?.trim() || null,
     required_skills: formData.required_skills?.trim() || null,
     benefits: formData.benefits?.trim() || null,
-    location: formData.location || null,
+    location: isEventRemote ? null : (formData.location || null),
+    location_address: isEventRemote ? null : (formData.location_address || null),
+    location_city: isEventRemote ? null : (formData.location_city || null),
+    location_lat: isEventRemote ? null : (formData.location_lat ?? null),
+    location_lng: isEventRemote ? null : (formData.location_lng ?? null),
+    event_mode: isEvenementCategory ? (eventMode || null) : null,
+    event_platform: isEventRemote ? (formData.event_platform?.trim() || null) : null,
     images: formData.images.length > 0 ? formData.images : null,
     video:
       normalizedCategorySlug === 'emploi' ||

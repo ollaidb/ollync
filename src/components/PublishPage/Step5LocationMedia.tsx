@@ -15,6 +15,8 @@ interface FormData {
   location_lng: number | null
   location_address: string
   location_visible_to_participants_only: boolean
+  event_mode?: 'in_person' | 'remote' | ''
+  event_platform?: string
   urgent: boolean
   images: string[]
   video: string | null
@@ -50,6 +52,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [mediaPickerType, setMediaPickerType] = useState<'photo' | 'video'>('photo')
   const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
   const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
+  const [isEventModeOpen, setIsEventModeOpen] = useState(false)
   const categorySlug = String(formData.category || '').toLowerCase()
   const subcategorySlug = String(formData.subcategory || '').toLowerCase()
   const isStudioLieuCategory = categorySlug === 'studio-lieu'
@@ -68,6 +71,9 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const isProjetsEquipeRequest = isProjetsEquipeCategory && isRequestListing
   const isPhotoOnlyMediaCategory =
     isStudioLieuCategory || isVenteCategory || isEmploiCategory || isPosteServiceCategory || isProjetsEquipeCategory || isServicesCategory || isEvenementsCategory || isSuiviCategory
+  const eventMode = ((formData.event_mode || '') as 'in_person' | 'remote' | '')
+  const isEventInPerson = eventMode === 'in_person'
+  const isEventRemote = eventMode === 'remote'
 
   const profileLevelOptions = useMemo(() => ([
     'Amateur',
@@ -144,6 +150,20 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     if (isVenteCategory || isEmploiRequest) {
       if (formData.taggedPostId) updates.taggedPostId = ''
     }
+    if (!isEvenementsCategory) {
+      if (formData.event_mode) updates.event_mode = ''
+      if (formData.event_platform) updates.event_platform = ''
+    } else if (isEventRemote) {
+      if (formData.location || formData.location_address || formData.location_city || formData.location_lat || formData.location_lng) {
+        updates.location = ''
+        updates.location_address = ''
+        updates.location_city = ''
+        updates.location_lat = null
+        updates.location_lng = null
+      }
+    } else if (isEventInPerson) {
+      if (formData.event_platform) updates.event_platform = ''
+    }
     if (Object.keys(updates).length > 0) {
       onUpdateFormData(updates)
     }
@@ -171,6 +191,13 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     formData.externalLink,
     formData.taggedPostId,
     formData.urgent,
+    formData.event_mode,
+    formData.event_platform,
+    formData.location,
+    formData.location_address,
+    formData.location_city,
+    formData.location_lat,
+    formData.location_lng,
     onUpdateFormData
   ])
 
@@ -526,21 +553,109 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     <div className="step5-location-media">
       <h2 className="step-title">Localisation et médias</h2>
 
-      <div className="form-group">
-        <label className="form-label">Lieu *</label>
-        <LocationAutocomplete
-          value={formData.location_address || formData.location || ''}
-          onChange={(value) => {
-            // Si l'utilisateur tape manuellement, on met à jour juste location
-            if (!formData.location_address || value !== formData.location_address) {
-              onUpdateFormData({ location: value })
-            }
-          }}
-          onLocationSelect={handleLocationSelect}
-          placeholder="Rechercher une adresse (ex: Paris, France)"
-          className="step5-location-autocomplete"
-        />
-      </div>
+      {isEvenementsCategory ? (
+        <>
+          <div className="form-group dropdown-field">
+            <label className="form-label">Type de présence *</label>
+            <button
+              type="button"
+              className={`dropdown-trigger ${isEventModeOpen ? 'open' : ''}`}
+              onClick={() => setIsEventModeOpen((prev) => !prev)}
+            >
+              <span>
+                {isEventInPerson ? 'En présentiel' : isEventRemote ? 'À distance' : 'Choisir le type de présence'}
+              </span>
+              <span className="dropdown-caret" aria-hidden="true" />
+            </button>
+            {isEventModeOpen && (
+              <>
+                <div
+                  className="publish-dropdown-backdrop"
+                  onClick={() => setIsEventModeOpen(false)}
+                />
+                <div className="publish-dropdown-panel profile-dropdown-panel">
+                  <div className="publish-dropdown-title">Choisissez le type de présence</div>
+                  <div className="profile-dropdown-list publish-list">
+                    <button
+                      type="button"
+                      className={`profile-dropdown-option ${isEventInPerson ? 'selected' : ''}`}
+                      onClick={() => {
+                        onUpdateFormData({ event_mode: 'in_person', event_platform: '' })
+                        setIsEventModeOpen(false)
+                      }}
+                    >
+                      <span className="profile-option-text">En présentiel</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`profile-dropdown-option ${isEventRemote ? 'selected' : ''}`}
+                      onClick={() => {
+                        onUpdateFormData({
+                          event_mode: 'remote',
+                          location: '',
+                          location_address: '',
+                          location_city: '',
+                          location_lat: null,
+                          location_lng: null
+                        })
+                        setIsEventModeOpen(false)
+                      }}
+                    >
+                      <span className="profile-option-text">À distance</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {eventMode && (
+            isEventInPerson ? (
+              <div className="form-group">
+                <label className="form-label">Adresse *</label>
+                <LocationAutocomplete
+                  value={formData.location_address || formData.location || ''}
+                  onChange={(value) => {
+                    if (!formData.location_address || value !== formData.location_address) {
+                      onUpdateFormData({ location: value })
+                    }
+                  }}
+                  onLocationSelect={handleLocationSelect}
+                  placeholder="Rechercher une adresse (ex: Paris, France)"
+                  className="step5-location-autocomplete"
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Plateforme *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex : Zoom, Google Meet, YouTube Live..."
+                  value={formData.event_platform || ''}
+                  onChange={(e) => onUpdateFormData({ event_platform: e.target.value })}
+                />
+              </div>
+            )
+          )}
+        </>
+      ) : (
+        <div className="form-group">
+          <label className="form-label">Lieu *</label>
+          <LocationAutocomplete
+            value={formData.location_address || formData.location || ''}
+            onChange={(value) => {
+              // Si l'utilisateur tape manuellement, on met à jour juste location
+              if (!formData.location_address || value !== formData.location_address) {
+                onUpdateFormData({ location: value })
+              }
+            }}
+            onLocationSelect={handleLocationSelect}
+            placeholder="Rechercher une adresse (ex: Paris, France)"
+            className="step5-location-autocomplete"
+          />
+        </div>
+      )}
 
       <div className="form-group">
         <label className="form-label">Média *</label>

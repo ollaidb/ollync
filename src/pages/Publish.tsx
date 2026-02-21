@@ -39,6 +39,8 @@ export default function Publish() {
     location_lng?: number | null
     location_address?: string | null
     location_visible_to_participants_only?: boolean | null
+    event_mode?: 'in_person' | 'remote' | null
+    event_platform?: string | null
     payment_type?: string | null
     exchange_service?: string | null
     revenue_share_percentage?: number | string | null
@@ -96,6 +98,8 @@ export default function Publish() {
     location_lng: null as number | null,
     location_address: '',
     location_visible_to_participants_only: false,
+    event_mode: '' as '' | 'in_person' | 'remote',
+    event_platform: '',
     exchange_type: '',
     exchange_service: '',
     revenue_share_percentage: '',
@@ -349,6 +353,12 @@ export default function Publish() {
           location_lng: postData.location_lng ?? null,
           location_address: postData.location_address || '',
           location_visible_to_participants_only: postData.location_visible_to_participants_only || false,
+          event_mode: (
+            postData.event_mode === 'in_person' || postData.event_mode === 'remote'
+              ? postData.event_mode
+              : ''
+          ) as '' | 'in_person' | 'remote',
+          event_platform: postData.event_platform || '',
           exchange_type: postData.payment_type || '',
           exchange_service: postData.exchange_service || '',
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',

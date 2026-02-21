@@ -71,6 +71,8 @@ export const subSubCategoriesMap: Record<string, Record<string, SubSubCategory[]
     'organisation': [],
     'agence': [],
     'setup-materiel': [],
+    'visage-marque': [],
+    'animation-compte': [],
     'autre': []
   },
   'evenements': {

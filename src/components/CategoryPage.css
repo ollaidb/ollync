@@ -229,7 +229,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.category-filter-button:hover {
+.category-filter-button:hover:not(.active) {
   background-color: var(--muted);
   color: var(--foreground);
 }
@@ -257,10 +257,16 @@
 }
 
 @media (hover: none) {
-  .category-filter-button:hover {
+  .category-filter-button:hover:not(.active) {
     background-color: var(--background);
     color: var(--muted-foreground);
   }
+}
+
+.category-filter-button.active:hover,
+.category-filter-button.active:active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .category-filter-button.active .category-filter-chevron {
@@ -364,7 +370,7 @@
   gap: 8px;
 }
 
-.category-dropdown-item:hover {
+.category-dropdown-item:hover:not(.active) {
   background-color: var(--muted);
   opacity: 0.7;
 }
@@ -479,7 +485,7 @@
   white-space: nowrap;
 }
 
-.category-nested-dropdown-item:hover {
+.category-nested-dropdown-item:hover:not(.active) {
   background-color: var(--muted);
   opacity: 0.7;
 }

@@ -231,6 +231,72 @@
   font-weight: 600;
 }
 
+.resources-tax-calculator {
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resources-tax-calculator h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--foreground);
+}
+
+.resources-tax-calculator p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.resources-tax-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.resources-tax-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resources-tax-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.resources-tax-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.resources-tax-result > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--card);
+}
+
+.resources-tax-result span {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.resources-tax-result strong {
+  font-size: 16px;
+  color: var(--foreground);
+}
+
 @media (max-width: 768px) {
   .resources-title {
     font-size: 18px;
@@ -255,5 +321,10 @@
 
   .resources-detail-section {
     padding: 22px 18px;
+  }
+
+  .resources-tax-grid,
+  .resources-tax-result {
+    grid-template-columns: 1fr;
   }
 }

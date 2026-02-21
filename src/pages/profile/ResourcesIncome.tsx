@@ -1,9 +1,12 @@
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import './Resources.css'
 
 const ResourcesIncome = () => {
   const { i18n } = useTranslation()
   const isEnglish = i18n.language.startsWith('en')
+  const [incomeInput, setIncomeInput] = useState('')
+  const [rateInput, setRateInput] = useState('12')
 
   const content = isEnglish
     ? {
@@ -18,7 +21,14 @@ const ResourcesIncome = () => {
           'Official tax portal',
           'Declarations for professionals (service-public)',
           'URSSAF - social declarations'
-        ]
+        ],
+        calculatorTitle: 'Tax estimate calculator',
+        calculatorDescription:
+          'Enter your income and your tax rate to estimate how much tax you need to pay.',
+        incomeLabel: 'Income (€)',
+        rateLabel: 'Tax rate (%)',
+        taxDueLabel: 'Estimated tax to pay',
+        netLabel: 'Estimated amount after tax'
       }
     : {
         title: 'Déclarer ses revenus',
@@ -32,8 +42,41 @@ const ResourcesIncome = () => {
           'Portail officiel des impôts',
           'Déclarations pour les professionnels (service-public)',
           'URSSAF - déclarations sociales'
-        ]
+        ],
+        calculatorTitle: "Calculateur d'impôt",
+        calculatorDescription:
+          "Entrez vos revenus et votre taux d'impôt pour estimer combien vous devez payer.",
+        incomeLabel: 'Revenus (€)',
+        rateLabel: "Taux d'impôt (%)",
+        taxDueLabel: "Montant d'impôt à payer",
+        netLabel: 'Montant estimé après impôt'
       }
+
+  const parsedIncome = useMemo(() => {
+    const value = Number(incomeInput.replace(',', '.'))
+    return Number.isFinite(value) && value > 0 ? value : 0
+  }, [incomeInput])
+
+  const parsedRate = useMemo(() => {
+    const value = Number(rateInput.replace(',', '.'))
+    return Number.isFinite(value) && value >= 0 ? value : 0
+  }, [rateInput])
+
+  const taxDue = useMemo(() => {
+    return parsedIncome * (parsedRate / 100)
+  }, [parsedIncome, parsedRate])
+
+  const netAfterTax = useMemo(() => {
+    return parsedIncome - taxDue
+  }, [parsedIncome, taxDue])
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat(isEnglish ? 'en-US' : 'fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value)
 
   return (
     <div className="resources-detail-page">
@@ -47,6 +90,56 @@ const ResourcesIncome = () => {
         </p>
         <p>{content.paragraphs[2]}</p>
         <p>{content.paragraphs[3]}</p>
+
+        <div className="resources-tax-calculator">
+          <h4>{content.calculatorTitle}</h4>
+          <p>{content.calculatorDescription}</p>
+
+          <div className="resources-tax-grid">
+            <div className="resources-tax-field">
+              <label htmlFor="income-input">{content.incomeLabel}</label>
+              <input
+                id="income-input"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="form-input"
+                value={incomeInput}
+                onChange={(e) => setIncomeInput(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="resources-tax-field">
+              <label htmlFor="rate-input">{content.rateLabel}</label>
+              <input
+                id="rate-input"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                inputMode="decimal"
+                className="form-input"
+                value={rateInput}
+                onChange={(e) => setRateInput(e.target.value)}
+                placeholder="12"
+              />
+            </div>
+          </div>
+
+          <div className="resources-tax-result">
+            <div>
+              <span>{content.taxDueLabel}</span>
+              <strong>{formatCurrency(taxDue)}</strong>
+            </div>
+            <div>
+              <span>{content.netLabel}</span>
+              <strong>{formatCurrency(netAfterTax)}</strong>
+            </div>
+          </div>
+        </div>
+
         <ul className="resources-links">
           <li>
             <a href="https://www.impots.gouv.fr/" target="_blank" rel="noreferrer">

@@ -51,7 +51,7 @@ i18n.use(initReactI18next).init({
           'projets-equipe':
             'Monter une équipe pour réaliser un vrai projet créatif de A à Z. Chercher, proposer ou collaborer à plusieurs.',
           'services':
-            'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel).',
+            'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel, visage de marque, animation de compte).',
           'evenements':
             'Participer ou proposer des événements créatifs (masterclass, conférence, débat, atelier).',
           'suivi':
@@ -113,6 +113,8 @@ i18n.use(initReactI18next).init({
           'monetisation-audience': 'Monétisation audience',
           'aisance-camera': 'Aisance caméra',
           'setup-materiel': 'Setup matériel',
+          'visage-marque': 'Visage de marque',
+          'animation-compte': 'Animation de compte',
           'comptes': 'Comptes',
           'noms-utilisateur': "Noms d'utilisateur",
           'concepts-niches': 'Concepts / Niches',
@@ -399,7 +401,7 @@ i18n.use(initReactI18next).init({
           'studio-lieu': 'Find places to create content (shoots, filming, sets, suitable spaces).',
           'projets-equipe': 'Build a team to deliver a real creative project from A to Z.',
           'services':
-            'Offer or look for content-creation services (content coaching, editorial strategy, organization, agency, equipment setup).',
+            'Offer or look for content-creation services (content coaching, editorial strategy, organization, agency, equipment setup, brand face, account management).',
           'evenements': 'Join or propose creative events (masterclass, conference, debate, workshop).',
           'suivi': 'Field follow-up and support (on-site production, travel, event/outing).',
           'vente': 'Buy or sell (accounts, usernames, concepts, equipment).'
@@ -459,6 +461,8 @@ i18n.use(initReactI18next).init({
           'monetisation-audience': 'Audience monetization',
           'aisance-camera': 'Camera confidence',
           'setup-materiel': 'Equipment setup',
+          'visage-marque': 'Brand face',
+          'animation-compte': 'Account management',
           'comptes': 'Accounts',
           'noms-utilisateur': 'Usernames',
           'concepts-niches': 'Concepts / niches',

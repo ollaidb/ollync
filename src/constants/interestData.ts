@@ -48,6 +48,8 @@ export const interestCatalog: Record<string, string[]> = {
     'Organisation',
     'Agence',
     'Setup matériel',
+    'Visage de marque',
+    'Animation de compte',
     'Autre'
   ],
   'evenements': [

@@ -23,6 +23,8 @@ interface Post {
   location_lat?: number | null
   location_lng?: number | null
   location_address?: string | null
+  event_mode?: 'in_person' | 'remote' | null
+  event_platform?: string | null
   images?: string[] | null
   video?: string | null
   likes_count: number
@@ -575,6 +577,10 @@ const PostDetails = () => {
 
   const checkMatchRequest = async () => {
     if (!user || !id || !post) return
+    if (post.listing_type === 'request') {
+      setMatchRequest(null)
+      return
+    }
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -603,6 +609,22 @@ const PostDetails = () => {
   const handleApply = () => {
     if (!user) {
       navigate('/auth/login')
+      return
+    }
+
+    if (post?.listing_type === 'request') {
+      const reviewerName = post?.user?.full_name || post?.user?.username || ''
+      const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
+      setRequestMessage(`${greeting} votre annonce de demande m’intéresse. Êtes-vous disponible ?`)
+      setRequestRole('')
+      setRequestCvDocument(null)
+      setRequestCvDocumentName('')
+      setRequestCoverLetterDocument(null)
+      setRequestCoverLetterDocumentName('')
+      setReservationDate('')
+      setReservationTime('')
+      setReservationDurationMinutes(60)
+      setShowSendRequestModal(true)
       return
     }
 
@@ -707,6 +729,103 @@ const PostDetails = () => {
 
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
+    const isRequestListingPost = post.listing_type === 'request'
+
+    const findOrCreateDirectConversation = async (otherUserId: string, relatedPostId?: string | null) => {
+      const pairFilter = `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
+
+      const queryExistingConversation = async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.from('conversations') as any)
+          .select('id, user1_id, user2_id, is_group, deleted_at')
+          .or(pairFilter)
+          .eq('is_group', false)
+          .is('deleted_at', null)
+          .limit(1)
+
+        if (error) {
+          console.error('Error searching direct conversation:', error)
+          return null
+        }
+
+        const rows = (data as Array<{ id: string }> | null) || []
+        return rows.length > 0 ? rows[0] : null
+      }
+
+      const existing = await queryExistingConversation()
+      if (existing) return existing
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: inserted, error: insertError } = await (supabase.from('conversations') as any)
+        .insert({
+          user1_id: user.id,
+          user2_id: otherUserId,
+          post_id: relatedPostId || null,
+          type: 'direct',
+          is_group: false
+        })
+        .select('id')
+        .single()
+
+      if (!insertError && inserted) return inserted
+
+      if (insertError?.code === '23505') {
+        const retried = await queryExistingConversation()
+        if (retried) return retried
+      }
+
+      console.error('Error creating direct conversation:', insertError)
+      return null
+    }
+
+    if (isRequestListingPost) {
+      setLoadingRequest(true)
+      try {
+        const conversation = await findOrCreateDirectConversation(post.user_id, id)
+        if (!conversation || !(conversation as { id?: string }).id) {
+          alert('Impossible de créer la conversation')
+          return
+        }
+
+        const trimmedMessage = requestMessage.trim()
+        const fallbackMessage = 'Bonjour, votre annonce de demande m’intéresse. Êtes-vous disponible ?'
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: messageError } = await (supabase.from('messages') as any).insert({
+          conversation_id: (conversation as { id: string }).id,
+          sender_id: user.id,
+          message_type: 'text',
+          content: trimmedMessage.length > 0 ? trimmedMessage : fallbackMessage,
+          shared_post_id: id
+        })
+
+        if (messageError) {
+          console.error('Error sending direct contact message:', messageError)
+          alert(`Erreur lors de l'envoi du message: ${messageError.message}`)
+          return
+        }
+
+        setShowSendRequestModal(false)
+        setRequestMessage('')
+        setRequestRole('')
+        setRequestCvDocument(null)
+        setRequestCvDocumentName('')
+        setRequestCoverLetterDocument(null)
+        setRequestCoverLetterDocumentName('')
+        setReservationDate('')
+        setReservationTime('')
+        setReservationDurationMinutes(60)
+        showSuccess('Message envoyé')
+        navigate(`/messages/${(conversation as { id: string }).id}`)
+        return
+      } catch (error) {
+        console.error('Error sending direct contact message:', error)
+        alert('Erreur lors de l’envoi du message')
+        return
+      } finally {
+        setLoadingRequest(false)
+      }
+    }
 
     const availableRoles = isEmploiRequestPost ? [] : getProfileRolesList(post.profile_roles)
     if (availableRoles.length > 0 && !requestRole.trim()) {
@@ -955,6 +1074,7 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const contactIntent = getContactIntent(post?.category?.slug)
+  const isRequestListingPost = post?.listing_type === 'request'
   const images = post?.images || []
   const isValidMediaUrl = (value: string) => {
     const lower = value.toLowerCase()
@@ -1052,6 +1172,8 @@ const PostDetails = () => {
   }
 
   const getActionButtonLabel = () => {
+    if (isRequestListingPost) return 'Contacter'
+
     if (matchRequest?.status === 'pending') {
       if (contactIntent === 'reserve') return 'Réservation envoyée'
       if (contactIntent === 'ticket') return 'Demande de billet envoyée'
@@ -1089,6 +1211,8 @@ const PostDetails = () => {
   const categorySlug = (post?.category?.slug || '').trim().toLowerCase()
   const subCategorySlug = (post?.sub_category?.slug || '').trim().toLowerCase()
   const isStudioLieuPost = categorySlug === 'studio-lieu'
+  const isEvenementPost = categorySlug === 'evenements' || categorySlug === 'evenement'
+  const isEvenementRemote = isEvenementPost && post?.event_mode === 'remote'
   const isEmploiRequestPost = EMPLOI_CATEGORY_SLUGS.has(categorySlug) && post?.listing_type === 'request'
   const isCastingFigurantRequestPost =
     (categorySlug === 'casting-role' || categorySlug === 'casting') &&
@@ -1420,7 +1544,12 @@ const PostDetails = () => {
 
             {/* Informations sous le titre */}
             <div className="post-title-meta">
-              {post.location && (
+              {isEvenementRemote && post.event_platform && (
+                <span className="post-title-meta-item">
+                  Plateforme : {post.event_platform}
+                </span>
+              )}
+              {post.location && !isEvenementRemote && (
                 <span className="post-title-meta-item">
                   <MapPin size={16} /> {post.location}
                 </span>
@@ -1645,52 +1774,63 @@ const PostDetails = () => {
             </div>
 
             {/* Localisation */}
-            {(post.location || hasAddress) && (
+            {(isEvenementRemote ? !!post.event_platform : (post.location || hasAddress)) && (
               <div className="post-location-details-section">
                 <h3 className="post-additional-title">Localisation</h3>
-                <div className="post-info-item">
-                  <span className="post-info-label">Lieu</span>
-                  <div className="post-info-value">
-                    <div className="post-address-text">
-                      <MapPin size={16} />
-                      <span>{post.location || post.location_address || 'Non renseigné'}</span>
-                    </div>
-                  </div>
-                </div>
-                {post.location_address && post.location_address !== post.location && (
+                {isEvenementRemote ? (
                   <div className="post-info-item">
-                    <span className="post-info-label">Adresse</span>
+                    <span className="post-info-label">Plateforme</span>
                     <div className="post-info-value">
-                      <div className="post-address-text">
-                        <MapPin size={16} />
-                        <span>{post.location_address}</span>
-                      </div>
-                      {post.location_lat && post.location_lng && (
-                        <div className="post-address-coords">
-                          {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
-                        </div>
-                      )}
-                      {post.location_lat && post.location_lng && (
-                        <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
-                          <Navigation size={18} />
-                          Itinéraire
-                        </button>
-                      )}
+                      <span>{post.event_platform}</span>
                     </div>
                   </div>
-                )}
-                {post.location_lat && post.location_lng && (
-                  <div className="post-map-section">
-                    <GoogleMapComponent
-                      lat={post.location_lat}
-                      lng={post.location_lng}
-                      address={post.location_address || post.location || undefined}
-                      height="400px"
-                      zoom={15}
-                      markerTitle={post.location_address || post.location || post.title}
-                      onMarkerClick={handleOpenNavigation}
-                    />
-                  </div>
+                ) : (
+                  <>
+                    <div className="post-info-item">
+                      <span className="post-info-label">Lieu</span>
+                      <div className="post-info-value">
+                        <div className="post-address-text">
+                          <MapPin size={16} />
+                          <span>{post.location || post.location_address || 'Non renseigné'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {post.location_address && post.location_address !== post.location && (
+                      <div className="post-info-item">
+                        <span className="post-info-label">Adresse</span>
+                        <div className="post-info-value">
+                          <div className="post-address-text">
+                            <MapPin size={16} />
+                            <span>{post.location_address}</span>
+                          </div>
+                          {post.location_lat && post.location_lng && (
+                            <div className="post-address-coords">
+                              {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
+                            </div>
+                          )}
+                          {post.location_lat && post.location_lng && (
+                            <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
+                              <Navigation size={18} />
+                              Itinéraire
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {post.location_lat && post.location_lng && (
+                      <div className="post-map-section">
+                        <GoogleMapComponent
+                          lat={post.location_lat}
+                          lng={post.location_lng}
+                          address={post.location_address || post.location || undefined}
+                          height="400px"
+                          zoom={15}
+                          markerTitle={post.location_address || post.location || post.title}
+                          onMarkerClick={handleOpenNavigation}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -1786,9 +1926,15 @@ const PostDetails = () => {
         {user && !isOwner && (
           <div className="post-action-bar">
             <button 
-              className={`post-action-btn post-action-btn-primary ${matchRequest?.status === 'pending' ? 'post-action-button-sent' : matchRequest?.status === 'accepted' ? 'post-action-button-accepted' : ''}`}
+              className={`post-action-btn post-action-btn-primary ${
+                !isRequestListingPost && matchRequest?.status === 'pending'
+                  ? 'post-action-button-sent'
+                  : !isRequestListingPost && matchRequest?.status === 'accepted'
+                    ? 'post-action-button-accepted'
+                    : ''
+              }`}
               onClick={handleApply}
-              disabled={loadingRequest || matchRequest?.status === 'accepted'}
+              disabled={loadingRequest || (!isRequestListingPost && matchRequest?.status === 'accepted')}
             >
               {getActionButtonLabel()}
             </button>
@@ -1800,7 +1946,9 @@ const PostDetails = () => {
           <ConfirmationModal
             visible={showSendRequestModal}
             title={
-              contactIntent === 'apply'
+              isRequestListingPost
+                ? 'Contacter'
+                : contactIntent === 'apply'
                 ? 'Postuler'
                 : contactIntent === 'reserve'
                   ? 'Réserver un lieu'
@@ -1811,7 +1959,9 @@ const PostDetails = () => {
                       : 'Message personnalisé'
             }
             message={
-              contactIntent === 'apply'
+              isRequestListingPost
+                ? 'Votre message sera envoyé directement dans la messagerie.'
+                : contactIntent === 'apply'
                 ? 'Envoyez votre candidature avec votre CV.'
                 : contactIntent === 'reserve'
                   ? 'Renseignez la date, l’heure et la durée de réservation.'
@@ -1834,10 +1984,22 @@ const PostDetails = () => {
               setReservationTime('')
               setReservationDurationMinutes(60)
             }}
-            confirmLabel={loadingRequest ? 'Envoi...' : contactIntent === 'ticket' ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet') : contactIntent === 'reserve' ? (isPaidAction() ? 'Payer la réservation' : 'Valider la réservation') : contactIntent === 'buy' ? 'Confirmer l’achat' : 'Envoyer'}
+            confirmLabel={
+              loadingRequest
+                ? 'Envoi...'
+                : isRequestListingPost
+                  ? 'Envoyer le message'
+                  : contactIntent === 'ticket'
+                    ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet')
+                    : contactIntent === 'reserve'
+                      ? (isPaidAction() ? 'Payer la réservation' : 'Valider la réservation')
+                      : contactIntent === 'buy'
+                        ? 'Confirmer l’achat'
+                        : 'Envoyer'
+            }
             cancelLabel="Annuler"
           >
-            {!isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
+            {!isRequestListingPost && !isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
               <div className="confirmation-modal-field">
                 <label className="confirmation-modal-label">
                   Poste recherché
@@ -1872,7 +2034,7 @@ const PostDetails = () => {
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
 
-            {contactIntent === 'apply' && (
+            {!isRequestListingPost && contactIntent === 'apply' && (
               <>
                 <div className="confirmation-modal-field">
                   <label className="confirmation-modal-label" htmlFor="match-request-cv">
@@ -1936,7 +2098,7 @@ const PostDetails = () => {
               </>
             )}
 
-            {contactIntent === 'reserve' && (
+            {!isRequestListingPost && contactIntent === 'reserve' && (
               <>
                 <div className="confirmation-modal-field">
                   <label className="confirmation-modal-label" htmlFor="reservation-date">

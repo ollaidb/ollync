@@ -567,6 +567,16 @@ export const Step4Description = ({
       description:
         'Ex : Je propose un setup de création (décor, éclairage, espace).'
     },
+    'visage-marque': {
+      title: 'Ex : Je deviens visage de marque',
+      description:
+        'Ex : J’incarne une marque de manière régulière à travers des vidéos, photos et contenus publiés sur les réseaux.'
+    },
+    'animation-compte': {
+      title: 'Ex : Je gère l’animation du compte',
+      description:
+        'Ex : Je gère et publie du contenu régulièrement sur le compte pour garder une présence active.'
+    },
     autre: {
       title: 'Ex : Autre service',
       description:

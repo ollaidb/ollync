@@ -371,7 +371,7 @@ export const publicationTypes: PublicationType[] = [
     icon: Wrench,
     color: '#43e97b',
     description:
-      'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel).',
+      'Proposer ou chercher des services dans la création de contenu (coaching contenu, stratégie éditoriale, organisation, agence, setup matériel, visage de marque, animation de compte).',
     subcategories: [
       {
         id: 'tout',
@@ -454,6 +454,20 @@ export const publicationTypes: PublicationType[] = [
         slug: 'setup-materiel',
         description:
           'Accompagnement pour installer un setup de création (décor, éclairage, espace, optimisation du lieu).'
+      },
+      {
+        id: 'visage-marque',
+        name: 'Visage de marque',
+        slug: 'visage-marque',
+        description:
+          'Incarner une marque de manière régulière à travers des vidéos, photos ou contenus publiés sur les réseaux.'
+      },
+      {
+        id: 'animation-compte',
+        name: 'Animation de compte',
+        slug: 'animation-compte',
+        description:
+          'Gestion et publication régulière de contenu sur un compte pour faire vivre la marque dans le temps.'
       },
       {
         id: 'autre',

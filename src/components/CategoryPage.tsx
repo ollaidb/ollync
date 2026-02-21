@@ -394,11 +394,12 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
             </div>
           )}
           {subMenus.map((subMenu) => {
-            const isActive = isAllSelected 
+            const isRouteActive = isAllSelected
               ? subMenu.slug === 'tout'
               : currentSubMenu === subMenu.slug
             const hasSubSub = hasSubSubCategories(categorySlug, subMenu.slug)
             const isDropdownOpen = openDropdown === subMenu.slug
+            const isActive = isRouteActive || isDropdownOpen
             const subSubCategories = getSubSubCategories(categorySlug, subMenu.slug)
             const subMenuLabel = getSubMenuLabel(subMenu.slug, subMenu.name)
             
@@ -488,6 +489,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                       const hasNested = hasSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
                       const nestedKey = `${subMenu.slug}::${subSub.slug}`
                       const isNestedOpen = openNestedDropdown === nestedKey
+                      const isSubSubSelected = isSubSubActive || isNestedOpen
                       const nestedCategories = getSubSubSubCategories(categorySlug, subMenu.slug, subSub.slug)
                       const subSubLabel = getSubMenuLabel(subSub.slug, subSub.name)
                       
@@ -500,7 +502,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
                           }}
                         >
                           <button
-                            className={`category-dropdown-item ${isSubSubActive ? 'active' : ''} ${hasNested ? 'has-nested' : ''}`}
+                            className={`category-dropdown-item ${isSubSubSelected ? 'active' : ''} ${hasNested ? 'has-nested' : ''}`}
                             onClick={() => {
                               if (hasNested) {
                                 // Si l'élément N3 a des enfants N4, ouvrir/fermer la colonne N4
