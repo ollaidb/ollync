@@ -11,6 +11,12 @@
   justify-content: center;
   z-index: 2300;
   animation: searchOverlayFade 0.18s ease-out;
+  box-sizing: border-box;
+  transition: padding-bottom 0.18s ease-out;
+}
+
+.confirmation-modal-overlay--bottom-sheet {
+  align-items: flex-end;
 }
 
 @keyframes searchOverlayFade {
@@ -30,6 +36,19 @@
   animation: searchSheetUp 0.22s ease-out;
   will-change: transform, opacity;
   text-align: center;
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-normal);
+}
+
+.confirmation-modal-content--bottom-sheet {
+  width: min(100%, 620px);
+  max-width: 100%;
+  border-radius: 18px 18px 0 0;
+  border-bottom: none;
+  padding: 14px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
+  overflow-y: auto;
+  text-align: left;
 }
 
 @keyframes searchSheetUp {
@@ -81,8 +100,13 @@
   border: 1px solid var(--border);
   padding: 10px 12px;
   font-size: 13px;
+  font-family: var(--font-sans);
   background: var(--background);
   color: var(--foreground);
+  text-align: left;
+  direction: ltr;
+  unicode-bidi: plaintext;
+  caret-color: var(--foreground);
 }
 
 .confirmation-modal-input {
@@ -91,8 +115,13 @@
   border: 1px solid var(--border);
   padding: 10px 12px;
   font-size: 13px;
+  font-family: var(--font-sans);
   background: var(--background);
   color: var(--foreground);
+  text-align: left;
+  direction: ltr;
+  unicode-bidi: plaintext;
+  caret-color: var(--foreground);
 }
 
 .confirmation-modal-input:focus {
@@ -186,6 +215,11 @@
     padding: 18px;
   }
 
+  .confirmation-modal-content--bottom-sheet {
+    width: 100%;
+    padding: 14px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
   .confirmation-modal-title {
     font-size: 16px;
   }
@@ -257,4 +291,166 @@
   align-items: center;
   gap: 6px;
   word-break: break-word;
+}
+
+.confirmation-modal-time-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.confirmation-modal-time-input {
+  flex: 1;
+}
+
+.confirmation-modal-time-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirmation-modal-time-stepper-btn {
+  width: 28px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.confirmation-modal-time-stepper-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.confirmation-date-picker-trigger {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--muted-foreground);
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.confirmation-date-picker-trigger.has-value {
+  color: var(--foreground);
+}
+
+.confirmation-date-picker-trigger:hover,
+.confirmation-date-picker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.confirmation-calendar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 12020;
+  animation: searchOverlayFade 0.18s ease-out;
+}
+
+.confirmation-calendar-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
+  background: var(--card);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  box-shadow: var(--shadow-xl);
+  z-index: 12021;
+  animation: searchSheetUp 0.22s ease-out;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.confirmation-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.confirmation-calendar-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--foreground);
+}
+
+.confirmation-calendar-nav {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.confirmation-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.confirmation-calendar-weekday {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-align: center;
+  padding: 3px 0;
+}
+
+.confirmation-calendar-empty {
+  height: 34px;
+}
+
+.confirmation-calendar-day {
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmation-calendar-day:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.confirmation-calendar-day:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.confirmation-calendar-day.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }

@@ -718,6 +718,330 @@
   white-space: nowrap;
 }
 
+.venue-settings-group {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--card);
+  gap: 10px;
+}
+
+.venue-settings-group .form-group {
+  margin-bottom: 0;
+}
+
+.venue-dropdown-field {
+  margin-top: 4px;
+}
+
+.venue-time-group,
+.venue-opening-group {
+  margin-top: 8px;
+}
+
+.venue-payment-value-group {
+  margin-top: 8px;
+}
+
+.publish-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 12000;
+  animation: searchOverlayFade 0.18s ease-out;
+}
+
+.publish-dropdown-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
+  background: var(--card);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 12001;
+  animation: searchSheetUp 0.22s ease-out;
+  overscroll-behavior: contain;
+}
+
+.publish-dropdown-title {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.publish-dropdown-panel .custom-list {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 160px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.publish-dropdown-panel .custom-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.publish-dropdown-panel .custom-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  border-radius: 999px;
+}
+
+.publish-dropdown-panel .custom-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.publish-list {
+  position: static;
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  margin-top: 0;
+  left: auto;
+  transform: none;
+}
+
+.publish-dropdown-panel .custom-list-item-content {
+  align-items: center;
+}
+
+.publish-dropdown-panel .custom-list-item-name {
+  text-align: center;
+  width: 100%;
+}
+
+.payment-options-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.time-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-input {
+  flex: 1;
+}
+
+.time-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.time-stepper-btn {
+  width: 22px;
+  height: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-stepper-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.opening-hours-sheet {
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
+}
+
+.opening-hours-sheet-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
+  padding: 12px 12px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.opening-hours-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.opening-hours-sheet-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  text-align: center;
+  width: 100%;
+}
+
+.opening-hours-sheet-close {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+}
+
+.opening-hours-sheet-divider {
+  height: 1px;
+  background: var(--border);
+  width: 100%;
+}
+
+.opening-days-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.opening-day-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.opening-day-item.selected {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.opening-day-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+}
+
+.opening-day-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.opening-day-check.checked {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.opening-day-checkmark {
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: all 0.15s ease;
+}
+
+.opening-day-check.checked .opening-day-checkmark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.opening-day-hours-inline {
+  border-top: 1px solid var(--border);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opening-day-hours-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.opening-hours-time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opening-hours-time-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.opening-hours-time {
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.opening-hours-summary {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opening-hours-summary-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+@keyframes searchOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes searchSheetUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Statuts */
 .statuses-list {
   display: flex;

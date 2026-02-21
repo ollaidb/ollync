@@ -105,7 +105,6 @@ export default function Publish() {
     revenue_share_percentage: '',
     co_creation_details: '',
     materialCondition: '',
-    modelTypes: [] as string[],
     urgent: false,
     images: [] as string[],
     video: null as string | null,
@@ -188,16 +187,6 @@ export default function Publish() {
     if (!description) return ''
     const match = description.match(/État du matériel\s*:\s*(.+)$/mi)
     return match?.[1]?.trim() || ''
-  }
-
-  const parseModelTypesFromDescription = (description?: string | null) => {
-    if (!description) return [] as string[]
-    const match = description.match(/Type de modèle recherché\s*:\s*(.+)$/mi)
-    if (!match?.[1]) return [] as string[]
-    return match[1]
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean)
   }
 
   const formatMinutesToTime = (value?: number | null) => {
@@ -364,7 +353,6 @@ export default function Publish() {
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
           co_creation_details: postData.co_creation_details || '',
           materialCondition: parseMaterialConditionFromDescription(postData.description),
-          modelTypes: parseModelTypesFromDescription(postData.description),
           urgent: postData.is_urgent || false,
           images: postData.images || [],
           video: postData.video || null,
@@ -517,6 +505,7 @@ export default function Publish() {
           {step === 2 && (
             <Step2Subcategory
               selectedCategory={selectedCategory ?? null}
+              listingType={formData.listingType}
               onSelectSubcategory={(subcategoryId) => {
                 updateFormData({ 
                   subcategory: subcategoryId,

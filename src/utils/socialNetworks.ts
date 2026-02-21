@@ -12,7 +12,7 @@ export const SOCIAL_NETWORKS_CONFIG: SocialNetworkOption[] = [
   { id: 'instagram', name: 'Instagram' },
   { id: 'youtube', name: 'YouTube' },
   { id: 'facebook', name: 'Facebook' },
-  { id: 'twitter', name: 'Twitter' },
+  { id: 'twitter', name: 'Twitter (X)' },
   { id: 'linkedin', name: 'LinkedIn' },
   { id: 'snapchat', name: 'Snapchat' },
   { id: 'pinterest', name: 'Pinterest' },

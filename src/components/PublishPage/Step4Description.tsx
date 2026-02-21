@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
@@ -32,7 +33,6 @@ interface FormData {
   exchange_service?: string
   revenue_share_percentage?: string
   co_creation_details?: string
-  modelTypes?: string[]
   category?: string | null
   subcategory?: string | null
   subSubCategory?: string | null
@@ -87,10 +87,9 @@ export const Step4Description = ({
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
-  const [isModelTypeOpen, setIsModelTypeOpen] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
-  const [activeOpeningDay, setActiveOpeningDay] = useState<string | null>(null)
+  const [keyboardInset, setKeyboardInset] = useState(0)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
     return new Date(base.getFullYear(), base.getMonth(), 1)
@@ -146,20 +145,6 @@ export const Step4Description = ({
     { id: 'bon-etat', name: 'Bon état' },
     { id: 'etat-moyen', name: 'État moyen' }
   ]
-  const modelTypeOptions = [
-    'Visage',
-    'Corps entier',
-    'Silhouette',
-    'Mains',
-    'Pieds',
-    'Cheveux',
-    'Ongles',
-    'Yeux',
-    'Lèvres',
-    'Peau'
-  ]
-
-
   const selectedSocialNetworkName =
     SOCIAL_NETWORKS_CONFIG.find((network) => network.id === formData.socialNetwork)?.name ??
     'Choisir un réseau'
@@ -172,13 +157,6 @@ export const Step4Description = ({
   const selectedMaterialConditionName =
     materialConditionOptions.find((option) => option.id === formData.materialCondition)?.name ??
     'Choisir un état du matériel'
-  const selectedModelTypes = formData.modelTypes || []
-  const selectedModelTypesLabel =
-    selectedModelTypes.length === 0
-      ? 'Choisir un type de modèle'
-      : selectedModelTypes.length === 1
-        ? selectedModelTypes[0]
-        : `${selectedModelTypes.length} types sélectionnés`
   const formatDurationValue = (value?: string) => {
     const minutes = parseInt(value || '0', 10)
     if (!Number.isFinite(minutes) || minutes <= 0) return ''
@@ -277,17 +255,6 @@ export const Step4Description = ({
       [key]: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}`
     })
   }
-
-  useEffect(() => {
-    if (!selectedOpeningDays.length) {
-      setActiveOpeningDay(null)
-      return
-    }
-    const isStillEnabled = selectedOpeningDays.some((slot) => slot.day === activeOpeningDay)
-    if (!isStillEnabled) {
-      setActiveOpeningDay(selectedOpeningDays[0].day)
-    }
-  }, [selectedOpeningDays, activeOpeningDay])
 
   useEffect(() => {
     if (!isDatePickerOpen) return
@@ -390,37 +357,37 @@ export const Step4Description = ({
   }
   const castingRoleExamples: Record<string, { title: string; description: string }> = {
     figurant: {
-      title: 'Ex : Figurant pour vidéo comédie',
+      title: 'Je cherche 14 figurants pour une vidéo drôle.',
       description:
         'Ex : Je cherche des figurants pour apparaître dans une vidéo comédie. Durée : 2h.'
     },
     'modele-photo': {
-      title: 'Ex : Modèle photo pour lookbook',
+      title: 'À la recherche de modèle femme pour shooting sur le thème du moyen âge.',
       description:
         'Ex : Je cherche un modèle photo pour un shooting mode (vêtements/chaussures). Durée : 2h.'
     },
     'modele-video': {
-      title: 'Ex : Modèle vidéo pour clip',
+      title: 'À la recherche d’un modèle homme pour apparaître dans un clip.',
       description:
         'Ex : Je cherche un modèle vidéo pour apparaître dans un clip/vidéo créative. Durée : 3h.'
     },
     'voix-off': {
-      title: 'Ex : Voix off pour vidéo promo',
+      title: 'À la recherche de voix off grave pour une vidéo de promotion.',
       description:
         'Ex : Je cherche une voix off pour une vidéo promo (1 à 2 minutes).'
     },
     'invite-podcast': {
-      title: 'Ex : Invité podcast (thème)',
+      title: 'Recherche personne pour discuter autour d’un livre.',
       description:
         'Ex : Je cherche un invité pour parler d’un thème précis dans un podcast. Durée : 45 min.'
     },
     'invite-micro-trottoir': {
-      title: 'Ex : Micro‑trottoir (thème)',
+      title: 'À la recherche de 3 hommes pour poser des questions sur le thème du voyage.',
       description:
         'Ex : Je cherche des personnes à interviewer dans la rue sur un thème précis. Durée : 10 min.'
     },
     'youtube-video': {
-      title: 'Ex : Vidéo YouTube (type de vidéo)',
+      title: 'Recherche 4 personnes pour participer à un concept YouTube.',
       description:
         'Ex : Je cherche un invité pour une vidéo YouTube (débat/interview/concept). Durée : 1h.'
     },
@@ -432,9 +399,39 @@ export const Step4Description = ({
   }
   const castingRequestExamples: Record<string, { title: string; description: string }> = {
     figurant: {
-      title: 'Ex : Figurant pour vidéo comédie',
+      title: 'J’ai envie de participer à un tournage en tant que figurant.',
       description:
         'Ex : Indique le type de rôle, ton expérience, tes disponibilités et le format où tu veux intervenir.'
+    },
+    'modele-photo': {
+      title: 'Mannequin amateur je propose mes services en échange de clichés pour mon book.',
+      description:
+        'Ex : Indique ton profil, ton style et les conditions de collaboration.'
+    },
+    'modele-video': {
+      title: 'Comédienne depuis 5 ans je propose mes services.',
+      description:
+        'Ex : Précise ton expérience, ton style et le format de vidéos recherché.'
+    },
+    'voix-off': {
+      title: 'Après des études de journalisme, je cherche à m’exercer sur des vidéos.',
+      description:
+        'Ex : Décris ton type de voix, ton expérience et les formats qui te conviennent.'
+    },
+    'invite-podcast': {
+      title: 'J’ai toujours rêvé d’être dans un podcast !',
+      description:
+        'Ex : Indique les thèmes sur lesquels tu peux intervenir et ton format préféré.'
+    },
+    'invite-micro-trottoir': {
+      title: 'Avec la copine on propose de participer à un micro-trottoir !',
+      description:
+        'Ex : Précise le thème, le style d’intervention et ta disponibilité.'
+    },
+    'youtube-video': {
+      title: 'Je suis motivé pour participer à un jeu YouTube.',
+      description:
+        'Ex : Indique le type de concept YouTube et le rôle que tu peux tenir.'
     }
   }
   const emploiExamples: Record<string, { title: string; description: string }> = {
@@ -869,6 +866,50 @@ export const Step4Description = ({
     onUpdateFormData
   ])
 
+  const hasSheetOpen =
+    isContractOpen ||
+    isSocialNetworkOpen ||
+    isPaymentOpen ||
+    isMaterialConditionOpen ||
+    isDatePickerOpen ||
+    isOpeningDaysOpen
+
+  useEffect(() => {
+    if (!hasSheetOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [hasSheetOpen])
+
+  useEffect(() => {
+    if (!hasSheetOpen || typeof window === 'undefined') {
+      setKeyboardInset(0)
+      return
+    }
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateInset = () => {
+      const nextInset = Math.max(
+        0,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop)
+      )
+      setKeyboardInset(nextInset)
+    }
+
+    updateInset()
+    viewport.addEventListener('resize', updateInset)
+    viewport.addEventListener('scroll', updateInset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateInset)
+      viewport.removeEventListener('scroll', updateInset)
+      setKeyboardInset(0)
+    }
+  }, [hasSheetOpen])
+
   useEffect(() => {
     if (!isCastingFigurantRequest) return
     const updates: Partial<FormData> = {}
@@ -904,12 +945,30 @@ export const Step4Description = ({
     formData.co_creation_details,
     onUpdateFormData
   ])
+
+  const MIN_TITLE_CHARS = 20
+  const MIN_DESCRIPTION_CHARS = 80
+  const MIN_WORK_SCHEDULE_CHARS = 5
+  const MIN_RESPONSIBILITIES_CHARS = 60
+  const MIN_REQUIRED_SKILLS_CHARS = 40
+  const MIN_BENEFITS_CHARS = 30
+
+  const titleLength = formData.title.trim().length
+  const descriptionLength = formData.description.trim().length
+  const workScheduleLength = (formData.work_schedule || '').trim().length
+  const responsibilitiesLength = (formData.responsibilities || '').trim().length
+  const requiredSkillsLength = (formData.required_skills || '').trim().length
+  const benefitsLength = (formData.benefits || '').trim().length
   
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
-    formData.title.trim().length > 0 && 
-    formData.description.trim().length > 0 &&
+    titleLength >= MIN_TITLE_CHARS &&
+    descriptionLength >= MIN_DESCRIPTION_CHARS &&
     (!isJobCategory || (formData.contract_type && formData.contract_type.trim().length > 0)) &&
+    (!isJobCategory || isJobRequest || workScheduleLength >= MIN_WORK_SCHEDULE_CHARS) &&
+    (!isJobCategory || isJobRequest || responsibilitiesLength >= MIN_RESPONSIBILITIES_CHARS) &&
+    (!isJobCategory || isJobRequest || requiredSkillsLength >= MIN_REQUIRED_SKILLS_CHARS) &&
+    (!isJobCategory || isJobRequest || benefitsLength >= MIN_BENEFITS_CHARS) &&
     (isJobRequest || formData.exchange_type.trim().length > 0) &&
     (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
     (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
@@ -929,6 +988,33 @@ export const Step4Description = ({
       formData.businessOpeningHours.some((slot) => slot.enabled && slot.start && slot.end && slot.start < slot.end)
     ))
 
+  const renderBottomSheet = (
+    open: boolean,
+    onClose: () => void,
+    title: string,
+    content: ReactNode,
+    panelClassName = ''
+  ) => {
+    if (!open || typeof document === 'undefined') return null
+    const panelStyle: CSSProperties = keyboardInset > 0
+      ? { bottom: keyboardInset, maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - 84px - ${keyboardInset}px)` }
+      : {}
+    return createPortal(
+      <>
+        <div className="publish-dropdown-backdrop" onClick={onClose} />
+        <div
+          className={`publish-dropdown-panel ${panelClassName}`.trim()}
+          style={panelStyle}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {title && <div className="publish-dropdown-title">{title}</div>}
+          {content}
+        </div>
+      </>,
+      document.body
+    )
+  }
+
   return (
     <div className="step4-description">
       <h2 className="step-title">{isJobRequest ? 'Présentez votre candidature' : 'Décrivez votre annonce'}</h2>
@@ -942,6 +1028,9 @@ export const Step4Description = ({
           value={formData.title}
           onChange={(e) => onUpdateFormData({ title: e.target.value })}
         />
+        <div className="form-field-meta">
+          Minimum {MIN_TITLE_CHARS} caractères ({titleLength}/{MIN_TITLE_CHARS})
+        </div>
       </div>
 
       {isJobCategory && (
@@ -956,27 +1045,21 @@ export const Step4Description = ({
               <span>{selectedContractName}</span>
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
-            {isContractOpen && (
-              <>
-                <div
-                  className="publish-dropdown-backdrop"
-                  onClick={() => setIsContractOpen(false)}
-                />
-                <div className="publish-dropdown-panel">
-                  <div className="publish-dropdown-title">Choisissez un type de contrat</div>
-                  <CustomList
-                    items={contractOptions}
-                    selectedId={formData.contract_type}
-                    onSelectItem={(optionId) => {
-                      onUpdateFormData({ contract_type: optionId })
-                      setIsContractOpen(false)
-                    }}
-                    className="publish-list"
-                    showCheckbox={false}
-                    showDescription={false}
-                  />
-                </div>
-              </>
+            {renderBottomSheet(
+              isContractOpen,
+              () => setIsContractOpen(false),
+              'Choisissez un type de contrat',
+              <CustomList
+                items={contractOptions}
+                selectedId={formData.contract_type}
+                onSelectItem={(optionId) => {
+                  onUpdateFormData({ contract_type: optionId })
+                  setIsContractOpen(false)
+                }}
+                className="publish-list"
+                showCheckbox={false}
+                showDescription={false}
+              />
             )}
           </div>
         </>
@@ -993,26 +1076,20 @@ export const Step4Description = ({
             <span>{selectedSocialNetworkName}</span>
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
-          {isSocialNetworkOpen && (
-            <>
-              <div
-                className="publish-dropdown-backdrop"
-                onClick={() => setIsSocialNetworkOpen(false)}
-              />
-              <div className="publish-dropdown-panel">
-                <div className="publish-dropdown-title">Choisissez un réseau social</div>
-                <CustomList
-                  items={SOCIAL_NETWORKS_CONFIG}
-                  selectedId={formData.socialNetwork}
-                  onSelectItem={(networkId) => {
-                    onUpdateFormData({ socialNetwork: networkId })
-                    setIsSocialNetworkOpen(false)
-                  }}
-                  className="social-networks-list publish-list"
-                  showCheckbox={false}
-                />
-              </div>
-            </>
+          {renderBottomSheet(
+            isSocialNetworkOpen,
+            () => setIsSocialNetworkOpen(false),
+            'Choisissez un réseau social',
+            <CustomList
+              items={SOCIAL_NETWORKS_CONFIG}
+              selectedId={formData.socialNetwork}
+              onSelectItem={(networkId) => {
+                onUpdateFormData({ socialNetwork: networkId })
+                setIsSocialNetworkOpen(false)
+              }}
+              className="social-networks-list publish-list"
+              showCheckbox={false}
+            />
           )}
         </div>
       )}
@@ -1027,6 +1104,9 @@ export const Step4Description = ({
             onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
           />
+          <div className="form-field-meta">
+            Minimum {MIN_DESCRIPTION_CHARS} caractères ({descriptionLength}/{MIN_DESCRIPTION_CHARS})
+          </div>
         </div>
       )}
 
@@ -1041,76 +1121,21 @@ export const Step4Description = ({
             <span>{selectedMaterialConditionName}</span>
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
-          {isMaterialConditionOpen && (
-            <>
-              <div
-                className="publish-dropdown-backdrop"
-                onClick={() => setIsMaterialConditionOpen(false)}
-              />
-              <div className="publish-dropdown-panel">
-                <div className="publish-dropdown-title">Choisissez un état du matériel</div>
-                <CustomList
-                  items={materialConditionOptions}
-                  selectedId={formData.materialCondition}
-                  onSelectItem={(optionId) => {
-                    onUpdateFormData({ materialCondition: optionId })
-                    setIsMaterialConditionOpen(false)
-                  }}
-                  className="publish-list"
-                  showCheckbox={false}
-                  showDescription={false}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {isCastingCategory && (
-        <div className="form-group dropdown-field">
-          <label className="form-label">
-            {isCastingFigurantRequest ? 'Type de profil (optionnel)' : 'Type de modèle recherché (optionnel)'}
-          </label>
-          <button
-            type="button"
-            className={`dropdown-trigger ${isModelTypeOpen ? 'open' : ''}`}
-            onClick={() => setIsModelTypeOpen((prev) => !prev)}
-          >
-            <span>{selectedModelTypesLabel}</span>
-            <span className="dropdown-caret" aria-hidden="true" />
-          </button>
-          {isModelTypeOpen && (
-            <>
-              <div
-                className="publish-dropdown-backdrop"
-                onClick={() => setIsModelTypeOpen(false)}
-              />
-              <div className="publish-dropdown-panel">
-                <div className="publish-dropdown-title">Choisissez un type de modèle</div>
-                <div className="model-types-grid publish-list">
-                  {modelTypeOptions.map((type) => {
-                    const selected = selectedModelTypes.includes(type)
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        className={`model-type-chip ${selected ? 'selected' : ''}`}
-                        onClick={() => {
-                          const current = formData.modelTypes || []
-                          onUpdateFormData({
-                            modelTypes: selected
-                              ? current.filter((item) => item !== type)
-                              : [...current, type]
-                          })
-                        }}
-                      >
-                        {type}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </>
+          {renderBottomSheet(
+            isMaterialConditionOpen,
+            () => setIsMaterialConditionOpen(false),
+            'Choisissez un état du matériel',
+            <CustomList
+              items={materialConditionOptions}
+              selectedId={formData.materialCondition}
+              onSelectItem={(optionId) => {
+                onUpdateFormData({ materialCondition: optionId })
+                setIsMaterialConditionOpen(false)
+              }}
+              className="publish-list"
+              showCheckbox={false}
+              showDescription={false}
+            />
           )}
         </div>
       )}
@@ -1128,34 +1153,28 @@ export const Step4Description = ({
             <span>{selectedPaymentName}</span>
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
-          {isPaymentOpen && (
-            <>
-              <div
-                className="publish-dropdown-backdrop"
-                onClick={() => setIsPaymentOpen(false)}
-              />
-              <div className="publish-dropdown-panel">
-                <div className="publish-dropdown-title">Choisissez un moyen de paiement</div>
-                <CustomList
-                  items={paymentOptions}
-                  selectedId={formData.exchange_type}
-                  onSelectItem={(optionId) => {
-                    onUpdateFormData({
-                      exchange_type: optionId,
-                      price: optionId === 'remuneration' ? formData.price : '',
-                      exchange_service: optionId === 'echange' ? formData.exchange_service : '',
-                      revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
-                      co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
-                    })
-                    setIsPaymentOpen(false)
-                  }}
-                  className="payment-options-list publish-list"
-                  showCheckbox={false}
-                  showDescription={true}
-                  truncateDescription={false}
-                />
-              </div>
-            </>
+          {renderBottomSheet(
+            isPaymentOpen,
+            () => setIsPaymentOpen(false),
+            'Choisissez un moyen de paiement',
+            <CustomList
+              items={paymentOptions}
+              selectedId={formData.exchange_type}
+              onSelectItem={(optionId) => {
+                onUpdateFormData({
+                  exchange_type: optionId,
+                  price: optionId === 'remuneration' ? formData.price : '',
+                  exchange_service: optionId === 'echange' ? formData.exchange_service : '',
+                  revenue_share_percentage: optionId === 'partage-revenus' ? formData.revenue_share_percentage : '',
+                  co_creation_details: optionId === 'co-creation' ? formData.co_creation_details : ''
+                })
+                setIsPaymentOpen(false)
+              }}
+              className="payment-options-list publish-list"
+              showCheckbox={false}
+              showDescription={true}
+              truncateDescription={false}
+            />
           )}
         </div>
       )}
@@ -1273,145 +1292,123 @@ export const Step4Description = ({
               </span>
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
-            {isOpeningDaysOpen && (
-              <div
-                className="opening-hours-overlay"
-                onClick={() => setIsOpeningDaysOpen(false)}
-              >
-                <div
-                  className="opening-hours-sheet"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <div className="opening-hours-sheet-header">
-                    <h3>Jours d’ouverture</h3>
-                    <button
-                      type="button"
-                      className="opening-hours-sheet-close"
-                      onClick={() => setIsOpeningDaysOpen(false)}
-                      aria-label="Fermer"
+            {renderBottomSheet(
+              isOpeningDaysOpen,
+              () => setIsOpeningDaysOpen(false),
+              '',
+              <div className="opening-hours-sheet-content">
+                <div className="opening-hours-sheet-header">
+                  <h3>Jours d’ouverture</h3>
+                  <button
+                    type="button"
+                    className="opening-hours-sheet-close"
+                    onClick={() => setIsOpeningDaysOpen(false)}
+                    aria-label="Fermer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="opening-hours-sheet-divider" />
+                <div className="opening-days-list">
+                  {openingDays.map((slot) => (
+                    <div
+                      key={slot.day}
+                      className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
                     >
-                      <X size={16} />
-                    </button>
-                  </div>
-                  <div className="opening-hours-sheet-divider" />
-                  <div className="opening-days-list">
-                    {openingDays.map((slot) => (
-                      <div
-                        key={slot.day}
-                        className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
+                      <button
+                        type="button"
+                        className="opening-day-row"
+                        onClick={() => toggleOpeningDay(slot.day)}
                       >
-                        <button
-                          type="button"
-                          className="opening-day-row"
-                          onClick={() => {
-                            if (!slot.enabled) {
-                              toggleOpeningDay(slot.day)
-                              setActiveOpeningDay(slot.day)
-                              return
-                            }
-                            setActiveOpeningDay(slot.day)
-                          }}
-                        >
-                          <span>{dayLabels[slot.day] || slot.day}</span>
-                          {slot.enabled ? (
-                            <span className="opening-day-actions">
-                              <span className="opening-day-check">Sélectionné</span>
-                              <span
-                                className="opening-day-remove"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  toggleOpeningDay(slot.day)
-                                }}
-                              >
-                                Retirer
-                              </span>
-                            </span>
-                          ) : <span className="opening-day-check muted">Non</span>}
-                        </button>
-                        {slot.enabled && activeOpeningDay === slot.day && (
-                          <div className="opening-day-hours-inline">
-                            <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
-                            <div className="opening-day-hours-grid">
-                              <div className="opening-hours-time-block">
-                                <span className="opening-hours-time-label">De</span>
-                                <div className="time-input-row">
-                                  <input
-                                    type="text"
-                                    className="form-input opening-hours-time"
-                                    value={slot.start}
-                                    onChange={(event) =>
-                                      updateOpeningDay(slot.day, { start: normalizeTime(event.target.value) })
-                                    }
-                                    onBlur={() =>
-                                      updateOpeningDay(slot.day, { start: formatTime(slot.start || '09:00') })
-                                    }
-                                    placeholder="HH:MM"
-                                    inputMode="numeric"
-                                  />
-                                  <div className="time-stepper">
-                                    <button
-                                      type="button"
-                                      className="time-stepper-btn"
-                                      onClick={() => stepOpeningTime(slot.day, 'start', 30)}
-                                      aria-label="Augmenter de 30 minutes"
-                                    >
-                                      <ChevronUp size={14} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="time-stepper-btn"
-                                      onClick={() => stepOpeningTime(slot.day, 'start', -30)}
-                                      aria-label="Diminuer de 30 minutes"
-                                    >
-                                      <ChevronDown size={14} />
-                                    </button>
-                                  </div>
+                        <span>{dayLabels[slot.day] || slot.day}</span>
+                        <span className={`opening-day-check ${slot.enabled ? 'checked' : ''}`} aria-hidden="true">
+                          <span className="opening-day-checkmark">✓</span>
+                        </span>
+                      </button>
+                      {slot.enabled && (
+                        <div className="opening-day-hours-inline">
+                          <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
+                          <div className="opening-day-hours-grid">
+                            <div className="opening-hours-time-block">
+                              <span className="opening-hours-time-label">De</span>
+                              <div className="time-input-row">
+                                <input
+                                  type="text"
+                                  className="form-input opening-hours-time"
+                                  value={slot.start}
+                                  onChange={(event) =>
+                                    updateOpeningDay(slot.day, { start: normalizeTime(event.target.value) })
+                                  }
+                                  onBlur={() =>
+                                    updateOpeningDay(slot.day, { start: formatTime(slot.start || '09:00') })
+                                  }
+                                  placeholder="HH:MM"
+                                  inputMode="numeric"
+                                />
+                                <div className="time-stepper">
+                                  <button
+                                    type="button"
+                                    className="time-stepper-btn"
+                                    onClick={() => stepOpeningTime(slot.day, 'start', 30)}
+                                    aria-label="Augmenter de 30 minutes"
+                                  >
+                                    <ChevronUp size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="time-stepper-btn"
+                                    onClick={() => stepOpeningTime(slot.day, 'start', -30)}
+                                    aria-label="Diminuer de 30 minutes"
+                                  >
+                                    <ChevronDown size={14} />
+                                  </button>
                                 </div>
                               </div>
-                              <div className="opening-hours-time-block">
-                                <span className="opening-hours-time-label">À</span>
-                                <div className="time-input-row">
-                                  <input
-                                    type="text"
-                                    className="form-input opening-hours-time"
-                                    value={slot.end}
-                                    onChange={(event) =>
-                                      updateOpeningDay(slot.day, { end: normalizeTime(event.target.value) })
-                                    }
-                                    onBlur={() =>
-                                      updateOpeningDay(slot.day, { end: formatTime(slot.end || '18:00') })
-                                    }
-                                    placeholder="HH:MM"
-                                    inputMode="numeric"
-                                  />
-                                  <div className="time-stepper">
-                                    <button
-                                      type="button"
-                                      className="time-stepper-btn"
-                                      onClick={() => stepOpeningTime(slot.day, 'end', 30)}
-                                      aria-label="Augmenter de 30 minutes"
-                                    >
-                                      <ChevronUp size={14} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="time-stepper-btn"
-                                      onClick={() => stepOpeningTime(slot.day, 'end', -30)}
-                                      aria-label="Diminuer de 30 minutes"
-                                    >
-                                      <ChevronDown size={14} />
-                                    </button>
-                                  </div>
+                            </div>
+                            <div className="opening-hours-time-block">
+                              <span className="opening-hours-time-label">À</span>
+                              <div className="time-input-row">
+                                <input
+                                  type="text"
+                                  className="form-input opening-hours-time"
+                                  value={slot.end}
+                                  onChange={(event) =>
+                                    updateOpeningDay(slot.day, { end: normalizeTime(event.target.value) })
+                                  }
+                                  onBlur={() =>
+                                    updateOpeningDay(slot.day, { end: formatTime(slot.end || '18:00') })
+                                  }
+                                  placeholder="HH:MM"
+                                  inputMode="numeric"
+                                />
+                                <div className="time-stepper">
+                                  <button
+                                    type="button"
+                                    className="time-stepper-btn"
+                                    onClick={() => stepOpeningTime(slot.day, 'end', 30)}
+                                    aria-label="Augmenter de 30 minutes"
+                                  >
+                                    <ChevronUp size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="time-stepper-btn"
+                                    onClick={() => stepOpeningTime(slot.day, 'end', -30)}
+                                    aria-label="Diminuer de 30 minutes"
+                                  >
+                                    <ChevronDown size={14} />
+                                  </button>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </div>,
+              'opening-hours-sheet'
             )}
           </div>
           {selectedOpeningDays.length > 0 && (
@@ -1437,73 +1434,71 @@ export const Step4Description = ({
           <span>{formatDeadlineLabel(formData.deadline)}</span>
           <CalendarDays size={18} />
         </button>
-        {isDatePickerOpen && (
-          <>
-            <div
-              className="publish-dropdown-backdrop"
-              onClick={() => setIsDatePickerOpen(false)}
-            />
-            <div className="publish-dropdown-panel publish-calendar-panel">
-              <div className="publish-calendar-header">
-                <button
-                  type="button"
-                  className="publish-calendar-nav"
-                  onClick={() =>
-                    setCalendarMonth(
-                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
-                    )
-                  }
-                  aria-label="Mois précédent"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <div className="publish-calendar-title">{monthLabel}</div>
-                <button
-                  type="button"
-                  className="publish-calendar-nav"
-                  onClick={() =>
-                    setCalendarMonth(
-                      new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
-                    )
-                  }
-                  aria-label="Mois suivant"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <div className="publish-calendar-grid">
-                {weekDays.map((day) => (
-                  <div key={`weekday-${day}`} className="publish-calendar-weekday">
-                    {day}
-                  </div>
-                ))}
-                {dayCells.map((dateValue, index) => {
-                  if (!dateValue) {
-                    return <div key={`empty-${index}`} className="publish-calendar-empty" />
-                  }
-
-                  const key = toDateKey(dateValue)
-                  const isSelected = formData.deadline === key
-                  const isPast = key < todayKey
-
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`publish-calendar-day ${isSelected ? 'selected' : ''}`}
-                      disabled={isPast}
-                      onClick={() => {
-                        onUpdateFormData({ deadline: key })
-                        setIsDatePickerOpen(false)
-                      }}
-                    >
-                      {dateValue.getDate()}
-                    </button>
+        {renderBottomSheet(
+          isDatePickerOpen,
+          () => setIsDatePickerOpen(false),
+          '',
+          <div className="publish-calendar-panel-content">
+            <div className="publish-calendar-header">
+              <button
+                type="button"
+                className="publish-calendar-nav"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
                   )
-                })}
-              </div>
+                }
+                aria-label="Mois précédent"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="publish-calendar-title">{monthLabel}</div>
+              <button
+                type="button"
+                className="publish-calendar-nav"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                  )
+                }
+                aria-label="Mois suivant"
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
-          </>
+            <div className="publish-calendar-grid">
+              {weekDays.map((day) => (
+                <div key={`weekday-${day}`} className="publish-calendar-weekday">
+                  {day}
+                </div>
+              ))}
+              {dayCells.map((dateValue, index) => {
+                if (!dateValue) {
+                  return <div key={`empty-${index}`} className="publish-calendar-empty" />
+                }
+
+                const key = toDateKey(dateValue)
+                const isSelected = formData.deadline === key
+                const isPast = key < todayKey
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`publish-calendar-day ${isSelected ? 'selected' : ''}`}
+                    disabled={isPast}
+                    onClick={() => {
+                      onUpdateFormData({ deadline: key })
+                      setIsDatePickerOpen(false)
+                    }}
+                  >
+                    {dateValue.getDate()}
+                  </button>
+                )
+              })}
+            </div>
+          </div>,
+          'publish-calendar-panel'
         )}
       </div>
       )}
@@ -1572,13 +1567,16 @@ export const Step4Description = ({
             onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
           />
+          <div className="form-field-meta">
+            Minimum {MIN_DESCRIPTION_CHARS} caractères ({descriptionLength}/{MIN_DESCRIPTION_CHARS})
+          </div>
         </div>
       )}
 
       {isJobCategory && !isJobRequest && (
         <>
           <div className="form-group">
-            <label className="form-label">{isJobRequest ? 'Disponibilités' : 'Horaires / temps de travail'}</label>
+            <label className="form-label">{isJobRequest ? 'Disponibilités' : 'Horaires / temps de travail *'}</label>
             <input
               type="text"
               className="form-input small-placeholder"
@@ -1586,10 +1584,13 @@ export const Step4Description = ({
               value={formData.work_schedule || ''}
               onChange={(e) => onUpdateFormData({ work_schedule: e.target.value })}
             />
+            <div className="form-field-meta">
+              Minimum {MIN_WORK_SCHEDULE_CHARS} caractères ({workScheduleLength}/{MIN_WORK_SCHEDULE_CHARS})
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Missions / responsabilités</label>
+            <label className="form-label">Missions / responsabilités *</label>
             <textarea
               className="form-textarea"
               placeholder="Décrivez les missions principales du poste."
@@ -1597,10 +1598,13 @@ export const Step4Description = ({
               onChange={(e) => onUpdateFormData({ responsibilities: e.target.value })}
               rows={4}
             />
+            <div className="form-field-meta">
+              Minimum {MIN_RESPONSIBILITIES_CHARS} caractères ({responsibilitiesLength}/{MIN_RESPONSIBILITIES_CHARS})
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Compétences requises</label>
+            <label className="form-label">Compétences requises *</label>
             <textarea
               className="form-textarea"
               placeholder="Listez les compétences attendues (ex: montage, rédaction, outils...)."
@@ -1608,10 +1612,13 @@ export const Step4Description = ({
               onChange={(e) => onUpdateFormData({ required_skills: e.target.value })}
               rows={4}
             />
+            <div className="form-field-meta">
+              Minimum {MIN_REQUIRED_SKILLS_CHARS} caractères ({requiredSkillsLength}/{MIN_REQUIRED_SKILLS_CHARS})
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Avantages</label>
+            <label className="form-label">Avantages *</label>
             <textarea
               className="form-textarea"
               placeholder="Ex: télétravail, horaires flexibles, tickets resto..."
@@ -1619,6 +1626,9 @@ export const Step4Description = ({
               onChange={(e) => onUpdateFormData({ benefits: e.target.value })}
               rows={3}
             />
+            <div className="form-field-meta">
+              Minimum {MIN_BENEFITS_CHARS} caractères ({benefitsLength}/{MIN_BENEFITS_CHARS})
+            </div>
           </div>
         </>
       )}

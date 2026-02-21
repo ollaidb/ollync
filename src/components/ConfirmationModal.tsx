@@ -1,4 +1,4 @@
-import { useEffect, useId, type ReactNode } from 'react'
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react'
 import './ConfirmationModal.css'
 
 export interface ConfirmationModalProps {
@@ -12,6 +12,7 @@ export interface ConfirmationModalProps {
   isDestructive?: boolean
   children?: ReactNode
   contentClassName?: string
+  presentation?: 'center' | 'bottom-sheet'
 }
 
 const ConfirmationModal = ({
@@ -24,10 +25,12 @@ const ConfirmationModal = ({
   cancelLabel = 'Annuler',
   isDestructive = false,
   children,
-  contentClassName
+  contentClassName,
+  presentation = 'center'
 }: ConfirmationModalProps) => {
   const titleId = useId()
   const messageId = useId()
+  const [keyboardInset, setKeyboardInset] = useState(0)
 
   // Bloquer le scroll quand le modal est visible
   useEffect(() => {
@@ -42,12 +45,56 @@ const ConfirmationModal = ({
     }
   }, [visible])
 
+  useEffect(() => {
+    if (!visible || presentation !== 'bottom-sheet' || typeof window === 'undefined') {
+      setKeyboardInset(0)
+      return
+    }
+
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateInset = () => {
+      const nextInset = Math.max(
+        0,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop)
+      )
+      setKeyboardInset(nextInset)
+    }
+
+    updateInset()
+    viewport.addEventListener('resize', updateInset)
+    viewport.addEventListener('scroll', updateInset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateInset)
+      viewport.removeEventListener('scroll', updateInset)
+      setKeyboardInset(0)
+    }
+  }, [visible, presentation])
+
   if (!visible) return null
 
+  const overlayStyle: CSSProperties = presentation === 'bottom-sheet' && keyboardInset > 0
+    ? { paddingBottom: keyboardInset }
+    : {}
+
+  const contentStyle: CSSProperties = presentation === 'bottom-sheet' && keyboardInset > 0
+    ? { maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - 84px - ${keyboardInset}px)` }
+    : {}
+
   return (
-    <div className="confirmation-modal-overlay">
+    <div
+      className={`confirmation-modal-overlay ${
+        presentation === 'bottom-sheet' ? 'confirmation-modal-overlay--bottom-sheet' : ''
+      }`.trim()}
+      style={overlayStyle}
+    >
       <div
-        className={`confirmation-modal-content${contentClassName ? ` ${contentClassName}` : ''}`}
+        className={`confirmation-modal-content ${
+          presentation === 'bottom-sheet' ? 'confirmation-modal-content--bottom-sheet' : ''
+        }${contentClassName ? ` ${contentClassName}` : ''}`.trim()}
+        style={contentStyle}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

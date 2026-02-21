@@ -622,7 +622,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         ) : postsSections.length === 0 ? (
           <EmptyState 
             type="category"
-            customTitle="Une annonce. Une rencontre. Un projet."
+            customTitle="Un projet. Une annonce. Une rencontre."
             customSubtext="Publie en quelques minutes et trouve les bons profils."
             actionLabel="Publier une annonce"
             onAction={() => navigate('/publish')}

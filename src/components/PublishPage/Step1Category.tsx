@@ -1,8 +1,6 @@
 import { publicationTypes } from '../../constants/publishData'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
-import { useState } from 'react'
-import { useIsMobile } from '../../hooks/useIsMobile'
 import './Step1Category.css'
 
 interface Step1CategoryProps {
@@ -12,41 +10,84 @@ interface Step1CategoryProps {
 
 export const Step1Category = ({ onSelectCategory, listingType }: Step1CategoryProps) => {
   const { t } = useTranslation(['publish', 'categories'])
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({})
-  const isMobile = useIsMobile()
-  const hiddenWhenRequest = new Set(['vente', 'studio-lieu', 'evenements', 'suivi'])
+  // Les libellés Offre/Demande sont swappés côté UI :
+  // - listingType 'request' => affiché "Offre"
+  // - listingType 'offer'   => affiché "Demande"
+  //
+  // Règle demandée :
+  // - Vente, Lieu, Évènement : visibles en "Offre", masqués en "Demande"
+  // - Suivi : visible en "Demande"
+  const hiddenWhenDisplayedDemande = new Set(['vente', 'studio-lieu', 'evenements', 'suivi'])
   const visibleCategories = publicationTypes.filter((category) =>
-    listingType === 'request' ? !hiddenWhenRequest.has(category.slug) : true
+    listingType === 'offer' ? !hiddenWhenDisplayedDemande.has(category.slug) : true
   )
+  // Les libellés Offre/Demande sont swappés côté UI.
+  // On aligne donc les descriptions sur l'intention affichée et non la valeur technique stockée.
+  const listingTypeForDisplayedIntent =
+    listingType === 'offer' ? 'request' : listingType === 'request' ? 'offer' : ''
 
-  const toggleDescription = (e: React.MouseEvent, categoryId: string) => {
-    e.stopPropagation()
-    setExpandedDescriptions((prev) => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }))
+  const CATEGORY_DESCRIPTIONS_BY_TYPE: Record<
+    string,
+    { offer?: string; request?: string; default?: string }
+  > = {
+    'creation-contenu': {
+      offer:
+        'Collaboration en création de contenu: photo, vidéo, vlog... Collaborer à plusieurs.',
+      request:
+        'Recherche de collaboration en création de contenu: photo, vidéo, vlog... Trouver et collaborer à plusieurs.'
+    },
+    'casting-role': {
+      offer:
+        'Profil disponible pour un casting: figurant, modèle, voix off... Collaborer à plusieurs.',
+      request:
+        'Profils recherchés pour un casting: figurant, modèle, voix off... Trouver et collaborer à plusieurs.'
+    },
+    emploi: {
+      offer:
+        'Compétences disponibles pour des missions en création de contenu: montage, community management, écriture...',
+      request:
+        'Profils recherchés pour des missions en création de contenu: montage, community management, écriture...'
+    },
+    'studio-lieu': {
+      offer: 'Lieux disponibles pour créer du contenu: studio, lieu résidentiel, lieu pro...'
+    },
+    'projets-equipe': {
+      offer:
+        'Rejoindre un projet existant: émission, podcast, interview... Collaborer à plusieurs.',
+      request:
+        'Chercher des profils pour construire un projet: émission, podcast, interview... Trouver et collaborer à plusieurs.'
+    },
+    services: {
+      offer: 'Services disponibles: coaching contenu, stratégie éditoriale, organisation...',
+      request: 'Services recherchés: coaching contenu, stratégie éditoriale, organisation...'
+    },
+    evenements: {
+      offer: 'Événements proposés: masterclass, conférence, atelier...'
+    },
+    suivi: {
+      default:
+        'Accompagnement disponible: production sur place, déplacement, événement/sortie...'
+    },
+    vente: {
+      default: 'À vendre: comptes, noms d’utilisateur, matériel...',
+      request: 'Recherche d’achat: comptes, noms d’utilisateur, matériel...'
+    },
+    'poste-service': {
+      offer: 'Échange service contre visibilité: prestation, food, lieux...',
+      request: 'Échange service contre visibilité recherché: prestation, food, lieux...'
+    }
   }
 
-  const getPreviewText = (text: string, wordLimit: number) => {
-    const words = text.trim().split(/\s+/)
-    if (words.length <= wordLimit) return { preview: text, hasMore: false }
-    return { preview: words.slice(0, wordLimit).join(' '), hasMore: true }
+  const getCategoryDescription = (slug: string, fallback: string) => {
+    const custom = CATEGORY_DESCRIPTIONS_BY_TYPE[slug]
+    if (!custom) return fallback
+    if (listingTypeForDisplayedIntent && custom[listingTypeForDisplayedIntent]) {
+      return custom[listingTypeForDisplayedIntent] as string
+    }
+    if (custom.default) return custom.default
+    return fallback
   }
 
-  const getPreviewWithHalfWord = (text: string, baseWordLimit: number) => {
-    const adjustedLimit = baseWordLimit + 2
-    const { preview, hasMore } = getPreviewText(text, adjustedLimit)
-    if (!hasMore) return { preview, hasMore }
-    const words = text.trim().split(/\s+/)
-    const nextWord = words[adjustedLimit] ?? ''
-    if (!nextWord) return { preview, hasMore }
-    const cutLength = Math.max(1, Math.floor(nextWord.length / 2))
-    return { preview: `${preview} ${nextWord.slice(0, cutLength)}`, hasMore }
-  }
-  const getFirstSentence = (text: string) => {
-    const match = text.match(/^.*?[.!?](\s|$)/)
-    return match ? match[0].trim() : text
-  }
   return (
     <div className="step1-category">
       <h2 className="step-question">{t('publish:step1Title')}</h2>
@@ -55,19 +96,10 @@ export const Step1Category = ({ onSelectCategory, listingType }: Step1CategoryPr
         {visibleCategories.map((category) => {
           const Icon = category.icon
           const categoryLabel = t(`categories:titles.${category.slug}`, { defaultValue: category.name })
-          const categoryDescription = t(`categories:descriptions.${category.slug}`, {
+          const fallbackDescription = t(`categories:descriptions.${category.slug}`, {
             defaultValue: category.description
           })
-          const isExpanded = isMobile || !!expandedDescriptions[category.id]
-          const extraWordsMap: Record<string, number> = {
-            'emploi': 2,
-            'creation-contenu': 1,
-            'studio-lieu': 1,
-            'projets-equipe': 1
-          }
-          const extraWords = extraWordsMap[category.slug] ?? 0
-          const { preview, hasMore } = getPreviewWithHalfWord(categoryDescription, 6 + extraWords)
-          const mobilePreview = getFirstSentence(categoryDescription)
+          const categoryDescription = getCategoryDescription(category.slug, fallbackDescription)
           return (
             <button
               key={category.id}
@@ -82,33 +114,9 @@ export const Step1Category = ({ onSelectCategory, listingType }: Step1CategoryPr
                 <span className="category-name">{categoryLabel}</span>
                 <div className="category-description-row">
                   <span
-                    className={`category-description ${isExpanded || !hasMore ? 'is-expanded' : 'is-collapsed'}`}
+                    className="category-description is-expanded"
                   >
-                    {isExpanded || !hasMore
-                      ? categoryDescription
-                      : isMobile
-                        ? mobilePreview
-                        : preview}
-                    {!isMobile && hasMore && !isExpanded && (
-                      <button
-                        type="button"
-                        className="category-more inline"
-                        onClick={(e) => toggleDescription(e, category.id)}
-                        aria-label="Afficher la description complète"
-                      >
-                        ...
-                      </button>
-                    )}
-                    {!isMobile && hasMore && isExpanded && (
-                      <button
-                        type="button"
-                        className="category-more inline"
-                        onClick={(e) => toggleDescription(e, category.id)}
-                        aria-label="Réduire la description"
-                      >
-                        Réduire
-                      </button>
-                    )}
+                    {categoryDescription}
                   </span>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe, CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -38,6 +39,10 @@ interface ProfileData {
   availability?: string | null
   skills?: string[]
   services?: Service[] | string[] // Peut être un tableau d'objets ou de strings (compatibilité)
+  display_categories?: string[] | null
+  venue_opening_hours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | null
+  venue_billing_hours?: number | null
+  venue_payment_types?: string[] | null
   languages?: Array<{ name: string; level: string }>
   badges?: string[]
   social_links?: {
@@ -94,6 +99,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'avis'>('a-propos')
+  const [aboutSectionTab, setAboutSectionTab] = useState<'services' | 'reservations'>('services')
   const [posts, setPosts] = useState<Post[]>([])
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -118,8 +124,92 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [showServiceCancelModal, setShowServiceCancelModal] = useState(false)
   const [serviceRequestLoading, setServiceRequestLoading] = useState(false)
   const [serviceRequestMessage, setServiceRequestMessage] = useState('')
+  const [showVenueReservationModal, setShowVenueReservationModal] = useState(false)
+  const [venueReservationLoading, setVenueReservationLoading] = useState(false)
+  const [venueReservationMessage, setVenueReservationMessage] = useState('')
+  const [venueReservationDate, setVenueReservationDate] = useState('')
+  const [venueReservationTime, setVenueReservationTime] = useState('01:00')
+  const [venueReservationDurationMinutes, setVenueReservationDurationMinutes] = useState(60)
+  const [venueReservationDurationText, setVenueReservationDurationText] = useState('01:00')
+  const [isVenueDatePickerOpen, setIsVenueDatePickerOpen] = useState(false)
+  const [venueCalendarMonth, setVenueCalendarMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
 
   const profileId = userId || user?.id
+  const VENUE_CATEGORY_SLUGS = ['studio-lieu', 'lieu']
+  const venueDayLabels: Record<string, string> = {
+    lundi: 'Lundi',
+    mardi: 'Mardi',
+    mercredi: 'Mercredi',
+    jeudi: 'Jeudi',
+    vendredi: 'Vendredi',
+    samedi: 'Samedi',
+    dimanche: 'Dimanche'
+  }
+
+  const normalizeTime = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, '')
+    const parts = cleaned.split(':')
+    if (parts.length === 1) {
+      const raw = parts[0]
+      if (raw.length <= 2) return raw
+      return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+    }
+    const [h, m] = parts
+    return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+  }
+
+  const formatTime = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const minutesToTime = (minutes?: number | null) => {
+    const safe = Math.max(0, Number.isFinite(minutes as number) ? Math.floor(minutes as number) : 0)
+    const h = Math.floor(safe / 60)
+    const m = safe % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const durationTextToMinutes = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return h * 60 + m
+  }
+
+  const stepVenueReservationTime = (deltaMinutes: number) => {
+    const base = venueReservationTime && venueReservationTime.trim().length > 0 ? venueReservationTime : '01:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    setVenueReservationTime(`${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}`)
+  }
+
+  const stepVenueReservationDuration = (deltaMinutes: number) => {
+    const next = Math.max(30, venueReservationDurationMinutes + deltaMinutes)
+    setVenueReservationDurationMinutes(next)
+    setVenueReservationDurationText(minutesToTime(next))
+  }
+
+  const toDateKey = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const today = new Date()
+  const venueTodayKey = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
+  const venueWeekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
   const normalizeTab = (value?: string | null) => {
     if (value === 'annonces' || value === 'avis' || value === 'a-propos') {
@@ -578,6 +668,134 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setShowServiceCancelModal(false)
   }
 
+  const handleOpenVenueReservationModal = () => {
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+    setVenueReservationDate('')
+    setVenueReservationTime('01:00')
+    setVenueReservationDurationMinutes(60)
+    setVenueReservationDurationText('01:00')
+    setVenueReservationMessage('')
+    setIsVenueDatePickerOpen(false)
+    setShowVenueReservationModal(true)
+  }
+
+  const checkVenueReservationConflict = useCallback(async (
+    dateValue: string,
+    timeValue: string,
+    durationMinutes: number
+  ) => {
+    if (!profileId) return false
+    const normalizedDate = dateValue
+    const normalizedTime = formatTime(timeValue)
+    const normalizedDuration = Math.max(30, durationMinutes)
+
+    // 1) Vérification côté SQL (fonction dédiée) si disponible
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await ((supabase as any).rpc('check_reservation_slot_conflict', {
+        p_to_user_id: profileId,
+        p_reservation_date: normalizedDate,
+        p_reservation_time: normalizedTime,
+        p_duration_minutes: normalizedDuration,
+        p_ignore_request_id: null
+      }) as any)
+      if (!error) {
+        return Boolean(data)
+      }
+      if (error.code !== '42883') {
+        console.error('Error checking reservation conflict (rpc):', error)
+      }
+    } catch (error) {
+      console.error('Error checking reservation conflict (rpc):', error)
+    }
+
+    // 2) Fallback JS si la fonction SQL n'existe pas encore
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .select('reservation_time, reservation_duration_minutes')
+        .eq('to_user_id', profileId)
+        .eq('request_intent', 'reserve')
+        .eq('reservation_date', normalizedDate)
+        .in('status', ['pending', 'accepted'])
+
+      if (error) {
+        console.error('Error checking reservation conflict (fallback):', error)
+        return false
+      }
+
+      const [newH, newM] = normalizedTime.split(':').map((v) => parseInt(v, 10))
+      const newStart = (newH * 60) + newM
+      const newEnd = newStart + normalizedDuration
+
+      return (data || []).some((item: { reservation_time?: string | null; reservation_duration_minutes?: number | null }) => {
+        if (!item.reservation_time) return false
+        const time = String(item.reservation_time).slice(0, 5)
+        const [h, m] = time.split(':').map((v) => parseInt(v, 10))
+        const start = (h * 60) + m
+        const end = start + Math.max(30, Number(item.reservation_duration_minutes || 60))
+        return start < newEnd && newStart < end
+      })
+    } catch (error) {
+      console.error('Error checking reservation conflict (fallback):', error)
+      return false
+    }
+  }, [profileId])
+
+  const handleSendVenueReservation = async () => {
+    if (!user || !profileId || !venueReservationDate) return
+
+    const normalizedTime = formatTime(venueReservationTime || '01:00')
+    const normalizedDurationText = formatTime(venueReservationDurationText || '01:00')
+    const normalizedDurationMinutes = Math.max(30, durationTextToMinutes(normalizedDurationText))
+    setVenueReservationTime(normalizedTime)
+    setVenueReservationDurationText(normalizedDurationText)
+    setVenueReservationDurationMinutes(normalizedDurationMinutes)
+
+    const hasConflict = await checkVenueReservationConflict(
+      venueReservationDate,
+      normalizedTime,
+      normalizedDurationMinutes
+    )
+    if (hasConflict) {
+      alert('Ce créneau est déjà réservé. Choisissez une autre heure.')
+      return
+    }
+
+    setVenueReservationLoading(true)
+    try {
+      const trimmedMessage = venueReservationMessage.trim()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('match_requests') as any)
+        .insert({
+          from_user_id: user.id,
+          to_user_id: profileId,
+          status: 'pending',
+          request_intent: 'reserve',
+          request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
+          reservation_date: venueReservationDate,
+          reservation_time: normalizedTime,
+          reservation_duration_minutes: normalizedDurationMinutes
+        })
+
+      if (error) {
+        alert(`Erreur lors de la réservation: ${error.message}`)
+        return
+      }
+
+      setShowVenueReservationModal(false)
+      showSuccess('Demande de réservation envoyée')
+    } catch (error) {
+      console.error('Error sending venue reservation:', error)
+      alert('Erreur lors de la réservation')
+    } finally {
+      setVenueReservationLoading(false)
+    }
+  }
+
   const fetchFollowersCount = useCallback(async () => {
     if (!profileId) return
 
@@ -865,6 +1083,12 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, activeTab, postsLoaded])
 
+  useEffect(() => {
+    if (!isVenueDatePickerOpen) return
+    const base = venueReservationDate ? new Date(`${venueReservationDate}T12:00:00`) : new Date()
+    setVenueCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1))
+  }, [isVenueDatePickerOpen, venueReservationDate])
+
   if (loading) {
     return (
       <div className="public-profile-loading">
@@ -882,6 +1106,32 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   }
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
+  const normalizedDisplayCategories = (profile.display_categories || []).map((slug) => String(slug))
+  const isVenueProfile = normalizedDisplayCategories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug))
+  const isVenueOnlyProfile =
+    normalizedDisplayCategories.length > 0 &&
+    normalizedDisplayCategories.every((slug) => VENUE_CATEGORY_SLUGS.includes(slug))
+  const venueOpeningHours = Array.isArray(profile.venue_opening_hours)
+    ? profile.venue_opening_hours
+    : []
+  const venuePaymentTypes = Array.isArray(profile.venue_payment_types)
+    ? profile.venue_payment_types
+    : []
+  const venuePaymentEntries = venuePaymentTypes.map((raw) => {
+    const [id = '', ...rest] = String(raw).split('|')
+    return { id, value: rest.join('|') }
+  })
+
+  const firstVenueDayOfMonth = new Date(venueCalendarMonth.getFullYear(), venueCalendarMonth.getMonth(), 1)
+  const venueDaysInMonth = new Date(venueCalendarMonth.getFullYear(), venueCalendarMonth.getMonth() + 1, 0).getDate()
+  const venueStartOffset = (firstVenueDayOfMonth.getDay() + 6) % 7
+  const venueDayCells: Array<Date | null> = []
+  for (let i = 0; i < venueStartOffset; i += 1) venueDayCells.push(null)
+  for (let day = 1; day <= venueDaysInMonth; day += 1) {
+    venueDayCells.push(new Date(venueCalendarMonth.getFullYear(), venueCalendarMonth.getMonth(), day))
+  }
+  while (venueDayCells.length % 7 !== 0) venueDayCells.push(null)
+  const venueMonthLabel = venueCalendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
   // Services (objets avec name, description, payment_type, value)
   // Les services sont déjà parsés dans fetchProfile, on les utilise directement
@@ -1001,6 +1251,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
     return cleanedServices
   })()
+  const hasServicesSection = !isVenueOnlyProfile && services.length > 0
+  const hasReservationsSection = isVenueProfile
+  const effectiveAboutSectionTab = isVenueOnlyProfile ? 'reservations' : aboutSectionTab
 
   return (
     <div className="public-profile-page">
@@ -1238,8 +1491,29 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               )
             )}
 
+            {(hasServicesSection || hasReservationsSection) && (
+              <div className="profile-secondary-menu profile-a-propos-menu">
+                {hasServicesSection && (
+                  <button
+                    className={`profile-menu-btn ${effectiveAboutSectionTab === 'services' ? 'active' : ''}`}
+                    onClick={() => setAboutSectionTab('services')}
+                  >
+                    services
+                  </button>
+                )}
+                {hasReservationsSection && (
+                  <button
+                    className={`profile-menu-btn ${effectiveAboutSectionTab === 'reservations' ? 'active' : ''}`}
+                    onClick={() => setAboutSectionTab('reservations')}
+                  >
+                    ouverture
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* SERVICES */}
-            {services.length > 0 && (
+            {hasServicesSection && effectiveAboutSectionTab === 'services' && (
               <div className="profile-services-section">
                 <h3 className="services-title">services</h3>
                 <div className="services-list-container">
@@ -1307,6 +1581,46 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {hasReservationsSection && effectiveAboutSectionTab === 'reservations' && (
+              <div className="profile-venue-section">
+                <h3 className="services-title">jours ouvrables</h3>
+                <div className="profile-venue-card">
+                  {venueOpeningHours.filter((slot) => slot.enabled).length > 0 ? (
+                    <div className="profile-venue-hours-list">
+                      {venueOpeningHours.filter((slot) => slot.enabled).map((slot) => (
+                        <div key={slot.day} className="profile-venue-hours-row">
+                          <span>{venueDayLabels[slot.day] || slot.day}</span>
+                          <span>{slot.start} - {slot.end}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="profile-venue-empty">Horaires non renseignés</p>
+                  )}
+
+                  <div className="profile-venue-meta">
+                    {venuePaymentEntries.map(({ id, value }) => (
+                      <div key={`${id}-${value}`} className="profile-venue-chip">
+                        {getPaymentOptionConfig(id)?.name || id}
+                        {id === 'remuneration' && value ? ` • Prix: ${value}` : ''}
+                        {id === 'visibilite-contre-service' && value ? ` • Heures offertes: ${value}h` : ''}
+                      </div>
+                    ))}
+                  </div>
+
+                  {!isOwnProfile && user && profileId !== user.id && (
+                    <button
+                      type="button"
+                      className="profile-venue-book-btn"
+                      onClick={handleOpenVenueReservationModal}
+                    >
+                      Prendre rendez-vous
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1445,6 +1759,162 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           confirmLabel={serviceRequestLoading ? 'Annulation...' : 'Oui, annuler'}
           cancelLabel="Non, garder la demande"
         />
+      )}
+
+      {showVenueReservationModal && (
+        <ConfirmationModal
+          visible={showVenueReservationModal}
+          presentation="bottom-sheet"
+          title="Réserver un créneau"
+          message="Choisissez la date, l’heure et la durée."
+          onConfirm={handleSendVenueReservation}
+          onCancel={() => {
+            setShowVenueReservationModal(false)
+            setIsVenueDatePickerOpen(false)
+          }}
+          confirmLabel={venueReservationLoading ? 'Envoi...' : 'Envoyer la réservation'}
+          cancelLabel="Annuler"
+        >
+          <div className="confirmation-modal-field">
+            <label className="confirmation-modal-label" htmlFor="venue-reservation-date-trigger">
+              Date
+            </label>
+            <button
+              id="venue-reservation-date-trigger"
+              type="button"
+              className={`confirmation-date-picker-trigger ${venueReservationDate ? 'has-value' : ''}`}
+              onClick={() => setIsVenueDatePickerOpen(true)}
+            >
+              <span>
+                {venueReservationDate
+                  ? new Date(`${venueReservationDate}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+                  : 'Choisir une date'}
+              </span>
+              <CalendarDays size={18} />
+            </button>
+          </div>
+          <div className="confirmation-modal-field">
+            <label className="confirmation-modal-label" htmlFor="venue-reservation-time">
+              Heure
+            </label>
+            <div className="confirmation-modal-time-row">
+              <input
+                id="venue-reservation-time"
+                type="text"
+                className="confirmation-modal-input confirmation-modal-time-input"
+                value={venueReservationTime}
+                placeholder="HH:MM"
+                inputMode="numeric"
+                onChange={(event) => setVenueReservationTime(normalizeTime(event.target.value))}
+                onBlur={() => setVenueReservationTime(formatTime(venueReservationTime || '01:00'))}
+              />
+              <div className="confirmation-modal-time-stepper">
+                <button type="button" className="confirmation-modal-time-stepper-btn" onClick={() => stepVenueReservationTime(30)}>
+                  <ChevronUp size={14} />
+                </button>
+                <button type="button" className="confirmation-modal-time-stepper-btn" onClick={() => stepVenueReservationTime(-30)}>
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="confirmation-modal-field">
+            <label className="confirmation-modal-label" htmlFor="venue-reservation-duration">
+              Durée
+            </label>
+            <div className="confirmation-modal-time-row">
+              <input
+                id="venue-reservation-duration"
+                type="text"
+                className="confirmation-modal-input confirmation-modal-time-input"
+                value={venueReservationDurationText}
+                placeholder="HH:MM"
+                inputMode="numeric"
+                onChange={(event) => setVenueReservationDurationText(normalizeTime(event.target.value))}
+                onBlur={() => {
+                  const formatted = formatTime(venueReservationDurationText || '01:00')
+                  setVenueReservationDurationText(formatted)
+                  setVenueReservationDurationMinutes(Math.max(30, durationTextToMinutes(formatted)))
+                }}
+              />
+              <div className="confirmation-modal-time-stepper">
+                <button type="button" className="confirmation-modal-time-stepper-btn" onClick={() => stepVenueReservationDuration(30)}>
+                  <ChevronUp size={14} />
+                </button>
+                <button type="button" className="confirmation-modal-time-stepper-btn" onClick={() => stepVenueReservationDuration(-30)}>
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="confirmation-modal-field">
+            <label className="confirmation-modal-label" htmlFor="venue-reservation-message">
+              Message (optionnel)
+            </label>
+            <textarea
+              id="venue-reservation-message"
+              className="confirmation-modal-textarea"
+              placeholder="Écrivez votre message ici."
+              value={venueReservationMessage}
+              maxLength={500}
+              onChange={(event) => setVenueReservationMessage(event.target.value)}
+            />
+            <div className="confirmation-modal-hint">{venueReservationMessage.length}/500</div>
+          </div>
+        </ConfirmationModal>
+      )}
+
+      {showVenueReservationModal && isVenueDatePickerOpen && createPortal(
+        <>
+          <div className="confirmation-calendar-backdrop" onClick={() => setIsVenueDatePickerOpen(false)} />
+          <div className="confirmation-calendar-panel">
+            <div className="confirmation-calendar-header">
+              <button
+                type="button"
+                className="confirmation-calendar-nav"
+                onClick={() => setVenueCalendarMonth(new Date(venueCalendarMonth.getFullYear(), venueCalendarMonth.getMonth() - 1, 1))}
+                aria-label="Mois précédent"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="confirmation-calendar-title">{venueMonthLabel}</div>
+              <button
+                type="button"
+                className="confirmation-calendar-nav"
+                onClick={() => setVenueCalendarMonth(new Date(venueCalendarMonth.getFullYear(), venueCalendarMonth.getMonth() + 1, 1))}
+                aria-label="Mois suivant"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            <div className="confirmation-calendar-grid">
+              {venueWeekDays.map((day, index) => (
+                <div key={`weekday-${day}-${index}`} className="confirmation-calendar-weekday">{day}</div>
+              ))}
+              {venueDayCells.map((dateValue, index) => {
+                if (!dateValue) return <div key={`empty-${index}`} className="confirmation-calendar-empty" />
+                const key = toDateKey(dateValue)
+                const isSelected = venueReservationDate === key
+                const isPast = key < venueTodayKey
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`confirmation-calendar-day ${isSelected ? 'selected' : ''}`}
+                    disabled={isPast}
+                    onClick={() => {
+                      setVenueReservationDate(key)
+                      setIsVenueDatePickerOpen(false)
+                    }}
+                  >
+                    {dateValue.getDate()}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </>,
+        document.body
       )}
 
       {/* Modal de signalement */}

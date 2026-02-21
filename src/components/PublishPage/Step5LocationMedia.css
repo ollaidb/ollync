@@ -1,6 +1,7 @@
 .step5-location-media {
   max-width: 600px;
   margin: 0 auto;
+  font-family: var(--font-sans);
 }
 
 .step-title {
@@ -145,7 +146,7 @@
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.45);
-  z-index: 9998;
+  z-index: 12000;
   animation: publishOverlayFade 0.18s ease-out;
 }
 
@@ -155,19 +156,22 @@
   right: 0;
   bottom: 0;
   width: 100%;
-  max-height: 72vh;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 84px);
   background: var(--card);
   border-top-left-radius: 18px;
   border-top-right-radius: 18px;
   border: 1px solid var(--border);
   border-bottom: none;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  z-index: 9999;
+  z-index: 12001;
   animation: publishSheetUp 0.22s ease-out;
   will-change: transform, opacity;
+  overscroll-behavior: contain;
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-normal);
 }
 
 .publish-dropdown-title {
@@ -198,10 +202,10 @@
 }
 
 .tagged-post-panel .tagged-post-list {
-  max-height: calc(72vh - 44px);
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 160px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 10px 12px 14px;
+  padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
 }
 
 .tagged-post-option {
@@ -290,6 +294,10 @@
   background-color: var(--input);
   transition: border-color 0.2s;
   box-sizing: border-box;
+  text-align: left;
+  direction: ltr;
+  unicode-bidi: plaintext;
+  caret-color: var(--foreground);
 }
 
 .form-input:focus {
@@ -548,10 +556,10 @@
 }
 
 .profile-dropdown-panel .profile-dropdown-list {
-  max-height: calc(72vh - 44px);
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 160px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 10px 12px 14px;
+  padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
 }
 
 .profile-dropdown-option {

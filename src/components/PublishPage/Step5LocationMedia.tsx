@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -53,6 +54,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const [isProfileLevelOpen, setIsProfileLevelOpen] = useState(false)
   const [isProfileRoleOpen, setIsProfileRoleOpen] = useState(false)
   const [isEventModeOpen, setIsEventModeOpen] = useState(false)
+  const [keyboardInset, setKeyboardInset] = useState(0)
   const categorySlug = String(formData.category || '').toLowerCase()
   const subcategorySlug = String(formData.subcategory || '').toLowerCase()
   const isStudioLieuCategory = categorySlug === 'studio-lieu'
@@ -200,6 +202,44 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     formData.location_lng,
     onUpdateFormData
   ])
+
+  const hasSheetOpen = isEventModeOpen || isProfileLevelOpen || isProfileRoleOpen || isTaggedPostOpen
+
+  useEffect(() => {
+    if (!hasSheetOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [hasSheetOpen])
+
+  useEffect(() => {
+    if (!hasSheetOpen || typeof window === 'undefined') {
+      setKeyboardInset(0)
+      return
+    }
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateInset = () => {
+      const nextInset = Math.max(
+        0,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop)
+      )
+      setKeyboardInset(nextInset)
+    }
+
+    updateInset()
+    viewport.addEventListener('resize', updateInset)
+    viewport.addEventListener('scroll', updateInset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateInset)
+      viewport.removeEventListener('scroll', updateInset)
+      setKeyboardInset(0)
+    }
+  }, [hasSheetOpen])
 
   // Hooks de consentement
   const locationConsent = useConsent('location')
@@ -549,6 +589,33 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
     })
   }
 
+  const renderBottomSheet = (
+    open: boolean,
+    onClose: () => void,
+    title: string,
+    content: ReactNode,
+    panelClassName = ''
+  ) => {
+    if (!open || typeof document === 'undefined') return null
+    const panelStyle: CSSProperties = keyboardInset > 0
+      ? { bottom: keyboardInset, maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - 84px - ${keyboardInset}px)` }
+      : {}
+    return createPortal(
+      <>
+        <div className="publish-dropdown-backdrop" onClick={onClose} />
+        <div
+          className={`publish-dropdown-panel ${panelClassName}`.trim()}
+          style={panelStyle}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="publish-dropdown-title">{title}</div>
+          {content}
+        </div>
+      </>,
+      document.body
+    )
+  }
+
   return (
     <div className="step5-location-media">
       <h2 className="step-title">Localisation et médias</h2>
@@ -567,45 +634,40 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
               </span>
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
-            {isEventModeOpen && (
-              <>
-                <div
-                  className="publish-dropdown-backdrop"
-                  onClick={() => setIsEventModeOpen(false)}
-                />
-                <div className="publish-dropdown-panel profile-dropdown-panel">
-                  <div className="publish-dropdown-title">Choisissez le type de présence</div>
-                  <div className="profile-dropdown-list publish-list">
-                    <button
-                      type="button"
-                      className={`profile-dropdown-option ${isEventInPerson ? 'selected' : ''}`}
-                      onClick={() => {
-                        onUpdateFormData({ event_mode: 'in_person', event_platform: '' })
-                        setIsEventModeOpen(false)
-                      }}
-                    >
-                      <span className="profile-option-text">En présentiel</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`profile-dropdown-option ${isEventRemote ? 'selected' : ''}`}
-                      onClick={() => {
-                        onUpdateFormData({
-                          event_mode: 'remote',
-                          location: '',
-                          location_address: '',
-                          location_city: '',
-                          location_lat: null,
-                          location_lng: null
-                        })
-                        setIsEventModeOpen(false)
-                      }}
-                    >
-                      <span className="profile-option-text">À distance</span>
-                    </button>
-                  </div>
-                </div>
-              </>
+            {renderBottomSheet(
+              isEventModeOpen,
+              () => setIsEventModeOpen(false),
+              'Choisissez le type de présence',
+              <div className="profile-dropdown-list publish-list">
+                <button
+                  type="button"
+                  className={`profile-dropdown-option ${isEventInPerson ? 'selected' : ''}`}
+                  onClick={() => {
+                    onUpdateFormData({ event_mode: 'in_person', event_platform: '' })
+                    setIsEventModeOpen(false)
+                  }}
+                >
+                  <span className="profile-option-text">En présentiel</span>
+                </button>
+                <button
+                  type="button"
+                  className={`profile-dropdown-option ${isEventRemote ? 'selected' : ''}`}
+                  onClick={() => {
+                    onUpdateFormData({
+                      event_mode: 'remote',
+                      location: '',
+                      location_address: '',
+                      location_city: '',
+                      location_lat: null,
+                      location_lng: null
+                    })
+                    setIsEventModeOpen(false)
+                  }}
+                >
+                  <span className="profile-option-text">À distance</span>
+                </button>
+              </div>,
+              'profile-dropdown-panel'
             )}
           </div>
 
@@ -762,47 +824,42 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
           <span>{formData.profileLevel || 'Choisir un niveau'}</span>
           <span className="dropdown-caret" aria-hidden="true" />
         </button>
-        {isProfileLevelOpen && (
-          <>
-            <div
-              className="publish-dropdown-backdrop"
-              onClick={() => setIsProfileLevelOpen(false)}
-            />
-            <div className="publish-dropdown-panel profile-dropdown-panel">
-              <div className="publish-dropdown-title">Choisissez un niveau</div>
-              <div className="profile-dropdown-list publish-list">
-                {profileLevelOptions.map((level) => {
-                  const isSelected = formData.profileLevel === level
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      className={`profile-dropdown-option ${isSelected ? 'selected' : ''}`}
-                      onClick={() => {
-                        onUpdateFormData({ profileLevel: formData.profileLevel === level ? '' : level })
-                        setIsProfileLevelOpen(false)
+        {renderBottomSheet(
+          isProfileLevelOpen,
+          () => setIsProfileLevelOpen(false),
+          'Choisissez un niveau',
+          <div className="profile-dropdown-list publish-list">
+            {profileLevelOptions.map((level) => {
+              const isSelected = formData.profileLevel === level
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  className={`profile-dropdown-option ${isSelected ? 'selected' : ''}`}
+                  onClick={() => {
+                    onUpdateFormData({ profileLevel: formData.profileLevel === level ? '' : level })
+                    setIsProfileLevelOpen(false)
+                  }}
+                >
+                  <span className="profile-option-text">{level}</span>
+                  {isSelected && (
+                    <span
+                      className="profile-option-remove"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onUpdateFormData({ profileLevel: '' })
                       }}
+                      role="button"
+                      aria-label="Supprimer"
                     >
-                      <span className="profile-option-text">{level}</span>
-                      {isSelected && (
-                        <span
-                          className="profile-option-remove"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onUpdateFormData({ profileLevel: '' })
-                          }}
-                          role="button"
-                          aria-label="Supprimer"
-                        >
-                          <X size={12} />
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </>
+                      <X size={12} />
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>,
+          'profile-dropdown-panel'
         )}
       </div>
       )}
@@ -822,51 +879,46 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             </span>
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
-          {isProfileRoleOpen && (
-            <>
-              <div
-                className="publish-dropdown-backdrop"
-                onClick={() => setIsProfileRoleOpen(false)}
-              />
-              <div className="publish-dropdown-panel profile-dropdown-panel">
-                <div className="publish-dropdown-title">Choisissez un ou plusieurs rôles</div>
-                <div className="profile-dropdown-list publish-list">
-                  {profileRoleOptions.map((role) => {
-                    const roles = formData.profileRoles || []
-                    const isActive = roles.includes(role)
-                    return (
-                      <button
-                        key={role}
-                        type="button"
-                        className={`profile-dropdown-option ${isActive ? 'selected' : ''}`}
-                        onClick={() => {
-                          const nextRoles = isActive
-                            ? roles.filter((item) => item !== role)
-                            : [...roles, role]
+          {renderBottomSheet(
+            isProfileRoleOpen,
+            () => setIsProfileRoleOpen(false),
+            'Choisissez un ou plusieurs rôles',
+            <div className="profile-dropdown-list publish-list">
+              {profileRoleOptions.map((role) => {
+                const roles = formData.profileRoles || []
+                const isActive = roles.includes(role)
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    className={`profile-dropdown-option ${isActive ? 'selected' : ''}`}
+                    onClick={() => {
+                      const nextRoles = isActive
+                        ? roles.filter((item) => item !== role)
+                        : [...roles, role]
+                      onUpdateFormData({ profileRoles: nextRoles })
+                    }}
+                  >
+                    <span className="profile-option-text">{role}</span>
+                    {isActive && (
+                      <span
+                        className="profile-option-remove"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const nextRoles = roles.filter((item) => item !== role)
                           onUpdateFormData({ profileRoles: nextRoles })
                         }}
+                        role="button"
+                        aria-label="Supprimer"
                       >
-                        <span className="profile-option-text">{role}</span>
-                        {isActive && (
-                          <span
-                            className="profile-option-remove"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const nextRoles = roles.filter((item) => item !== role)
-                              onUpdateFormData({ profileRoles: nextRoles })
-                            }}
-                            role="button"
-                            aria-label="Supprimer"
-                          >
-                            <X size={12} />
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </>
+                        <X size={12} />
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>,
+            'profile-dropdown-panel'
           )}
         </div>
       )}
@@ -891,38 +943,33 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
               <span>{taggedPostName}</span>
               <span className="dropdown-caret" aria-hidden="true" />
             </button>
-            {isTaggedPostOpen && (
-              <>
-                <div
-                  className="publish-dropdown-backdrop"
-                  onClick={() => setIsTaggedPostOpen(false)}
-                />
-                <div className="publish-dropdown-panel tagged-post-panel">
-                  <div className="publish-dropdown-title">Choisissez une annonce à taguer</div>
-                  <div className="tagged-post-list publish-list">
-                    {userPosts.map((post) => (
-                      <button
-                        key={post.id}
-                        type="button"
-                        className={`tagged-post-option ${formData.taggedPostId === post.id ? 'selected' : ''}`}
-                        onClick={() => {
-                          onUpdateFormData({ taggedPostId: post.id })
-                          setIsTaggedPostOpen(false)
-                        }}
-                      >
-                        <div className="tagged-post-thumb">
-                          {post.image ? (
-                            <img src={post.image} alt={post.title} />
-                          ) : (
-                            <div className="tagged-post-thumb-placeholder" />
-                          )}
-                        </div>
-                        <span className="tagged-post-title">{post.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
+            {renderBottomSheet(
+              isTaggedPostOpen,
+              () => setIsTaggedPostOpen(false),
+              'Choisissez une annonce à taguer',
+              <div className="tagged-post-list publish-list">
+                {userPosts.map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    className={`tagged-post-option ${formData.taggedPostId === post.id ? 'selected' : ''}`}
+                    onClick={() => {
+                      onUpdateFormData({ taggedPostId: post.id })
+                      setIsTaggedPostOpen(false)
+                    }}
+                  >
+                    <div className="tagged-post-thumb">
+                      {post.image ? (
+                        <img src={post.image} alt={post.title} />
+                      ) : (
+                        <div className="tagged-post-thumb-placeholder" />
+                      )}
+                    </div>
+                    <span className="tagged-post-title">{post.title}</span>
+                  </button>
+                ))}
+              </div>,
+              'tagged-post-panel'
             )}
           </>
         )}

@@ -12,37 +12,37 @@ export const PAYMENT_OPTIONS_CONFIG: PaymentOption[] = [
   {
     id: 'co-creation',
     name: 'Co-création',
-    description: 'Collaboration créative où les parties contribuent conjointement au projet avec partage des résultats.'
+    description: 'Collaboration créative où les résultats sont partagés.'
   },
   {
     id: 'participation',
     name: 'Participation',
-    description: 'Engagement collectif où chaque participant contribue à la réussite du projet sans contrepartie monétaire.'
+    description: 'Parce que tu as envie de vivre une belle expérience!'
   },
   {
     id: 'association',
     name: 'Association',
-    description: 'Regroupement de ressources et compétences pour atteindre un objectif commun en tant que partenaires.'
+    description: 'Regroupement de ressources et compétences pour un objectif commun.'
   },
   {
     id: 'partage-revenus',
     name: 'Partage de revenus',
-    description: 'Les gains générés sont répartis entre les partenaires selon un pourcentage convenu d\'avance.'
+    description: 'Selon les gains générés par le contenu.'
   },
   {
     id: 'remuneration',
     name: 'Rémunération',
-    description: 'Paiement en euros pour les services rendus ou le travail fourni selon un tarif établi.'
+    description: 'Liquide, virement, paypal, wero avant ou après le service.'
   },
   {
     id: 'echange',
     name: 'Échange de service',
-    description: 'Troc de services où les parties s\'échangent leurs compétences sans transaction monétaire.'
+    description: 'Partage d’expertise et/ou de compétences'
   },
   {
     id: 'visibilite-contre-service',
     name: 'Visibilité contre service',
-    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.'
+    description: 'Accord préalable sur une mention, un crédit ou une publicité en échange du service.'
   }
 ]
 

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, ImageOff, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
@@ -126,6 +127,7 @@ const PostDetails = () => {
   const [showCancelRequestModal, setShowCancelRequestModal] = useState(false)
   const [loadingRequest, setLoadingRequest] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
+  const requestMessageTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [requestRole, setRequestRole] = useState('')
   const [requestCvDocument, setRequestCvDocument] = useState<File | null>(null)
   const [requestCvDocumentName, setRequestCvDocumentName] = useState<string>('')
@@ -134,6 +136,12 @@ const PostDetails = () => {
   const [reservationDate, setReservationDate] = useState('')
   const [reservationTime, setReservationTime] = useState('')
   const [reservationDurationMinutes, setReservationDurationMinutes] = useState<number>(60)
+  const [reservationDurationText, setReservationDurationText] = useState('01:00')
+  const [isReservationDatePickerOpen, setIsReservationDatePickerOpen] = useState(false)
+  const [reservationCalendarMonth, setReservationCalendarMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -169,6 +177,119 @@ const PostDetails = () => {
   const maxPostsPerSection = isMobile ? 5 : 4
   const currentPath = `${location.pathname}${location.search}`
   const navState = (location.state || {}) as { originPath?: string }
+
+  const normalizeReservationTime = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, '')
+    const parts = cleaned.split(':')
+    if (parts.length === 1) {
+      const raw = parts[0]
+      if (raw.length <= 2) return raw
+      return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+    }
+    const [h, m] = parts
+    return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+  }
+
+  const formatReservationTime = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const stepReservationTime = (deltaMinutes: number) => {
+    const base = reservationTime && reservationTime.trim().length > 0 ? reservationTime : '01:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    setReservationTime(`${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}`)
+  }
+
+  const minutesToDurationText = (minutes: number) => {
+    const safe = Math.max(0, Number.isFinite(minutes) ? Math.floor(minutes) : 0)
+    const h = Math.floor(safe / 60)
+    const m = safe % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const durationTextToMinutes = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return h * 60 + m
+  }
+
+  const stepReservationDuration = (deltaMinutes: number) => {
+    const next = Math.max(30, reservationDurationMinutes + deltaMinutes)
+    setReservationDurationMinutes(next)
+    setReservationDurationText(minutesToDurationText(next))
+  }
+
+  const toDateKey = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const today = new Date()
+  const reservationTodayKey = toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
+  const reservationWeekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+  const formatReservationDateLabel = (value?: string) => {
+    if (!value) return 'Choisir une date'
+    const parsed = new Date(`${value}T12:00:00`)
+    if (Number.isNaN(parsed.getTime())) return 'Choisir une date'
+    return parsed.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  useEffect(() => {
+    if (!isReservationDatePickerOpen) return
+    const base = reservationDate ? new Date(`${reservationDate}T12:00:00`) : new Date()
+    setReservationCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1))
+  }, [isReservationDatePickerOpen, reservationDate])
+
+  const firstReservationDayOfMonth = new Date(
+    reservationCalendarMonth.getFullYear(),
+    reservationCalendarMonth.getMonth(),
+    1
+  )
+  const reservationDaysInMonth = new Date(
+    reservationCalendarMonth.getFullYear(),
+    reservationCalendarMonth.getMonth() + 1,
+    0
+  ).getDate()
+  const reservationStartOffset = (firstReservationDayOfMonth.getDay() + 6) % 7
+  const reservationDayCells: Array<Date | null> = []
+  for (let i = 0; i < reservationStartOffset; i += 1) reservationDayCells.push(null)
+  for (let day = 1; day <= reservationDaysInMonth; day += 1) {
+    reservationDayCells.push(new Date(reservationCalendarMonth.getFullYear(), reservationCalendarMonth.getMonth(), day))
+  }
+  while (reservationDayCells.length % 7 !== 0) reservationDayCells.push(null)
+  const reservationMonthLabel = reservationCalendarMonth.toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric'
+  })
+
+  useEffect(() => {
+    if (!showSendRequestModal) return
+    const rafId = window.requestAnimationFrame(() => {
+      const textarea = requestMessageTextareaRef.current
+      if (!textarea) return
+      const end = textarea.value.length
+      textarea.focus({ preventScroll: true })
+      textarea.setSelectionRange(end, end)
+    })
+    return () => window.cancelAnimationFrame(rafId)
+  }, [showSendRequestModal])
 
   const findNonPostOriginPath = () => {
     const previousEntries = [...history].slice(0, -1).reverse()
@@ -622,8 +743,10 @@ const PostDetails = () => {
       setRequestCoverLetterDocument(null)
       setRequestCoverLetterDocumentName('')
       setReservationDate('')
-      setReservationTime('')
+      setReservationTime(post?.needed_time || '01:00')
       setReservationDurationMinutes(60)
+      setReservationDurationText('01:00')
+      setIsReservationDatePickerOpen(false)
       setShowSendRequestModal(true)
       return
     }
@@ -648,9 +771,11 @@ const PostDetails = () => {
     setRequestCvDocumentName('')
     setRequestCoverLetterDocument(null)
     setRequestCoverLetterDocumentName('')
-    setReservationDate(post?.needed_date || '')
-    setReservationTime(post?.needed_time || '')
+    setReservationDate(post?.needed_date || new Date().toISOString().slice(0, 10))
+    setReservationTime(post?.needed_time || '01:00')
     setReservationDurationMinutes(post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60)
+    setReservationDurationText(minutesToDurationText(post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60))
+    setIsReservationDatePickerOpen(false)
     setShowSendRequestModal(true)
   }
 
@@ -706,6 +831,60 @@ const PostDetails = () => {
 
     const reservedCount = Number(count || 0)
     return reservedCount < post.number_of_people
+  }
+
+  const hasReservationSlotConflict = async (dateValue: string, timeValue: string, durationMinutes: number) => {
+    if (!post?.user_id || !dateValue) return false
+    const normalizedTime = formatReservationTime(timeValue || '01:00')
+    const normalizedDuration = Math.max(30, durationMinutes || 60)
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await ((supabase as any).rpc('check_reservation_slot_conflict', {
+        p_to_user_id: post.user_id,
+        p_reservation_date: dateValue,
+        p_reservation_time: normalizedTime,
+        p_duration_minutes: normalizedDuration,
+        p_ignore_request_id: null
+      }) as any)
+      if (!error) return Boolean(data)
+      if (error.code !== '42883') {
+        console.error('Error checking reservation conflict (rpc):', error)
+      }
+    } catch (error) {
+      console.error('Error checking reservation conflict (rpc):', error)
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .select('reservation_time, reservation_duration_minutes')
+        .eq('to_user_id', post.user_id)
+        .eq('request_intent', 'reserve')
+        .eq('reservation_date', dateValue)
+        .in('status', ['pending', 'accepted'])
+
+      if (error) {
+        console.error('Error checking reservation conflict (fallback):', error)
+        return false
+      }
+
+      const [newH, newM] = normalizedTime.split(':').map((v) => parseInt(v, 10))
+      const newStart = (newH * 60) + newM
+      const newEnd = newStart + normalizedDuration
+
+      return (data || []).some((item: { reservation_time?: string | null; reservation_duration_minutes?: number | null }) => {
+        if (!item.reservation_time) return false
+        const time = String(item.reservation_time).slice(0, 5)
+        const [h, m] = time.split(':').map((v) => parseInt(v, 10))
+        const start = (h * 60) + m
+        const end = start + Math.max(30, Number(item.reservation_duration_minutes || 60))
+        return start < newEnd && newStart < end
+      })
+    } catch (error) {
+      console.error('Error checking reservation conflict (fallback):', error)
+      return false
+    }
   }
 
   const createTicketForCurrentUser = async () => {
@@ -815,6 +994,8 @@ const PostDetails = () => {
         setReservationDate('')
         setReservationTime('')
         setReservationDurationMinutes(60)
+        setReservationDurationText('01:00')
+        setIsReservationDatePickerOpen(false)
         showSuccess('Message envoyé')
         navigate(`/messages/${(conversation as { id: string }).id}`)
         return
@@ -838,13 +1019,30 @@ const PostDetails = () => {
       return
     }
 
+    let reservationDurationToSave = reservationDurationMinutes
     if (contactIntent === 'reserve') {
+      const formattedDuration = formatReservationTime(reservationDurationText || '01:00')
+      const parsedDurationMinutes = Math.max(30, durationTextToMinutes(formattedDuration))
+      reservationDurationToSave = parsedDurationMinutes
+      if (parsedDurationMinutes !== reservationDurationMinutes || formattedDuration !== reservationDurationText) {
+        setReservationDurationMinutes(parsedDurationMinutes)
+        setReservationDurationText(formattedDuration)
+      }
       if (!reservationDate || !reservationTime) {
         alert('Choisissez une date et une heure pour réserver.')
         return
       }
-      if (!reservationDurationMinutes || reservationDurationMinutes <= 0) {
+      if (!parsedDurationMinutes || parsedDurationMinutes <= 0) {
         alert('Indiquez une durée valide.')
+        return
+      }
+      const hasConflict = await hasReservationSlotConflict(
+        reservationDate,
+        reservationTime,
+        parsedDurationMinutes
+      )
+      if (hasConflict) {
+        alert('Ce créneau est déjà réservé. Choisissez une autre heure.')
         return
       }
     }
@@ -893,7 +1091,7 @@ const PostDetails = () => {
           request_intent: contactIntent,
           reservation_date: reservationDate || null,
           reservation_time: reservationTime || null,
-          reservation_duration_minutes: contactIntent === 'reserve' ? reservationDurationMinutes : null
+          reservation_duration_minutes: contactIntent === 'reserve' ? reservationDurationToSave : null
         })
         .select()
         .single()
@@ -906,7 +1104,7 @@ const PostDetails = () => {
       }
 
       if (data) {
-        const shouldAutoValidateTicket = (contactIntent === 'ticket' || contactIntent === 'reserve') && !isPaidAction()
+        const shouldAutoValidateTicket = contactIntent === 'ticket' && !isPaidAction()
 
         if (shouldAutoValidateTicket) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -929,6 +1127,8 @@ const PostDetails = () => {
         setReservationDate('')
         setReservationTime('')
         setReservationDurationMinutes(60)
+        setReservationDurationText('01:00')
+        setIsReservationDatePickerOpen(false)
         showSuccess(shouldAutoValidateTicket ? 'Billet validé' : 'Demande envoyée')
       }
     } catch (error) {
@@ -1106,6 +1306,13 @@ const PostDetails = () => {
     return fileName ? decodeURIComponent(fileName) : 'Document PDF'
   }
 
+  const removeModelTypeLine = (text?: string | null) => {
+    if (!text) return ''
+    return text
+      .replace(/\n*\s*Type de modèle recherché\s*:\s*[^\n\r]*/gi, '')
+      .trim()
+  }
+
   const getProfileRolesList = (roles?: string[] | string | null) => {
     if (!roles) return []
     if (Array.isArray(roles)) return roles.filter(Boolean)
@@ -1175,7 +1382,7 @@ const PostDetails = () => {
     if (isRequestListingPost) return 'Contacter'
 
     if (matchRequest?.status === 'pending') {
-      if (contactIntent === 'reserve') return 'Réservation envoyée'
+      if (contactIntent === 'reserve') return 'Demande envoyée'
       if (contactIntent === 'ticket') return 'Demande de billet envoyée'
       if (contactIntent === 'apply') return 'Candidature envoyée'
       if (contactIntent === 'buy') return 'Achat en attente'
@@ -1183,14 +1390,14 @@ const PostDetails = () => {
     }
 
     if (matchRequest?.status === 'accepted') {
-      if (contactIntent === 'reserve') return 'Réservation acceptée'
+      if (contactIntent === 'reserve') return 'Demande acceptée'
       if (contactIntent === 'ticket') return 'Billet validé'
       if (contactIntent === 'apply') return 'Candidature acceptée'
       if (contactIntent === 'buy') return 'Achat validé'
       return 'Demande acceptée'
     }
 
-    if (contactIntent === 'reserve') return 'Réserver'
+    if (contactIntent === 'reserve') return 'Envoyer ma demande'
     if (contactIntent === 'ticket') return 'Réserver un billet'
     if (contactIntent === 'apply') return 'Postuler'
     if (contactIntent === 'buy') return 'Acheter'
@@ -1609,7 +1816,7 @@ const PostDetails = () => {
             {/* Description */}
             <div className="post-description-section">
               <h3 className="post-description-title">Description</h3>
-              <p className="post-description-text">{post.description}</p>
+              <p className="post-description-text">{removeModelTypeLine(post.description)}</p>
               {!isEmploiRequestPost && (post.responsibilities || post.required_skills || post.benefits) && (
                 <div className="post-description-details">
                   {post.responsibilities && (
@@ -1945,13 +2152,14 @@ const PostDetails = () => {
         {showSendRequestModal && (
           <ConfirmationModal
             visible={showSendRequestModal}
+            presentation="bottom-sheet"
             title={
               isRequestListingPost
                 ? 'Contacter'
                 : contactIntent === 'apply'
                 ? 'Postuler'
                 : contactIntent === 'reserve'
-                  ? 'Réserver un lieu'
+                  ? 'Envoyer une demande'
                   : contactIntent === 'ticket'
                     ? 'Réserver un billet'
                     : contactIntent === 'buy'
@@ -1964,7 +2172,7 @@ const PostDetails = () => {
                 : contactIntent === 'apply'
                 ? 'Envoyez votre candidature avec votre CV.'
                 : contactIntent === 'reserve'
-                  ? 'Renseignez la date, l’heure et la durée de réservation.'
+                  ? 'Renseignez la date, l’heure et la durée, puis envoyez votre demande.'
                   : contactIntent === 'ticket'
                     ? 'Confirmez votre billet.'
                     : contactIntent === 'buy'
@@ -1983,6 +2191,8 @@ const PostDetails = () => {
               setReservationDate('')
               setReservationTime('')
               setReservationDurationMinutes(60)
+              setReservationDurationText('01:00')
+              setIsReservationDatePickerOpen(false)
             }}
             confirmLabel={
               loadingRequest
@@ -1992,7 +2202,7 @@ const PostDetails = () => {
                   : contactIntent === 'ticket'
                     ? (isPaidAction() ? 'Payer le billet' : 'Valider le billet')
                     : contactIntent === 'reserve'
-                      ? (isPaidAction() ? 'Payer la réservation' : 'Valider la réservation')
+                      ? 'Envoyer ma demande'
                       : contactIntent === 'buy'
                         ? 'Confirmer l’achat'
                         : 'Envoyer'
@@ -2024,11 +2234,16 @@ const PostDetails = () => {
               </label>
               <textarea
                 id="match-request-message"
+                ref={requestMessageTextareaRef}
                 className="confirmation-modal-textarea"
                 placeholder="Écrivez votre message ici."
                 value={requestMessage}
                 maxLength={500}
                 onChange={(event) => setRequestMessage(event.target.value)}
+                onFocus={(event) => {
+                  const end = event.currentTarget.value.length
+                  event.currentTarget.setSelectionRange(end, end)
+                }}
                 autoFocus
               />
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
@@ -2101,52 +2316,173 @@ const PostDetails = () => {
             {!isRequestListingPost && contactIntent === 'reserve' && (
               <>
                 <div className="confirmation-modal-field">
-                  <label className="confirmation-modal-label" htmlFor="reservation-date">
+                  <label className="confirmation-modal-label" htmlFor="reservation-date-trigger">
                     Date
                   </label>
-                  <input
-                    id="reservation-date"
-                    type="date"
-                    className="confirmation-modal-input"
-                    value={reservationDate}
-                    onChange={(event) => setReservationDate(event.target.value)}
-                  />
+                  <button
+                    id="reservation-date-trigger"
+                    type="button"
+                    className={`confirmation-date-picker-trigger ${reservationDate ? 'has-value' : ''}`}
+                    onClick={() => setIsReservationDatePickerOpen(true)}
+                  >
+                    <span>{formatReservationDateLabel(reservationDate)}</span>
+                    <CalendarDays size={18} />
+                  </button>
                 </div>
                 <div className="confirmation-modal-field">
                   <label className="confirmation-modal-label" htmlFor="reservation-time">
                     Heure
                   </label>
-                  <input
-                    id="reservation-time"
-                    type="time"
-                    className="confirmation-modal-input"
-                    value={reservationTime}
-                    onChange={(event) => setReservationTime(event.target.value)}
-                  />
+                  <div className="confirmation-modal-time-row">
+                    <input
+                      id="reservation-time"
+                      type="text"
+                      className="confirmation-modal-input confirmation-modal-time-input"
+                      value={reservationTime}
+                      placeholder="HH:MM"
+                      inputMode="numeric"
+                      onChange={(event) => setReservationTime(normalizeReservationTime(event.target.value))}
+                      onBlur={() => setReservationTime(formatReservationTime(reservationTime || '01:00'))}
+                    />
+                    <div className="confirmation-modal-time-stepper">
+                      <button
+                        type="button"
+                        className="confirmation-modal-time-stepper-btn"
+                        onClick={() => stepReservationTime(30)}
+                        aria-label="Augmenter de 30 minutes"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="confirmation-modal-time-stepper-btn"
+                        onClick={() => stepReservationTime(-30)}
+                        aria-label="Diminuer de 30 minutes"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="confirmation-modal-field">
                   <label className="confirmation-modal-label" htmlFor="reservation-duration">
-                    Durée (minutes)
+                    Durée
                   </label>
-                  <input
-                    id="reservation-duration"
-                    type="number"
-                    min={30}
-                    step={30}
-                    className="confirmation-modal-input"
-                    value={reservationDurationMinutes}
-                    onChange={(event) => setReservationDurationMinutes(Number(event.target.value) || 60)}
-                  />
+                  <div className="confirmation-modal-time-row">
+                    <input
+                      id="reservation-duration"
+                      type="text"
+                      className="confirmation-modal-input confirmation-modal-time-input"
+                      value={reservationDurationText}
+                      placeholder="HH:MM"
+                      inputMode="numeric"
+                      onChange={(event) => setReservationDurationText(normalizeReservationTime(event.target.value))}
+                      onBlur={() => {
+                        const formatted = formatReservationTime(reservationDurationText || '01:00')
+                        setReservationDurationText(formatted)
+                        setReservationDurationMinutes(Math.max(30, durationTextToMinutes(formatted)))
+                      }}
+                    />
+                    <div className="confirmation-modal-time-stepper">
+                      <button
+                        type="button"
+                        className="confirmation-modal-time-stepper-btn"
+                        onClick={() => stepReservationDuration(30)}
+                        aria-label="Augmenter de 30 minutes"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="confirmation-modal-time-stepper-btn"
+                        onClick={() => stepReservationDuration(-30)}
+                        aria-label="Diminuer de 30 minutes"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
           </ConfirmationModal>
         )}
 
+        {showSendRequestModal && contactIntent === 'reserve' && isReservationDatePickerOpen && createPortal(
+          <>
+            <div
+              className="confirmation-calendar-backdrop"
+              onClick={() => setIsReservationDatePickerOpen(false)}
+            />
+            <div className="confirmation-calendar-panel">
+              <div className="confirmation-calendar-header">
+                <button
+                  type="button"
+                  className="confirmation-calendar-nav"
+                  onClick={() =>
+                    setReservationCalendarMonth(
+                      new Date(reservationCalendarMonth.getFullYear(), reservationCalendarMonth.getMonth() - 1, 1)
+                    )
+                  }
+                  aria-label="Mois précédent"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="confirmation-calendar-title">{reservationMonthLabel}</div>
+                <button
+                  type="button"
+                  className="confirmation-calendar-nav"
+                  onClick={() =>
+                    setReservationCalendarMonth(
+                      new Date(reservationCalendarMonth.getFullYear(), reservationCalendarMonth.getMonth() + 1, 1)
+                    )
+                  }
+                  aria-label="Mois suivant"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <div className="confirmation-calendar-grid">
+                {reservationWeekDays.map((day, index) => (
+                  <div key={`weekday-${day}-${index}`} className="confirmation-calendar-weekday">
+                    {day}
+                  </div>
+                ))}
+                {reservationDayCells.map((dateValue, index) => {
+                  if (!dateValue) {
+                    return <div key={`empty-${index}`} className="confirmation-calendar-empty" />
+                  }
+
+                  const key = toDateKey(dateValue)
+                  const isSelected = reservationDate === key
+                  const isPast = key < reservationTodayKey
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`confirmation-calendar-day ${isSelected ? 'selected' : ''}`}
+                      disabled={isPast}
+                      onClick={() => {
+                        setReservationDate(key)
+                        setIsReservationDatePickerOpen(false)
+                      }}
+                    >
+                      {dateValue.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
         {/* Modal de confirmation d'annulation de demande */}
         {showCancelRequestModal && (
           <ConfirmationModal
             visible={showCancelRequestModal}
+            presentation="bottom-sheet"
             title="Annuler cette demande"
             message="Vous allez annuler la demande de match que vous avez envoyée. Vous pourrez toujours renvoyer une nouvelle demande plus tard."
             onConfirm={handleCancelRequest}
@@ -2160,6 +2496,7 @@ const PostDetails = () => {
         {showDeleteConfirm && (
           <ConfirmationModal
             visible={showDeleteConfirm}
+            presentation="bottom-sheet"
             title="Supprimer l'annonce"
             message="Cette action est irréversible."
             onConfirm={handleDelete}

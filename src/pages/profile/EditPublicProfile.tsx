@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Save, X, Camera, Plus } from 'lucide-react'
+import { Save, X, Camera, Plus, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
@@ -14,7 +15,7 @@ import ConfirmationModal from '../../components/ConfirmationModal'
 import { LocationAutocomplete } from '../../components/Location/LocationAutocomplete'
 import { CustomList } from '../../components/CustomList/CustomList'
 import { publicationTypes } from '../../constants/publishData'
-import { getAllPaymentOptions, getPaymentOptionConfig } from '../../utils/publishHelpers'
+import { getAllPaymentOptions, getPaymentOptionConfig, getPaymentOptionsForCategory } from '../../utils/publishHelpers'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -40,6 +41,17 @@ const EditPublicProfile = () => {
       payment_type: string
       value: string
     }>,
+    venue_opening_hours: [
+      { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
+      { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
+    ] as Array<{ day: string; enabled: boolean; start: string; end: string }>,
+    venue_billing_hours: '01:00',
+    venue_payment_types: [] as string[],
     socialLinks: [] as string[],
     phone: '',
     email: '',
@@ -65,6 +77,20 @@ const EditPublicProfile = () => {
   })
   const [showServiceNameSuggestions, setShowServiceNameSuggestions] = useState(false)
   const [isServicePaymentOpen, setIsServicePaymentOpen] = useState(false)
+  const [isVenuePaymentOpen, setIsVenuePaymentOpen] = useState(false)
+  const [isVenueOpeningDaysOpen, setIsVenueOpeningDaysOpen] = useState(false)
+  const [keyboardInset, setKeyboardInset] = useState(0)
+
+  const VENUE_CATEGORY_SLUGS = useMemo(() => (['studio-lieu', 'lieu']), [])
+  const venueDayLabels: Record<string, string> = useMemo(() => ({
+    lundi: 'Lundi',
+    mardi: 'Mardi',
+    mercredi: 'Mercredi',
+    jeudi: 'Jeudi',
+    vendredi: 'Vendredi',
+    samedi: 'Samedi',
+    dimanche: 'Dimanche'
+  }), [])
 
   // Hook de consentement pour les données personnelles du profil
   const profileConsent = useConsent('profile_data')
@@ -133,6 +159,75 @@ const EditPublicProfile = () => {
         .split('||')
         .map(item => item.trim())
         .filter(Boolean)
+    }
+
+    const normalizeTime = (value: string) => {
+      const cleaned = value.replace(/[^\d:]/g, '')
+      const parts = cleaned.split(':')
+      if (parts.length === 1) {
+        const raw = parts[0]
+        if (raw.length <= 2) return raw
+        return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+      }
+      const [h, m] = parts
+      return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+    }
+
+    const formatTime = (value: string) => {
+      const [hRaw, mRaw] = value.split(':')
+      const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+      const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    }
+
+    const minutesToTime = (minutes?: number | null) => {
+      const safe = Math.max(0, Number.isFinite(minutes as number) ? Math.floor(minutes as number) : 0)
+      const hours = Math.floor(safe / 60)
+      const mins = safe % 60
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
+    }
+
+    const parseVenueOpeningHours = (value: unknown) => {
+      const defaults = [
+        { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
+        { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
+      ]
+      if (!Array.isArray(value)) return defaults
+      const map = new Map<string, { day: string; enabled: boolean; start: string; end: string }>()
+      value.forEach((item) => {
+        if (!item || typeof item !== 'object') return
+        const obj = item as Record<string, unknown>
+        const day = String(obj.day || '').toLowerCase()
+        if (!day) return
+        map.set(day, {
+          day,
+          enabled: Boolean(obj.enabled),
+          start: formatTime(normalizeTime(String(obj.start || '09:00')) || '09:00'),
+          end: formatTime(normalizeTime(String(obj.end || '18:00')) || '18:00')
+        })
+      })
+      return defaults.map((slot) => map.get(slot.day) || slot)
+    }
+
+    const parseVenuePaymentTypes = (value: unknown) => {
+      if (!value) return []
+      if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean)
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.map((item) => String(item)).filter(Boolean)
+          }
+        } catch {
+          return value.split(',').map((item) => item.trim()).filter(Boolean)
+        }
+      }
+      return []
     }
 
     const initialProfileTypes = parseProfileTypes((profileData as { profile_type?: string | null }).profile_type)
@@ -234,6 +329,9 @@ const EditPublicProfile = () => {
         console.log(`✅ Services normalisés pour édition: ${normalized.length}`)
         return normalized
       })(),
+      venue_opening_hours: parseVenueOpeningHours((profileData as { venue_opening_hours?: unknown }).venue_opening_hours),
+      venue_billing_hours: minutesToTime((profileData as { venue_billing_hours?: number | null }).venue_billing_hours || 60),
+      venue_payment_types: parseVenuePaymentTypes((profileData as { venue_payment_types?: unknown }).venue_payment_types),
       socialLinks: socialLinksArray,
       phone: (profileData as { phone?: string | null }).phone || '',
       email: user.email || '',
@@ -245,6 +343,127 @@ const EditPublicProfile = () => {
     setLoading(false)
   }, [user])
 
+  const isVenueDisplayCategory = useMemo(
+    () => profile.display_categories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug)),
+    [profile.display_categories, VENUE_CATEGORY_SLUGS]
+  )
+  const venuePaymentOptions = useMemo(
+    () => getPaymentOptionsForCategory('studio-lieu'),
+    []
+  )
+  const selectedVenuePaymentRaw = profile.venue_payment_types[0] || ''
+  const [selectedVenuePaymentType, selectedVenuePaymentValue = ''] = selectedVenuePaymentRaw.split('|')
+  const selectedVenuePaymentName =
+    venuePaymentOptions.find((option) => option.id === selectedVenuePaymentType)?.name ??
+    'Choisir un moyen de paiement'
+
+  const normalizeTime = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, '')
+    const parts = cleaned.split(':')
+    if (parts.length === 1) {
+      const raw = parts[0]
+      if (raw.length <= 2) return raw
+      return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+    }
+    const [h, m] = parts
+    return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+  }
+
+  const formatTime = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const timeToMinutes = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return h * 60 + m
+  }
+
+  const updateVenueDay = (
+    day: string,
+    updates: Partial<{ enabled: boolean; start: string; end: string }>
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      venue_opening_hours: prev.venue_opening_hours.map((slot) =>
+        slot.day === day ? { ...slot, ...updates } : slot
+      )
+    }))
+  }
+
+  const stepVenueTime = (day: string, key: 'start' | 'end', deltaMinutes: number) => {
+    const target = profile.venue_opening_hours.find((slot) => slot.day === day)
+    if (!target) return
+    const base = target[key] || '09:00'
+    const [hRaw, mRaw] = base.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    updateVenueDay(day, { [key]: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}` })
+  }
+
+  const setVenuePaymentType = (paymentType: string) => {
+    setProfile((prev) => ({
+      ...prev,
+      venue_payment_types: paymentType ? [paymentType] : []
+    }))
+  }
+
+  const setVenuePaymentValue = (value: string) => {
+    setProfile((prev) => {
+      const currentRaw = prev.venue_payment_types[0] || ''
+      const [paymentType = ''] = currentRaw.split('|')
+      if (!paymentType) return prev
+      const trimmedValue = value.trim()
+      return {
+        ...prev,
+        venue_payment_types: [trimmedValue ? `${paymentType}|${trimmedValue}` : paymentType]
+      }
+    })
+  }
+
+  const toggleVenueOpeningDay = (day: string) => {
+    const target = profile.venue_opening_hours.find((slot) => slot.day === day)
+    if (!target) return
+    updateVenueDay(day, { enabled: !target.enabled })
+  }
+
+  const selectedVenueOpeningDays = profile.venue_opening_hours.filter((slot) => slot.enabled)
+
+  const renderVenueBottomSheet = (
+    open: boolean,
+    onClose: () => void,
+    title: string,
+    content: ReactNode,
+    panelClassName = ''
+  ) => {
+    if (!open || typeof document === 'undefined') return null
+    const panelStyle: CSSProperties = keyboardInset > 0
+      ? { bottom: keyboardInset, maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - 84px - ${keyboardInset}px)` }
+      : {}
+    return createPortal(
+      <>
+        <div className="publish-dropdown-backdrop" onClick={onClose} />
+        <div
+          className={`publish-dropdown-panel ${panelClassName}`.trim()}
+          style={panelStyle}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {title && <div className="publish-dropdown-title">{title}</div>}
+          {content}
+        </div>
+      </>,
+      document.body
+    )
+  }
+
   useEffect(() => {
     if (user) {
       fetchProfile()
@@ -252,6 +471,22 @@ const EditPublicProfile = () => {
     setLoading(false)
   }
   }, [user, fetchProfile])
+
+  useEffect(() => {
+    if (!isVenueDisplayCategory) {
+      setIsVenuePaymentOpen(false)
+      setIsVenueOpeningDaysOpen(false)
+    }
+  }, [isVenueDisplayCategory])
+
+  useEffect(() => {
+    if (!isVenueDisplayCategory) return
+    if (!selectedVenuePaymentType) return
+    const exists = venuePaymentOptions.some((option) => option.id === selectedVenuePaymentType)
+    if (!exists) {
+      setVenuePaymentType('')
+    }
+  }, [isVenueDisplayCategory, selectedVenuePaymentType, venuePaymentOptions])
 
   // Fermer les suggestions quand on clique en dehors
   useEffect(() => {
@@ -274,16 +509,43 @@ const EditPublicProfile = () => {
     }
   }, [showDisplayCategorySuggestions, showProfileTypeSuggestions])
 
+  const hasOverlayOpen = isServicePaymentOpen || isVenuePaymentOpen || isVenueOpeningDaysOpen
+
   useEffect(() => {
-    if (isServicePaymentOpen) {
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = ''
-      }
+    if (!hasOverlayOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
     }
-    document.body.style.overflow = ''
-    return undefined
-  }, [isServicePaymentOpen])
+  }, [hasOverlayOpen])
+
+  useEffect(() => {
+    if ((!isVenuePaymentOpen && !isVenueOpeningDaysOpen) || typeof window === 'undefined') {
+      setKeyboardInset(0)
+      return
+    }
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateInset = () => {
+      const nextInset = Math.max(
+        0,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop)
+      )
+      setKeyboardInset(nextInset)
+    }
+
+    updateInset()
+    viewport.addEventListener('resize', updateInset)
+    viewport.addEventListener('scroll', updateInset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateInset)
+      viewport.removeEventListener('scroll', updateInset)
+      setKeyboardInset(0)
+    }
+  }, [isVenuePaymentOpen, isVenueOpeningDaysOpen])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -688,6 +950,32 @@ const EditPublicProfile = () => {
     setSaving(true)
     
     try {
+      if (isVenueDisplayCategory) {
+        if (!selectedVenuePaymentType) {
+          showError('Choisissez un moyen de paiement pour le lieu')
+          setSaving(false)
+          return
+        }
+
+        if (selectedVenuePaymentType === 'remuneration') {
+          const price = Number(selectedVenuePaymentValue)
+          if (!selectedVenuePaymentValue || Number.isNaN(price) || price <= 0) {
+            showError('Ajoutez un prix valide pour la rémunération')
+            setSaving(false)
+            return
+          }
+        }
+
+        if (selectedVenuePaymentType === 'visibilite-contre-service') {
+          const freeHours = Number(selectedVenuePaymentValue)
+          if (!selectedVenuePaymentValue || Number.isNaN(freeHours) || freeHours <= 0) {
+            showError('Ajoutez un nombre d’heures gratuites valide')
+            setSaving(false)
+            return
+          }
+        }
+      }
+
       // 1. Mettre à jour auth.users pour full_name et username
       const { error: authError } = await supabase.auth.updateUser({
         data: {
@@ -713,27 +1001,46 @@ const EditPublicProfile = () => {
       const profileTypesToSave = profile.profile_types.length > 0
         ? JSON.stringify(profile.profile_types)
         : null
+      const venueBillingHoursToSave = timeToMinutes(formatTime(profile.venue_billing_hours || '01:00'))
       console.log(`💾 Services à sauvegarder (${profile.services.length}):`, servicesToSave)
       
+      const baseProfilePayload = {
+        id: user.id,
+        email: profile.email,
+        phone: profile.phone || null,
+        bio: profile.bio || null,
+        location: profile.location || null,
+        avatar_url: profile.avatar_url || null,
+        skills: skillsToSave,
+        display_categories: profile.display_categories,
+        profile_type: profileTypesToSave,
+        services: servicesToSave,
+        venue_opening_hours: profile.venue_opening_hours,
+        venue_billing_hours: venueBillingHoursToSave,
+        venue_payment_types: profile.venue_payment_types,
+        social_links: convertSocialLinksToObject(profile.socialLinks),
+        phone_verified: profile.phone_verified,
+        updated_at: new Date().toISOString()
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: profileError, data: savedData } = await (supabase.from('profiles') as any)
+      let { error: profileError, data: savedData } = await (supabase.from('profiles') as any)
         .upsert({
-          id: user.id,
-          email: profile.email,
-          phone: profile.phone || null,
-          bio: profile.bio || null,
-          location: profile.location || null,
-          avatar_url: profile.avatar_url || null,
-          skills: skillsToSave,
-          display_categories: profile.display_categories,
-          profile_type: profileTypesToSave,
-          services: servicesToSave,
-          social_links: convertSocialLinksToObject(profile.socialLinks),
-          phone_verified: profile.phone_verified,
-          show_in_users: profile.show_in_users,
-          updated_at: new Date().toISOString()
+          ...baseProfilePayload,
+          show_in_users: profile.show_in_users
         })
         .select()
+
+      const profileErrorMessage = String((profileError as { message?: string } | null)?.message || '').toLowerCase()
+      if (profileError && profileErrorMessage.includes('show_in_users')) {
+        // Fallback si la colonne n'existe pas encore dans cet environnement
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const retry = await (supabase.from('profiles') as any)
+          .upsert(baseProfilePayload)
+          .select()
+        profileError = retry.error
+        savedData = retry.data
+      }
 
       if (profileError) {
         console.error('❌ Erreur lors de la sauvegarde:', profileError)
@@ -953,6 +1260,214 @@ const EditPublicProfile = () => {
                 )}
               </div>
             </div>
+
+            {isVenueDisplayCategory && (
+              <div className="form-group venue-settings-group">
+                <div className="form-group dropdown-field venue-dropdown-field">
+                  <label className="form-label">Moyen de paiement *</label>
+                  <button
+                    type="button"
+                    className={`dropdown-trigger ${isVenuePaymentOpen ? 'open' : ''}`}
+                    onClick={() => setIsVenuePaymentOpen((prev) => !prev)}
+                  >
+                    <span>{selectedVenuePaymentName}</span>
+                    <span className="dropdown-caret" aria-hidden="true" />
+                  </button>
+                  {renderVenueBottomSheet(
+                    isVenuePaymentOpen,
+                    () => setIsVenuePaymentOpen(false),
+                    'Choisissez un moyen de paiement',
+                    <CustomList
+                      items={venuePaymentOptions}
+                      selectedId={selectedVenuePaymentType}
+                      onSelectItem={(optionId) => {
+                        setVenuePaymentType(optionId)
+                        setIsVenuePaymentOpen(false)
+                      }}
+                      className="payment-options-list publish-list"
+                      showCheckbox={false}
+                      showDescription
+                      truncateDescription={false}
+                    />
+                  )}
+                </div>
+
+                {selectedVenuePaymentType === 'remuneration' && (
+                  <div className="form-group venue-payment-value-group">
+                    <label className="form-label">Prix *</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      min="0"
+                      step="0.01"
+                      placeholder="Ex: 50"
+                      value={selectedVenuePaymentValue}
+                      onChange={(event) => setVenuePaymentValue(event.target.value)}
+                    />
+                  </div>
+                )}
+
+                {selectedVenuePaymentType === 'visibilite-contre-service' && (
+                  <div className="form-group venue-payment-value-group">
+                    <label className="form-label">Heures offertes (gratuit) *</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      min="0.5"
+                      step="0.5"
+                      placeholder="Ex: 2"
+                      value={selectedVenuePaymentValue}
+                      onChange={(event) => setVenuePaymentValue(event.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="form-group venue-opening-group">
+                  <label className="form-label">Jours et horaires d'ouverture *</label>
+                  <div className="dropdown-field venue-dropdown-field">
+                    <button
+                      type="button"
+                      className={`dropdown-trigger ${isVenueOpeningDaysOpen ? 'open' : ''}`}
+                      onClick={() => setIsVenueOpeningDaysOpen((prev) => !prev)}
+                    >
+                      <span>
+                        {selectedVenueOpeningDays.length > 0
+                          ? `${selectedVenueOpeningDays.length} jour(s) sélectionné(s)`
+                          : 'Choisir les jours d’ouverture'}
+                      </span>
+                      <span className="dropdown-caret" aria-hidden="true" />
+                    </button>
+                    {renderVenueBottomSheet(
+                      isVenueOpeningDaysOpen,
+                      () => setIsVenueOpeningDaysOpen(false),
+                      '',
+                      <div className="opening-hours-sheet-content">
+                        <div className="opening-hours-sheet-header">
+                          <h3>Jours d’ouverture</h3>
+                          <button
+                            type="button"
+                            className="opening-hours-sheet-close"
+                            onClick={() => setIsVenueOpeningDaysOpen(false)}
+                            aria-label="Fermer"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="opening-hours-sheet-divider" />
+                        <div className="opening-days-list">
+                          {profile.venue_opening_hours.map((slot) => (
+                            <div
+                              key={slot.day}
+                              className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
+                            >
+                              <button
+                                type="button"
+                                className="opening-day-row"
+                                onClick={() => toggleVenueOpeningDay(slot.day)}
+                              >
+                                <span>{venueDayLabels[slot.day] || slot.day}</span>
+                                <span className={`opening-day-check ${slot.enabled ? 'checked' : ''}`} aria-hidden="true">
+                                  <span className="opening-day-checkmark">✓</span>
+                                </span>
+                              </button>
+                              {slot.enabled && (
+                                <div className="opening-day-hours-inline">
+                                  <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
+                                  <div className="opening-day-hours-grid">
+                                    <div className="opening-hours-time-block">
+                                      <span className="opening-hours-time-label">De</span>
+                                      <div className="time-input-row">
+                                        <input
+                                          type="text"
+                                          className="form-input opening-hours-time"
+                                          value={slot.start}
+                                          onChange={(event) =>
+                                            updateVenueDay(slot.day, { start: normalizeTime(event.target.value) })
+                                          }
+                                          onBlur={() =>
+                                            updateVenueDay(slot.day, { start: formatTime(slot.start || '09:00') })
+                                          }
+                                          placeholder="HH:MM"
+                                          inputMode="numeric"
+                                        />
+                                        <div className="time-stepper">
+                                          <button
+                                            type="button"
+                                            className="time-stepper-btn"
+                                            onClick={() => stepVenueTime(slot.day, 'start', 30)}
+                                            aria-label="Augmenter de 30 minutes"
+                                          >
+                                            <ChevronUp size={14} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="time-stepper-btn"
+                                            onClick={() => stepVenueTime(slot.day, 'start', -30)}
+                                            aria-label="Diminuer de 30 minutes"
+                                          >
+                                            <ChevronDown size={14} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="opening-hours-time-block">
+                                      <span className="opening-hours-time-label">À</span>
+                                      <div className="time-input-row">
+                                        <input
+                                          type="text"
+                                          className="form-input opening-hours-time"
+                                          value={slot.end}
+                                          onChange={(event) =>
+                                            updateVenueDay(slot.day, { end: normalizeTime(event.target.value) })
+                                          }
+                                          onBlur={() =>
+                                            updateVenueDay(slot.day, { end: formatTime(slot.end || '18:00') })
+                                          }
+                                          placeholder="HH:MM"
+                                          inputMode="numeric"
+                                        />
+                                        <div className="time-stepper">
+                                          <button
+                                            type="button"
+                                            className="time-stepper-btn"
+                                            onClick={() => stepVenueTime(slot.day, 'end', 30)}
+                                            aria-label="Augmenter de 30 minutes"
+                                          >
+                                            <ChevronUp size={14} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="time-stepper-btn"
+                                            onClick={() => stepVenueTime(slot.day, 'end', -30)}
+                                            aria-label="Diminuer de 30 minutes"
+                                          >
+                                            <ChevronDown size={14} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>,
+                      'opening-hours-sheet'
+                    )}
+                  </div>
+                  {selectedVenueOpeningDays.length > 0 && (
+                    <div className="opening-hours-summary">
+                      {selectedVenueOpeningDays.map((slot) => (
+                        <span key={slot.day} className="opening-hours-summary-chip">
+                          {venueDayLabels[slot.day] || slot.day}: {slot.start} - {slot.end}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Statuts */}
             <div className="form-group">

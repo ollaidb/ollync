@@ -70,7 +70,7 @@ const Home = () => {
   const heroPanels = [
     {
       id: 'hero-1',
-      title: 'Une annonce. Une rencontre. Un projet.',
+      title: 'Un projet. Une annonce. Une rencontre.',
       description: 'Publie en quelques minutes et trouve les bons profils.',
       button: 'Publier une annonce',
       route: '/publish',

@@ -94,29 +94,28 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
   'co-creation': {
     id: 'co-creation',
     name: 'Co-création',
-    description: 'Collaboration créative où les  parties contribuent conjointement au projet avec partage des résultats.',
+    description: 'Collaboration créative où les résultats sont partagés.',
   },
   participation: {
     id: 'participation',
     name: 'Participation',
-    description: 'Rejoindre en tant que participant(e).'
+    description: 'Parce que tu as envie de vivre une belle expérience!'
   },
   association: {
     id: 'association',
     name: 'Association',
-    description:
-      'Regroupement de ressources et compétences pour atteindre un objectif commun en tant que partenaires.'
+    description: 'Regroupement de ressources et compétences pour un objectif commun.'
   },
   'partage-revenus': {
     id: 'partage-revenus',
     name: 'Partage de revenus',
-    description: 'Les gains générés sont répartis entre les partenaires selon un pourcentage convenu d\'avance.',
+    description: 'Selon les gains générés par le contenu.',
     requiresPercentage: true
   },
   remuneration: {
     id: 'remuneration',
     name: 'Rémunération',
-    description: 'Paiement en euros pour les services rendus ou le travail fourni selon un tarif établi.',
+    description: 'Liquide, virement, paypal, wero avant ou après le service.',
     requiresPrice: true
   },
   prix: {
@@ -128,13 +127,13 @@ const PAYMENT_OPTION_CONFIGS: Record<string, PaymentOptionConfig> = {
   echange: {
     id: 'echange',
     name: 'Échange de service',
-    description: 'Troc de services où les parties s\'échangent leurs compétences sans transaction monétaire.',
+    description: 'Partage d’expertise et/ou de compétences',
     requiresExchangeService: true
   },
   'visibilite-contre-service': {
     id: 'visibilite-contre-service',
     name: 'Visibilité contre service',
-    description: 'Accord où une mise en visibilité est offerte en échange d\'un service rendu.'
+    description: 'Accord préalable sur une mention, un crédit ou une publicité en échange du service.'
   }
 }
 
@@ -177,11 +176,19 @@ export const validatePublishForm = (
   formData: FormData,
   requireSocialNetwork: boolean = false
 ): ValidationResult => {
+  const MIN_TITLE_CHARS = 20
+  const MIN_DESCRIPTION_CHARS = 80
+  const MIN_WORK_SCHEDULE_CHARS = 5
+  const MIN_RESPONSIBILITIES_CHARS = 60
+  const MIN_REQUIRED_SKILLS_CHARS = 40
+  const MIN_BENEFITS_CHARS = 30
+
   const CASTING_SLUGS = new Set(['casting-role', 'casting'])
   const errors: string[] = []
   const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const isJobCategory = EMPLOI_SLUGS.has(formData.category || '')
   const isJobRequest = isJobCategory && formData.listingType === 'request'
+  const isJobOffer = isJobCategory && !isJobRequest
   const isCastingFigurantRequest =
     formData.listingType === 'request' &&
     CASTING_SLUGS.has(formData.category || '') &&
@@ -227,17 +234,52 @@ export const validatePublishForm = (
   }
 
   // Titre
-  if (!formData.title || formData.title.trim().length === 0) {
+  const titleLength = (formData.title || '').trim().length
+  const descriptionLength = (formData.description || '').trim().length
+  const workScheduleLength = (formData.work_schedule || '').trim().length
+  const responsibilitiesLength = (formData.responsibilities || '').trim().length
+  const requiredSkillsLength = (formData.required_skills || '').trim().length
+  const benefitsLength = (formData.benefits || '').trim().length
+
+  if (!formData.title || titleLength === 0) {
     errors.push('Le titre est obligatoire')
+  } else if (titleLength < MIN_TITLE_CHARS) {
+    errors.push(`Le titre doit contenir au moins ${MIN_TITLE_CHARS} caractères`)
   }
 
   // Description
-  if (!formData.description || formData.description.trim().length === 0) {
+  if (!formData.description || descriptionLength === 0) {
     errors.push('La description est obligatoire')
+  } else if (descriptionLength < MIN_DESCRIPTION_CHARS) {
+    errors.push(`La description doit contenir au moins ${MIN_DESCRIPTION_CHARS} caractères`)
   }
 
   if (isJobCategory && (!formData.contract_type || formData.contract_type.trim().length === 0)) {
     errors.push('Le type de contrat est obligatoire pour un emploi')
+  }
+
+  if (isJobOffer && (!formData.work_schedule || workScheduleLength === 0)) {
+    errors.push('Les horaires / temps de travail sont obligatoires pour un emploi')
+  } else if (isJobOffer && workScheduleLength < MIN_WORK_SCHEDULE_CHARS) {
+    errors.push(`Les horaires / temps de travail doivent contenir au moins ${MIN_WORK_SCHEDULE_CHARS} caractères`)
+  }
+
+  if (isJobOffer && (!formData.responsibilities || responsibilitiesLength === 0)) {
+    errors.push('Les missions / responsabilités sont obligatoires pour un emploi')
+  } else if (isJobOffer && responsibilitiesLength < MIN_RESPONSIBILITIES_CHARS) {
+    errors.push(`Les missions / responsabilités doivent contenir au moins ${MIN_RESPONSIBILITIES_CHARS} caractères`)
+  }
+
+  if (isJobOffer && (!formData.required_skills || requiredSkillsLength === 0)) {
+    errors.push('Les compétences requises sont obligatoires pour un emploi')
+  } else if (isJobOffer && requiredSkillsLength < MIN_REQUIRED_SKILLS_CHARS) {
+    errors.push(`Les compétences requises doivent contenir au moins ${MIN_REQUIRED_SKILLS_CHARS} caractères`)
+  }
+
+  if (isJobOffer && (!formData.benefits || benefitsLength === 0)) {
+    errors.push('Les avantages sont obligatoires pour un emploi')
+  } else if (isJobOffer && benefitsLength < MIN_BENEFITS_CHARS) {
+    errors.push(`Les avantages doivent contenir au moins ${MIN_BENEFITS_CHARS} caractères`)
   }
 
   const eventMode = (formData.event_mode || '').trim()
@@ -593,14 +635,6 @@ export const handlePublish = async (
     const hasMaterialCondition = /État du matériel\s*:/i.test(descriptionValue)
     if (!hasMaterialCondition) {
       descriptionValue += `\n\nÉtat du matériel : ${formData.materialCondition.trim()}`
-    }
-  }
-
-  if (normalizedCategorySlug === 'casting-role' && Array.isArray(formData.modelTypes) && formData.modelTypes.length > 0) {
-    const label = `Type de modèle recherché : ${formData.modelTypes.join(', ')}`
-    const hasModelTypes = /Type de modèle recherché\s*:/i.test(descriptionValue)
-    if (!hasModelTypes) {
-      descriptionValue += `\n\n${label}`
     }
   }
 
