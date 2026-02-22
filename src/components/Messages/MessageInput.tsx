@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
@@ -257,6 +258,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       return
     }
     setShowOptions(false)
+    setContractItems([])
+    setSelectedContractId(null)
     setShowContractSelector(true)
     await loadContractsForConversation()
   }
@@ -525,6 +528,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       {showCalendarModal && (
         <div className="appointment-overlay" onClick={handleCalendarClose}>
           <div className="appointment-inline-panel" onClick={(event) => event.stopPropagation()}>
+          <div className="appointment-inline-sheet-handle" aria-hidden="true" />
           <div className="appointment-inline-header">
             <h4>Créer un rendez-vous</h4>
             <button 
@@ -793,85 +797,90 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         />
       )}
 
-      {showContractSelector && (
-        <div className="message-contract-selector-overlay" onClick={() => setShowContractSelector(false)}>
-          <div className="message-contract-selector-content" onClick={(e) => e.stopPropagation()}>
-            <div className="message-contract-selector-header">
-              <h3>Choisir un contrat</h3>
-              <button className="message-contract-selector-close" onClick={() => setShowContractSelector(false)}>
-                ✕
-              </button>
-            </div>
-            <p className="message-contract-selector-hint">
-              Sélectionne un contrat existant pour l’envoyer dans cette conversation.
-            </p>
-            <div className="message-contract-selector-list">
-              {contractsLoading ? (
-                <div className="message-contract-selector-empty">
-                  <Loader className="spinner" size={20} />
-                  <span>Chargement...</span>
-                </div>
-              ) : contractItems.length === 0 ? (
-                <div className="message-contract-selector-empty">
-                  <p>Aucun contrat trouvé avec cet utilisateur.</p>
-                  <button
-                    type="button"
-                    className="message-contract-selector-link-btn"
-                    onClick={() => {
-                      setShowContractSelector(false)
-                      navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
-                    }}
-                  >
-                    Créer / continuer un contrat
-                  </button>
-                </div>
-              ) : (
-                contractItems.map((contract) => (
-                  <button
-                    key={`${contract.item_type}-${contract.id}`}
-                    type="button"
-                    className={`message-contract-selector-item ${selectedContractId === contract.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedContractId(contract.id)}
-                  >
-                    <div className="message-contract-selector-item-title">
-                      {contract.item_type === 'draft'
-                        ? (contract.draft_name || 'Brouillon de contrat')
-                        : (contract.post?.title || 'Contrat')}
-                    </div>
-                    <div className="message-contract-selector-item-meta">
-                      <span>{contract.item_type === 'draft' ? 'brouillon' : (contract.status || 'generated')}</span>
-                      <span>
-                        {(contract.updated_at || contract.created_at)
-                          ? new Date(contract.updated_at || contract.created_at || '').toLocaleDateString('fr-FR')
-                          : ''}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-            <div className="message-contract-selector-actions">
-              <button
-                type="button"
-                className="message-contract-selector-btn secondary"
-                onClick={() => {
-                  setShowContractSelector(false)
-                  navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
-                }}
-              >
-                Ouvrir Contrats
-              </button>
-              <button
-                type="button"
-                className="message-contract-selector-btn primary"
-                onClick={() => void handleSendContractShare()}
-                disabled={!selectedContractId || contractsLoading || sending}
-              >
-                {sending ? 'Envoi...' : 'Envoyer'}
-              </button>
+      {showContractSelector && typeof document !== 'undefined' && createPortal(
+        <>
+          <div className="message-contract-selector-backdrop" onClick={() => setShowContractSelector(false)} />
+          <div className="message-contract-selector-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="message-contract-selector-content">
+              <div className="message-contract-selector-handle" aria-hidden="true" />
+              <div className="message-contract-selector-header">
+                <h3>Choisir un contrat</h3>
+                <button className="message-contract-selector-close" onClick={() => setShowContractSelector(false)}>
+                  ✕
+                </button>
+              </div>
+              <p className="message-contract-selector-hint">
+                Sélectionne un contrat existant pour l’envoyer dans cette conversation.
+              </p>
+              <div className="message-contract-selector-list">
+                {contractsLoading ? (
+                  <div className="message-contract-selector-empty">
+                    <Loader className="spinner" size={20} />
+                    <span>Chargement...</span>
+                  </div>
+                ) : contractItems.length === 0 ? (
+                  <div className="message-contract-selector-empty">
+                    <p>Aucun contrat trouvé avec cet utilisateur.</p>
+                    <button
+                      type="button"
+                      className="message-contract-selector-link-btn"
+                      onClick={() => {
+                        setShowContractSelector(false)
+                        navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
+                      }}
+                    >
+                      Créer / continuer un contrat
+                    </button>
+                  </div>
+                ) : (
+                  contractItems.map((contract) => (
+                    <button
+                      key={`${contract.item_type}-${contract.id}`}
+                      type="button"
+                      className={`message-contract-selector-item ${selectedContractId === contract.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedContractId(contract.id)}
+                    >
+                      <div className="message-contract-selector-item-title">
+                        {contract.item_type === 'draft'
+                          ? (contract.draft_name || 'Brouillon de contrat')
+                          : (contract.post?.title || 'Contrat')}
+                      </div>
+                      <div className="message-contract-selector-item-meta">
+                        <span>{contract.item_type === 'draft' ? 'brouillon' : (contract.status || 'generated')}</span>
+                        <span>
+                          {(contract.updated_at || contract.created_at)
+                            ? new Date(contract.updated_at || contract.created_at || '').toLocaleDateString('fr-FR')
+                            : ''}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              <div className="message-contract-selector-actions">
+                <button
+                  type="button"
+                  className="message-contract-selector-btn secondary"
+                  onClick={() => {
+                    setShowContractSelector(false)
+                    navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
+                  }}
+                >
+                  Ouvrir Contrats
+                </button>
+                <button
+                  type="button"
+                  className="message-contract-selector-btn primary"
+                  onClick={() => void handleSendContractShare()}
+                  disabled={!selectedContractId || contractsLoading || sending}
+                >
+                  {sending ? 'Envoi...' : 'Envoyer'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </>
   )

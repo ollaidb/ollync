@@ -135,6 +135,7 @@ const PostSelector = ({ onPostSelect, onClose }: PostSelectorProps) => {
   return (
     <div className="post-selector-overlay" onClick={onClose}>
       <div className="post-selector-content" onClick={(e) => e.stopPropagation()}>
+        <div className="post-selector-handle" aria-hidden="true" />
         <div className="post-selector-header">
           <h3>Choisir une annonce</h3>
           <button className="post-selector-close" onClick={onClose}>✕</button>

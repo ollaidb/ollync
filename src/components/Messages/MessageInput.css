@@ -1,3 +1,19 @@
+@keyframes searchOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes searchSheetUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0.86;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .message-input-container {
   position: relative;
   padding: 12px 16px;
@@ -258,39 +274,64 @@
   border-top: 1px solid var(--border);
 }
 
-.message-contract-selector-overlay {
+.message-contract-selector-overlay,
+.message-contract-selector-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 16px;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 12000;
+  animation: searchOverlayFade 0.18s ease-out;
+}
+
+.message-contract-selector-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+  z-index: 12001;
+  animation: searchSheetUp 0.22s ease-out;
+  will-change: transform, opacity;
+  pointer-events: none;
 }
 
 .message-contract-selector-content {
-  width: min(520px, 100%);
-  max-height: 88vh;
+  width: min(calc(100% - 24px), 472px);
+  max-height: min(66vh, 560px);
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  grid-template-rows: auto auto auto 1fr auto;
+  background: color-mix(in srgb, var(--card) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 18px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  margin: 0 auto calc(env(safe-area-inset-bottom, 0px) + 52px);
+  pointer-events: auto;
+}
+
+.message-contract-selector-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  margin: 10px auto 2px;
 }
 
 .message-contract-selector-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 16px 8px;
+  padding: 10px 14px 8px;
 }
 
 .message-contract-selector-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .message-contract-selector-close {
@@ -303,16 +344,16 @@
 
 .message-contract-selector-hint {
   margin: 0;
-  padding: 0 16px 10px;
+  padding: 0 14px 10px;
   color: var(--muted-foreground);
   font-size: 12px;
 }
 
 .message-contract-selector-list {
-  padding: 0 16px 12px;
+  padding: 0 12px 10px;
   overflow-y: auto;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   align-content: start;
 }
 
@@ -321,10 +362,10 @@
   text-align: left;
   border: 1px solid var(--border);
   background: var(--input);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 10px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
 }
 
@@ -334,7 +375,7 @@
 }
 
 .message-contract-selector-item-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--foreground);
 }
@@ -344,7 +385,7 @@
   justify-content: space-between;
   gap: 8px;
   color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .message-contract-selector-empty {
@@ -371,7 +412,7 @@
 .message-contract-selector-actions {
   display: flex;
   gap: 10px;
-  padding: 12px 16px 16px;
+  padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
 }
 
@@ -445,16 +486,16 @@
   -webkit-backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 20px;
+  padding: 12px;
   overflow-y: auto;
 }
 
 .appointment-overlay .appointment-inline-panel {
   position: relative;
   margin: 0;
-  max-width: 236px;
+  max-width: 420px;
   width: 100%;
 }
 
@@ -462,21 +503,30 @@
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 18px;
+  padding: 10px;
   margin: 0 auto 8px auto;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   transition: all 0.3s ease;
   box-shadow: var(--shadow-lg);
-  max-width: 214px;
+  max-width: 390px;
   width: 100%;
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+}
+
+.appointment-inline-sheet-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  margin: 2px auto 8px;
 }
 
 .appointment-inline-panel:focus-within,
 .appointment-inline-panel:hover {
   background: color-mix(in srgb, var(--card) 97%, transparent);
   box-shadow: var(--shadow-xl);
-  transform: scale(1.02);
+  transform: translateY(-1px);
 }
 
 .appointment-inline-header {
@@ -484,24 +534,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
-  padding-bottom: 5px;
+  margin-bottom: 8px;
+  padding-bottom: 7px;
   border-bottom: 1px solid var(--border);
 }
 
 .appointment-inline-header h4 {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--foreground);
 }
 
 .appointment-inline-close {
   position: absolute;
-  top: -9px;
-  right: -9px;
-  width: 24px;
-  height: 24px;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--background);
@@ -523,7 +573,7 @@
 .appointment-inline-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .appointment-inline-form-group {
@@ -533,19 +583,19 @@
 }
 
 .appointment-inline-form-group label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted-foreground);
 }
 
 .appointment-inline-input {
   width: 100%;
-  padding: 7px 8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--input);
   color: var(--foreground);
-  font-size: 11px;
+  font-size: 14px;
   outline: none;
   transition: all 0.2s;
 }
@@ -574,7 +624,7 @@
 }
 
 .appointment-inline-calendar-wrapper .calendar-picker {
-  max-width: 186px;
+  max-width: 260px;
   padding: 2px;
 }
 
@@ -582,19 +632,19 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 5px 6px;
+  padding: 8px 10px;
   background: var(--muted);
   border-radius: 6px;
 }
 
 .appointment-inline-date-label {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-foreground);
   font-weight: 500;
 }
 
 .appointment-inline-date-value {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--foreground);
   font-weight: 600;
 }
@@ -609,10 +659,10 @@
 .appointment-inline-back,
 .appointment-inline-submit {
   flex: 1;
-  padding: 7px 8px;
+  padding: 10px 12px;
   border: none;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -647,7 +697,7 @@
 @media (max-width: 768px) {
   .appointment-overlay {
     align-items: flex-end;
-    padding: 12px;
+    padding: 10px;
   }
 
   .appointment-overlay .appointment-inline-panel {
@@ -657,7 +707,7 @@
   .appointment-inline-panel {
     max-width: 100%;
     padding: 9px;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 }
 
@@ -720,5 +770,32 @@
 
   .appointment-inline-time-stepper {
     width: 32px;
+  }
+
+  .message-contract-selector-content {
+    width: calc(100% - 20px);
+    max-height: min(70vh, 580px);
+    border-radius: 16px;
+    margin: 0 auto calc(env(safe-area-inset-bottom, 0px) + 56px);
+  }
+
+  .message-contract-selector-panel {
+    padding: 0 10px;
+  }
+
+  .message-contract-selector-header {
+    padding: 10px 12px 8px;
+  }
+
+  .message-contract-selector-hint {
+    padding: 0 12px 10px;
+  }
+
+  .message-contract-selector-list {
+    padding: 0 10px 8px;
+  }
+
+  .message-contract-selector-actions {
+    padding: 10px 12px 12px;
   }
 }

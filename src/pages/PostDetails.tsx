@@ -1571,6 +1571,16 @@ const PostDetails = () => {
   }
 
   const hasAddress = post?.location_address || (post?.location_lat && post?.location_lng)
+  const primaryLocationMapsUrl = post?.location_lat && post?.location_lng
+    ? `https://www.google.com/maps/search/?api=1&query=${post.location_lat},${post.location_lng}`
+    : (post?.location || post?.location_address)
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(post.location || post.location_address || '')}`
+      : null
+  const exactAddressMapsUrl = post?.location_address
+    ? (post?.location_lat && post?.location_lng
+      ? `https://www.google.com/maps/search/?api=1&query=${post.location_lat},${post.location_lng}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(post.location_address)}`)
+    : null
   const openingHoursList = getOpeningHoursList(post?.opening_hours)
   const categorySlug = (post?.category?.slug || '').trim().toLowerCase()
   const subCategorySlug = (post?.sub_category?.slug || '').trim().toLowerCase()
@@ -2162,7 +2172,18 @@ const PostDetails = () => {
                       <div className="post-info-value">
                         <div className="post-address-text">
                           <MapPin size={16} />
-                          <span>{post.location || post.location_address || 'Non renseigné'}</span>
+                          {primaryLocationMapsUrl ? (
+                            <a
+                              href={primaryLocationMapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="post-address-link"
+                            >
+                              {post.location || post.location_address || 'Non renseigné'}
+                            </a>
+                          ) : (
+                            <span>{post.location || post.location_address || 'Non renseigné'}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2172,7 +2193,18 @@ const PostDetails = () => {
                         <div className="post-info-value">
                           <div className="post-address-text">
                             <MapPin size={16} />
-                            <span>{post.location_address}</span>
+                            {exactAddressMapsUrl ? (
+                              <a
+                                href={exactAddressMapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="post-address-link"
+                              >
+                                {post.location_address}
+                              </a>
+                            ) : (
+                              <span>{post.location_address}</span>
+                            )}
                           </div>
                           {post.location_lat && post.location_lng && (
                             <div className="post-address-coords">

@@ -28,6 +28,24 @@
   gap: 6px;
 }
 
+.edit-profile-location-group {
+  position: relative;
+  z-index: 20;
+}
+
+.edit-profile-location-group:focus-within {
+  z-index: 500;
+}
+
+.edit-profile-location-group .location-autocomplete {
+  position: relative;
+  z-index: 1;
+}
+
+.edit-profile-location-group .location-autocomplete:focus-within {
+  z-index: 500;
+}
+
 .form-group.profile-progress-missing {
   border: 1.5px solid #ef4444;
   border-radius: 12px;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { File, MapPin, DollarSign, Calendar, Share2, X, Trash2 } from 'lucide-react'
+import { File, MapPin, DollarSign, Calendar, Share2, X, Trash2, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { jsPDF } from 'jspdf'
@@ -714,7 +714,9 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
               className="message-avatar"
             />
           ) : (
-            <div className="message-avatar-spacer" aria-hidden="true"></div>
+            <div className="message-avatar message-avatar-fallback" aria-hidden="true">
+              <User size={16} className="message-avatar-fallback-icon" />
+            </div>
           )
         ) : (
           <div className="message-avatar-spacer" aria-hidden="true"></div>

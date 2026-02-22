@@ -1166,7 +1166,7 @@ const EditPublicProfile = () => {
             </div>
 
             {/* Localisation */}
-            <div className={`form-group ${fromProfileProgress && missingCompletionSections.location ? 'profile-progress-missing' : ''}`}>
+            <div className={`form-group edit-profile-location-group ${fromProfileProgress && missingCompletionSections.location ? 'profile-progress-missing' : ''}`}>
               <label htmlFor="location">Ville</label>
               <LocationAutocomplete
                 value={profile.location}

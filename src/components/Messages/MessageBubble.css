@@ -38,6 +38,19 @@
   border: 1px solid var(--border);
 }
 
+.message-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--muted) 88%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--border) 85%, var(--muted-foreground) 15%);
+  color: var(--muted-foreground);
+}
+
+.message-avatar-fallback-icon {
+  opacity: 0.9;
+}
+
 .message-avatar-logo {
   height: 16px;
   width: auto;
