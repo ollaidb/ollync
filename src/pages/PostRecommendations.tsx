@@ -25,10 +25,12 @@ const PostRecommendations = () => {
   const { user } = useAuth()
   const [sourcePost, setSourcePost] = useState<SourcePostMeta | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const navState = (location.state || {}) as { originPath?: string; sourcePostPath?: string }
   const originPath = navState.originPath || '/home'
   const sourcePostPath = navState.sourcePostPath || `/post/${id}`
+  const recommendationsPath = `${location.pathname}${location.search}`
 
   useEffect(() => {
     const loadRecommendations = async () => {
@@ -89,10 +91,117 @@ const PostRecommendations = () => {
     loadRecommendations()
   }, [id, user?.id])
 
+  useEffect(() => {
+    const fetchLikedPostIds = async () => {
+      if (!user?.id || posts.length === 0) {
+        setLikedPostIds(new Set())
+        return
+      }
+
+      try {
+        const postIds = posts.map((post) => post.id)
+        const { data, error } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds)
+
+        if (error) {
+          console.error('Error fetching likes for recommendations:', error)
+          setLikedPostIds(new Set())
+          return
+        }
+
+        const likeRows = (data || []) as Array<{ post_id: string | null }>
+        setLikedPostIds(new Set(likeRows.map((row) => row.post_id).filter((id): id is string => Boolean(id))))
+      } catch (error) {
+        console.error('Error fetching likes for recommendations:', error)
+        setLikedPostIds(new Set())
+      }
+    }
+
+    fetchLikedPostIds()
+  }, [user?.id, posts])
+
+  useEffect(() => {
+    const handleLikeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ postId?: string; liked?: boolean }>).detail
+      const postId = detail?.postId
+      if (!postId) return
+
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (detail.liked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
+    }
+
+    window.addEventListener('likeChanged', handleLikeChange)
+    return () => window.removeEventListener('likeChanged', handleLikeChange)
+  }, [])
+
   const title = useMemo(
     () => (sourcePost ? 'Annonces similaires' : 'Annonces similaires'),
     [sourcePost]
   )
+
+  const handleLikeClick = async (event: React.MouseEvent, postId: string) => {
+    event.stopPropagation()
+
+    if (!user?.id) {
+      navigate('/auth/login')
+      return
+    }
+
+    const currentlyLiked = likedPostIds.has(postId)
+
+    setLikedPostIds((prev) => {
+      const next = new Set(prev)
+      if (currentlyLiked) {
+        next.delete(postId)
+      } else {
+        next.add(postId)
+      }
+      return next
+    })
+
+    try {
+      if (currentlyLiked) {
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId)
+        if (error) throw error
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('likes') as any)
+          .insert({ user_id: user.id, post_id: postId })
+        if (error) throw error
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('likeChanged', {
+          detail: { postId, liked: !currentlyLiked }
+        })
+      )
+    } catch (error) {
+      console.error('Error toggling like in recommendations:', error)
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (currentlyLiked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
+    }
+  }
 
   return (
     <div className="swipe-page post-recommendations-page">
@@ -138,7 +247,11 @@ const PostRecommendations = () => {
                 <div
                   key={post.id}
                   className="swipe-card"
-                  onClick={() => navigate(`/post/${post.id}`, { state: { originPath } })}
+                  onClick={() =>
+                    navigate(`/post/${post.id}`, {
+                      state: { originPath: recommendationsPath }
+                    })
+                  }
                 >
                   <div className="swipe-card-title-top">
                     <span className="swipe-card-title-text">{post.title}</span>
@@ -158,10 +271,15 @@ const PostRecommendations = () => {
                     )}
 
                     {post.category && <div className="swipe-card-category">{post.category.name}</div>}
-                    <div className="swipe-card-like">
-                      <Heart size={16} fill="currentColor" />
+                    <div
+                      className={`swipe-card-like ${likedPostIds.has(post.id) ? 'liked' : ''}`}
+                      onClick={(event) => handleLikeClick(event, post.id)}
+                      role="button"
+                      aria-label={likedPostIds.has(post.id) ? 'Retirer le like' : 'Ajouter un like'}
+                      tabIndex={0}
+                    >
+                      <Heart size={16} fill={likedPostIds.has(post.id) ? 'currentColor' : 'none'} />
                     </div>
-
                     <div className="swipe-card-overlay">
                       <div
                         className="swipe-card-profile"

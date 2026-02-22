@@ -362,10 +362,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--destructive);
+  color: var(--muted-foreground);
   z-index: 20;
   box-shadow: var(--shadow-sm);
   pointer-events: auto;
+  cursor: pointer;
+}
+
+.swipe-card-like.liked {
+  color: var(--destructive);
 }
 
 .swipe-card-like svg {

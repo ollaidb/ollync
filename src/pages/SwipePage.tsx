@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
@@ -53,6 +53,7 @@ interface Category {
 const SwipePage = () => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const categoryId = searchParams.get('category')
@@ -65,6 +66,7 @@ const SwipePage = () => {
   const [page, setPage] = useState(0)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const POSTS_PER_PAGE = 20
@@ -331,13 +333,124 @@ const SwipePage = () => {
     }
   }, [hasMore, loadingMore, loading, page, fetchPosts])
 
+  useEffect(() => {
+    const fetchLikedPostIds = async () => {
+      if (!user?.id || posts.length === 0) {
+        setLikedPostIds(new Set())
+        return
+      }
+
+      try {
+        const postIds = posts.map((post) => post.id)
+        const { data, error } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds)
+
+        if (error) {
+          console.error('Error fetching likes for swipe page:', error)
+          setLikedPostIds(new Set())
+          return
+        }
+
+        const likeRows = (data || []) as Array<{ post_id: string | null }>
+        setLikedPostIds(new Set(likeRows.map((row) => row.post_id).filter((id): id is string => Boolean(id))))
+      } catch (error) {
+        console.error('Error fetching likes for swipe page:', error)
+        setLikedPostIds(new Set())
+      }
+    }
+
+    fetchLikedPostIds()
+  }, [user?.id, posts])
+
+  useEffect(() => {
+    const handleLikeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ postId?: string; liked?: boolean }>).detail
+      const postId = detail?.postId
+      if (!postId) return
+
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (detail.liked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
+    }
+
+    window.addEventListener('likeChanged', handleLikeChange)
+    return () => window.removeEventListener('likeChanged', handleLikeChange)
+  }, [])
+
   const handlePostClick = (post: Post) => {
-    navigate(`/post/${post.id}`)
+    navigate(`/post/${post.id}`, {
+      state: { originPath: `${location.pathname}${location.search}` }
+    })
   }
 
   const handleProfileClick = (e: React.MouseEvent, userId: string) => {
     e.stopPropagation()
     navigate(`/profile/public/${userId}`)
+  }
+
+  const handleLikeClick = async (e: React.MouseEvent, postId: string) => {
+    e.stopPropagation()
+
+    if (!user?.id) {
+      navigate('/auth/login')
+      return
+    }
+
+    const currentlyLiked = likedPostIds.has(postId)
+
+    setLikedPostIds((prev) => {
+      const next = new Set(prev)
+      if (currentlyLiked) {
+        next.delete(postId)
+      } else {
+        next.add(postId)
+      }
+      return next
+    })
+
+    try {
+      if (currentlyLiked) {
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId)
+
+        if (error) throw error
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('likes') as any)
+          .insert({ user_id: user.id, post_id: postId })
+
+        if (error) throw error
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('likeChanged', {
+          detail: { postId, liked: !currentlyLiked }
+        })
+      )
+    } catch (error) {
+      console.error('Error toggling like on swipe page:', error)
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (currentlyLiked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
+    }
   }
 
 
@@ -431,11 +544,16 @@ const SwipePage = () => {
                       </div>
                     )}
                     
-                    {/* Icône like en haut à droite */}
-                    <div className="swipe-card-like">
-                      <Heart size={16} fill="currentColor" />
+                    <div
+                      className={`swipe-card-like ${likedPostIds.has(post.id) ? 'liked' : ''}`}
+                      onClick={(e) => handleLikeClick(e, post.id)}
+                      role="button"
+                      aria-label={likedPostIds.has(post.id) ? 'Retirer le like' : 'Ajouter un like'}
+                      tabIndex={0}
+                    >
+                      <Heart size={16} fill={likedPostIds.has(post.id) ? 'currentColor' : 'none'} />
                     </div>
-                    
+
                     {/* Overlay profil - en bas à droite */}
                     <div className="swipe-card-overlay">
                       <div 

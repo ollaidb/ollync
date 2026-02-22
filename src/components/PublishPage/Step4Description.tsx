@@ -120,6 +120,7 @@ export const Step4Description = ({
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
   const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
+  const [showValidationErrors, setShowValidationErrors] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
@@ -971,8 +972,10 @@ export const Step4Description = ({
     onUpdateFormData
   ])
 
-  const MIN_TITLE_CHARS = 20
-  const MIN_DESCRIPTION_CHARS = 80
+  const MIN_TITLE_CHARS = 5
+  const MAX_TITLE_CHARS = 50
+  const MIN_DESCRIPTION_CHARS = 20
+  const MAX_DESCRIPTION_CHARS = 500
   const MIN_WORK_SCHEDULE_CHARS = 5
   const MIN_RESPONSIBILITIES_CHARS = 60
   const MIN_REQUIRED_SKILLS_CHARS = 40
@@ -985,6 +988,15 @@ export const Step4Description = ({
   const requiredSkillsLength = (formData.required_skills || '').trim().length
   const benefitsLength = (formData.benefits || '').trim().length
   
+  const hasValidStudioBillingHours =
+    !!formData.billingHours &&
+    /^\d{1,2}:\d{2}$/.test(formData.billingHours) &&
+    formData.billingHours !== '00:00'
+
+  const hasValidOpeningHours =
+    Array.isArray(formData.businessOpeningHours) &&
+    formData.businessOpeningHours.some((slot) => slot.enabled && slot.start && slot.end && slot.start < slot.end)
+
   // Validation complète des champs obligatoires de cette étape
   const canContinue = 
     titleLength >= MIN_TITLE_CHARS &&
@@ -1008,12 +1020,52 @@ export const Step4Description = ({
     (!isMaterialSale || (formData.materialCondition && formData.materialCondition.trim().length > 0)) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0)) &&
     (!isStudioLieuCategory || (
-      !!formData.billingHours &&
-      /^\d{1,2}:\d{2}$/.test(formData.billingHours) &&
-      formData.billingHours !== '00:00' &&
-      Array.isArray(formData.businessOpeningHours) &&
-      formData.businessOpeningHours.some((slot) => slot.enabled && slot.start && slot.end && slot.start < slot.end)
+      hasValidStudioBillingHours &&
+      hasValidOpeningHours
     ))
+
+  const titleInvalid = titleLength < MIN_TITLE_CHARS
+  const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS
+  const contractTypeInvalid = isJobCategory && !(formData.contract_type && formData.contract_type.trim().length > 0)
+  const socialNetworkInvalid = showSocialNetwork && !(formData.socialNetwork && formData.socialNetwork.trim().length > 0)
+  const paymentInvalid = showPaymentSection && !isJobRequest && !(formData.exchange_type && formData.exchange_type.trim().length > 0)
+  const materialConditionInvalid = isMaterialSale && !(formData.materialCondition && formData.materialCondition.trim().length > 0)
+  const visibiliteOfferTypeInvalid = isVisibiliteContreService && !(formData.visibilite_offer_type && formData.visibilite_offer_type.trim().length > 0)
+  const priceInvalid = !!requiresPrice && !(formData.price && parseFloat(formData.price) > 0)
+  const exchangeServiceInvalid = !!requiresExchangeService && !(formData.exchange_service && formData.exchange_service.trim().length > 0)
+  const visibiliteServiceDetailsInvalid =
+    !!requiresVisibiliteServiceDetails &&
+    !(formData.visibilite_service_details && formData.visibilite_service_details.trim().length > 0)
+  const revenueShareInvalid =
+    !!requiresRevenueShare &&
+    !(
+      formData.revenue_share_percentage &&
+      !Number.isNaN(parseFloat(formData.revenue_share_percentage)) &&
+      parseFloat(formData.revenue_share_percentage) > 0 &&
+      parseFloat(formData.revenue_share_percentage) <= 100
+    )
+  const studioBillingInvalid = isStudioLieuCategory && !hasValidStudioBillingHours
+  const openingHoursInvalid = isStudioLieuCategory && !hasValidOpeningHours
+  const deadlineInvalid =
+    !isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest &&
+    !(formData.deadline && formData.deadline.trim().length > 0)
+  const neededTimeInvalid =
+    !isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest &&
+    !(formData.neededTime && formData.neededTime.trim().length > 0)
+  const workScheduleInvalid = isJobCategory && !isJobRequest && workScheduleLength < MIN_WORK_SCHEDULE_CHARS
+  const responsibilitiesInvalid = isJobCategory && !isJobRequest && responsibilitiesLength < MIN_RESPONSIBILITIES_CHARS
+  const requiredSkillsInvalid = isJobCategory && !isJobRequest && requiredSkillsLength < MIN_REQUIRED_SKILLS_CHARS
+  const benefitsInvalid = isJobCategory && !isJobRequest && benefitsLength < MIN_BENEFITS_CHARS
+
+  const showError = (invalid: boolean) => showValidationErrors && invalid
+
+  const handleContinueClick = () => {
+    if (!canContinue) {
+      setShowValidationErrors(true)
+      return
+    }
+    onContinue()
+  }
 
   const renderBottomSheet = (
     open: boolean,
@@ -1046,27 +1098,28 @@ export const Step4Description = ({
     <div className="step4-description">
       <h2 className="step-title">{isJobRequest ? 'Présentez votre candidature' : 'Décrivez votre annonce'}</h2>
       
-      <div className="form-group">
+      <div className={`form-group ${showError(titleInvalid) ? 'has-error' : ''}`}>
         <label className="form-label">{isJobRequest ? 'Titre de votre candidature *' : 'Titre *'}</label>
         <input
           type="text"
-          className="form-input"
+          className={`form-input ${showError(titleInvalid) ? 'field-error' : ''}`}
           placeholder={titlePlaceholder}
           value={formData.title}
           onChange={(e) => onUpdateFormData({ title: e.target.value })}
+          maxLength={MAX_TITLE_CHARS}
         />
         <div className="form-field-meta">
-          Minimum {MIN_TITLE_CHARS} caractères ({titleLength}/{MIN_TITLE_CHARS})
+          Minimum {MIN_TITLE_CHARS} caractères, maximum {MAX_TITLE_CHARS} ({titleLength}/{MAX_TITLE_CHARS})
         </div>
       </div>
 
       {isJobCategory && (
         <>
-          <div className="form-group dropdown-field">
+          <div className={`form-group dropdown-field ${showError(contractTypeInvalid) ? 'has-error' : ''}`}>
             <label className="form-label">{isJobRequest ? 'Type de contrat souhaité *' : 'Type de contrat *'}</label>
             <button
               type="button"
-              className={`dropdown-trigger ${isContractOpen ? 'open' : ''}`}
+              className={`dropdown-trigger ${isContractOpen ? 'open' : ''} ${showError(contractTypeInvalid) ? 'field-error' : ''}`}
               onClick={() => setIsContractOpen((prev) => !prev)}
             >
               <span>{selectedContractName}</span>
@@ -1093,11 +1146,11 @@ export const Step4Description = ({
       )}
 
       {showSocialNetwork && (
-        <div className="form-group dropdown-field">
+        <div className={`form-group dropdown-field ${showError(socialNetworkInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Réseau social concerné *</label>
           <button
             type="button"
-            className={`dropdown-trigger ${isSocialNetworkOpen ? 'open' : ''}`}
+            className={`dropdown-trigger ${isSocialNetworkOpen ? 'open' : ''} ${showError(socialNetworkInvalid) ? 'field-error' : ''}`}
             onClick={() => setIsSocialNetworkOpen((prev) => !prev)}
           >
             <span>{selectedSocialNetworkName}</span>
@@ -1122,27 +1175,28 @@ export const Step4Description = ({
       )}
 
       {!isJobCategory && (
-        <div className="form-group">
+        <div className={`form-group ${showError(descriptionInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Description *</label>
           <textarea
-            className="form-textarea"
+            className={`form-textarea ${showError(descriptionInvalid) ? 'field-error' : ''}`}
             placeholder={descriptionPlaceholder}
             value={formData.description}
             onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
+            maxLength={MAX_DESCRIPTION_CHARS}
           />
           <div className="form-field-meta">
-            Minimum {MIN_DESCRIPTION_CHARS} caractères ({descriptionLength}/{MIN_DESCRIPTION_CHARS})
+            Minimum {MIN_DESCRIPTION_CHARS} caractères, maximum {MAX_DESCRIPTION_CHARS} ({descriptionLength}/{MAX_DESCRIPTION_CHARS})
           </div>
         </div>
       )}
 
       {isMaterialSale && (
-        <div className="form-group dropdown-field">
+        <div className={`form-group dropdown-field ${showError(materialConditionInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">État du matériel *</label>
           <button
             type="button"
-            className={`dropdown-trigger ${isMaterialConditionOpen ? 'open' : ''}`}
+            className={`dropdown-trigger ${isMaterialConditionOpen ? 'open' : ''} ${showError(materialConditionInvalid) ? 'field-error' : ''}`}
             onClick={() => setIsMaterialConditionOpen((prev) => !prev)}
           >
             <span>{selectedMaterialConditionName}</span>
@@ -1168,13 +1222,13 @@ export const Step4Description = ({
       )}
 
       {showPaymentSection && (
-        <div className="form-group dropdown-field">
+        <div className={`form-group dropdown-field ${showError(paymentInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">
             {isJobCategory ? 'Type de rémunération *' : 'Moyen de paiement *'}
           </label>
           <button
             type="button"
-            className={`dropdown-trigger ${isPaymentOpen ? 'open' : ''}`}
+            className={`dropdown-trigger ${isPaymentOpen ? 'open' : ''} ${showError(paymentInvalid) ? 'field-error' : ''}`}
             onClick={() => setIsPaymentOpen((prev) => !prev)}
           >
             <span>{selectedPaymentName}</span>
@@ -1210,11 +1264,11 @@ export const Step4Description = ({
       )}
 
       {isVisibiliteContreService && (
-        <div className="form-group dropdown-field">
+        <div className={`form-group dropdown-field ${showError(visibiliteOfferTypeInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Tu offres quoi ? *</label>
           <button
             type="button"
-            className={`dropdown-trigger ${isVisibiliteOfferTypeOpen ? 'open' : ''}`}
+            className={`dropdown-trigger ${isVisibiliteOfferTypeOpen ? 'open' : ''} ${showError(visibiliteOfferTypeInvalid) ? 'field-error' : ''}`}
             onClick={() => setIsVisibiliteOfferTypeOpen((prev) => !prev)}
           >
             <span>{selectedVisibiliteOfferTypeName}</span>
@@ -1245,16 +1299,16 @@ export const Step4Description = ({
 
       {/* Champs liés au moyen de paiement: affichés juste après la sélection */}
       {isStudioLieuCategory && (
-        <div className="form-group">
+        <div className={`form-group ${showError(studioBillingInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">
             {formData.exchange_type === 'visibilite-contre-service'
               ? "Temps (heures/minutes) pour service contre visibilité *"
               : "Temps (heures/minutes) *"}
           </label>
-          <div className="time-input-row">
+          <div className={`time-input-row ${showError(studioBillingInvalid) ? 'field-error-wrap' : ''}`}>
             <input
               type="text"
-              className="form-input time-input"
+              className={`form-input time-input ${showError(studioBillingInvalid) ? 'field-error' : ''}`}
               placeholder="HH:MM"
               value={formData.billingHours || '01:00'}
               onChange={(e) => onUpdateFormData({ billingHours: normalizeTime(e.target.value) })}
@@ -1284,11 +1338,11 @@ export const Step4Description = ({
       )}
 
       {requiresPrice && (
-        <div className="form-group">
+        <div className={`form-group ${showError(priceInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">{isJobCategory ? 'Prix par heure *' : 'Prix *'}</label>
           <input
             type="number"
-            className="form-input"
+            className={`form-input ${showError(priceInvalid) ? 'field-error' : ''}`}
             placeholder="0"
             value={formData.price}
             onChange={(e) => onUpdateFormData({ price: e.target.value })}
@@ -1299,10 +1353,10 @@ export const Step4Description = ({
       )}
 
       {requiresExchangeService && (
-        <div className="form-group">
+        <div className={`form-group ${showError(exchangeServiceInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Décrivez le service échangé *</label>
           <textarea
-            className="form-textarea"
+            className={`form-textarea ${showError(exchangeServiceInvalid) ? 'field-error' : ''}`}
             placeholder="Ex: Je propose un échange de service de montage vidéo contre une séance photo..."
             value={formData.exchange_service || ''}
             onChange={(e) => onUpdateFormData({ exchange_service: e.target.value })}
@@ -1312,10 +1366,10 @@ export const Step4Description = ({
       )}
 
       {requiresVisibiliteServiceDetails && (
-        <div className="form-group">
+        <div className={`form-group ${showError(visibiliteServiceDetailsInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Décrivez le service que vous offrez *</label>
           <textarea
-            className="form-textarea"
+            className={`form-textarea ${showError(visibiliteServiceDetailsInvalid) ? 'field-error' : ''}`}
             placeholder="Ex: 2h de montage, coaching contenu, animation de compte..."
             value={formData.visibilite_service_details || ''}
             onChange={(e) => onUpdateFormData({ visibilite_service_details: e.target.value })}
@@ -1325,11 +1379,11 @@ export const Step4Description = ({
       )}
 
       {requiresRevenueShare && (
-        <div className="form-group">
+        <div className={`form-group ${showError(revenueShareInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Pourcentage de partage (%) *</label>
           <input
             type="number"
-            className="form-input"
+            className={`form-input ${showError(revenueShareInvalid) ? 'field-error' : ''}`}
             placeholder="0"
             value={formData.revenue_share_percentage || ''}
             onChange={(e) => onUpdateFormData({ revenue_share_percentage: e.target.value })}
@@ -1354,12 +1408,12 @@ export const Step4Description = ({
       )}
 
       {isStudioLieuCategory && (
-        <div className="form-group">
+        <div className={`form-group ${showError(openingHoursInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">Jours et horaires d'ouverture *</label>
           <div className="dropdown-field">
             <button
               type="button"
-              className={`dropdown-trigger ${isOpeningDaysOpen ? 'open' : ''}`}
+              className={`dropdown-trigger ${isOpeningDaysOpen ? 'open' : ''} ${showError(openingHoursInvalid) ? 'field-error' : ''}`}
               onClick={() => setIsOpeningDaysOpen((prev) => !prev)}
             >
               <span>
@@ -1501,11 +1555,11 @@ export const Step4Description = ({
       )}
 
       {!isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
-      <div className="form-group">
+      <div className={`form-group ${showError(deadlineInvalid) ? 'has-error' : ''}`}>
         <label className="form-label">Date *</label>
         <button
           type="button"
-          className={`date-picker-trigger ${formData.deadline ? 'has-value' : ''}`}
+          className={`date-picker-trigger ${formData.deadline ? 'has-value' : ''} ${showError(deadlineInvalid) ? 'field-error' : ''}`}
           onClick={() => setIsDatePickerOpen(true)}
         >
           <span>{formatDeadlineLabel(formData.deadline)}</span>
@@ -1581,12 +1635,12 @@ export const Step4Description = ({
       )}
 
       {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest && (
-      <div className="form-group">
+      <div className={`form-group ${showError(neededTimeInvalid) ? 'has-error' : ''}`}>
         <label className="form-label">Heure *</label>
-        <div className="time-input-row">
+        <div className={`time-input-row ${showError(neededTimeInvalid) ? 'field-error-wrap' : ''}`}>
           <input
             type="text"
-            className="form-input time-input"
+            className={`form-input time-input ${showError(neededTimeInvalid) ? 'field-error' : ''}`}
             value={formData.neededTime || '01:00'}
             onChange={(e) => onUpdateFormData({ neededTime: normalizeTime(e.target.value) })}
             onBlur={() => onUpdateFormData({ neededTime: formatTime(formData.neededTime || '01:00') })}
@@ -1635,28 +1689,29 @@ export const Step4Description = ({
       )}
 
       {isJobCategory && (
-        <div className="form-group">
+        <div className={`form-group ${showError(descriptionInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">{isJobRequest ? 'Description de votre profil *' : 'Description du poste *'}</label>
           <textarea
-            className="form-textarea"
+            className={`form-textarea ${showError(descriptionInvalid) ? 'field-error' : ''}`}
             placeholder={descriptionPlaceholder}
             value={formData.description}
             onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
+            maxLength={MAX_DESCRIPTION_CHARS}
           />
           <div className="form-field-meta">
-            Minimum {MIN_DESCRIPTION_CHARS} caractères ({descriptionLength}/{MIN_DESCRIPTION_CHARS})
+            Minimum {MIN_DESCRIPTION_CHARS} caractères, maximum {MAX_DESCRIPTION_CHARS} ({descriptionLength}/{MAX_DESCRIPTION_CHARS})
           </div>
         </div>
       )}
 
       {isJobCategory && !isJobRequest && (
         <>
-          <div className="form-group">
+          <div className={`form-group ${showError(workScheduleInvalid) ? 'has-error' : ''}`}>
             <label className="form-label">{isJobRequest ? 'Disponibilités' : 'Horaires / temps de travail *'}</label>
             <input
               type="text"
-              className="form-input small-placeholder"
+              className={`form-input small-placeholder ${showError(workScheduleInvalid) ? 'field-error' : ''}`}
               placeholder={isJobRequest ? 'Ex : 20h/semaine, soirs, week-end...' : 'Ex : 35h/semaine'}
               value={formData.work_schedule || ''}
               onChange={(e) => onUpdateFormData({ work_schedule: e.target.value })}
@@ -1666,10 +1721,10 @@ export const Step4Description = ({
             </div>
           </div>
 
-          <div className="form-group">
+          <div className={`form-group ${showError(responsibilitiesInvalid) ? 'has-error' : ''}`}>
             <label className="form-label">Missions / responsabilités *</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${showError(responsibilitiesInvalid) ? 'field-error' : ''}`}
               placeholder="Décrivez les missions principales du poste."
               value={formData.responsibilities || ''}
               onChange={(e) => onUpdateFormData({ responsibilities: e.target.value })}
@@ -1680,10 +1735,10 @@ export const Step4Description = ({
             </div>
           </div>
 
-          <div className="form-group">
+          <div className={`form-group ${showError(requiredSkillsInvalid) ? 'has-error' : ''}`}>
             <label className="form-label">Compétences requises *</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${showError(requiredSkillsInvalid) ? 'field-error' : ''}`}
               placeholder="Listez les compétences attendues (ex: montage, rédaction, outils...)."
               value={formData.required_skills || ''}
               onChange={(e) => onUpdateFormData({ required_skills: e.target.value })}
@@ -1694,10 +1749,10 @@ export const Step4Description = ({
             </div>
           </div>
 
-          <div className="form-group">
+          <div className={`form-group ${showError(benefitsInvalid) ? 'has-error' : ''}`}>
             <label className="form-label">Avantages *</label>
             <textarea
-              className="form-textarea"
+              className={`form-textarea ${showError(benefitsInvalid) ? 'field-error' : ''}`}
               placeholder="Ex: télétravail, horaires flexibles, tickets resto..."
               value={formData.benefits || ''}
               onChange={(e) => onUpdateFormData({ benefits: e.target.value })}
@@ -1712,8 +1767,8 @@ export const Step4Description = ({
 
       <button
         className="continue-button"
-        onClick={onContinue}
-        disabled={!canContinue}
+        type="button"
+        onClick={handleContinueClick}
       >
         Continuer
       </button>

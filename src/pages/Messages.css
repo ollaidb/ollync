@@ -175,6 +175,28 @@
   height: 16px;
 }
 
+.messages-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+}
+
+.messages-filter-btn.active .messages-filter-badge {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  border-color: color-mix(in srgb, currentColor 24%, transparent);
+}
+
 /* Content */
 .messages-content {
   flex: 1;
@@ -951,6 +973,60 @@
   display: flex;
   gap: 12px;
   margin-top: 20px;
+}
+
+.messages-appointment-preview-card {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 18%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 8%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border));
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.messages-appointment-preview-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--foreground);
+}
+
+.messages-appointment-preview-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.messages-appointment-preview-date {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.messages-appointment-preview-user {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.messages-appointment-preview-actions {
+  gap: 10px;
+}
+
+.messages-appointment-preview-actions .messages-appointment-preview-btn {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.2;
+  border-radius: 10px;
 }
 
 .conversation-cancel-btn,
@@ -2284,6 +2360,29 @@
 
   .conversation-modal-actions {
     flex-direction: row;
+  }
+
+  .messages-appointment-preview-card {
+    padding: 12px;
+  }
+
+  .messages-appointment-preview-title-row h3 {
+    font-size: 15px;
+  }
+
+  .messages-appointment-preview-date {
+    font-size: 13px;
+  }
+
+  .messages-appointment-preview-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .messages-appointment-preview-actions .messages-appointment-preview-btn {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 12px;
   }
 
   .conversation-messages-list {

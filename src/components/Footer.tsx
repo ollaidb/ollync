@@ -1,12 +1,206 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
+import { useAuth } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabaseClient'
 import './Footer.css'
 
 const Footer = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadMessagesCount(0)
+      return
+    }
+
+    let isMounted = true
+
+    const loadUnreadMessagesCount = async () => {
+      try {
+        const { data: acceptedMatchRequests, error: acceptedMatchRequestsError } = await supabase
+          .from('match_requests')
+          .select('conversation_id')
+          .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+          .eq('status', 'accepted')
+          .not('conversation_id', 'is', null)
+
+        if (acceptedMatchRequestsError) {
+          console.error('Error loading accepted match requests for footer badge:', acceptedMatchRequestsError)
+          return
+        }
+
+        const excludedConversationIds = new Set(
+          ((acceptedMatchRequests || []) as Array<{ conversation_id?: string | null }>)
+            .map((row) => row.conversation_id)
+            .filter((id): id is string => Boolean(id))
+        )
+
+        const { data: participantRows, error: participantsError } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        if (participantsError) {
+          console.error('Error loading participant conversations for footer badge:', participantsError)
+        }
+
+        const participantIds = (participantRows || [])
+          .map((row) => (row as { conversation_id?: string | null }).conversation_id)
+          .filter((id): id is string => Boolean(id))
+
+        const participantFilter = participantIds.length > 0
+          ? `,id.in.(${participantIds.join(',')})`
+          : ''
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const conversationsQuery = (supabase.from('public_conversations_with_users' as any) as any)
+        const { data: conversations, error: conversationsError } = await conversationsQuery
+          .select('id')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},group_creator_id.eq.${user.id}${participantFilter}`)
+          .is('deleted_at', null)
+
+        if (conversationsError) {
+          console.error('Error loading conversations for footer unread badge:', conversationsError)
+          return
+        }
+
+        const conversationIds = ((conversations || []) as Array<{ id?: string | null }>)
+          .map((row) => row.id)
+          .filter((id): id is string => Boolean(id))
+
+        if (conversationIds.length === 0) {
+          if (isMounted) setUnreadMessagesCount(0)
+          return
+        }
+
+        const { data: stateRows, error: statesError } = await supabase
+          .from('conversation_user_states')
+          .select('conversation_id, is_archived, deleted_at')
+          .eq('user_id', user.id)
+          .in('conversation_id', conversationIds)
+
+        if (statesError) {
+          console.error('Error loading conversation user states for footer badge:', statesError)
+        }
+
+        const hiddenConversationIds = new Set(
+          ((stateRows || []) as Array<{
+            conversation_id?: string | null
+            is_archived?: boolean | null
+            deleted_at?: string | null
+          }>)
+            .filter((row) => Boolean(row.conversation_id) && (row.is_archived || row.deleted_at))
+            .map((row) => String(row.conversation_id))
+        )
+
+        // Reuse the same RPC as the Messages page so the footer badge matches the list unread indicators.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: summaries, error: summariesError } = await (supabase as any).rpc(
+          'get_conversation_summaries',
+          {
+            conversation_ids: conversationIds,
+            viewer_id: user.id
+          }
+        )
+
+        if (summariesError) {
+          console.error('Error loading conversation summaries for footer unread badge:', summariesError)
+          return
+        }
+
+        const totalUnread = Array.isArray(summaries)
+          ? summaries.reduce((sum, row) => {
+              if (row?.conversation_id && hiddenConversationIds.has(String(row.conversation_id))) {
+                return sum
+              }
+              if (row?.conversation_id && excludedConversationIds.has(String(row.conversation_id))) {
+                return sum
+              }
+              const unread = typeof row?.unread_count === 'number' ? row.unread_count : 0
+              return sum + (unread > 0 ? 1 : 0)
+            }, 0)
+          : 0
+
+        if (isMounted) {
+          setUnreadMessagesCount(totalUnread)
+        }
+      } catch (error) {
+        console.error('Error computing footer unread messages count:', error)
+      }
+    }
+
+    const channel = supabase
+      .channel(`footer-unread-messages-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          loadUnreadMessagesCount()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversation_participants'
+        },
+        () => {
+          loadUnreadMessagesCount()
+        }
+      )
+      .subscribe()
+
+    loadUnreadMessagesCount()
+
+    const requestsChannel = supabase
+      .channel(`footer-pending-requests-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_requests',
+          filter: `to_user_id=eq.${user.id}`
+        },
+        () => {
+          loadUnreadMessagesCount()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_requests',
+          filter: `from_user_id=eq.${user.id}`
+        },
+        () => {
+          loadUnreadMessagesCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+      supabase.removeChannel(requestsChannel)
+    }
+  }, [user?.id])
+
+  const formattedUnreadMessagesCount =
+    unreadMessagesCount > 99 ? '+99' : String(unreadMessagesCount)
 
   const navItems = [
     { path: '/home', icon: Home, label: t('nav.home') },
@@ -41,7 +235,14 @@ const Footer = () => {
                 <Icon size={28} strokeWidth={2} />
               </div>
             ) : (
-              <Icon size={24} strokeWidth={1.5} />
+              <div className="footer-icon-wrapper">
+                <Icon size={24} strokeWidth={1.5} />
+                {item.path === '/messages' && unreadMessagesCount > 0 && (
+                  <span className="footer-badge">
+                    {formattedUnreadMessagesCount}
+                  </span>
+                )}
+              </div>
             )}
           </button>
         )
@@ -51,4 +252,3 @@ const Footer = () => {
 }
 
 export default Footer
-

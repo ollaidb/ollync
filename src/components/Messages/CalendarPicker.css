@@ -30,6 +30,32 @@
   height: 16px;
 }
 
+@media (max-width: 768px) {
+  .calendar-picker {
+    max-width: 100%;
+    padding: 4px;
+  }
+
+  .calendar-header {
+    margin-bottom: 4px;
+  }
+
+  .calendar-month-title {
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .calendar-weekday {
+    font-size: 9px;
+    padding: 3px 0;
+  }
+
+  .calendar-day {
+    font-size: 9px;
+    min-height: 22px;
+  }
+}
+
 .calendar-nav-btn:hover {
   background-color: var(--muted);
 }

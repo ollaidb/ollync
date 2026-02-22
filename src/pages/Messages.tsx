@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, useParams, useLocation } from 'react-rout
 import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import Logo from '../components/Logo'
@@ -86,6 +87,8 @@ interface MatchRequest {
   updated_at?: string | null
   accepted_at?: string | null
   conversation_id?: string | null
+  opened_by_sender_at?: string | null
+  opened_by_recipient_at?: string | null
   other_user?: {
     id: string
     username?: string | null
@@ -151,6 +154,7 @@ interface Message {
   rate_data?: Record<string, unknown> | null
   calendar_request_data?: Record<string, unknown> | null
   shared_post_id?: string | null
+  shared_contract_id?: string | null
   shared_profile_id?: string | null
   is_deleted?: boolean | null
   deleted_for_user_id?: string | null
@@ -173,10 +177,12 @@ const Messages = () => {
   const postId = searchParams.get('post')
   const openAppointment = searchParams.get('openAppointment') === '1'
   const { user } = useAuth()
+  const { counts: unreadCommunicationCounts, markTypesAsRead } = useUnreadCommunicationCounts()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
   const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [selectedAppointmentPreview, setSelectedAppointmentPreview] = useState<Appointment | null>(null)
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -244,6 +250,29 @@ const Messages = () => {
       setActiveFilter(filterParam as FilterType)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!user) return
+
+    if (activeFilter === 'all') {
+      markTypesAsRead(['message'])
+      return
+    }
+
+    if (activeFilter === 'matches') {
+      markTypesAsRead(['match'])
+      return
+    }
+
+    if (activeFilter === 'match_requests') {
+      markTypesAsRead(['request'])
+      return
+    }
+
+    if (activeFilter === 'appointments') {
+      markTypesAsRead(['appointment'])
+    }
+  }, [activeFilter, markTypesAsRead, user])
 
   useEffect(() => {
     if (!headerRef.current || !containerRef.current) return
@@ -422,6 +451,8 @@ const Messages = () => {
         return `Rendez-vous ${directionLabel}`
       case 'post_share':
         return `Annonce ${directionLabel}`
+      case 'contract_share':
+        return `Contrat ${directionLabel}`
       default: {
         const text = (lastMessage.content || '').trim()
         if (!text || text === '0') return ''
@@ -1067,6 +1098,8 @@ const Messages = () => {
         updated_at?: string | null
         accepted_at?: string | null
         conversation_id?: string | null
+        opened_by_sender_at?: string | null
+        opened_by_recipient_at?: string | null
       }) => {
         const otherUserId = req.from_user_id === user.id ? req.to_user_id : req.from_user_id
         const otherUser = usersMap.get(otherUserId) || null
@@ -1097,6 +1130,8 @@ const Messages = () => {
           updated_at: req.updated_at,
           accepted_at: req.accepted_at,
           conversation_id: req.conversation_id,
+          opened_by_sender_at: req.opened_by_sender_at || null,
+          opened_by_recipient_at: req.opened_by_recipient_at || null,
           other_user: otherUser,
           related_post: relatedPost,
           request_type: requestType
@@ -1108,6 +1143,11 @@ const Messages = () => {
       const uniqueRequests = new Map<string, MatchRequest>()
       
       requestsWithData.forEach((request) => {
+        if (request.status === 'accepted') {
+          uniqueRequests.set(`accepted_${request.id}`, request)
+          return
+        }
+
         // Clé unique : annonce + utilisateur (pour les demandes envoyées) ou annonce + destinataire (pour les demandes reçues)
         const otherUserKey = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
         const key = request.related_post_id
@@ -1141,11 +1181,11 @@ const Messages = () => {
   }, [user])
 
   useEffect(() => {
-    if (!user || !isConversationView) return
+    if (!user) return
     loadMatchRequests().then((requests) => {
       setMatchRequests(requests)
     })
-  }, [user, isConversationView, loadMatchRequests])
+  }, [user, loadMatchRequests])
 
   const loadAppointments = useCallback(async () => {
     if (!user) return []
@@ -1294,6 +1334,13 @@ const Messages = () => {
       return []
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    loadAppointments().then((items) => {
+      setAppointments(items)
+    })
+  }, [user, loadAppointments])
 
   const loadSelectableUsers = useCallback(async () => {
     if (!user) return []
@@ -1922,6 +1969,7 @@ const Messages = () => {
       forwardPayload.rate_data = msg.rate_data || null
       forwardPayload.calendar_request_data = msg.calendar_request_data || null
       forwardPayload.shared_post_id = msg.shared_post_id || null
+      forwardPayload.shared_contract_id = msg.shared_contract_id || null
       forwardPayload.shared_profile_id = msg.shared_profile_id || null
     }
 
@@ -2022,6 +2070,53 @@ const Messages = () => {
     }
     return true
   })
+
+  const sentUnopenedRequestsCount = matchRequests.reduce((count, request) => {
+    if (request.request_type !== 'sent') return count
+    if (request.status !== 'pending') return count
+    if (request.opened_by_sender_at) return count
+    return count + 1
+  }, 0)
+
+  const unseenAcceptedRequestsCount = matchRequests.reduce((count, request) => {
+    if (request.status !== 'accepted') return count
+    const seenByCurrentUser =
+      request.request_type === 'sent' ? Boolean(request.opened_by_sender_at) : Boolean(request.opened_by_recipient_at)
+    return count + (seenByCurrentUser ? 0 : 1)
+  }, 0)
+
+  const markRequestAsOpenedByCurrentUser = useCallback(async (request: MatchRequest) => {
+    if (!user) return null
+
+    const isSender = request.from_user_id === user.id
+    const field = isSender ? 'opened_by_sender_at' : 'opened_by_recipient_at'
+    const alreadyOpened = isSender ? request.opened_by_sender_at : request.opened_by_recipient_at
+    if (alreadyOpened) return alreadyOpened
+
+    const openedAt = new Date().toISOString()
+    const { error } = await supabase
+      .from('match_requests')
+      .update({ [field]: openedAt } as never)
+      .eq('id', request.id)
+
+    if (error) {
+      console.error('Error marking match request as opened:', error)
+      return null
+    }
+
+    setMatchRequests((prev) =>
+      prev.map((item) =>
+        item.id === request.id
+          ? {
+              ...item,
+              [field]: openedAt
+            }
+          : item
+      )
+    )
+
+    return openedAt
+  }, [user])
 
   if (!user) {
     return (
@@ -2145,22 +2240,30 @@ const Messages = () => {
       : 'date inconnue'
     const canCopyMessage = !!activeMessage?.content
     const currentConversationId = selectedConversation?.id || conversationId
-    const acceptedMatchForConversation = matchRequests.find((request) => {
-      if (request.status !== 'accepted') return false
-      if (request.conversation_id && currentConversationId) {
-        return request.conversation_id === currentConversationId
-      }
-      if (!selectedConversation?.post_id || !request.related_post_id) return false
-      if (request.related_post_id !== selectedConversation.post_id) return false
-      if (!user || !otherUserId) return false
-      return (
-        (request.from_user_id === user.id && request.to_user_id === otherUserId) ||
-        (request.to_user_id === user.id && request.from_user_id === otherUserId)
-      )
-    })
+    const acceptedMatchesForConversation = matchRequests
+      .filter((request) => {
+        if (request.status !== 'accepted') return false
+        if (request.conversation_id && currentConversationId) {
+          return request.conversation_id === currentConversationId
+        }
+        if (!selectedConversation?.post_id || !request.related_post_id) return false
+        if (request.related_post_id !== selectedConversation.post_id) return false
+        if (!user || !otherUserId) return false
+        return (
+          (request.from_user_id === user.id && request.to_user_id === otherUserId) ||
+          (request.to_user_id === user.id && request.from_user_id === otherUserId)
+        )
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.accepted_at || a.created_at).getTime()
+        const bTime = new Date(b.accepted_at || b.created_at).getTime()
+        return aTime - bTime
+      })
     const messagesForDisplay = [...messages]
 
-    if (acceptedMatchForConversation?.related_post_id) {
+    acceptedMatchesForConversation.forEach((acceptedMatchForConversation) => {
+      if (!acceptedMatchForConversation.related_post_id) return
+
       const systemMessageId = `match-accepted-${acceptedMatchForConversation.id}`
       const alreadyExists = messagesForDisplay.some((msg) => msg.id === systemMessageId)
 
@@ -2187,7 +2290,7 @@ const Messages = () => {
           messagesForDisplay.splice(insertAt, 0, acceptedSystemMessage)
         }
       }
-    }
+    })
 
     const groupedMessages = groupMessagesByDate(messagesForDisplay)
     const lastDisplayMessageId = messagesForDisplay[messagesForDisplay.length - 1]?.id
@@ -3422,7 +3525,15 @@ const Messages = () => {
                     {formatDateSeparator(group.messages[0].created_at)}
                   </div>
                   {group.messages.map((msg, msgIndex) => {
-                    if (msg.message_type === 'match_accepted' && acceptedMatchForConversation?.related_post_id) {
+                    const acceptedMatchId =
+                      msg.message_type === 'match_accepted' && msg.id.startsWith('match-accepted-')
+                        ? msg.id.replace('match-accepted-', '')
+                        : null
+                    const acceptedMatchForMessage = acceptedMatchId
+                      ? acceptedMatchesForConversation.find((request) => request.id === acceptedMatchId)
+                      : null
+
+                    if (msg.message_type === 'match_accepted' && acceptedMatchForMessage?.related_post_id) {
                       const isLastMessage = msg.id === lastDisplayMessageId
 
                       return (
@@ -3433,9 +3544,9 @@ const Messages = () => {
                               <button
                                 type="button"
                                 className="conversation-match-link-inline"
-                                onClick={() => navigate(`/post/${acceptedMatchForConversation.related_post_id}`)}
+                                onClick={() => navigate(`/post/${acceptedMatchForMessage.related_post_id}`)}
                               >
-                                {acceptedMatchForConversation.related_post?.title || 'Voir l\'annonce'}
+                                {acceptedMatchForMessage.related_post?.title || 'Voir l\'annonce'}
                               </button>
                             </div>
                           </div>
@@ -3729,18 +3840,33 @@ const Messages = () => {
             onClick={() => setActiveFilter('all')}
           >
             Tous
+            {unreadCommunicationCounts.message > 0 && (
+              <span className="messages-filter-badge">
+                {unreadCommunicationCounts.message > 99 ? '99+' : unreadCommunicationCounts.message}
+              </span>
+            )}
           </button>
           <button
             className={`messages-filter-btn ${activeFilter === 'matches' ? 'active' : ''}`}
             onClick={() => setActiveFilter('matches')}
           >
             Matchs
+            {unseenAcceptedRequestsCount > 0 && (
+              <span className="messages-filter-badge">
+                {unseenAcceptedRequestsCount > 99 ? '99+' : unseenAcceptedRequestsCount}
+              </span>
+            )}
           </button>
           <button
             className={`messages-filter-btn ${activeFilter === 'match_requests' ? 'active' : ''}`}
             onClick={() => setActiveFilter('match_requests')}
           >
             Demandes
+            {sentUnopenedRequestsCount > 0 && (
+              <span className="messages-filter-badge">
+                {sentUnopenedRequestsCount > 99 ? '99+' : sentUnopenedRequestsCount}
+              </span>
+            )}
           </button>
           <button
             className={`messages-filter-btn ${activeFilter === 'groups' ? 'active' : ''}`}
@@ -3755,6 +3881,11 @@ const Messages = () => {
           >
             <Calendar size={16} />
             Rendez-vous
+            {appointments.length > 0 && (
+              <span className="messages-filter-badge">
+                {appointments.length > 99 ? '99+' : appointments.length}
+              </span>
+            )}
           </button>
           <button
             className={`messages-filter-btn ${activeFilter === 'archived' ? 'active' : ''}`}
@@ -3795,7 +3926,20 @@ const Messages = () => {
                 <div
                   key={request.id}
                   className="conversation-item"
-                  onClick={() => setSelectedMatchRequest(request)}
+                  onClick={async () => {
+                    const openedAt = await markRequestAsOpenedByCurrentUser(request)
+                    if (openedAt) {
+                      const isSender = user ? request.from_user_id === user.id : false
+                      setSelectedMatchRequest({
+                        ...request,
+                        ...(isSender
+                          ? { opened_by_sender_at: openedAt }
+                          : { opened_by_recipient_at: openedAt })
+                      })
+                      return
+                    }
+                    setSelectedMatchRequest(request)
+                  }}
                 >
                   <div className="conversation-avatar-wrapper">
                     <img
@@ -3867,6 +4011,7 @@ const Messages = () => {
                   onClick={async (e) => {
                     e.preventDefault()
                     e.stopPropagation()
+                    await markRequestAsOpenedByCurrentUser(request)
                     
                     // Pour les match_requests acceptées, créer ou ouvrir la conversation
                     if (!user) return
@@ -3958,7 +4103,7 @@ const Messages = () => {
                 <div
                   key={appointment.id}
                   className="conversation-item appointment-item"
-                  onClick={() => navigate(`/messages/${appointment.conversation_id}`)}
+                  onClick={() => setSelectedAppointmentPreview(appointment)}
                 >
                   <div className="conversation-avatar-wrapper">
                     <img
@@ -4294,6 +4439,56 @@ const Messages = () => {
             setSelectedMatchRequest(null)
           }}
         />
+      )}
+      {selectedAppointmentPreview && (
+        <div
+          className="conversation-modal-overlay"
+          onClick={() => setSelectedAppointmentPreview(null)}
+        >
+          <div
+            className="conversation-modal-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="conversation-modal-header">
+              <h2>Rendez-vous</h2>
+              <button
+                className="conversation-modal-close"
+                onClick={() => setSelectedAppointmentPreview(null)}
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+            <div className="conversation-modal-body">
+              <div className="messages-appointment-preview-card">
+                <div className="messages-appointment-preview-title-row">
+                  <Calendar size={18} />
+                  <h3>{selectedAppointmentPreview.title || 'Rendez-vous'}</h3>
+                </div>
+                <p className="messages-appointment-preview-date">
+                  {formatAppointmentDate(selectedAppointmentPreview.appointment_datetime)}
+                </p>
+                <p className="messages-appointment-preview-user">
+                  {selectedAppointmentPreview.other_user?.full_name || selectedAppointmentPreview.other_user?.username || 'Utilisateur'}
+                </p>
+              </div>
+              <div className="conversation-modal-actions messages-appointment-preview-actions">
+                <button
+                  className="conversation-submit-btn messages-appointment-preview-btn"
+                  onClick={() => {
+                    const conversationId = selectedAppointmentPreview.conversation_id
+                    setSelectedAppointmentPreview(null)
+                    if (conversationId) {
+                      navigate(`/messages/${conversationId}`)
+                    }
+                  }}
+                >
+                  Ouvrir la conversation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       <Footer />
     </div>

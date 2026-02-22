@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { RefreshCw, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
 import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import { useAuth } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabaseClient'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import type { MappedPost } from '../utils/postMapper'
 import { PAYMENT_OPTIONS_CONFIG } from '../utils/paymentOptions'
@@ -14,6 +15,7 @@ type Post = MappedPost
 
 const RecentPosts = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,6 +30,7 @@ const RecentPosts = () => {
   const [pendingListingTypeFilter, setPendingListingTypeFilter] = useState<'all' | 'offer' | 'request'>('all')
   const [pendingPaymentTypeFilter, setPendingPaymentTypeFilter] = useState<string>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -60,6 +63,59 @@ const RecentPosts = () => {
 
   useEffect(() => {
     fetchPosts()
+  }, [])
+
+  useEffect(() => {
+    const fetchLikedPostIds = async () => {
+      if (!user?.id || posts.length === 0) {
+        setLikedPostIds(new Set())
+        return
+      }
+
+      try {
+        const postIds = posts.map((post) => post.id)
+        const { data, error } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds)
+
+        if (error) {
+          console.error('Error fetching likes for recent posts:', error)
+          setLikedPostIds(new Set())
+          return
+        }
+
+        const likeRows = (data || []) as Array<{ post_id: string | null }>
+        setLikedPostIds(new Set(likeRows.map((row) => row.post_id).filter((id): id is string => Boolean(id))))
+      } catch (error) {
+        console.error('Error fetching likes for recent posts:', error)
+        setLikedPostIds(new Set())
+      }
+    }
+
+    fetchLikedPostIds()
+  }, [user?.id, posts])
+
+  useEffect(() => {
+    const handleLikeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ postId?: string; liked?: boolean }>).detail
+      const postId = detail?.postId
+      if (!postId) return
+
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (detail.liked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
+    }
+
+    window.addEventListener('likeChanged', handleLikeChange)
+    return () => window.removeEventListener('likeChanged', handleLikeChange)
   }, [])
 
   const filteredPosts = useMemo(() => {
@@ -107,7 +163,9 @@ const RecentPosts = () => {
   }, [posts, searchQuery, dateFilter, sortOrder, listingTypeFilter, paymentTypeFilter, user])
 
   const handlePostClick = (post: Post) => {
-    navigate(`/post/${post.id}`)
+    navigate(`/post/${post.id}`, {
+      state: { originPath: `${location.pathname}${location.search}` }
+    })
   }
 
   const handleBack = () => {
@@ -122,6 +180,60 @@ const RecentPosts = () => {
     e.stopPropagation()
     if (userId) {
       navigate(`/profile/public/${userId}`)
+    }
+  }
+
+  const handleLikeClick = async (e: React.MouseEvent, postId: string) => {
+    e.stopPropagation()
+
+    if (!user?.id) {
+      navigate('/auth/login')
+      return
+    }
+
+    const currentlyLiked = likedPostIds.has(postId)
+
+    setLikedPostIds((prev) => {
+      const next = new Set(prev)
+      if (currentlyLiked) {
+        next.delete(postId)
+      } else {
+        next.add(postId)
+      }
+      return next
+    })
+
+    try {
+      if (currentlyLiked) {
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId)
+        if (error) throw error
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('likes') as any)
+          .insert({ user_id: user.id, post_id: postId })
+        if (error) throw error
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('likeChanged', {
+          detail: { postId, liked: !currentlyLiked }
+        })
+      )
+    } catch (error) {
+      console.error('Error toggling like in recent posts:', error)
+      setLikedPostIds((prev) => {
+        const next = new Set(prev)
+        if (currentlyLiked) {
+          next.add(postId)
+        } else {
+          next.delete(postId)
+        }
+        return next
+      })
     }
   }
 
@@ -226,8 +338,14 @@ const RecentPosts = () => {
                       </div>
                     )}
 
-                    <div className="swipe-card-like">
-                      <Heart size={16} fill="currentColor" />
+                    <div
+                      className={`swipe-card-like ${likedPostIds.has(post.id) ? 'liked' : ''}`}
+                      onClick={(e) => handleLikeClick(e, post.id)}
+                      role="button"
+                      aria-label={likedPostIds.has(post.id) ? 'Retirer le like' : 'Ajouter un like'}
+                      tabIndex={0}
+                    >
+                      <Heart size={16} fill={likedPostIds.has(post.id) ? 'currentColor' : 'none'} />
                     </div>
 
                     <div className="swipe-card-overlay">

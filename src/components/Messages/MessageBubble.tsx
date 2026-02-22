@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react'
 import { File, MapPin, DollarSign, Calendar, Share2, X, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import CalendarPicker from './CalendarPicker'
 import Logo from '../Logo'
 import './MessageBubble.css'
+
+type SharedContractDetails = {
+  id: string
+  post_title?: string | null
+  status?: string | null
+  contract_content?: string | null
+}
+
+const appointmentIdByMessageCache = new Map<string, string | null>()
+const sharedContractCache = new Map<string, SharedContractDetails>()
 
 interface MessageBubbleProps {
   message: {
@@ -23,6 +35,7 @@ interface MessageBubbleProps {
     rate_data?: Record<string, unknown> | null
     calendar_request_data?: Record<string, unknown> | null
     shared_post_id?: string | null
+    shared_contract_id?: string | null
     shared_profile_id?: string | null
     sender?: {
       username?: string | null
@@ -42,6 +55,9 @@ interface MessageBubbleProps {
 const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }: MessageBubbleProps) => {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false)
+  const [showContractModal, setShowContractModal] = useState(false)
+  const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
+  const [loadingSharedContract, setLoadingSharedContract] = useState(false)
   const [sharedPost, setSharedPost] = useState<{
     title?: string
     user?: {
@@ -51,6 +67,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
       avatar_url?: string | null
     } | null
   } | null>(null)
+  const [sharedContract, setSharedContract] = useState<SharedContractDetails | null>(null)
   const [appointmentId, setAppointmentId] = useState<string | null>(null)
   const [editingAppointment, setEditingAppointment] = useState(false)
   const [newAppointmentDate, setNewAppointmentDate] = useState<string | null>(null)
@@ -59,19 +76,75 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  const fetchSharedContractDetails = async (contractId: string) => {
+    const cached = sharedContractCache.get(contractId)
+    if (cached) {
+      setSharedContract(cached)
+      return cached
+    }
+
+    try {
+      setLoadingSharedContract(true)
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('id, status, contract_content, post:posts(title)')
+        .eq('id', contractId)
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (!data) return null
+
+      const row = data as {
+        id: string
+        status?: string | null
+        contract_content?: string | null
+        post?: { title?: string | null } | null
+      }
+
+      const next = {
+        id: row.id,
+        status: row.status || null,
+        post_title: row.post?.title || null,
+        contract_content: row.contract_content || null
+      }
+      sharedContractCache.set(contractId, next)
+      setSharedContract(next)
+      return next
+    } catch (error) {
+      console.error('Error fetching shared contract:', error)
+      return null
+    } finally {
+      setLoadingSharedContract(false)
+    }
+  }
+
   // Charger l'appointment_id si c'est un rendez-vous
   useEffect(() => {
     if (message.message_type === 'calendar_request' && message.id) {
       const fetchAppointment = async () => {
+        const cachedAppointmentId = appointmentIdByMessageCache.get(message.id)
+        if (cachedAppointmentId !== undefined) {
+          setAppointmentId(cachedAppointmentId)
+          return
+        }
+
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('appointments')
             .select('id')
             .eq('message_id', message.id)
-            .single()
+            .maybeSingle()
+
+          if (error) throw error
           
           if (data) {
-            setAppointmentId((data as { id: string }).id)
+            const nextId = (data as { id: string }).id
+            appointmentIdByMessageCache.set(message.id, nextId)
+            setAppointmentId(nextId)
+          } else {
+            appointmentIdByMessageCache.set(message.id, null)
+            setAppointmentId(null)
           }
         } catch (error) {
           console.error('Error fetching appointment:', error)
@@ -122,6 +195,17 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
       fetchPost()
     }
   }, [message.message_type, message.shared_post_id])
+
+  useEffect(() => {
+    if (message.message_type !== 'contract_share' || !message.shared_contract_id) return
+
+    const fetchContract = async () => {
+      const contractId = String(message.shared_contract_id)
+      await fetchSharedContractDetails(contractId)
+    }
+
+    void fetchContract()
+  }, [message.message_type, message.shared_contract_id])
 
   const handleUpdateAppointment = async () => {
     if (!newAppointmentDate || !newAppointmentTime || !appointmentId || !user) return
@@ -228,6 +312,65 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
         </a>
       )
     })
+  }
+
+  const contractTarget =
+    message.message_type === 'contract_share' && message.shared_contract_id
+      ? (isOwn
+          ? `/profile/contracts?contract=${message.shared_contract_id}`
+          : `/profile/contracts?contract=${message.shared_contract_id}&acceptContract=1`)
+      : null
+
+  const handleDownloadSharedContract = async () => {
+    const contractTitle = sharedContract?.post_title || 'Contrat'
+    let content = sharedContract?.contract_content || null
+    if (!content && message.shared_contract_id) {
+      const refreshed = await fetchSharedContractDetails(String(message.shared_contract_id))
+      content = refreshed?.contract_content || null
+    }
+    content = content || message.content || 'Contrat partagé'
+    try {
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+      })
+
+      const marginX = 14
+      const marginTop = 16
+      const lineHeight = 6
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const maxTextWidth = pageWidth - marginX * 2
+      const maxY = pageHeight - 16
+
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(13)
+      const safeTitle = contractTitle.trim() || 'Contrat'
+      pdf.text(safeTitle, marginX, marginTop)
+
+      let cursorY = marginTop + 8
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(10)
+
+      const paragraphs = content.split('\n')
+      for (const paragraph of paragraphs) {
+        const lines = pdf.splitTextToSize(paragraph || ' ', maxTextWidth) as string[]
+        for (const line of lines) {
+          if (cursorY > maxY) {
+            pdf.addPage()
+            cursorY = marginTop
+          }
+          pdf.text(line, marginX, cursorY)
+          cursorY += lineHeight
+        }
+      }
+
+      pdf.save(`${safeTitle.replace(/[^\w\s-]/g, '').trim() || 'contrat'}.pdf`)
+    } catch (error) {
+      console.error('Error generating contract PDF from message:', error)
+      alert('Impossible de générer le PDF pour ce contrat.')
+    }
   }
 
   const renderMessageContent = () => {
@@ -350,7 +493,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
                 )}
               </div>
             </div>
-            {showAppointmentModal && (
+            {showAppointmentModal && canUsePortal && createPortal((
               <div className="appointment-overlay" onClick={() => {
                 setShowAppointmentModal(false)
                 setEditingAppointment(false)
@@ -471,7 +614,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
                   </div>
                 </div>
               </div>
-            )}
+            ), document.body)}
           </>
         )
       case 'post_share':
@@ -495,6 +638,30 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             </div>
           </div>
         )
+      case 'contract_share':
+        return (
+          <div
+            className="message-contract-share"
+            onClick={() => {
+              setShowContractDocumentPreview(true)
+              setShowContractModal(true)
+              if (message.shared_contract_id && !sharedContract?.contract_content) {
+                void fetchSharedContractDetails(String(message.shared_contract_id))
+              }
+            }}
+          >
+            <div className="message-contract-share-icon">
+              <File size={18} />
+            </div>
+            <div className="message-contract-share-content">
+              <h4 className="message-contract-share-title">{isOwn ? 'Contrat envoyé' : 'Contrat reçu'}</h4>
+              <p className="message-contract-share-subtitle">
+                {sharedContract?.post_title || message.content || 'Contrat partagé'}
+              </p>
+              <span className="message-contract-share-link">Appuyer pour ouvrir</span>
+            </div>
+          </div>
+        )
       case 'profile_share':
         return (
           <div className="message-share">
@@ -514,6 +681,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
 
   // Pour les images, vidéos et documents, pas de bulle de message
   const isStandaloneMedia = message.message_type === 'photo' || message.message_type === 'video' || message.message_type === 'document'
+  const canUsePortal = typeof document !== 'undefined'
 
   return (
     <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
@@ -554,7 +722,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
       </div>
       
       {/* Modal pour afficher l'image en grand */}
-      {showImageModal && message.file_url && message.message_type === 'photo' && (
+      {showImageModal && message.file_url && message.message_type === 'photo' && canUsePortal && createPortal((
         <div className="image-modal-overlay" onClick={() => setShowImageModal(false)}>
           <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
             <button 
@@ -570,10 +738,90 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             />
           </div>
         </div>
-      )}
+      ), document.body)}
+
+      {showContractModal && message.message_type === 'contract_share' && canUsePortal && createPortal((
+        <div
+          className="appointment-overlay"
+          onClick={() => {
+            setShowContractModal(false)
+            setShowContractDocumentPreview(false)
+          }}
+        >
+          <div className="contract-inline-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="appointment-inline-header">
+              <h4>{sharedContract?.post_title || 'Contrat'}</h4>
+              <button
+                className="appointment-inline-close"
+                onClick={() => {
+                  setShowContractModal(false)
+                  setShowContractDocumentPreview(false)
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="contract-inline-body">
+              <div className="contract-inline-document-card">
+                <File size={18} />
+                <div className="contract-inline-document-meta">
+                  <strong>{sharedContract?.post_title || 'Contrat partagé'}</strong>
+                  <span>{sharedContract?.status || 'generated'}</span>
+                </div>
+              </div>
+
+              {showContractDocumentPreview && (
+                <div className="contract-inline-preview">
+                  {loadingSharedContract
+                    ? 'Chargement du document...'
+                    : (sharedContract?.contract_content || 'Le document sera visible après chargement du contrat.')}
+                </div>
+              )}
+
+              <div className="contract-inline-actions">
+                <button
+                  type="button"
+                  className="contract-inline-btn"
+                  onClick={() => void handleDownloadSharedContract()}
+                >
+                  Télécharger le document
+                </button>
+                <button
+                  type="button"
+                  className="contract-inline-btn"
+                  onClick={() => setShowContractDocumentPreview((prev) => !prev)}
+                >
+                  {showContractDocumentPreview ? 'Fermer le document' : 'Ouvrir le document'}
+                </button>
+                <button
+                  type="button"
+                  className="contract-inline-btn contract-inline-btn-primary"
+                  onClick={() => {
+                    if (!contractTarget) return
+                    setShowContractModal(false)
+                    navigate(contractTarget)
+                  }}
+                >
+                  Modifier le contrat
+                </button>
+                <button
+                  type="button"
+                  className="contract-inline-btn"
+                  onClick={() => {
+                    setShowContractModal(false)
+                    setShowContractDocumentPreview(false)
+                  }}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
     </div>
   )
 }
 
 export default MessageBubble
-

@@ -17,7 +17,19 @@ interface MessageInputProps {
   counterpartyId?: string | null
 }
 
-type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share'
+type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share' | 'contract_share'
+
+interface SelectableContract {
+  id: string
+  item_type: 'contract' | 'draft'
+  status?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  draft_name?: string | null
+  post?: {
+    title?: string | null
+  } | null
+}
 
 const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId }: MessageInputProps) => {
   const navigate = useNavigate()
@@ -26,6 +38,10 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [showOptions, setShowOptions] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [showPostSelector, setShowPostSelector] = useState(false)
+  const [showContractSelector, setShowContractSelector] = useState(false)
+  const [contractsLoading, setContractsLoading] = useState(false)
+  const [contractItems, setContractItems] = useState<SelectableContract[]>([])
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null)
   const [appointmentDate, setAppointmentDate] = useState<string | null>(null)
   const [appointmentTime, setAppointmentTime] = useState('')
   const [appointmentTitle, setAppointmentTitle] = useState('')
@@ -44,7 +60,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
   }, [openCalendarOnMount])
 
-  const sendMessage = async (type: MessageType = 'text', extraData?: Record<string, unknown>) => {
+  const sendMessage = async (type: MessageType | 'contract_share' = 'text', extraData?: Record<string, unknown>) => {
     if (!message.trim() && type === 'text') return
     if (disabled || sending) return
 
@@ -166,6 +182,97 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     messagingConsent.requireConsent(() => {
       void sendMessage(type, extraData)
     })
+  }
+
+  const loadContractsForConversation = async () => {
+    if (!counterpartyId || !senderId) return
+    setContractsLoading(true)
+    try {
+      const [{ data: contractsData, error }, { data: draftsData, error: draftsError }] = await Promise.all([
+        supabase
+        .from('contracts')
+        .select('id, status, created_at, post:posts(title)')
+        .or(
+          `and(creator_id.eq.${senderId},counterparty_id.eq.${counterpartyId}),and(creator_id.eq.${counterpartyId},counterparty_id.eq.${senderId})`
+        )
+        .order('created_at', { ascending: false })
+        .limit(30),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('contract_drafts') as any)
+          .select('id, draft, updated_at')
+          .eq('user_id', senderId)
+          .order('updated_at', { ascending: false })
+          .limit(20)
+      ])
+
+      if (error) throw error
+      if (draftsError) {
+        console.error('Error loading contract drafts for selector:', draftsError)
+      }
+
+      const contractRows = ((contractsData || []) as Array<Omit<SelectableContract, 'item_type'>>).map((item) => ({
+        ...item,
+        item_type: 'contract' as const
+      }))
+
+      const draftRows = (((draftsData || []) as Array<{ id: string; updated_at?: string | null; draft?: Record<string, unknown> | null }>))
+        .map((row) => {
+          const snapshot = (row.draft || {}) as Record<string, unknown>
+          const selectedOption = String(snapshot.selected_option || '')
+          const contextLabel = selectedOption ? selectedOption.replace(':', ' ') : null
+          const contractName = String(snapshot.contract_name || '').trim()
+          return {
+            id: row.id,
+            item_type: 'draft' as const,
+            status: 'draft',
+            created_at: null,
+            updated_at: row.updated_at || null,
+            draft_name: contractName || (contextLabel ? `Brouillon • ${contextLabel}` : 'Brouillon de contrat'),
+            post: null
+          } satisfies SelectableContract
+        })
+
+      const allItems = [...contractRows, ...draftRows].sort((a, b) => {
+        const aTs = +(new Date(a.updated_at || a.created_at || 0))
+        const bTs = +(new Date(b.updated_at || b.created_at || 0))
+        return bTs - aTs
+      })
+
+      const sendableContracts = allItems.filter((item) => item.item_type === 'contract')
+      setContractItems(sendableContracts)
+      setSelectedContractId(sendableContracts[0]?.id || null)
+    } catch (error) {
+      console.error('Error loading contracts for selector:', error)
+      setContractItems([])
+    } finally {
+      setContractsLoading(false)
+    }
+  }
+
+  const handleOpenContractSelector = async () => {
+    if (!counterpartyId) {
+      alert('Impossible de partager un contrat dans cette conversation.')
+      return
+    }
+    setShowOptions(false)
+    setShowContractSelector(true)
+    await loadContractsForConversation()
+  }
+
+  const handleSendContractShare = async () => {
+    if (!selectedContractId || disabled || sending) return
+    const selected = contractItems.find((item) => item.id === selectedContractId)
+    if (!selected) return
+
+    try {
+      sendMessageWithConsent('contract_share', {
+          shared_contract_id: selectedContractId,
+          content: selected?.post?.title ? `Contrat partagé • ${selected.post.title}` : 'Contrat partagé'
+        })
+      setShowContractSelector(false)
+    } catch (error) {
+      console.error('Error sending contract share:', error)
+    }
   }
 
   const performFileUpload = async (file: File, type: 'photo' | 'video' | 'document') => {
@@ -488,12 +595,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           <button
             className="message-option-btn"
             onClick={() => {
-              if (!counterpartyId) {
-                alert('Impossible de créer un contrat pour cet utilisateur.')
-                return
-              }
-              setShowOptions(false)
-              navigate(`/profile/contracts?counterparty=${counterpartyId}`)
+              void handleOpenContractSelector()
             }}
             title="Contrat"
           >
@@ -574,6 +676,87 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           onPostSelect={handlePostSelect}
           onClose={() => setShowPostSelector(false)}
         />
+      )}
+
+      {showContractSelector && (
+        <div className="message-contract-selector-overlay" onClick={() => setShowContractSelector(false)}>
+          <div className="message-contract-selector-content" onClick={(e) => e.stopPropagation()}>
+            <div className="message-contract-selector-header">
+              <h3>Choisir un contrat</h3>
+              <button className="message-contract-selector-close" onClick={() => setShowContractSelector(false)}>
+                ✕
+              </button>
+            </div>
+            <p className="message-contract-selector-hint">
+              Sélectionne un contrat existant pour l’envoyer dans cette conversation.
+            </p>
+            <div className="message-contract-selector-list">
+              {contractsLoading ? (
+                <div className="message-contract-selector-empty">
+                  <Loader className="spinner" size={20} />
+                  <span>Chargement...</span>
+                </div>
+              ) : contractItems.length === 0 ? (
+                <div className="message-contract-selector-empty">
+                  <p>Aucun contrat trouvé avec cet utilisateur.</p>
+                  <button
+                    type="button"
+                    className="message-contract-selector-link-btn"
+                    onClick={() => {
+                      setShowContractSelector(false)
+                      navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
+                    }}
+                  >
+                    Créer / continuer un contrat
+                  </button>
+                </div>
+              ) : (
+                contractItems.map((contract) => (
+                  <button
+                    key={`${contract.item_type}-${contract.id}`}
+                    type="button"
+                    className={`message-contract-selector-item ${selectedContractId === contract.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedContractId(contract.id)}
+                  >
+                    <div className="message-contract-selector-item-title">
+                      {contract.item_type === 'draft'
+                        ? (contract.draft_name || 'Brouillon de contrat')
+                        : (contract.post?.title || 'Contrat')}
+                    </div>
+                    <div className="message-contract-selector-item-meta">
+                      <span>{contract.item_type === 'draft' ? 'brouillon' : (contract.status || 'generated')}</span>
+                      <span>
+                        {(contract.updated_at || contract.created_at)
+                          ? new Date(contract.updated_at || contract.created_at || '').toLocaleDateString('fr-FR')
+                          : ''}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+            <div className="message-contract-selector-actions">
+              <button
+                type="button"
+                className="message-contract-selector-btn secondary"
+                onClick={() => {
+                  setShowContractSelector(false)
+                  navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
+                }}
+              >
+                Ouvrir Contrats
+              </button>
+              <button
+                type="button"
+                className="message-contract-selector-btn primary"
+                onClick={() => void handleSendContractShare()}
+                disabled={!selectedContractId || contractsLoading || sending}
+              >
+                {sending ? 'Envoi...' : 'Envoyer'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )
