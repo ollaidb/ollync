@@ -45,7 +45,9 @@
 
 .message-avatar-spacer {
   width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  margin-bottom: 4px;
 }
 
 .message-bubble-content {
@@ -263,14 +265,23 @@
   overflow-wrap: anywhere;
 }
 
+.message-calendar-duration {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .message-bubble.own .message-calendar-date,
-.message-bubble.own .message-calendar-time {
+.message-bubble.own .message-calendar-time,
+.message-bubble.own .message-calendar-duration {
   color: var(--primary-foreground);
   opacity: 0.9;
 }
 
 .message-bubble.calendar-message .message-calendar-date,
-.message-bubble.calendar-message .message-calendar-time {
+.message-bubble.calendar-message .message-calendar-time,
+.message-bubble.calendar-message .message-calendar-duration {
   color: var(--muted-foreground);
   opacity: 1;
 }
@@ -362,7 +373,7 @@
 .appointment-overlay .appointment-inline-panel {
   position: relative;
   margin: 0;
-  max-width: 280px;
+  max-width: 226px;
   width: 100%;
 }
 
@@ -371,12 +382,12 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 12px;
-  padding: 10px;
+  padding: 7px;
   margin: 0 auto 8px auto;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   transition: all 0.3s ease;
   box-shadow: var(--shadow-lg);
-  max-width: 240px;
+  max-width: 202px;
   width: 100%;
 }
 
@@ -391,14 +402,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
 }
 
 .appointment-inline-header h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--foreground);
 }
@@ -408,7 +419,7 @@
   border: none;
   color: var(--foreground);
   cursor: pointer;
-  padding: 4px;
+  padding: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -425,40 +436,46 @@
 .appointment-inline-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .appointment-inline-selected-date {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px;
+  gap: 3px;
+  padding: 4px 5px;
   background: var(--muted);
   border-radius: 6px;
 }
 
 .appointment-inline-date-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted-foreground);
   font-weight: 500;
 }
 
 .appointment-inline-date-value {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--foreground);
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .appointment-inline-calendar-wrapper {
-  margin: 8px 0;
+  margin: 3px 0 2px;
   display: flex;
   justify-content: center;
 }
 
+.appointment-inline-calendar-wrapper .calendar-picker {
+  max-width: 176px;
+  padding: 2px;
+}
+
 .appointment-inline-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
+  margin-top: 4px;
   flex-direction: column;
 }
 
@@ -466,10 +483,10 @@
 .appointment-inline-cancel-btn,
 .appointment-inline-save-btn,
 .appointment-inline-back-btn {
-  padding: 8px 16px;
+  padding: 6px 7px;
   border-radius: 8px;
   border: none;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -528,21 +545,21 @@
 .appointment-inline-form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 5px;
+  margin-bottom: 6px;
 }
 
 .appointment-inline-form-group label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--foreground);
 }
 
 .appointment-inline-input {
-  padding: 8px 12px;
+  padding: 6px 7px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   background-color: var(--background);
   color: var(--foreground);
 }
@@ -559,13 +576,13 @@
   }
 
   .appointment-overlay .appointment-inline-panel {
-    max-width: min(100%, 420px);
+    max-width: min(100%, 300px);
   }
 
   .appointment-inline-panel {
     max-width: 100%;
-    border-radius: 14px;
-    padding: 12px;
+    border-radius: 12px;
+    padding: 8px;
     margin: 0;
   }
 
@@ -575,18 +592,18 @@
   }
 
   .appointment-inline-header h4 {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.25;
     padding-right: 8px;
     overflow-wrap: anywhere;
   }
 
   .appointment-inline-selected-date {
-    padding: 8px;
+    padding: 5px;
   }
 
   .appointment-inline-date-value {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
@@ -597,8 +614,8 @@
   .appointment-inline-back-btn {
     width: 100%;
     min-width: 0;
-    font-size: 13px;
-    padding: 10px 12px;
+    font-size: 11px;
+    padding: 7px 9px;
   }
 
   .message-calendar,

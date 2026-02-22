@@ -36,6 +36,7 @@ import './App.css'
 
 function AppContent() {
   const location = useLocation()
+  const routeTransitionKey = `${location.pathname}${location.search}`
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
   const isConsentInfoPage =
@@ -69,7 +70,7 @@ function AppContent() {
         </div>
       }
     >
-      <Routes>
+      <Routes key={routeTransitionKey}>
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/home" element={<Home />} />
       <Route path="/feed" element={<Feed />} />
@@ -186,12 +187,20 @@ function AppContent() {
         <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
           {isMobile ? (
             <>
-              <main className="main-content without-header">{routes}</main>
+              <main className="main-content without-header">
+                <div key={routeTransitionKey} className="route-transition-shell">
+                  {routes}
+                </div>
+              </main>
               {showFooter && <Footer />}
             </>
           ) : (
             <WebLayout>
-              <main className="main-content without-header">{routes}</main>
+              <main className="main-content without-header">
+                <div key={routeTransitionKey} className="route-transition-shell">
+                  {routes}
+                </div>
+              </main>
               {showFooter && <Footer />}
             </WebLayout>
           )}

@@ -53,6 +53,7 @@ interface ProfileData {
     facebook?: string
     website?: string
   } | null
+  profile_type?: string[] | string | null
 }
 
 interface Post {
@@ -138,6 +139,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   })
 
   const profileId = userId || user?.id
+  const isOwnerViewingProfile = Boolean(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id)))
   const VENUE_CATEGORY_SLUGS = ['studio-lieu', 'lieu']
   const venueDayLabels: Record<string, string> = {
     lundi: 'Lundi',
@@ -1107,6 +1109,35 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
   const normalizedDisplayCategories = (profile.display_categories || []).map((slug) => String(slug))
+  const parseProfileTypes = (value: unknown) => {
+    if (!value) return [] as string[]
+    if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
+    if (typeof value !== 'string') return [] as string[]
+    const trimmed = value.trim()
+    if (!trimmed) return [] as string[]
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean)
+      }
+    } catch {
+      // fallback below
+    }
+    return trimmed.split('||').map((item) => item.trim()).filter(Boolean)
+  }
+  const normalizedProfileTypes = parseProfileTypes(profile.profile_type)
+  const socialLinksValues = profile.social_links
+    ? Object.values(profile.social_links).filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    : []
+  const profileCompletionChecks = [
+    { key: 'avatar', label: 'Photo de profil', done: Boolean(profile.avatar_url) },
+    { key: 'location', label: 'Ville', done: Boolean(profile.location?.trim()) },
+    { key: 'categories', label: "Catégories d'affichage", done: normalizedDisplayCategories.length > 0 },
+    { key: 'status', label: 'Statut / type de profil', done: normalizedProfileTypes.length > 0 },
+    { key: 'link', label: 'Lien (réseau social ou site)', done: socialLinksValues.length > 0 }
+  ]
+  const profileCompletionDoneCount = profileCompletionChecks.filter((item) => item.done).length
+  const profileCompletionPercent = Math.round((profileCompletionDoneCount / profileCompletionChecks.length) * 100)
   const isVenueProfile = normalizedDisplayCategories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug))
   const isVenueOnlyProfile =
     normalizedDisplayCategories.length > 0 &&
@@ -1262,7 +1293,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         <BackButton className="profile-back-button" />
         <div className="profile-header-spacer"></div>
         <div className="profile-header-actions">
-          {!(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
+          {!isOwnerViewingProfile && (
             <div className="profile-menu-container">
               <button 
                 className="profile-header-action-btn"
@@ -1350,7 +1381,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               </span>
             </div>
           )}
-          {(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id))) && (
+          {isOwnerViewingProfile && (
             <button
               className="profile-edit-text-btn"
               onClick={() => navigate('/profile/edit')}
@@ -1382,6 +1413,28 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           </div>
         </div>
       </div>
+
+      {isOwnerViewingProfile && profileCompletionPercent < 100 && (
+        <button
+          type="button"
+          className="profile-completion-card"
+          aria-label="Progression du profil"
+          onClick={() => navigate('/profile/edit?from=profile-progress')}
+        >
+          <div className="profile-completion-head">
+            <p className="profile-completion-title">
+              Progression du profil <span className="profile-completion-percent">{profileCompletionPercent}%</span>
+            </p>
+          </div>
+
+          <div className="profile-completion-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={profileCompletionPercent}>
+            <div
+              className="profile-completion-fill"
+              style={{ width: `${profileCompletionPercent}%` }}
+            />
+          </div>
+        </button>
+      )}
 
       {/* 3. MENU SECONDAIRE : À propos / Annonce / Avis / Bouton édition */}
       <div className="profile-secondary-menu">

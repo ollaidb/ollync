@@ -42,13 +42,15 @@ interface Step5LocationMediaProps {
   onUpdateFormData: (updates: Partial<FormData>) => void
   currentPostId?: string | null
   validationErrors?: string[]
+  showValidationErrors?: boolean
 }
 
 export const Step5LocationMedia = ({
   formData,
   onUpdateFormData,
   currentPostId,
-  validationErrors = []
+  validationErrors = [],
+  showValidationErrors = false
 }: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
@@ -105,7 +107,8 @@ export const Step5LocationMedia = ({
   const locationValidationError = validationErrors.find(
     (error) => /lieu est obligatoire|adresse est obligatoire/i.test(error)
   )
-  const isLocationFieldInvalid = !!locationValidationError
+  const isLocationFieldInvalid = showValidationErrors && !!locationValidationError
+  const LocationFieldComponent = LocationAutocomplete
 
   const profileLevelOptions = useMemo(() => ([
     'Amateur',
@@ -644,7 +647,7 @@ export const Step5LocationMedia = ({
             isEventInPerson ? (
               <div className="form-group">
                 <label className="form-label">Adresse *</label>
-                <LocationAutocomplete
+                <LocationFieldComponent
                   value={formData.location_address || formData.location || ''}
                   onChange={(value) => {
                     if (!formData.location_address || value !== formData.location_address) {
@@ -673,8 +676,8 @@ export const Step5LocationMedia = ({
       ) : (
         <div className="form-group">
           <label className="form-label">Lieu *</label>
-          <LocationAutocomplete
-            value={formData.location_address || formData.location || ''}
+                <LocationFieldComponent
+                  value={formData.location_address || formData.location || ''}
             onChange={(value) => {
               // Si l'utilisateur tape manuellement, on met à jour juste location
               if (!formData.location_address || value !== formData.location_address) {

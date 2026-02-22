@@ -357,7 +357,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
               className="category-users-button"
               title={t('categories:ui.viewUsers')}
             >
-              <Users size={24} className="category-users-icon" />
+              <Users size={18} className="category-users-icon" />
             </button>
           </div>
         </div>

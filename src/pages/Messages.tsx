@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
 import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
@@ -2071,6 +2071,20 @@ const Messages = () => {
     return true
   })
 
+  const sortedAppointments = useMemo(() => {
+    const now = Date.now()
+    return [...filteredAppointments].sort((a, b) => {
+      const timeA = new Date(a.appointment_datetime).getTime()
+      const timeB = new Date(b.appointment_datetime).getTime()
+      const aPast = timeA < now
+      const bPast = timeB < now
+
+      if (aPast !== bPast) return aPast ? 1 : -1
+      if (!aPast) return timeA - timeB
+      return timeB - timeA
+    })
+  }, [filteredAppointments])
+
   const sentUnopenedRequestsCount = matchRequests.reduce((count, request) => {
     if (request.request_type !== 'sent') return count
     if (request.status !== 'pending') return count
@@ -4091,7 +4105,7 @@ const Messages = () => {
             </div>
           )
         ) : activeFilter === 'appointments' ? (
-          filteredAppointments.length === 0 ? (
+          sortedAppointments.length === 0 ? (
             <EmptyState
               type="messages"
               customTitle="Aucun rendez-vous"
@@ -4099,10 +4113,12 @@ const Messages = () => {
             />
           ) : (
             <div className="conversations-list">
-              {filteredAppointments.map((appointment) => (
+              {sortedAppointments.map((appointment) => {
+                const isPastAppointment = new Date(appointment.appointment_datetime).getTime() < Date.now()
+                return (
                 <div
                   key={appointment.id}
-                  className="conversation-item appointment-item"
+                  className={`conversation-item appointment-item ${isPastAppointment ? 'appointment-item--past' : 'appointment-item--upcoming'}`}
                   onClick={() => setSelectedAppointmentPreview(appointment)}
                 >
                   <div className="conversation-avatar-wrapper">
@@ -4127,7 +4143,7 @@ const Messages = () => {
                     </p>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )
         ) : filteredConversations.length === 0 ? (

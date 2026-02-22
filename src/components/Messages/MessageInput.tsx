@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText } from 'lucide-react'
+import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import ConsentModal from '../ConsentModal'
@@ -44,6 +44,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null)
   const [appointmentDate, setAppointmentDate] = useState<string | null>(null)
   const [appointmentTime, setAppointmentTime] = useState('')
+  const [appointmentDurationText, setAppointmentDurationText] = useState('01:00')
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
   const mediaInputRef = useRef<HTMLInputElement>(null)
@@ -168,6 +169,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       setShowCalendarModal(false)
       setAppointmentDate(null)
       setAppointmentTime('')
+      setAppointmentDurationText('01:00')
       setAppointmentTitle('')
       onMessageSent()
     } catch (error) {
@@ -414,6 +416,57 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     setCalendarStep('time')
   }
 
+  const normalizeTime = (value: string) => {
+    const cleaned = value.replace(/[^\d:]/g, '')
+    const parts = cleaned.split(':')
+    if (parts.length === 1) {
+      const raw = parts[0]
+      if (raw.length <= 2) return raw
+      return `${raw.slice(0, 2)}:${raw.slice(2, 4)}`
+    }
+    const [h, m] = parts
+    return `${h.slice(0, 2)}:${m.slice(0, 2)}`
+  }
+
+  const formatTime = (value: string) => {
+    const [hRaw, mRaw] = value.split(':')
+    const h = Math.min(Math.max(parseInt(hRaw || '0', 10), 0), 23)
+    const m = Math.min(Math.max(parseInt(mRaw || '0', 10), 0), 59)
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const minutesToTime = (minutes: number) => {
+    const safe = Math.max(30, Number.isFinite(minutes) ? Math.floor(minutes) : 60)
+    const h = Math.floor(safe / 60)
+    const m = safe % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  const durationTextToMinutes = (value: string) => {
+    const formatted = formatTime(value || '01:00')
+    const [hRaw, mRaw] = formatted.split(':')
+    const h = parseInt(hRaw || '0', 10)
+    const m = parseInt(mRaw || '0', 10)
+    return Math.max(30, h * 60 + m)
+  }
+
+  const stepAppointmentTime = (deltaMinutes: number) => {
+    const base = appointmentTime && appointmentTime.trim().length > 0 ? appointmentTime : '01:00'
+    const [hRaw, mRaw] = formatTime(base).split(':')
+    const h = parseInt(hRaw, 10)
+    const m = parseInt(mRaw, 10)
+    const total = h * 60 + m + deltaMinutes
+    const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
+    const nextH = Math.floor(normalized / 60)
+    const nextM = normalized % 60
+    setAppointmentTime(`${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}`)
+  }
+
+  const stepAppointmentDuration = (deltaMinutes: number) => {
+    const next = Math.max(30, durationTextToMinutes(appointmentDurationText || '01:00') + deltaMinutes)
+    setAppointmentDurationText(minutesToTime(next))
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -438,17 +491,21 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       return
     }
 
+    const durationMinutes = durationTextToMinutes(appointmentDurationText || '01:00')
+
     await sendMessageWithConsent('calendar_request', {
       calendar_request_data: {
         title: appointmentTitle.trim(),
         appointment_datetime: appointmentDateTime,
-        event_name: appointmentTitle.trim()
+        event_name: appointmentTitle.trim(),
+        duration_minutes: durationMinutes
       }
     })
     
     // Réinitialiser le formulaire (sera fait dans sendMessage après succès)
     setAppointmentDate(null)
     setAppointmentTime('')
+    setAppointmentDurationText('01:00')
     setAppointmentTitle('')
     setCalendarStep('date')
   }
@@ -457,6 +514,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     setShowCalendarModal(false)
     setAppointmentDate(null)
     setAppointmentTime('')
+    setAppointmentDurationText('01:00')
     setAppointmentTitle('')
     setCalendarStep('date')
   }
@@ -520,12 +578,69 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
                 </div>
                 <div className="appointment-inline-form-group">
                   <label>Heure *</label>
-                  <input
-                    type="time"
-                    value={appointmentTime}
-                    onChange={(e) => setAppointmentTime(e.target.value)}
-                    className="appointment-inline-input"
-                  />
+                  <div className="appointment-inline-time-row">
+                    <input
+                      type="text"
+                      value={appointmentTime || '01:00'}
+                      onChange={(e) => setAppointmentTime(normalizeTime(e.target.value))}
+                      onBlur={() => setAppointmentTime(formatTime(appointmentTime || '01:00'))}
+                      placeholder="HH:MM"
+                      inputMode="numeric"
+                      aria-label="Heure du rendez-vous"
+                      className="appointment-inline-input appointment-inline-time-input"
+                    />
+                    <div className="appointment-inline-time-stepper">
+                      <button
+                        type="button"
+                        className="appointment-inline-time-stepper-btn"
+                        onClick={() => stepAppointmentTime(30)}
+                        aria-label="Augmenter de 30 minutes"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="appointment-inline-time-stepper-btn"
+                        onClick={() => stepAppointmentTime(-30)}
+                        aria-label="Diminuer de 30 minutes"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="appointment-inline-form-group">
+                  <label>Durée</label>
+                  <div className="appointment-inline-time-row">
+                    <input
+                      type="text"
+                      value={appointmentDurationText || '01:00'}
+                      onChange={(e) => setAppointmentDurationText(normalizeTime(e.target.value))}
+                      onBlur={() => setAppointmentDurationText(minutesToTime(durationTextToMinutes(appointmentDurationText || '01:00')))}
+                      placeholder="HH:MM"
+                      inputMode="numeric"
+                      aria-label="Durée du rendez-vous"
+                      className="appointment-inline-input appointment-inline-time-input"
+                    />
+                    <div className="appointment-inline-time-stepper">
+                      <button
+                        type="button"
+                        className="appointment-inline-time-stepper-btn"
+                        onClick={() => stepAppointmentDuration(30)}
+                        aria-label="Augmenter de 30 minutes"
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="appointment-inline-time-stepper-btn"
+                        onClick={() => stepAppointmentDuration(-30)}
+                        aria-label="Diminuer de 30 minutes"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="appointment-inline-actions">
                   <button

@@ -34,9 +34,8 @@ interface LocationAutocompleteProps {
 // Cache simple pour éviter les requêtes répétées
 const locationCache = new Map<string, { data: LocationSuggestion[], timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-let nominatimUnavailableInBrowser = false
-const ENABLE_BROWSER_NOMINATIM =
-  String((import.meta as any).env?.VITE_ENABLE_NOMINATIM_BROWSER || '').toLowerCase() === 'true'
+let nominatimRetryBlockedUntil = 0
+let lastNominatimWarningAt = 0
 
 export const LocationAutocomplete = ({
   value,
@@ -54,12 +53,12 @@ export const LocationAutocomplete = ({
   const [hasSelected, setHasSelected] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [userInitiated, setUserInitiated] = useState(false)
-  const [autocompleteUnavailable, setAutocompleteUnavailable] = useState(
-    nominatimUnavailableInBrowser || !ENABLE_BROWSER_NOMINATIM
-  )
+  const [autocompleteUnavailable, setAutocompleteUnavailable] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>()
+  const blurTimeoutRef = useRef<NodeJS.Timeout>()
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Recherche avec debounce réduit pour plus de réactivité
   useEffect(() => {
@@ -67,7 +66,7 @@ export const LocationAutocomplete = ({
       clearTimeout(timeoutRef.current)
     }
 
-    if (!value.trim() || value.length < 2 || !isFocused || !userInitiated || autocompleteUnavailable) {
+    if (!value.trim() || value.length < 1 || !isFocused || !userInitiated) {
       setSuggestions([])
       setShowSuggestions(false)
       setIsLoading(false)
@@ -82,14 +81,14 @@ export const LocationAutocomplete = ({
 
     timeoutRef.current = setTimeout(() => {
       searchLocations(value)
-    }, 200) // Réduit de 300ms à 200ms
+    }, 30)
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [value, isFocused, userInitiated, autocompleteUnavailable])
+  }, [value, isFocused, userInitiated])
 
   useEffect(() => {
     if (value.trim().length > 0 && !isFocused && !userInitiated) {
@@ -99,12 +98,19 @@ export const LocationAutocomplete = ({
   }, [value, isFocused, userInitiated])
 
   const searchLocations = async (query: string) => {
-    if (!query.trim() || query.length < 2 || autocompleteUnavailable) {
+    if (!query.trim() || query.length < 1) {
       setSuggestions([])
       return
     }
 
     const normalizedQuery = query.trim().toLowerCase()
+    if (Date.now() < nominatimRetryBlockedUntil) {
+      setAutocompleteUnavailable(true)
+      return
+    }
+
+    // Ouvrir la liste immédiatement pour un retour visuel plus rapide.
+    setShowSuggestions(true)
     
     // Vérifier le cache
     const cached = locationCache.get(normalizedQuery)
@@ -115,8 +121,33 @@ export const LocationAutocomplete = ({
       return
     }
 
+    // Affichage quasi instantané: réutilise un cache voisin pendant le fetch réseau.
+    const nearbyCachedEntry = Array.from(locationCache.entries())
+      .filter(([key, entry]) =>
+        Date.now() - entry.timestamp < CACHE_DURATION &&
+        (key.startsWith(normalizedQuery) || normalizedQuery.startsWith(key))
+      )
+      .sort((a, b) => a[0].length - b[0].length)[0]
+
+    if (nearbyCachedEntry) {
+      const fallbackSuggestions = nearbyCachedEntry[1].data
+        .filter((item) => item.display_name.toLowerCase().includes(normalizedQuery))
+        .slice(0, 5)
+      if (fallbackSuggestions.length > 0) {
+        setSuggestions(fallbackSuggestions)
+        setShowSuggestions(true)
+        setSelectedIndex(-1)
+      }
+    }
+
     setIsLoading(true)
     try {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       // Utilisation de l'API Nominatim d'OpenStreetMap (gratuite)
       // Recherche mondiale activée - pas de restriction géographique
       const response = await fetch(
@@ -125,7 +156,8 @@ export const LocationAutocomplete = ({
         `format=json&` +
         `limit=5&` +
         `addressdetails=1&` +
-        `accept-language=fr`
+        `accept-language=fr`,
+        { signal: controller.signal }
       )
 
       if (!response.ok) {
@@ -143,6 +175,7 @@ export const LocationAutocomplete = ({
       setSuggestions(data)
       setShowSuggestions(true)
       setSelectedIndex(-1)
+      setAutocompleteUnavailable(false)
       
       // Faire défiler pour rendre les suggestions visibles
       setTimeout(() => {
@@ -151,14 +184,24 @@ export const LocationAutocomplete = ({
         }
       }, 100)
     } catch (error) {
-      // Nominatim bloque souvent les appels navigateur (CORS/403).
-      // On désactive l'autocomplete pour cette session et on garde la saisie manuelle.
-      nominatimUnavailableInBrowser = true
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
+      // Conserver la saisie manuelle, mais ne pas désactiver définitivement l'autocomplete
+      // pour permettre une nouvelle tentative (comportement historique).
+      nominatimRetryBlockedUntil = Date.now() + 5000
       setAutocompleteUnavailable(true)
-      setSuggestions([])
-      setShowSuggestions(false)
-      console.warn('Autocomplete lieu indisponible (CORS/Nominatim). Saisie manuelle conservée.')
+      if (suggestions.length === 0) {
+        setShowSuggestions(false)
+      }
+      if (Date.now() - lastNominatimWarningAt > 5000) {
+        lastNominatimWarningAt = Date.now()
+        console.warn('Autocomplete lieu indisponible (CORS/Nominatim). Nouvelle tentative dans quelques secondes.')
+      }
     } finally {
+      if (abortControllerRef.current?.signal.aborted) {
+        return
+      }
       setIsLoading(false)
     }
   }
@@ -239,6 +282,17 @@ export const LocationAutocomplete = ({
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current)
+      }
+    }
+  }, [])
+
   return (
     <div className={`location-autocomplete ${className}`}>
       <div className="location-input-wrapper">
@@ -254,14 +308,22 @@ export const LocationAutocomplete = ({
           }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
+            if (blurTimeoutRef.current) {
+              clearTimeout(blurTimeoutRef.current)
+            }
             setIsFocused(true)
             if (suggestions.length > 0 && !hasSelected && userInitiated) {
               setShowSuggestions(true)
             }
           }}
           onBlur={() => {
-            setIsFocused(false)
-            setShowSuggestions(false)
+            if (blurTimeoutRef.current) {
+              clearTimeout(blurTimeoutRef.current)
+            }
+            blurTimeoutRef.current = setTimeout(() => {
+              setIsFocused(false)
+              setShowSuggestions(false)
+            }, 120)
           }}
           disabled={disabled}
         />
@@ -313,8 +375,14 @@ export const LocationAutocomplete = ({
         </div>
       )}
 
-      {showSuggestions && suggestions.length > 0 && !hasSelected && (
+      {showSuggestions && !hasSelected && (
         <div ref={suggestionsRef} className="location-suggestions">
+          {isLoading && suggestions.length === 0 && (
+            <div className="location-suggestion-loading" aria-live="polite">
+              <Loader size={14} className="location-suggestion-loading-icon" />
+              <span>Recherche en cours...</span>
+            </div>
+          )}
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.place_id}
@@ -322,6 +390,14 @@ export const LocationAutocomplete = ({
               className={`location-suggestion-item ${
                 index === selectedIndex ? 'selected' : ''
               }`}
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onTouchStart={() => {
+                if (blurTimeoutRef.current) {
+                  clearTimeout(blurTimeoutRef.current)
+                }
+              }}
               onClick={() => handleSelect(suggestion)}
               onMouseEnter={() => setSelectedIndex(index)}
             >

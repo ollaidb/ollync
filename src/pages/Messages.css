@@ -1170,6 +1170,14 @@
   border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
 }
 
+.dark .conversation-item.appointment-item.appointment-item--past {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--muted) 58%, var(--card)) 0%,
+    color-mix(in srgb, var(--muted) 42%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--muted-foreground) 25%);
+}
+
 .conversation-bottom-anchor {
   height: calc(env(safe-area-inset-bottom, 0px) + var(--messages-input-offset, 88px) + 24px);
 }
@@ -1513,6 +1521,23 @@
     color-mix(in srgb, var(--primary) 8%, var(--card)) 100%
   );
   border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+
+.conversation-item.appointment-item.appointment-item--past {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--muted) 92%, var(--card)) 0%,
+    color-mix(in srgb, var(--muted) 78%, var(--card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--muted-foreground) 12%);
+}
+
+.conversation-item.appointment-item.appointment-item--past .conversation-name,
+.conversation-item.appointment-item.appointment-item--past .appointment-user-name {
+  color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground) 16%);
+}
+
+.conversation-item.appointment-item.appointment-item--past .conversation-time {
+  color: var(--muted-foreground);
 }
 
 .conversation-item:hover {

@@ -23,24 +23,6 @@ const Footer = () => {
 
     const loadUnreadMessagesCount = async () => {
       try {
-        const { data: acceptedMatchRequests, error: acceptedMatchRequestsError } = await supabase
-          .from('match_requests')
-          .select('conversation_id')
-          .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
-          .eq('status', 'accepted')
-          .not('conversation_id', 'is', null)
-
-        if (acceptedMatchRequestsError) {
-          console.error('Error loading accepted match requests for footer badge:', acceptedMatchRequestsError)
-          return
-        }
-
-        const excludedConversationIds = new Set(
-          ((acceptedMatchRequests || []) as Array<{ conversation_id?: string | null }>)
-            .map((row) => row.conversation_id)
-            .filter((id): id is string => Boolean(id))
-        )
-
         const { data: participantRows, error: participantsError } = await supabase
           .from('conversation_participants')
           .select('conversation_id')
@@ -120,9 +102,6 @@ const Footer = () => {
               if (row?.conversation_id && hiddenConversationIds.has(String(row.conversation_id))) {
                 return sum
               }
-              if (row?.conversation_id && excludedConversationIds.has(String(row.conversation_id))) {
-                return sum
-              }
               const unread = typeof row?.unread_count === 'number' ? row.unread_count : 0
               return sum + (unread > 0 ? 1 : 0)
             }, 0)
@@ -160,42 +139,24 @@ const Footer = () => {
           loadUnreadMessagesCount()
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversation_user_states'
+        },
+        () => {
+          loadUnreadMessagesCount()
+        }
+      )
       .subscribe()
 
     loadUnreadMessagesCount()
 
-    const requestsChannel = supabase
-      .channel(`footer-pending-requests-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'match_requests',
-          filter: `to_user_id=eq.${user.id}`
-        },
-        () => {
-          loadUnreadMessagesCount()
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'match_requests',
-          filter: `from_user_id=eq.${user.id}`
-        },
-        () => {
-          loadUnreadMessagesCount()
-        }
-      )
-      .subscribe()
-
     return () => {
       isMounted = false
       supabase.removeChannel(channel)
-      supabase.removeChannel(requestsChannel)
     }
   }, [user?.id])
 

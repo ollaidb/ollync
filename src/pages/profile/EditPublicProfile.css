@@ -28,6 +28,15 @@
   gap: 6px;
 }
 
+.form-group.profile-progress-missing {
+  border: 1.5px solid #ef4444;
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, #ef4444 5%, var(--card));
+  box-shadow: 0 0 0 2px color-mix(in srgb, #ef4444 12%, transparent);
+  scroll-margin-top: 96px;
+}
+
 .dropdown-trigger {
   width: 100%;
   display: flex;

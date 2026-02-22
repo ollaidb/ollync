@@ -76,6 +76,16 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
   const navigate = useNavigate()
   const { user } = useAuth()
 
+  const formatDurationMinutes = (minutes?: number | null) => {
+    const total = Math.max(0, Number(minutes || 0))
+    const h = Math.floor(total / 60)
+    const m = total % 60
+    if (h > 0 && m > 0) return `${h}h${String(m).padStart(2, '0')}`
+    if (h > 0) return `${h}h`
+    if (m > 0) return `${m} min`
+    return ''
+  }
+
   const fetchSharedContractDetails = async (contractId: string) => {
     const cached = sharedContractCache.get(contractId)
     if (cached) {
@@ -459,9 +469,11 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
           event_name?: string
           appointment_datetime?: string
           start_date?: string
+          duration_minutes?: number
         } | null
         const appointmentDateTime = calendarData?.appointment_datetime || calendarData?.start_date
         const appointmentTitle = calendarData?.title || calendarData?.event_name || 'Rendez-vous'
+        const appointmentDurationLabel = formatDurationMinutes(calendarData?.duration_minutes)
         
         return (
           <>
@@ -489,6 +501,11 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
                         minute: '2-digit'
                       })}
                     </span>
+                    {appointmentDurationLabel && (
+                      <span className="message-calendar-duration">
+                        durée : {appointmentDurationLabel}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -540,13 +557,12 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
                                 })}
                               </span>
                             </div>
-                            <div className="appointment-inline-calendar-wrapper">
-                              <CalendarPicker
-                                selectedDate={new Date(appointmentDateTime).toISOString().split('T')[0]}
-                                onDateSelect={() => {}}
-                                minDate={new Date().toISOString().split('T')[0]}
-                              />
-                            </div>
+                            {appointmentDurationLabel && (
+                              <div className="appointment-inline-selected-date">
+                                <span className="appointment-inline-date-label">Durée :</span>
+                                <span className="appointment-inline-date-value">{appointmentDurationLabel}</span>
+                              </div>
+                            )}
                             <div className="appointment-inline-actions">
                               <button
                                 className="appointment-inline-edit-btn"
@@ -685,22 +701,25 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
 
   return (
     <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
-      {!isOwn && showAvatar && !isStandaloneMedia && (
-        (message.sender?.email || '').toLowerCase() === (systemSenderEmail || '').toLowerCase() ? (
-          <div className="message-avatar message-avatar-system">
-            <Logo className="message-avatar-logo" width={32} height={16} />
-          </div>
-        ) : (
-          message.sender?.avatar_url && (
-            <img 
-              src={message.sender.avatar_url} 
-              alt={message.sender.full_name || message.sender.username || ''} 
-              className="message-avatar" 
+      {!isOwn && !isStandaloneMedia && (
+        showAvatar ? (
+          (message.sender?.email || '').toLowerCase() === (systemSenderEmail || '').toLowerCase() ? (
+            <div className="message-avatar message-avatar-system">
+              <Logo className="message-avatar-logo" width={32} height={16} />
+            </div>
+          ) : message.sender?.avatar_url ? (
+            <img
+              src={message.sender.avatar_url}
+              alt={message.sender.full_name || message.sender.username || ''}
+              className="message-avatar"
             />
+          ) : (
+            <div className="message-avatar-spacer" aria-hidden="true"></div>
           )
+        ) : (
+          <div className="message-avatar-spacer" aria-hidden="true"></div>
         )
       )}
-      {!isOwn && !showAvatar && !isStandaloneMedia && <div className="message-avatar-spacer"></div>}
       <div className={`message-bubble-content ${isStandaloneMedia ? 'standalone' : ''}`}>
         {isStandaloneMedia ? (
           <>

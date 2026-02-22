@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { RefreshCw, Heart, Search, SlidersHorizontal, X } from 'lucide-react'
+import { RefreshCw, Heart, Search, SlidersHorizontal, Users, X } from 'lucide-react'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
 import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
@@ -244,7 +244,15 @@ const RecentPosts = () => {
         <div className="swipe-header-content">
           <BackButton className="swipe-back-button" onClick={handleBack} />
           <h1 className="swipe-title">Annonces récentes</h1>
-          <div className="swipe-header-spacer"></div>
+          <button
+            type="button"
+            onClick={() => navigate('/users')}
+            className="swipe-users-button"
+            title="Voir les utilisateurs"
+            aria-label="Voir les utilisateurs"
+          >
+            <Users size={18} className="swipe-users-icon" />
+          </button>
         </div>
         <div className="swipe-search-row">
           <div className="swipe-search-bar">

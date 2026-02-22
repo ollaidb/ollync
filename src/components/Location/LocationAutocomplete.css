@@ -152,6 +152,9 @@
   transform: translateZ(0);
   will-change: transform;
   isolation: isolate;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .location-suggestion-item {
@@ -166,10 +169,24 @@
   cursor: pointer;
   transition: background-color 0.2s;
   border-bottom: 1px solid #f0f0f0;
+  touch-action: manipulation;
 }
 
 .location-suggestion-item:last-child {
   border-bottom: none;
+}
+
+.location-suggestion-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  color: #666;
+  font-size: 13px;
+}
+
+.location-suggestion-loading-icon {
+  animation: spin 1s linear infinite;
 }
 
 .location-suggestion-item:hover,

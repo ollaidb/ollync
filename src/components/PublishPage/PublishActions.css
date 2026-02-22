@@ -54,6 +54,11 @@
   cursor: not-allowed;
 }
 
+.publish-action-button.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .publish-action-button.secondary {
   background-color: var(--muted);
   color: var(--foreground);

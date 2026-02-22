@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Loader, X, Search } from 'lucide-react'
-import { useLoadScript } from '@react-google-maps/api'
+import { isGoogleMapsReady, loadGoogleMapsScript } from '../../utils/loadGoogleMapsScript'
 import './LocationAutocomplete.css'
 
 interface GooglePlacesAutocompleteProps {
@@ -17,8 +17,6 @@ interface GooglePlacesAutocompleteProps {
   disabled?: boolean
 }
 
-const libraries: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places']
-
 export const GooglePlacesAutocomplete = ({
   value,
   onChange,
@@ -31,19 +29,45 @@ export const GooglePlacesAutocomplete = ({
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
   const isInitializedRef = useRef(false)
   const [inputValue, setInputValue] = useState(value)
+  const [isLoaded, setIsLoaded] = useState(isGoogleMapsReady())
+  const [loadError, setLoadError] = useState<Error | null>(null)
 
   // Récupération de la clé API depuis les variables d'environnement
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const apiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY
+  const isMissingGoogleKey =
+    !apiKey || apiKey === 'YOUR_API_KEY' || apiKey === 'votre_clé_api_google_maps_ici'
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey || '',
-    libraries
-  })
+  const isGoogleReady = isLoaded || isGoogleMapsReady()
+
+  useEffect(() => {
+    if (isMissingGoogleKey) return
+    if (isGoogleMapsReady()) {
+      setIsLoaded(true)
+      setLoadError(null)
+      return
+    }
+
+    let cancelled = false
+    loadGoogleMapsScript(apiKey)
+      .then(() => {
+        if (cancelled) return
+        setIsLoaded(true)
+        setLoadError(null)
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setLoadError(error instanceof Error ? error : new Error('Erreur chargement Google Maps'))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [apiKey, isMissingGoogleKey])
 
   // Initialiser l'autocomplete quand Google Maps est chargé
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || loadError || isInitializedRef.current) return
+    if (!isGoogleReady || !inputRef.current || loadError || isInitializedRef.current) return
 
     const autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
       types: ['address'],
@@ -93,7 +117,7 @@ export const GooglePlacesAutocomplete = ({
       }
       isInitializedRef.current = false
     }
-  }, [isLoaded, loadError, onChange, onLocationSelect])
+  }, [isGoogleReady, loadError, onChange, onLocationSelect])
 
   // Synchroniser l'état local avec la prop value quand elle change depuis l'extérieur
   useEffect(() => {
@@ -117,7 +141,7 @@ export const GooglePlacesAutocomplete = ({
     onChange(newValue)
   }
 
-  if (!apiKey || apiKey === 'YOUR_API_KEY') {
+  if (isMissingGoogleKey) {
     return (
       <div className={`location-autocomplete ${className}`}>
         <div className="location-input-wrapper">
@@ -157,7 +181,7 @@ export const GooglePlacesAutocomplete = ({
     )
   }
 
-  if (!isLoaded) {
+  if (!isGoogleReady) {
     return (
       <div className={`location-autocomplete ${className}`}>
         <div className="location-input-wrapper">
@@ -209,4 +233,3 @@ export const GooglePlacesAutocomplete = ({
     </div>
   )
 }
-

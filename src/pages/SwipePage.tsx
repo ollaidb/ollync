@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Heart } from 'lucide-react'
+import { Heart, Users } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -461,7 +461,15 @@ const SwipePage = () => {
         <div className="swipe-header-content">
           <BackButton className="swipe-back-button" />
           <h1 className="swipe-title">Découverte</h1>
-          <div className="swipe-header-spacer"></div>
+          <button
+            type="button"
+            onClick={() => navigate('/users')}
+            className="swipe-users-button"
+            title={t('categories:ui.viewUsers', { defaultValue: 'Voir les utilisateurs' })}
+            aria-label={t('categories:ui.viewUsers', { defaultValue: 'Voir les utilisateurs' })}
+          >
+            <Users size={18} className="swipe-users-icon" />
+          </button>
         </div>
         
         {/* Menu de filtres */}

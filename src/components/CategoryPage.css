@@ -151,31 +151,48 @@
 }
 
 .category-users-button {
-  background: none;
-  border: none;
-  padding: 4px;
+  width: 40px;
+  height: 40px;
+  background: color-mix(in srgb, var(--card) 82%, var(--primary) 18%);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--primary) 30%);
+  padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  border-radius: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .category-users-button:hover {
-  transform: scale(1.1);
-  opacity: 0.8;
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--card) 68%, var(--primary) 32%);
+  border-color: color-mix(in srgb, var(--border) 45%, var(--primary) 55%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.category-users-button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.category-users-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 75%, white 25%);
+  outline-offset: 2px;
 }
 
 @media (hover: none) {
   .category-users-button:hover {
     transform: none;
-    opacity: 1;
+    background: color-mix(in srgb, var(--card) 82%, var(--primary) 18%);
+    border-color: color-mix(in srgb, var(--border) 70%, var(--primary) 30%);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   }
 }
 
 .category-users-icon {
-  color: var(--foreground);
+  color: color-mix(in srgb, var(--foreground) 82%, var(--primary) 18%);
   flex-shrink: 0;
 }
 

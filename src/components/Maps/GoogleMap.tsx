@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api'
+import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_SCRIPT_ID } from '../../utils/googleMapsLoader'
 import './GoogleMap.css'
 
 interface GoogleMapProps {
@@ -11,8 +12,6 @@ interface GoogleMapProps {
   markerTitle?: string
   onMarkerClick?: () => void
 }
-
-const libraries: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places']
 
 export const GoogleMapComponent = ({
   lat,
@@ -41,8 +40,9 @@ export const GoogleMapComponent = ({
   }
 
   const { isLoaded, loadError } = useLoadScript({
+    id: GOOGLE_MAPS_SCRIPT_ID,
     googleMapsApiKey: apiKey,
-    libraries
+    libraries: GOOGLE_MAPS_LIBRARIES as unknown as ('places' | 'drawing' | 'geometry' | 'visualization')[]
   })
 
   const center = useMemo(() => ({ lat, lng }), [lat, lng])
@@ -87,4 +87,3 @@ export const GoogleMapComponent = ({
     </div>
   )
 }
-

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Save, X, Camera, Plus, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -21,6 +21,7 @@ import './EditPublicProfile.css'
 const EditPublicProfile = () => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(true)
@@ -80,6 +81,7 @@ const EditPublicProfile = () => {
   const [isVenuePaymentOpen, setIsVenuePaymentOpen] = useState(false)
   const [isVenueOpeningDaysOpen, setIsVenueOpeningDaysOpen] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
+  const fromProfileProgress = searchParams.get('from') === 'profile-progress'
 
   const VENUE_CATEGORY_SLUGS = useMemo(() => (['studio-lieu', 'lieu']), [])
   const venueDayLabels: Record<string, string> = useMemo(() => ({
@@ -1090,6 +1092,14 @@ const EditPublicProfile = () => {
     )
   }
 
+  const missingCompletionSections = {
+    avatar: !profile.avatar_url,
+    location: !profile.location.trim(),
+    categories: profile.display_categories.length === 0,
+    status: profile.profile_types.length === 0,
+    link: !((profile.socialLinks[0] || '').trim())
+  }
+
   return (
     <div className="page">
       <PageHeader title="Éditer le profil" />
@@ -1098,7 +1108,7 @@ const EditPublicProfile = () => {
         <div className="edit-public-profile-container">
           <div className="form-section">
             {/* Photo de profil */}
-            <div className="form-group">
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.avatar ? 'profile-progress-missing' : ''}`}>
               <label>Photo de profil</label>
               <div className="avatar-upload-section">
                 <div className="avatar-preview">
@@ -1156,7 +1166,7 @@ const EditPublicProfile = () => {
             </div>
 
             {/* Localisation */}
-            <div className="form-group">
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.location ? 'profile-progress-missing' : ''}`}>
               <label htmlFor="location">Ville</label>
               <LocationAutocomplete
                 value={profile.location}
@@ -1186,7 +1196,7 @@ const EditPublicProfile = () => {
             </div>
 
             {/* Catégories d'affichage */}
-            <div className="form-group compact-top">
+            <div className={`form-group compact-top ${fromProfileProgress && missingCompletionSections.categories ? 'profile-progress-missing' : ''}`}>
               <label>Catégories d'affichage</label>
               <p className="form-hint compact">Choisissez où vous voulez que votre profil apparaisse dans l'application.</p>
 
@@ -1470,7 +1480,7 @@ const EditPublicProfile = () => {
             )}
 
             {/* Statuts */}
-            <div className="form-group">
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.status ? 'profile-progress-missing' : ''}`}>
               <label>Statuts</label>
               <p className="form-hint compact">Choisissez jusqu’à 2 statuts pour aider les autres à mieux vous identifier.</p>
 
@@ -1818,7 +1828,7 @@ const EditPublicProfile = () => {
             )}
 
             {/* Lien */}
-            <div className="form-group">
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.link ? 'profile-progress-missing' : ''}`}>
               <label>Lien</label>
               <input
                 type="text"

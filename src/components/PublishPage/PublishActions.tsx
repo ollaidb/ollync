@@ -6,6 +6,7 @@ interface PublishActionsProps {
   onSaveDraft: () => void
   onPreview: () => void
   onPublish: () => void
+  onInvalidPublishAttempt?: () => void
   isValid?: boolean
   validationErrors?: string[]
   insets?: { bottom: number }
@@ -16,6 +17,7 @@ export const PublishActions = ({
   onSaveDraft, 
   onPreview: _onPreview, 
   onPublish,
+  onInvalidPublishAttempt,
   isValid = true,
   validationErrors = []
 }: PublishActionsProps) => {
@@ -40,9 +42,15 @@ export const PublishActions = ({
           Enregistrer comme brouillon
         </button>
         <button
-          className="publish-action-button primary"
-          onClick={onPublish}
-          disabled={!isValid}
+          className={`publish-action-button primary ${!isValid ? 'is-disabled' : ''}`}
+          onClick={() => {
+            if (!isValid) {
+              onInvalidPublishAttempt?.()
+              return
+            }
+            onPublish()
+          }}
+          aria-disabled={!isValid}
           title={!isValid ? firstError || 'Veuillez compléter les champs obligatoires' : undefined}
         >
           Publier

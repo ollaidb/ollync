@@ -142,6 +142,10 @@ export default function Publish() {
   const [isLoadingEdit, setIsLoadingEdit] = useState(false)
   const editPostId = searchParams.get('edit')
   const [isGuideOpen, setIsGuideOpen] = useState(false)
+  const [hasAttemptedPublish, setHasAttemptedPublish] = useState(false)
+  const [hasRestoredNewDraft, setHasRestoredNewDraft] = useState(false)
+  const NEW_DRAFT_STEP_KEY = 'publishDraftStep:new'
+  const NEW_DRAFT_DATA_KEY = 'publishDraftData:new'
 
   const { step, setStep, handleBack, getBreadcrumb } = usePublishNavigation(
     formData,
@@ -263,6 +267,35 @@ export default function Publish() {
       co_creation_details: ''
     }))
   }, [isVenteCategory, isEmploiCategory, formData.listingType, formData.exchange_type])
+
+  useEffect(() => {
+    if (editPostId) {
+      setHasRestoredNewDraft(true)
+      return
+    }
+
+    const storedStepRaw = Number(sessionStorage.getItem(NEW_DRAFT_STEP_KEY))
+    const validStoredStep =
+      [0, 1, 2, 3, 3.5, 4, 5].includes(storedStepRaw) ? (storedStepRaw as number) : null
+
+    const cachedDraftRaw = sessionStorage.getItem(NEW_DRAFT_DATA_KEY)
+    if (cachedDraftRaw) {
+      try {
+        const cachedDraft = JSON.parse(cachedDraftRaw)
+        if (cachedDraft && typeof cachedDraft === 'object') {
+          setFormData({ ...initialFormData, ...cachedDraft })
+        }
+      } catch {
+        sessionStorage.removeItem(NEW_DRAFT_DATA_KEY)
+      }
+    }
+
+    if (validStoredStep !== null) {
+      setStep(validStoredStep)
+    }
+
+    setHasRestoredNewDraft(true)
+  }, [editPostId, initialFormData, setStep, NEW_DRAFT_DATA_KEY, NEW_DRAFT_STEP_KEY])
 
   useEffect(() => {
     if (!editPostId || !user) return
@@ -405,14 +438,22 @@ export default function Publish() {
   }, [editPostId, user, setStep, getStepFromForm, initialFormData])
 
   useEffect(() => {
-    if (!editPostId) return
-    localStorage.setItem(`publishDraftStep:${editPostId}`, String(step))
-  }, [editPostId, step])
+    if (editPostId) {
+      localStorage.setItem(`publishDraftStep:${editPostId}`, String(step))
+      return
+    }
+    if (!hasRestoredNewDraft) return
+    sessionStorage.setItem(NEW_DRAFT_STEP_KEY, String(step))
+  }, [editPostId, step, hasRestoredNewDraft, NEW_DRAFT_STEP_KEY])
 
   useEffect(() => {
-    if (!editPostId) return
-    localStorage.setItem(`publishDraftData:${editPostId}`, JSON.stringify(formData))
-  }, [editPostId, formData])
+    if (editPostId) {
+      localStorage.setItem(`publishDraftData:${editPostId}`, JSON.stringify(formData))
+      return
+    }
+    if (!hasRestoredNewDraft) return
+    sessionStorage.setItem(NEW_DRAFT_DATA_KEY, JSON.stringify(formData))
+  }, [editPostId, formData, hasRestoredNewDraft, NEW_DRAFT_DATA_KEY])
 
   // Validation des champs obligatoires
   const requireSocialNetwork = shouldShowSocialNetwork(categorySlug, subcategorySlug)
@@ -425,11 +466,24 @@ export default function Publish() {
   }, [])
 
   const handlePublishPost = (status: 'draft' | 'active') => {
+    if (status === 'active') {
+      setHasAttemptedPublish(true)
+    }
     const showToastMessage = (message: string) => {
       showSuccess(message)
     }
     handlePublish(formData, navigate, status, showToastMessage, editPostId)
   }
+
+  useEffect(() => {
+    if (step !== 5) {
+      setHasAttemptedPublish(false)
+      return
+    }
+    if (validation.isValid && hasAttemptedPublish) {
+      setHasAttemptedPublish(false)
+    }
+  }, [step, validation.isValid, hasAttemptedPublish])
 
   if (!user) {
     return (
@@ -594,6 +648,7 @@ export default function Publish() {
               onUpdateFormData={updateFormData}
               currentPostId={editPostId}
               validationErrors={validation.errors}
+              showValidationErrors={hasAttemptedPublish}
             />
           )}
         </div>
@@ -606,6 +661,7 @@ export default function Publish() {
           onSaveDraft={() => handlePublishPost('draft')}
           onPreview={() => {}}
           onPublish={() => handlePublishPost('active')}
+          onInvalidPublishAttempt={() => setHasAttemptedPublish(true)}
           isValid={validation.isValid}
           validationErrors={validation.errors}
         />
