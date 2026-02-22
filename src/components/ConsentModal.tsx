@@ -44,6 +44,7 @@ const ConsentModal = ({
       message={message}
       onConfirm={onAccept}
       onCancel={onReject}
+      closeOnOverlayClick={false}
       confirmLabel={safeLabel('actions.accept', 'J\'accepte')}
       cancelLabel={safeLabel('actions.decline', 'Refuser')}
       contentClassName="consent-confirmation-modal"

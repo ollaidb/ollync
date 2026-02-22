@@ -1772,7 +1772,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             setShowVenueReservationModal(false)
             setIsVenueDatePickerOpen(false)
           }}
-          confirmLabel={venueReservationLoading ? 'Envoi...' : 'Envoyer la réservation'}
+          confirmLabel={venueReservationLoading ? 'Envoi...' : 'Envoyer ma demande'}
           cancelLabel="Annuler"
         >
           <div className="confirmation-modal-field">

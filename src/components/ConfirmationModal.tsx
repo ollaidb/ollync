@@ -7,6 +7,7 @@ export interface ConfirmationModalProps {
   message: string
   onConfirm: () => void
   onCancel: () => void
+  closeOnOverlayClick?: boolean
   confirmLabel?: string
   cancelLabel?: string
   isDestructive?: boolean
@@ -21,6 +22,7 @@ const ConfirmationModal = ({
   message,
   onConfirm,
   onCancel,
+  closeOnOverlayClick = true,
   confirmLabel = 'Accepter',
   cancelLabel = 'Annuler',
   isDestructive = false,
@@ -89,12 +91,16 @@ const ConfirmationModal = ({
         presentation === 'bottom-sheet' ? 'confirmation-modal-overlay--bottom-sheet' : ''
       }`.trim()}
       style={overlayStyle}
+      onClick={() => {
+        if (closeOnOverlayClick) onCancel()
+      }}
     >
       <div
         className={`confirmation-modal-content ${
           presentation === 'bottom-sheet' ? 'confirmation-modal-content--bottom-sheet' : ''
         }${contentClassName ? ` ${contentClassName}` : ''}`.trim()}
         style={contentStyle}
+        onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays, Upload, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
@@ -90,6 +90,12 @@ interface Application {
   } | null
 }
 
+interface EventTicketParticipant {
+  requestId: string
+  userId: string
+  name: string
+}
+
 type ContactIntent = 'request' | 'apply' | 'buy' | 'reserve' | 'ticket'
 
 const EMPLOI_CATEGORY_SLUGS = new Set(['emploi'])
@@ -119,6 +125,13 @@ const PostDetails = () => {
   const [isRestricted, setIsRestricted] = useState(false)
   const [liked, setLiked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
+  const [eventTicketParticipants, setEventTicketParticipants] = useState<EventTicketParticipant[]>([])
+  const [eventTicketParticipantsLoading, setEventTicketParticipantsLoading] = useState(false)
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [broadcastSending, setBroadcastSending] = useState(false)
+  const [ticketValidationState, setTicketValidationState] = useState<'valid' | 'invalid' | null>(null)
+  const [ticketValidationMessage, setTicketValidationMessage] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [matchRequest, setMatchRequest] = useState<{
     id: string
@@ -356,6 +369,21 @@ const PostDetails = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post, user?.id])
+
+  useEffect(() => {
+    if (!id) return
+    const params = new URLSearchParams(location.search)
+    const shouldValidate = params.get('ticketValidation') === '1'
+    const ticketRequestId = params.get('ticketRequest')
+
+    if (shouldValidate && ticketRequestId) {
+      validateTicketQr(ticketRequestId)
+    } else {
+      setTicketValidationState(null)
+      setTicketValidationMessage('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, location.search])
 
   // Réinitialiser l'index quand les médias changent
   useEffect(() => {
@@ -816,6 +844,162 @@ const PostDetails = () => {
     }
   }
 
+  const findOrCreateDirectConversation = async (currentUserId: string, otherUserId: string, relatedPostId?: string | null) => {
+    const pairFilter = `and(user1_id.eq.${currentUserId},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${currentUserId})`
+
+    const queryExistingConversation = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('conversations') as any)
+        .select('id, user1_id, user2_id, is_group, deleted_at')
+        .or(pairFilter)
+        .eq('is_group', false)
+        .is('deleted_at', null)
+        .limit(1)
+
+      if (error) {
+        console.error('Error searching direct conversation:', error)
+        return null
+      }
+
+      const rows = (data as Array<{ id: string }> | null) || []
+      return rows.length > 0 ? rows[0] : null
+    }
+
+    const existing = await queryExistingConversation()
+    if (existing) return existing
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: inserted, error: insertError } = await (supabase.from('conversations') as any)
+      .insert({
+        user1_id: currentUserId,
+        user2_id: otherUserId,
+        post_id: relatedPostId || null,
+        type: 'direct',
+        is_group: false
+      })
+      .select('id')
+      .single()
+
+    if (!insertError && inserted) return inserted
+
+    if (insertError?.code === '23505') {
+      const retried = await queryExistingConversation()
+      if (retried) return retried
+    }
+
+    console.error('Error creating direct conversation:', insertError)
+    return null
+  }
+
+  const fetchEventTicketParticipants = async () => {
+    if (!id || !user?.id || !post || post.user_id !== user.id) return
+
+    setEventTicketParticipantsLoading(true)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: requestsData, error: requestsError } = await (supabase.from('match_requests') as any)
+        .select('id, from_user_id')
+        .eq('related_post_id', id)
+        .eq('request_intent', 'ticket')
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: true })
+
+      if (requestsError) throw requestsError
+
+      const requesterIds = Array.from(new Set(
+        ((requestsData || []) as Array<{ from_user_id: string }>).map((row) => row.from_user_id).filter(Boolean)
+      ))
+
+      if (requesterIds.length === 0) {
+        setEventTicketParticipants([])
+        return
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', requesterIds)
+
+      if (profilesError) throw profilesError
+
+      const profileMap = new Map(
+        ((profilesData || []) as Array<{ id: string; username?: string | null; full_name?: string | null }>).map((p) => [
+          p.id,
+          p
+        ])
+      )
+
+      const participants = ((requestsData || []) as Array<{ id: string; from_user_id: string }>)
+        .map((row) => {
+          const profile = profileMap.get(row.from_user_id)
+          return {
+            requestId: row.id,
+            userId: row.from_user_id,
+            name: profile?.full_name || profile?.username || 'Utilisateur'
+          }
+        })
+        .filter((row) => row.userId !== user.id)
+
+      setEventTicketParticipants(participants)
+    } catch (error) {
+      console.error('Error loading event ticket participants:', error)
+      setEventTicketParticipants([])
+    } finally {
+      setEventTicketParticipantsLoading(false)
+    }
+  }
+
+  const handleOpenBroadcastModal = async () => {
+    await fetchEventTicketParticipants()
+    const fallback = `Bonjour, voici les infos importantes pour l'événement "${post?.title || 'événement'}".`
+    setBroadcastMessage(fallback)
+    setShowBroadcastModal(true)
+  }
+
+  const handleSendBroadcastMessage = async () => {
+    if (!user?.id || !id) return
+    const trimmed = broadcastMessage.trim()
+    if (trimmed.length === 0) {
+      alert('Ajoutez un message avant l’envoi.')
+      return
+    }
+    if (eventTicketParticipants.length === 0) {
+      alert('Aucun réservant accepté à contacter.')
+      return
+    }
+
+    setBroadcastSending(true)
+    try {
+      for (const participant of eventTicketParticipants) {
+        const conversation = await findOrCreateDirectConversation(user.id, participant.userId, id)
+        if (!conversation?.id) {
+          throw new Error(`Conversation introuvable pour ${participant.name}`)
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: messageError } = await (supabase.from('messages') as any).insert({
+          conversation_id: (conversation as { id: string }).id,
+          sender_id: user.id,
+          message_type: 'text',
+          content: trimmed,
+          shared_post_id: id
+        })
+
+        if (messageError) {
+          throw messageError
+        }
+      }
+
+      showSuccess('Message envoyé à tous les réservants.')
+      setShowBroadcastModal(false)
+    } catch (error) {
+      console.error('Error sending broadcast message:', error)
+      alert('Erreur lors de l’envoi du message groupé.')
+    } finally {
+      setBroadcastSending(false)
+    }
+  }
+
   const hasAvailableSpots = async () => {
     if (!id || !post?.number_of_people || post.number_of_people <= 0) return true
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -888,80 +1072,45 @@ const PostDetails = () => {
     }
   }
 
-  const createTicketForCurrentUser = async () => {
-    if (!user || !post) return
-    const baseDate = reservationDate || post.needed_date || new Date().toISOString().slice(0, 10)
-    const baseTime = reservationTime || post.needed_time || '10:00'
-    const eventDate = `${baseDate}T${baseTime}:00`
-    const now = new Date()
-    const ticketDate = new Date(eventDate)
-    const status = ticketDate.getTime() < now.getTime() ? 'past' : 'upcoming'
+  const validateTicketQr = async (requestId: string) => {
+    if (!id) return
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('event_tickets') as any).insert({
-      user_id: user.id,
-      title: contactIntent === 'ticket' ? `Billet - ${post.title}` : `Réservation - ${post.title}`,
-      event_date: ticketDate.toISOString(),
-      location: post.location || null,
-      status
-    })
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from('match_requests') as any)
+        .select('id, status, request_intent, related_post_id')
+        .eq('id', requestId)
+        .eq('related_post_id', id)
+        .eq('request_intent', 'ticket')
+        .eq('status', 'accepted')
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error validating ticket QR:', error)
+      }
+
+      if (data?.id) {
+        setTicketValidationState('valid')
+        setTicketValidationMessage('Billet validé: invitation confirmée.')
+      } else {
+        setTicketValidationState('invalid')
+        setTicketValidationMessage('QR code invalide ou billet non confirmé.')
+      }
+    } catch (error) {
+      console.error('Error validating ticket QR:', error)
+      setTicketValidationState('invalid')
+      setTicketValidationMessage('Impossible de valider ce QR code pour le moment.')
+    }
   }
 
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
     const isRequestListingPost = post.listing_type === 'request'
 
-    const findOrCreateDirectConversation = async (otherUserId: string, relatedPostId?: string | null) => {
-      const pairFilter = `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
-
-      const queryExistingConversation = async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (supabase.from('conversations') as any)
-          .select('id, user1_id, user2_id, is_group, deleted_at')
-          .or(pairFilter)
-          .eq('is_group', false)
-          .is('deleted_at', null)
-          .limit(1)
-
-        if (error) {
-          console.error('Error searching direct conversation:', error)
-          return null
-        }
-
-        const rows = (data as Array<{ id: string }> | null) || []
-        return rows.length > 0 ? rows[0] : null
-      }
-
-      const existing = await queryExistingConversation()
-      if (existing) return existing
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: inserted, error: insertError } = await (supabase.from('conversations') as any)
-        .insert({
-          user1_id: user.id,
-          user2_id: otherUserId,
-          post_id: relatedPostId || null,
-          type: 'direct',
-          is_group: false
-        })
-        .select('id')
-        .single()
-
-      if (!insertError && inserted) return inserted
-
-      if (insertError?.code === '23505') {
-        const retried = await queryExistingConversation()
-        if (retried) return retried
-      }
-
-      console.error('Error creating direct conversation:', insertError)
-      return null
-    }
-
     if (isRequestListingPost) {
       setLoadingRequest(true)
       try {
-        const conversation = await findOrCreateDirectConversation(post.user_id, id)
+        const conversation = await findOrCreateDirectConversation(user.id, post.user_id, id)
         if (!conversation || !(conversation as { id?: string }).id) {
           alert('Impossible de créer la conversation')
           return
@@ -1105,18 +1254,7 @@ const PostDetails = () => {
       }
 
       if (data) {
-        const shouldAutoValidateTicket = contactIntent === 'ticket' && !isPaidAction()
-
-        if (shouldAutoValidateTicket) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from('match_requests') as any)
-            .update({ status: 'accepted' })
-            .eq('id', data.id)
-          await createTicketForCurrentUser()
-          setMatchRequest({ id: data.id, status: 'accepted' })
-        } else {
-          setMatchRequest({ id: data.id, status: data.status })
-        }
+        setMatchRequest({ id: data.id, status: data.status })
 
         setShowSendRequestModal(false)
         setRequestMessage('')
@@ -1134,7 +1272,8 @@ const PostDetails = () => {
       }
     } catch (error) {
       console.error('Error sending match request:', error)
-      alert('Erreur lors de l\'envoi de la demande')
+      const message = error instanceof Error ? error.message : 'Erreur lors de l\'envoi de la demande'
+      alert(`Erreur lors de l'envoi de la demande: ${message}`)
     } finally {
       setLoadingRequest(false)
     }
@@ -1369,14 +1508,6 @@ const PostDetails = () => {
         ...slot,
         day: dayLabelMap[slot.day] || slot.day
       }))
-  }
-
-  const isPaidAction = () => {
-    if (!post) return false
-    const paymentType = String(post.payment_type || '').toLowerCase().trim()
-    const paidTypes = new Set(['remuneration', 'rémunération', 'price', 'paid', 'argent', 'money'])
-    if (paidTypes.has(paymentType)) return true
-    return Number(post.price || 0) > 0
   }
 
   const getActionButtonLabel = () => {
@@ -1751,6 +1882,12 @@ const PostDetails = () => {
               <h1 className="post-title-main">{post.title}</h1>
             </div>
 
+            {ticketValidationState && (
+              <div className={`ticket-validation-banner ${ticketValidationState}`}>
+                {ticketValidationMessage}
+              </div>
+            )}
+
             {/* Informations sous le titre */}
             <div className="post-title-meta">
               {isEvenementRemote && post.event_platform && (
@@ -2045,6 +2182,24 @@ const PostDetails = () => {
             )}
 
             {/* Section candidatures pour les matchs (propriétaire uniquement) */}
+            {isOwner && isEvenementPost && (
+              <div className="event-broadcast-section">
+                <h3>Réservants événement</h3>
+                <p>
+                  Envoyez le même message à tous les réservants acceptés, sans créer de groupe.
+                </p>
+                <button
+                  type="button"
+                  className="event-broadcast-btn"
+                  onClick={handleOpenBroadcastModal}
+                  disabled={eventTicketParticipantsLoading}
+                >
+                  {eventTicketParticipantsLoading ? 'Chargement...' : 'Message aux réservants'}
+                </button>
+              </div>
+            )}
+
+            {/* Section candidatures pour les matchs (propriétaire uniquement) */}
             {isOwner && applications.length > 0 && (
               <div className="applications-section">
                 <h3>Candidatures ({applications.length})</h3>
@@ -2253,65 +2408,102 @@ const PostDetails = () => {
 
             {!isRequestListingPost && contactIntent === 'apply' && (
               <>
-                <div className="confirmation-modal-field">
-                  <label className="confirmation-modal-label" htmlFor="match-request-cv">
-                    CV (obligatoire)
-                  </label>
-                  <div className="confirmation-modal-file-input-wrapper">
-                    <input
-                      id="match-request-cv"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="confirmation-modal-file-input"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0]
-                        if (!file) return
-                        try {
-                          validateRequestFile(file)
-                          setRequestCvDocument(file)
-                          setRequestCvDocumentName(file.name)
-                        } catch (error) {
-                          alert(error instanceof Error ? error.message : 'Fichier invalide')
-                        }
-                      }}
-                    />
-                    {requestCvDocumentName && (
-                      <div className="confirmation-modal-file-name">
-                        ✓ {requestCvDocumentName}
-                      </div>
-                    )}
+                <div className="confirmation-modal-field confirmation-upload-card confirmation-upload-card--required">
+                  <div className="confirmation-upload-header">
+                    <label className="confirmation-modal-label" htmlFor="match-request-cv">
+                      CV (obligatoire)
+                    </label>
+                    <span className="confirmation-upload-badge">Requis</span>
                   </div>
+                  <input
+                    id="match-request-cv"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="confirmation-modal-file-input confirmation-modal-file-input--hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file) return
+                      try {
+                        validateRequestFile(file)
+                        setRequestCvDocument(file)
+                        setRequestCvDocumentName(file.name)
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : 'Fichier invalide')
+                      }
+                    }}
+                  />
+                  <label className="confirmation-upload-trigger" htmlFor="match-request-cv">
+                    <Upload size={16} />
+                    <span>Choisir un fichier</span>
+                  </label>
+                  {requestCvDocumentName && (
+                    <div className="confirmation-modal-file-name confirmation-modal-file-name--modern">
+                      <div className="confirmation-modal-file-main">
+                        <FileText size={15} />
+                        <span>{requestCvDocumentName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="confirmation-modal-file-remove"
+                        onClick={() => {
+                          setRequestCvDocument(null)
+                          setRequestCvDocumentName('')
+                        }}
+                        aria-label="Supprimer le CV"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="confirmation-modal-field">
-                  <label className="confirmation-modal-label" htmlFor="match-request-cover-letter">
-                    Lettre de motivation (optionnel)
-                  </label>
-                  <div className="confirmation-modal-file-input-wrapper">
-                    <input
-                      id="match-request-cover-letter"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="confirmation-modal-file-input"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0]
-                        if (!file) return
-                        try {
-                          validateRequestFile(file)
-                          setRequestCoverLetterDocument(file)
-                          setRequestCoverLetterDocumentName(file.name)
-                        } catch (error) {
-                          alert(error instanceof Error ? error.message : 'Fichier invalide')
-                        }
-                      }}
-                    />
-                    {requestCoverLetterDocumentName && (
-                      <div className="confirmation-modal-file-name">
-                        ✓ {requestCoverLetterDocumentName}
-                      </div>
-                    )}
+                <div className="confirmation-modal-field confirmation-upload-card">
+                  <div className="confirmation-upload-header">
+                    <label className="confirmation-modal-label" htmlFor="match-request-cover-letter">
+                      Lettre de motivation (optionnel)
+                    </label>
                   </div>
-                </div>
+                  <input
+                    id="match-request-cover-letter"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="confirmation-modal-file-input confirmation-modal-file-input--hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file) return
+                      try {
+                        validateRequestFile(file)
+                        setRequestCoverLetterDocument(file)
+                        setRequestCoverLetterDocumentName(file.name)
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : 'Fichier invalide')
+                      }
+                    }}
+                  />
+                  <label className="confirmation-upload-trigger" htmlFor="match-request-cover-letter">
+                    <Upload size={16} />
+                    <span>Choisir un fichier</span>
+                  </label>
+                  {requestCoverLetterDocumentName && (
+                    <div className="confirmation-modal-file-name confirmation-modal-file-name--modern">
+                      <div className="confirmation-modal-file-main">
+                        <FileText size={15} />
+                        <span>{requestCoverLetterDocumentName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="confirmation-modal-file-remove"
+                        onClick={() => {
+                          setRequestCoverLetterDocument(null)
+                          setRequestCoverLetterDocumentName('')
+                        }}
+                        aria-label="Supprimer la lettre de motivation"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                  </div>
               </>
             )}
 
@@ -2478,6 +2670,47 @@ const PostDetails = () => {
             </div>
           </>,
           document.body
+        )}
+
+        {showBroadcastModal && (
+          <ConfirmationModal
+            visible={showBroadcastModal}
+            presentation="bottom-sheet"
+            title="Message aux réservants"
+            message={`Envoi individuel à ${eventTicketParticipants.length} réservant(s) accepté(s).`}
+            onConfirm={handleSendBroadcastMessage}
+            onCancel={() => setShowBroadcastModal(false)}
+            confirmLabel={broadcastSending ? 'Envoi...' : 'Envoyer à tous'}
+            cancelLabel="Annuler"
+          >
+            <div className="confirmation-modal-field">
+              <label className="confirmation-modal-label" htmlFor="broadcast-message">
+                Message à envoyer
+              </label>
+              <textarea
+                id="broadcast-message"
+                className="confirmation-modal-textarea"
+                placeholder="Ajoutez votre message (lien de visio, consignes, rappel...)"
+                value={broadcastMessage}
+                onChange={(event) => setBroadcastMessage(event.target.value)}
+                maxLength={500}
+              />
+              <div className="confirmation-modal-hint">{broadcastMessage.length}/500</div>
+            </div>
+            <div className="broadcast-participants-preview">
+              {eventTicketParticipants.length > 0 ? (
+                <>
+                  <span>Destinataires :</span>
+                  <span className="broadcast-participants-names">
+                    {eventTicketParticipants.slice(0, 8).map((participant) => participant.name).join(', ')}
+                    {eventTicketParticipants.length > 8 ? ' ...' : ''}
+                  </span>
+                </>
+              ) : (
+                <span>Aucun réservant accepté pour le moment.</span>
+              )}
+            </div>
+          </ConfirmationModal>
         )}
 
         {/* Modal de confirmation d'annulation de demande */}

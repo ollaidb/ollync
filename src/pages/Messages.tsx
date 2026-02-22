@@ -1110,11 +1110,13 @@ const Messages = () => {
       requestsWithData.forEach((request) => {
         // Clé unique : annonce + utilisateur (pour les demandes envoyées) ou annonce + destinataire (pour les demandes reçues)
         const otherUserKey = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
-        const key = request.related_post_id 
+        const key = request.related_post_id
           ? `post_${request.related_post_id}_${otherUserKey}`
           : request.related_service_name
             ? `service_${request.related_service_name}_${otherUserKey}`
-            : `user_${otherUserKey}`
+            : request.request_intent === 'reserve'
+              ? `reserve_${request.id}`
+              : `user_${otherUserKey}_${request.id}`
         
         const existing = uniqueRequests.get(key)
         
@@ -3297,7 +3299,6 @@ const Messages = () => {
                       <ul>
                         <li>Demande d'argent urgente ou pression pour décider vite.</li>
                         <li>Refus de fournir des infos claires ou incohérences dans le récit.</li>
-                        <li>Invitation à continuer la discussion hors de la plateforme.</li>
                       </ul>
                     </div>
                     <div className="conversation-safety-section">
@@ -3326,16 +3327,15 @@ const Messages = () => {
                     <div className="conversation-safety-section">
                       <h3>Moyens de paiement</h3>
                       <ul>
-                        <li>Évitez les virements instantanés ou moyens non traçables.</li>
-                        <li>Ne cliquez jamais sur des liens de paiement envoyés par message.</li>
                         <li>Privilégiez les paiements sécurisés et vérifiables.</li>
                       </ul>
                     </div>
                     <div className="conversation-safety-section">
-                      <h3>Documents à ne pas envoyer</h3>
+                      <h3>Documents sensibles</h3>
                       <ul>
-                        <li>Pièce d'identité, RIB, codes ou mots de passe.</li>
-                        <li>Photos de cartes bancaires ou justificatifs confidentiels.</li>
+                        <li>Pour une pièce d'identité, masquez les informations non nécessaires et ajoutez un filigrane (ex: “Uniquement pour vérification Ollync + date”).</li>
+                        <li>Si vous partagez un document (RIB ou autre justificatif), transmettez uniquement ce qui est strictement nécessaire.</li>
+                        <li>Évitez d'envoyer des codes, mots de passe, photo de carte bancaire ou données complètes non indispensables.</li>
                       </ul>
                     </div>
                     <div className="conversation-safety-section">

@@ -358,8 +358,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     <>
       {/* Overlay transparent avec bloc de rendez-vous au centre */}
       {showCalendarModal && (
-        <div className="appointment-overlay">
-          <div className="appointment-inline-panel">
+        <div className="appointment-overlay" onClick={handleCalendarClose}>
+          <div className="appointment-inline-panel" onClick={(event) => event.stopPropagation()}>
           <div className="appointment-inline-header">
             <h4>Créer un rendez-vous</h4>
             <button 

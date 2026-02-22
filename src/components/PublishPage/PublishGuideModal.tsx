@@ -3,164 +3,85 @@ import './PublishGuideModal.css'
 
 type GuideSection = {
   title: string
-  questions: string[]
-  examples: string[]
+  offerExamples: string[]
+  requestExamples?: string[]
 }
 
 const GUIDE_SECTIONS: GuideSection[] = [
   {
-    title: 'Titres courts / Tendance',
-    questions: [
-      'Quel trend, format ou plateforme ?',
-      'Le titre peut-il être juste un type de vidéo ou un scénario ?',
-      'Quel objectif principal (collab, tournage, idée, besoin) ?',
+    title: 'Création de contenu',
+    offerExamples: [
+      'Je propose de filmer vos contenus lifestyle',
+      'Créateur dispo pour photos et vidéos de marque',
+      'Je propose du montage court format réseaux',
     ],
-    examples: [
-      'Trend TikTok “nom du trend”',
-      'Reel Instagram “nom du format”',
-      'Scénario “nom du scénario”',
-      'Idée vidéo “titre simple”',
-      'Recherche associé pour composer',
+    requestExamples: [
+      'Je cherche un vidéaste pour filmer ma journée',
+      'Recherche photographe pour contenu Instagram',
+      'Besoin d’un monteur pour vidéos YouTube',
     ],
   },
   {
-    title: 'Collaboration / Duo',
-    questions: [
-      'Quel type de duo veux-tu créer (humour, lifestyle, challenge) ?',
-      'Tu veux une collab ponctuelle ou régulière ?',
-      'Quel format et quelle plateforme ?',
+    title: 'Emploi',
+    offerExamples: [
+      'Community manager disponible pour mission mensuelle',
+      'Je propose mes services en montage vidéo',
+      'Rédacteur de contenu disponible à distance',
     ],
-    examples: [
-      'Cherche partenaire pour créer un duo régulier',
-      'Besoin d’un créateur pour collab TikTok',
-      'Duo créatif pour Reels Instagram',
-      'Collaboration pour une série de vidéos',
-      'Binôme pour challenges tendance',
-      'Cherche quelqu’un avec qui collaborer pour une vidéo',
+    requestExamples: [
+      'Recherche monteur pour vidéos hebdomadaires',
+      'Je cherche un community manager pour une marque',
+      'Besoin d’un profil rédaction contenu en freelance',
     ],
   },
   {
-    title: 'Caméraman / Suivi',
-    questions: [
-      'Tu veux juste quelqu’un pour filmer ou aussi cadrer/son ?',
-      'Durée de tournage prévue ?',
-      'Tu filmes avec téléphone ou caméra ?',
+    title: 'Casting',
+    offerExamples: [
+      'Je propose de participer comme figurant',
+      'Modèle photo disponible pour shooting studio',
+      'Voix off disponible pour vidéos promotionnelles',
     ],
-    examples: [
-      'Cherche personne pour me filmer',
-      'Quelqu’un pour me suivre sur un vlog journée',
-      'Besoin d’un caméraman mobile',
-      'Recherche cadreur discret pour tournage rapide',
-      'Besoin d’aide pour filmer un reel',
-      'Recherche quelqu’un pour me filmer sur un spot précis',
+    requestExamples: [
+      'Je cherche 3 figurants pour un sketch',
+      'Recherche modèle vidéo pour clip musical',
+      'Besoin d’une voix off grave pour publicité',
     ],
   },
   {
-    title: 'Vlog / Storytelling',
-    questions: [
-      'Quel thème de vlog (train, ville, backstage, travel) ?',
-      'Tu veux un montage court ou long ?',
-      'Lieu et durée du vlog ?',
-    ],
-    examples: [
-      'Vlog “train/transport” à filmer',
-      'Vidéo “une journée avec moi”',
-      'Vlog découverte en ville',
-      'Tournage vlog backstage',
-      'Vlog challenge en extérieur',
-      'Vlog “sortie création de contenu”',
+    title: 'Lieu',
+    offerExamples: [
+      'Lieu de loisirs disponible pour tournage soirée',
+      'Espace bien-être disponible pour prestations',
+      'Je propose un lieu privatisable le week-end',
     ],
   },
   {
-    title: 'Interview / Questions',
-    questions: [
-      'Sujet précis et angle de discussion ?',
-      'Format interview (face cam, micro‑trottoir) ?',
-      'Durée et plateforme ciblée ?',
+    title: 'Service/Mission',
+    offerExamples: [
+      'Je propose du coaching contenu personnalisé',
+      'Animation de compte disponible pour marque',
+      'Développement business pour créateurs',
     ],
-    examples: [
-      'Je cherche quelqu’un pour poser des questions',
-      'Interview courte pour TikTok',
-      'Discussion à deux pour YouTube',
-      'Talk vidéo sur un sujet spécifique',
-      'Interview “micro‑trottoir” en ville',
+    requestExamples: [
+      'Je cherche un coach pour structurer mon contenu',
+      'Recherche animation de compte pour mon projet',
+      'Besoin d’un accompagnement branding',
     ],
   },
   {
-    title: 'Chaîne YouTube / Formats longs',
-    questions: [
-      'Thème de la chaîne et fréquence de publication ?',
-      'Tu cherches un co‑host ou un invité ?',
-      'Tu as besoin d’aide pour montage ?',
-    ],
-    examples: [
-      'Création d’une chaîne YouTube à deux',
-      'Cherche co‑host pour vidéos longues',
-      'Partenaire pour vidéos YouTube régulières',
-      'Recherche invité pour format YouTube',
-      'Équipe pour série YouTube',
+    title: 'Événement',
+    offerExamples: [
+      'Je propose l’organisation d’une masterclass',
+      'Intervenant disponible pour conférence',
+      'Je propose un atelier pratique en présentiel',
     ],
   },
   {
-    title: 'Concepts spécifiques',
-    questions: [
-      'Quel concept exact (challenge, réaction, expérimentation) ?',
-      'Lieu et timing du tournage ?',
-      'Besoin de participants ou figurants ?',
-    ],
-    examples: [
-      'Vidéo “train/transport” à filmer',
-      'Concept “reaction” en duo',
-      'Vidéo test/expérience sociale',
-      'Concept humoristique à tourner',
-      'Challenge à plusieurs',
-      'Concept “scénario” à réaliser',
-    ],
-  },
-  {
-    title: 'Lieu / Spot de tournage',
-    questions: [
-      'Quel type de lieu (studio, café, extérieur) ?',
-      'Durée d’occupation et budget ?',
-      'Accessibilité et autorisations ?',
-    ],
-    examples: [
-      'Recherche lieu pour shooting',
-      'Besoin d’un endroit pour créer du contenu',
-      'Studio photo dispo pour 2h',
-      'Lieu lumineux pour vidéo',
-      'Spots sympas pour tournage',
-      'Spot précis pour photos Instagram',
-    ],
-  },
-  {
-    title: 'Modèle / Figurants',
-    questions: [
-      'Quel type de profil et style ?',
-      'Durée et lieu du shooting ?',
-      'Contenu rémunéré ou collab ?',
-    ],
-    examples: [
-      'Cherche modèle pour shooting',
-      'Figurant recherché pour vidéo courte',
-      'Casting rapide pour contenu produit',
-      'Modèle pour portraits',
-      'Mannequin pour lookbook',
-    ],
-  },
-  {
-    title: 'Photographe / Vidéaste',
-    questions: [
-      'Tu veux photo, vidéo, ou les deux ?',
-      'Style souhaité (lifestyle, urbain, studio) ?',
-      'Délai et livrables attendus ?',
-    ],
-    examples: [
-      'Photographe recherché pour shooting',
-      'Besoin d’un vidéaste pour contenu',
-      'Recherche photographe lifestyle',
-      'Vidéaste pour clips courts',
-      'Photographe pour book perso',
+    title: 'Vente',
+    offerExamples: [
+      'Je vends un kit lumière complet',
+      'Vente micro pro pour podcast',
+      'Je propose du matériel photo en bon état',
     ],
   },
 ]
@@ -184,8 +105,8 @@ export const PublishGuideModal = ({ isOpen, onClose }: PublishGuideModalProps) =
         </div>
 
         <p className="publish-guide-intro">
-          Utilise ces exemples pour rédiger un titre clair. Tu peux aussi répondre aux questions
-          rapides pour structurer ta demande.
+          Guide rapide pour rédiger un titre selon le type de besoin. Pour chaque catégorie, tu as
+          des exemples pour Offre puis Demande.
         </p>
 
         <div className="publish-guide-sections">
@@ -193,21 +114,23 @@ export const PublishGuideModal = ({ isOpen, onClose }: PublishGuideModalProps) =
             <div key={section.title} className="publish-guide-section">
               <h3 className="publish-guide-section-title">{section.title}</h3>
               <div className="publish-guide-block">
-                <p className="publish-guide-block-title">Questions utiles</p>
+                <p className="publish-guide-block-title">Offre - exemples de titres</p>
                 <ul className="publish-guide-list">
-                  {section.questions.map((question) => (
-                    <li key={question}>{question}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="publish-guide-block">
-                <p className="publish-guide-block-title">Exemples de titres</p>
-                <ul className="publish-guide-list">
-                  {section.examples.map((example) => (
+                  {section.offerExamples.map((example) => (
                     <li key={example}>{example}</li>
                   ))}
                 </ul>
               </div>
+              {section.requestExamples && section.requestExamples.length > 0 && (
+                <div className="publish-guide-block">
+                  <p className="publish-guide-block-title">Demande - exemples de titres</p>
+                  <ul className="publish-guide-list">
+                    {section.requestExamples.map((example) => (
+                      <li key={example}>{example}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>

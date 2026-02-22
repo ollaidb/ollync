@@ -70,6 +70,7 @@ const MatchRequestDetail = ({
   const isPending = request.status === 'pending'
   const isAccepted = request.status === 'accepted'
   const profileUserId = request.other_user?.id
+  const isReservationRequest = request.request_intent === 'reserve'
 
   const formatReservationDuration = (minutes?: number | null) => {
     if (!minutes || minutes <= 0) return ''
@@ -273,10 +274,16 @@ const MatchRequestDetail = ({
     }
   }
 
+  const handleOpenPost = () => {
+    if (!request.related_post?.id) return
+    onClose()
+    navigate(`/post/${request.related_post.id}`)
+  }
+
   return (
-    <div className="match-request-detail-overlay">
+    <div className="match-request-detail-overlay" onClick={onClose}>
       {!isConfirmVisible && (
-        <div className="match-request-detail-content">
+        <div className="match-request-detail-content" onClick={(event) => event.stopPropagation()}>
           <button className="match-request-detail-close" onClick={onClose}>
             <X size={24} />
           </button>
@@ -303,7 +310,13 @@ const MatchRequestDetail = ({
           {request.related_post && (
             <div className="match-request-detail-post">
               <p className="match-request-detail-post-label">Annonce concernée :</p>
-              <p className="match-request-detail-post-title">{request.related_post.title}</p>
+              <button
+                type="button"
+                className="match-request-detail-post-title match-request-detail-post-title-link"
+                onClick={handleOpenPost}
+              >
+                {request.related_post.title}
+              </button>
               {request.request_role && (
                 <p className="match-request-detail-post-subtitle">
                   Poste demandé : {request.request_role}
@@ -376,9 +389,11 @@ const MatchRequestDetail = ({
                 className="match-request-detail-document-link"
                 download={request.request_document_name}
               >
-                <FileText size={18} />
-                <span>{request.request_document_name || 'Document'}</span>
-                <Download size={16} />
+                <FileText size={18} className="match-request-detail-document-icon-start" />
+                <span className="match-request-detail-document-name">{request.request_document_name || 'Document'}</span>
+                <span className="match-request-detail-document-download" aria-hidden="true">
+                  <Download size={16} />
+                </span>
               </a>
             </div>
           )}
@@ -393,14 +408,16 @@ const MatchRequestDetail = ({
                 className="match-request-detail-document-link"
                 download={request.request_cover_letter_name}
               >
-                <FileText size={18} />
-                <span>{request.request_cover_letter_name || 'Lettre de motivation'}</span>
-                <Download size={16} />
+                <FileText size={18} className="match-request-detail-document-icon-start" />
+                <span className="match-request-detail-document-name">{request.request_cover_letter_name || 'Lettre de motivation'}</span>
+                <span className="match-request-detail-document-download" aria-hidden="true">
+                  <Download size={16} />
+                </span>
               </a>
             </div>
           )}
 
-          {(request.reservation_date || request.reservation_time || request.reservation_duration_minutes) && (
+          {isReservationRequest && (request.reservation_date || request.reservation_time || request.reservation_duration_minutes) && (
             <div className="match-request-detail-message">
               <p className="match-request-detail-message-label">Réservation :</p>
               <p className="match-request-detail-message-text">
