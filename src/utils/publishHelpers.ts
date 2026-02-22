@@ -166,8 +166,8 @@ export const validatePublishForm = (
   formData: FormData,
   requireSocialNetwork: boolean = false
 ): ValidationResult => {
-  const MIN_TITLE_CHARS = 20
-  const MIN_DESCRIPTION_CHARS = 80
+  const MIN_TITLE_CHARS = 5
+  const MIN_DESCRIPTION_CHARS = 20
   const MIN_WORK_SCHEDULE_CHARS = 5
   const MIN_RESPONSIBILITIES_CHARS = 60
   const MIN_REQUIRED_SKILLS_CHARS = 40
@@ -292,6 +292,7 @@ export const validatePublishForm = (
   const eventMode = (formData.event_mode || '').trim()
   const isEventRemote = isEvenementsCategory && eventMode === 'remote'
   const isEventInPerson = isEvenementsCategory && eventMode === 'in_person'
+  const locationValue = (formData.location_address || formData.location || '').trim()
 
   // Lieu / mode évènement
   if (isEvenementsCategory) {
@@ -301,14 +302,14 @@ export const validatePublishForm = (
       errors.push('Le type de présence de l’événement est invalide')
     }
 
-    if (isEventInPerson && (!formData.location || formData.location.trim().length === 0)) {
+    if (isEventInPerson && locationValue.length === 0) {
       errors.push('L’adresse est obligatoire pour un événement en présentiel')
     }
 
     if (isEventRemote && (!formData.event_platform || formData.event_platform.trim().length === 0)) {
       errors.push('La plateforme est obligatoire pour un événement à distance')
     }
-  } else if (!formData.location || formData.location.trim().length === 0) {
+  } else if (locationValue.length === 0) {
     errors.push('Le lieu est obligatoire')
   }
 

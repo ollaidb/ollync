@@ -10,7 +10,8 @@ export function getSubcategoriesForPublish(categorySlug: string): Subcategory[] 
   const category = publicationTypes.find(c => c.slug === categorySlug)
   if (!category) return []
 
-  // Récupérer les sous-catégories de base (N2)
+  // Récupérer les sous-catégories de base (N2) pour la publication.
+  // "tout" est un filtre de navigation, pas une vraie sous-catégorie de publication.
   const subcategories = category.subcategories.filter(sub => sub.id !== 'tout')
 
   // Enrichir avec les niveaux 3 et 4
@@ -56,4 +57,3 @@ export function getPublicationTypesWithSubSubCategories(): PublicationType[] {
     subcategories: getSubcategoriesForPublish(category.slug)
   }))
 }
-

@@ -41,9 +41,15 @@ interface Step5LocationMediaProps {
   formData: FormData
   onUpdateFormData: (updates: Partial<FormData>) => void
   currentPostId?: string | null
+  validationErrors?: string[]
 }
 
-export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }: Step5LocationMediaProps) => {
+export const Step5LocationMedia = ({
+  formData,
+  onUpdateFormData,
+  currentPostId,
+  validationErrors = []
+}: Step5LocationMediaProps) => {
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [uploadingDocument, setUploadingDocument] = useState(false)
@@ -96,6 +102,10 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
   const eventMode = ((formData.event_mode || '') as 'in_person' | 'remote' | '')
   const isEventInPerson = eventMode === 'in_person'
   const isEventRemote = eventMode === 'remote'
+  const locationValidationError = validationErrors.find(
+    (error) => /lieu est obligatoire|adresse est obligatoire/i.test(error)
+  )
+  const isLocationFieldInvalid = !!locationValidationError
 
   const profileLevelOptions = useMemo(() => ([
     'Amateur',
@@ -643,7 +653,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
                   }}
                   onLocationSelect={handleLocationSelect}
                   placeholder="Rechercher une adresse (ex: Paris, France)"
-                  className="step5-location-autocomplete"
+                  className={`step5-location-autocomplete ${isLocationFieldInvalid ? 'is-invalid' : ''}`}
                 />
               </div>
             ) : (
@@ -673,7 +683,7 @@ export const Step5LocationMedia = ({ formData, onUpdateFormData, currentPostId }
             }}
             onLocationSelect={handleLocationSelect}
             placeholder="Rechercher une adresse (ex: Paris, France)"
-            className="step5-location-autocomplete"
+            className={`step5-location-autocomplete ${isLocationFieldInvalid ? 'is-invalid' : ''}`}
           />
         </div>
       )}

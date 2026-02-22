@@ -10,6 +10,18 @@
   box-shadow: 0 -4px 12px hsl(0 0% 0% / 0.08);
 }
 
+.publish-actions-validation {
+  max-width: 800px;
+  margin: 0 auto 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff4f4;
+  color: #b42318;
+  border: 1px solid #f3b3b3;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .publish-actions-content {
   max-width: 800px;
   margin: 0 auto;
@@ -37,6 +49,11 @@
   background-color: var(--accent);
 }
 
+.publish-action-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .publish-action-button.secondary {
   background-color: var(--muted);
   color: var(--foreground);
@@ -55,10 +72,16 @@
     gap: 8px;
   }
 
+  .publish-actions-validation {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
   .publish-action-button {
     padding: 8px 10px;
     font-size: 13px;
     border-radius: 6px;
   }
 }
-

@@ -77,6 +77,16 @@
   border-color: #10b981;
 }
 
+.location-autocomplete.is-invalid .location-input {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15);
+}
+
+.location-autocomplete.is-invalid .location-input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.18);
+}
+
 .location-input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;

@@ -420,9 +420,9 @@ export default function Publish() {
     return validatePublishForm(formData, requireSocialNetwork)
   }, [formData, requireSocialNetwork])
 
-  const updateFormData = (updates: Partial<typeof formData>) => {
-    setFormData({ ...formData, ...updates })
-  }
+  const updateFormData = useCallback((updates: Partial<typeof formData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }))
+  }, [])
 
   const handlePublishPost = (status: 'draft' | 'active') => {
     const showToastMessage = (message: string) => {
@@ -593,6 +593,7 @@ export default function Publish() {
               formData={formData}
               onUpdateFormData={updateFormData}
               currentPostId={editPostId}
+              validationErrors={validation.errors}
             />
           )}
         </div>
@@ -606,6 +607,7 @@ export default function Publish() {
           onPreview={() => {}}
           onPublish={() => handlePublishPost('active')}
           isValid={validation.isValid}
+          validationErrors={validation.errors}
         />
       )}
 

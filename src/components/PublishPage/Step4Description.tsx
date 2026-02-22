@@ -249,22 +249,25 @@ export const Step4Description = ({
   const selectedOpeningDays = openingDays.filter((slot) => slot.enabled)
 
   useEffect(() => {
+    if (isCastingFigurantRequest) return
     if (!formData.deadline || !formData.deadline.trim()) {
       onUpdateFormData({ deadline: todayKey })
     }
-  }, [formData.deadline, onUpdateFormData, todayKey])
+  }, [isCastingFigurantRequest, formData.deadline, onUpdateFormData, todayKey])
 
   useEffect(() => {
+    if (isCastingFigurantRequest) return
     if (!formData.neededTime || !formData.neededTime.trim()) {
       onUpdateFormData({ neededTime: '01:00' })
     }
-  }, [formData.neededTime, onUpdateFormData])
+  }, [isCastingFigurantRequest, formData.neededTime, onUpdateFormData])
 
   useEffect(() => {
+    if (isCastingFigurantRequest) return
     if (!formData.duration_minutes || !formData.duration_minutes.trim()) {
       onUpdateFormData({ duration_minutes: '60' })
     }
-  }, [formData.duration_minutes, onUpdateFormData])
+  }, [isCastingFigurantRequest, formData.duration_minutes, onUpdateFormData])
 
   const formatDeadlineLabel = (value?: string) => {
     if (!value) return 'Choisir une date'

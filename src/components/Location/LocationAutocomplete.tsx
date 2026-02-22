@@ -34,6 +34,9 @@ interface LocationAutocompleteProps {
 // Cache simple pour éviter les requêtes répétées
 const locationCache = new Map<string, { data: LocationSuggestion[], timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+let nominatimUnavailableInBrowser = false
+const ENABLE_BROWSER_NOMINATIM =
+  String((import.meta as any).env?.VITE_ENABLE_NOMINATIM_BROWSER || '').toLowerCase() === 'true'
 
 export const LocationAutocomplete = ({
   value,
@@ -51,6 +54,9 @@ export const LocationAutocomplete = ({
   const [hasSelected, setHasSelected] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [userInitiated, setUserInitiated] = useState(false)
+  const [autocompleteUnavailable, setAutocompleteUnavailable] = useState(
+    nominatimUnavailableInBrowser || !ENABLE_BROWSER_NOMINATIM
+  )
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>()
@@ -61,7 +67,7 @@ export const LocationAutocomplete = ({
       clearTimeout(timeoutRef.current)
     }
 
-    if (!value.trim() || value.length < 2 || !isFocused || !userInitiated) {
+    if (!value.trim() || value.length < 2 || !isFocused || !userInitiated || autocompleteUnavailable) {
       setSuggestions([])
       setShowSuggestions(false)
       setIsLoading(false)
@@ -83,7 +89,7 @@ export const LocationAutocomplete = ({
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [value, isFocused, userInitiated])
+  }, [value, isFocused, userInitiated, autocompleteUnavailable])
 
   useEffect(() => {
     if (value.trim().length > 0 && !isFocused && !userInitiated) {
@@ -93,7 +99,7 @@ export const LocationAutocomplete = ({
   }, [value, isFocused, userInitiated])
 
   const searchLocations = async (query: string) => {
-    if (!query.trim() || query.length < 2) {
+    if (!query.trim() || query.length < 2 || autocompleteUnavailable) {
       setSuggestions([])
       return
     }
@@ -119,16 +125,11 @@ export const LocationAutocomplete = ({
         `format=json&` +
         `limit=5&` +
         `addressdetails=1&` +
-        `accept-language=fr`,
-        {
-          headers: {
-            'User-Agent': 'Ollync App' // Requis par Nominatim
-          }
-        }
+        `accept-language=fr`
       )
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la recherche')
+        throw new Error(`Erreur lors de la recherche (${response.status})`)
       }
 
       const data: LocationSuggestion[] = await response.json()
@@ -150,8 +151,13 @@ export const LocationAutocomplete = ({
         }
       }, 100)
     } catch (error) {
-      console.error('Error searching locations:', error)
+      // Nominatim bloque souvent les appels navigateur (CORS/403).
+      // On désactive l'autocomplete pour cette session et on garde la saisie manuelle.
+      nominatimUnavailableInBrowser = true
+      setAutocompleteUnavailable(true)
       setSuggestions([])
+      setShowSuggestions(false)
+      console.warn('Autocomplete lieu indisponible (CORS/Nominatim). Saisie manuelle conservée.')
     } finally {
       setIsLoading(false)
     }
@@ -294,6 +300,18 @@ export const LocationAutocomplete = ({
           )
         )}
       </div>
+
+      {autocompleteUnavailable && (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 12,
+            color: '#6b7280'
+          }}
+        >
+          Recherche automatique indisponible. Saisissez le lieu manuellement.
+        </div>
+      )}
 
       {showSuggestions && suggestions.length > 0 && !hasSelected && (
         <div ref={suggestionsRef} className="location-suggestions">

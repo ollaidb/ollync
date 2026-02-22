@@ -337,17 +337,10 @@ const PostDetails = () => {
     navigate('/home')
   }
 
-  const recommendedPostsFull = useMemo(() => {
-    const list: Array<any> = []
-    if (taggedPost) list.push(taggedPost)
-    relatedPosts.forEach((postItem) => {
-      if (!taggedPost || postItem.id !== taggedPost.id) {
-        list.push(postItem)
-      }
-    })
-    return list
-  }, [taggedPost, relatedPosts])
-  const recommendedPosts = recommendedPostsFull.slice(0, maxPostsPerSection)
+  const recommendedPosts = useMemo(
+    () => relatedPosts.filter((postItem) => !taggedPost || postItem.id !== taggedPost.id).slice(0, maxPostsPerSection),
+    [relatedPosts, taggedPost, maxPostsPerSection]
+  )
 
   useEffect(() => {
     if (id) {
@@ -392,6 +385,9 @@ const PostDetails = () => {
 
   const fetchPost = async () => {
     if (!id) return
+    const isUuid = (value: unknown) =>
+      typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 
     try {
       // 1. Récupérer le post
@@ -448,55 +444,79 @@ const PostDetails = () => {
 
       // 3. Récupérer la catégorie
       let categoryData = null
-      if (post.category_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: catData } = await supabase
-          .from('categories')
-          .select('id, name, slug')
+      if (post.category_id && isUuid(post.category_id)) {
+        const { data: catData, error: categoryError } = await (supabase
+          .from('categories') as any)
+          .select('slug')
           .eq('id', post.category_id)
-          .single()
+          .maybeSingle()
+
+        if (categoryError) {
+          console.warn('Category query failed:', categoryError)
+        }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (catData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const category = catData as any
           categoryData = {
-            name: category.name,
+            name: category.slug || 'Catégorie',
             slug: category.slug
           }
         }
+      } else if (post.category_id) {
+        console.warn('category_id invalide dans post:', post.category_id)
       }
 
       // 4. Récupérer l'annonce taguée (optionnel)
       if (post.tagged_post_id) {
         try {
-          const { data: taggedData, error: taggedError } = await supabase
+          const { data: taggedPostRaw, error: taggedError } = await supabase
             .from('posts')
-            .select(`
-              id,
-              title,
-              description,
-              price,
-              location,
-              images,
-              likes_count,
-              comments_count,
-              created_at,
-              needed_date,
-              number_of_people,
-              delivery_available,
-              is_urgent,
-              user_id,
-              category_id,
-              sub_category_id,
-              profiles (username, full_name, avatar_url),
-              categories (name, slug)
-            `)
+            .select('*')
             .eq('id', post.tagged_post_id)
-            .single()
+            .maybeSingle()
 
-          if (!taggedError && taggedData) {
-            setTaggedPost(mapPost(taggedData as any))
+          if (!taggedError && taggedPostRaw) {
+            // Enrichissement robuste pour éviter les erreurs 400 si certaines relations/colonnes sont absentes.
+            const tagged = taggedPostRaw as any
+            let taggedProfile: any = null
+            let taggedCategory: any = null
+
+            if (tagged.user_id) {
+              const { data: taggedProfileData } = await supabase
+                .from('profiles')
+                .select('username, full_name, avatar_url')
+                .eq('id', tagged.user_id)
+                .maybeSingle()
+              taggedProfile = taggedProfileData || null
+            }
+
+            if (tagged.category_id && isUuid(tagged.category_id)) {
+              const { data: taggedCategoryData, error: taggedCategoryError } = await (supabase
+                .from('categories') as any)
+                .select('slug')
+                .eq('id', tagged.category_id)
+                .maybeSingle()
+
+              if (taggedCategoryError) {
+                console.warn('Tagged post category query failed:', taggedCategoryError)
+              } else if (taggedCategoryData) {
+                taggedCategory = {
+                  slug: (taggedCategoryData as any).slug,
+                  name: (taggedCategoryData as any).slug || 'Catégorie'
+                }
+              }
+            }
+
+            setTaggedPost(mapPost({
+              ...tagged,
+              likes_count: Number(tagged.likes_count || 0),
+              comments_count: Number(tagged.comments_count || 0),
+              delivery_available: Boolean(tagged.delivery_available),
+              profiles: taggedProfile,
+              categories: taggedCategory
+            } as any))
           } else {
             setTaggedPost(null)
           }
@@ -510,23 +530,28 @@ const PostDetails = () => {
 
       // 4. Récupérer la sous-catégorie
       let subCategoryData = null
-      if (post.sub_category_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: subCatData } = await supabase
-          .from('sub_categories')
-          .select('id, name, slug')
+      if (post.sub_category_id && isUuid(post.sub_category_id)) {
+        const { data: subCatData, error: subCategoryError } = await (supabase
+          .from('sub_categories') as any)
+          .select('slug')
           .eq('id', post.sub_category_id)
-          .single()
+          .maybeSingle()
+
+        if (subCategoryError) {
+          console.warn('Subcategory query failed:', subCategoryError)
+        }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (subCatData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const subCategory = subCatData as any
           subCategoryData = {
-            name: subCategory.name,
+            name: subCategory.slug || 'Sous-catégorie',
             slug: subCategory.slug
           }
         }
+      } else if (post.sub_category_id) {
+        console.warn('sub_category_id invalide dans post:', post.sub_category_id)
       }
 
       // 5. Combiner les données
@@ -2178,6 +2203,18 @@ const PostDetails = () => {
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Annonce taguée */}
+            {taggedPost && (
+              <div className="other-posts-section">
+                <div className="other-posts-header" role="presentation">
+                  <h3>Annonce taguée</h3>
+                </div>
+                <div className="other-posts-grid">
+                  <PostCard post={taggedPost} viewMode="grid" hideCategoryBadge />
+                </div>
               </div>
             )}
 

@@ -7,6 +7,7 @@ interface PublishActionsProps {
   onPreview: () => void
   onPublish: () => void
   isValid?: boolean
+  validationErrors?: string[]
   insets?: { bottom: number }
 }
 
@@ -15,10 +16,22 @@ export const PublishActions = ({
   onSaveDraft, 
   onPreview: _onPreview, 
   onPublish,
-  isValid = true
+  isValid = true,
+  validationErrors = []
 }: PublishActionsProps) => {
+  const rawFirstError = !isValid ? validationErrors[0] : null
+  const firstError =
+    rawFirstError && /lieu est obligatoire|adresse est obligatoire/i.test(rawFirstError)
+      ? null
+      : rawFirstError
+
   return (
     <div className="publish-actions">
+      {firstError && (
+        <div className="publish-actions-validation" role="alert">
+          {firstError}
+        </div>
+      )}
       <div className="publish-actions-content">
         <button
           className="publish-action-button secondary"
@@ -30,6 +43,7 @@ export const PublishActions = ({
           className="publish-action-button primary"
           onClick={onPublish}
           disabled={!isValid}
+          title={!isValid ? firstError || 'Veuillez compléter les champs obligatoires' : undefined}
         >
           Publier
         </button>
@@ -37,4 +51,3 @@ export const PublishActions = ({
     </div>
   )
 }
-
