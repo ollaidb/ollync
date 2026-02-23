@@ -83,6 +83,8 @@ function AppContent() {
       <Route path="/messages/:id/info" element={<Messages />} />
       <Route path="/messages/:id/media" element={<Messages />} />
       <Route path="/messages/:id/appointments" element={<Messages />} />
+      <Route path="/messages/:id/contracts" element={<Messages />} />
+      <Route path="/messages/:id/posts" element={<Messages />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/public" element={<Profile />} />
       <Route path="/profile/public/:id" element={<Profile />} />

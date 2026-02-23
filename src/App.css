@@ -12,6 +12,8 @@
   flex: 1;
   padding-bottom: 3px;
   overflow-y: auto;
+  background-color: var(--background);
+  overscroll-behavior-y: contain;
 }
 
 .main-content.with-header {

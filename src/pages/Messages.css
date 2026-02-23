@@ -208,6 +208,8 @@
   padding-right: 20px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: var(--background);
+  overscroll-behavior: contain;
 }
 
 .messages-content::-webkit-scrollbar {
@@ -356,6 +358,23 @@
   cursor: pointer;
 }
 
+.conversation-info-profile-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  text-underline-offset: 3px;
+}
+
+.conversation-info-profile-link:hover {
+  color: var(--primary);
+}
+
 .conversation-info-field {
   display: flex;
   flex-direction: column;
@@ -401,12 +420,75 @@
   padding: 8px 16px;
   font-size: 14px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.conversation-info-save.is-success {
+  background: #16a34a;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #16a34a 16%, transparent);
+  animation: conversation-save-bounce 240ms ease-out;
+}
+
+@keyframes conversation-save-bounce {
+  0% {
+    transform: scale(0.98);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .conversation-info-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.conversation-info-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conversation-info-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 85%, var(--input));
+}
+
+.conversation-info-preview-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.conversation-info-preview-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-info-preview-subtitle {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .conversation-info-row {
@@ -540,6 +622,21 @@
   color: var(--foreground);
 }
 
+.conversation-participant-name-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.conversation-participant-name-link:hover {
+  color: var(--primary);
+}
+
 .conversation-participant-role {
   margin: 4px 0 0;
   font-size: 12px;
@@ -663,6 +760,97 @@
   font-size: 13px;
   color: var(--foreground);
   cursor: pointer;
+}
+
+.conversation-record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, white), var(--card));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--foreground) 4%, transparent);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.conversation-record-row:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.conversation-record-row:active {
+  transform: translateY(0);
+}
+
+.conversation-record-row-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conversation-record-row-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-record-row-subtitle {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-record-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.conversation-record-row-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.conversation-record-row--appointment .conversation-record-row-badge {
+  color: #0f766e;
+  background: color-mix(in srgb, #14b8a6 14%, transparent);
+  border-color: color-mix(in srgb, #14b8a6 22%, transparent);
+}
+
+.conversation-record-row--contract .conversation-record-row-badge {
+  color: #7c3aed;
+  background: color-mix(in srgb, #8b5cf6 14%, transparent);
+  border-color: color-mix(in srgb, #8b5cf6 22%, transparent);
+}
+
+.conversation-record-row--post .conversation-record-row-badge {
+  color: #1d4ed8;
+  background: color-mix(in srgb, #3b82f6 14%, transparent);
+  border-color: color-mix(in srgb, #3b82f6 22%, transparent);
+}
+
+.conversation-record-row-chevron {
+  color: var(--muted-foreground);
 }
 
 .conversation-media-actions-overlay {

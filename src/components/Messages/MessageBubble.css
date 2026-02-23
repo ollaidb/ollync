@@ -223,7 +223,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 6px;
+  padding: 8px 10px;
 }
 
 .message-document-info,
@@ -243,7 +243,7 @@
 .message-rate-amount,
 .message-calendar-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -285,16 +285,27 @@
   overflow-wrap: anywhere;
 }
 
+.message-calendar-subtitle {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
 .message-bubble.own .message-calendar-date,
 .message-bubble.own .message-calendar-time,
-.message-bubble.own .message-calendar-duration {
+.message-bubble.own .message-calendar-duration,
+.message-bubble.own .message-calendar-subtitle {
   color: var(--primary-foreground);
   opacity: 0.9;
 }
 
 .message-bubble.calendar-message .message-calendar-date,
 .message-bubble.calendar-message .message-calendar-time,
-.message-bubble.calendar-message .message-calendar-duration {
+.message-bubble.calendar-message .message-calendar-duration,
+.message-bubble.calendar-message .message-calendar-subtitle {
   color: var(--muted-foreground);
   opacity: 1;
 }
@@ -706,56 +717,67 @@
 .message-post-share {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 8px 10px;
+  min-height: 72px;
+  width: min(252px, calc(100vw - 132px));
   background-color: rgba(255, 255, 255, 0.6);
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .message-post-share:hover {
   background-color: rgba(255, 255, 255, 0.8);
 }
 
-.message-post-share-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
+.message-post-share-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--primary) 12%, white);
+  color: var(--primary);
   flex-shrink: 0;
-  border: 2px solid var(--border);
+  overflow: hidden;
+}
+
+.message-post-share-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .message-post-share-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px;
 }
 
 .message-post-share-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--foreground);
+  line-height: 1.15;
+}
+
+.message-post-share-subtitle {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.25;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.message-post-share-link {
-  font-size: 12px;
-  color: var(--primary);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.message-post-share:hover .message-post-share-link {
-  text-decoration: underline;
 }
 
 .message-contract-share {
@@ -763,12 +785,37 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
+  min-height: 72px;
+  width: min(252px, calc(100vw - 132px));
   background-color: rgba(255, 255, 255, 0.62);
   border: none;
   border-radius: 8px;
   transition: all 0.2s;
   max-width: 100%;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+.message-calendar {
+  min-height: 72px;
+  width: min(252px, calc(100vw - 132px));
+  background-color: rgba(255, 255, 255, 0.62);
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.message-calendar:hover {
+  background-color: rgba(255, 255, 255, 0.84);
+}
+
+.message-calendar .message-calendar-info {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px;
 }
 
 .message-contract-share:hover {
@@ -790,9 +837,10 @@
 .message-contract-share-content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px;
 }
 
 .message-contract-share-title {
@@ -811,13 +859,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.25;
-}
-
-.message-contract-share-link {
-  font-size: 11px;
-  color: var(--primary);
-  font-weight: 500;
-  line-height: 1.2;
 }
 
 .contract-inline-panel {

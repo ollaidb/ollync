@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
@@ -220,6 +220,7 @@ const Messages = () => {
   const [groupPhotoFile, setGroupPhotoFile] = useState<File | null>(null)
   const [savingGroup, setSavingGroup] = useState(false)
   const [aliasDraft, setAliasDraft] = useState('')
+  const [aliasSaveFeedback, setAliasSaveFeedback] = useState<'idle' | 'saved'>('idle')
   const [mediaTab, setMediaTab] = useState<'media' | 'links' | 'documents'>('media')
   const [showAddParticipants, setShowAddParticipants] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<ConversationParticipant | null>(null)
@@ -238,11 +239,14 @@ const Messages = () => {
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
+  const aliasSaveFeedbackTimerRef = useRef<number | null>(null)
   const loadMessagesRequestIdRef = useRef(0)
   const loadConversationsRequestIdRef = useRef(0)
   const isInfoView = location.pathname.endsWith('/info')
   const isMediaView = location.pathname.endsWith('/media')
   const isAppointmentsView = location.pathname.endsWith('/appointments')
+  const isContractsView = location.pathname.endsWith('/contracts')
+  const isPostsView = location.pathname.endsWith('/posts')
   const isConversationView = Boolean(conversationId || selectedConversation)
 
   // Lire le paramètre filter depuis l'URL pour activer automatiquement le bon filtre
@@ -464,6 +468,18 @@ const Messages = () => {
     return `${datePart} • ${timePart}`
   }
 
+  const getContractMessageLabel = (message: Message): string => {
+    const raw = (message.content || '').trim()
+    if (!raw) return 'Contrat partagé'
+    return raw.replace(/^Contrat partagé\s*[•:-]\s*/i, '').trim() || raw
+  }
+
+  const getSharedPostLabel = (message: Message): string => {
+    const raw = (message.content || '').trim()
+    if (!raw) return 'Annonce partagée'
+    return raw.replace(/^Annonce partagée\s*[•:-]\s*/i, '').trim() || raw
+  }
+
   const formatLastSeen = (dateString?: string | null): string => {
     if (!dateString) return 'Dernière activité : inconnue'
 
@@ -498,6 +514,49 @@ const Messages = () => {
     return match ? match[0] : ''
   }
 
+  const openPublicProfile = (profileId?: string | null) => {
+    if (!profileId) return
+    navigate(`/profile/public/${profileId}`)
+  }
+
+  const openContractDetails = (message: Message) => {
+    const params = new URLSearchParams()
+    if (message.shared_contract_id) params.set('contract', String(message.shared_contract_id))
+    if (!selectedConversation?.is_group && selectedConversation?.other_user?.id) {
+      params.set('counterparty', selectedConversation.other_user.id)
+    }
+    const query = params.toString()
+    navigate(query ? `/profile/contracts?${query}` : '/profile/contracts')
+  }
+
+  const openAppointmentDetailsFromMessage = (message: Message) => {
+    const currentId = selectedConversation?.id || conversationId
+    const data = (message.calendar_request_data || {}) as {
+      title?: string
+      appointment_datetime?: string
+    }
+
+    const matchedAppointment = appointments.find((appointment) => {
+      if (currentId && appointment.conversation_id !== currentId) return false
+      const sameDate = data.appointment_datetime
+        ? appointment.appointment_datetime === data.appointment_datetime
+        : true
+      const sameTitle = data.title
+        ? (appointment.title || '').trim() === (data.title || '').trim()
+        : true
+      return sameDate && sameTitle
+    })
+
+    if (matchedAppointment) {
+      setSelectedAppointmentPreview(matchedAppointment)
+      return
+    }
+
+    if (currentId) {
+      navigate(`/messages/${currentId}?openAppointment=1`)
+    }
+  }
+
   const handleSaveMedia = async (msg: Message) => {
     if (!msg.file_url) return
     try {
@@ -517,6 +576,18 @@ const Messages = () => {
       window.open(msg.file_url, '_blank', 'noopener,noreferrer')
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (aliasSaveFeedbackTimerRef.current) {
+        window.clearTimeout(aliasSaveFeedbackTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    setAliasSaveFeedback('idle')
+  }, [selectedConversation?.id])
 
   const handleShareMedia = async (msg: Message, type: 'link' | 'media') => {
     try {
@@ -2335,6 +2406,8 @@ const Messages = () => {
       const appointmentMessages = messages.filter((msg) =>
         msg.message_type === 'calendar_request' && msg.calendar_request_data
       )
+      const contractMessages = messages.filter((msg) => msg.message_type === 'contract_share')
+      const sharedPostMessages = messages.filter((msg) => msg.message_type === 'post_share')
 
       return (
         <div className="messages-page-container conversation-page conversation-info-page">
@@ -2373,6 +2446,15 @@ const Messages = () => {
                     ;(e.target as HTMLImageElement).src = fallback
                   }}
                 />
+                {!isGroupConversation && (
+                  <button
+                    type="button"
+                    className="conversation-info-profile-link"
+                    onClick={() => openPublicProfile(selectedConversation?.other_user?.id)}
+                  >
+                    {displayName}
+                  </button>
+                )}
                 {isGroupConversation && isGroupOwner && (
                   <button
                     type="button"
@@ -2503,16 +2585,32 @@ const Messages = () => {
                   </div>
                   <button
                     type="button"
-                    className="conversation-info-save"
+                    className={`conversation-info-save ${aliasSaveFeedback === 'saved' ? 'is-success' : ''}`}
                     onClick={() => {
                       if (!selectedConversation?.id) return
                       const trimmed = aliasDraft.trim()
                       const next = { ...conversationAliases, [selectedConversation.id]: trimmed }
                       setConversationAliases(next)
                       localStorage.setItem('messages_aliases', JSON.stringify(next))
+                      setAliasSaveFeedback('saved')
+                      if (aliasSaveFeedbackTimerRef.current) {
+                        window.clearTimeout(aliasSaveFeedbackTimerRef.current)
+                      }
+                      aliasSaveFeedbackTimerRef.current = window.setTimeout(() => {
+                        setAliasSaveFeedback('idle')
+                        aliasSaveFeedbackTimerRef.current = null
+                      }, 1400)
                     }}
+                    aria-live="polite"
                   >
-                    Enregistrer
+                    {aliasSaveFeedback === 'saved' ? (
+                      <>
+                        <Check size={16} />
+                        Enregistré
+                      </>
+                    ) : (
+                      'Enregistrer'
+                    )}
                   </button>
                 </>
               )}
@@ -2628,17 +2726,106 @@ const Messages = () => {
                 <ChevronRight size={18} className="conversation-info-arrow" />
               </div>
               {appointmentMessages.length === 0 ? null : (
-                <div className="conversation-info-list">
-                  {appointmentMessages.slice(0, 6).map((msg) => (
-                    <div key={msg.id} className="conversation-info-row">
-                      <div className="conversation-info-row-left">
-                        <span>{(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}</span>
+                <div className="conversation-info-preview-list">
+                  {appointmentMessages.slice(0, 1).map((msg) => (
+                    <div key={msg.id} className="conversation-info-preview-row">
+                      <div className="conversation-info-preview-main">
+                        <span className="conversation-info-preview-title">
+                          {(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}
+                        </span>
+                        <span className="conversation-info-preview-subtitle">
+                          {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
+                            ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
+                            : 'Date à confirmer'}
+                        </span>
                       </div>
-                      <span className="conversation-info-role">
-                        {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
-                          ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
-                          : ''}
-                      </span>
+                      <ChevronRight size={16} className="conversation-info-arrow" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div
+              className="conversation-info-card conversation-info-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/posts`)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  const currentId = selectedConversation?.id || conversationId
+                  if (currentId) {
+                    navigate(`/messages/${currentId}/posts`)
+                  }
+                }
+              }}
+            >
+              <div className="conversation-info-header-row">
+                <h3>Annonces</h3>
+                <ChevronRight size={18} className="conversation-info-arrow" />
+              </div>
+              {sharedPostMessages.length === 0 ? null : (
+                <div className="conversation-info-preview-list">
+                  {sharedPostMessages.slice(0, 1).map((msg) => (
+                    <div key={msg.id} className="conversation-info-preview-row">
+                      <div className="conversation-info-preview-main">
+                        <span className="conversation-info-preview-title">
+                          {getSharedPostLabel(msg)}
+                        </span>
+                        <span className="conversation-info-preview-subtitle">
+                          Partagée le {formatAppointmentDate(msg.created_at)}
+                        </span>
+                      </div>
+                      <ChevronRight size={16} className="conversation-info-arrow" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div
+              className="conversation-info-card conversation-info-card-clickable"
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/contracts`)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  const currentId = selectedConversation?.id || conversationId
+                  if (currentId) {
+                    navigate(`/messages/${currentId}/contracts`)
+                  }
+                }
+              }}
+            >
+              <div className="conversation-info-header-row">
+                <h3>Contrats</h3>
+                <ChevronRight size={18} className="conversation-info-arrow" />
+              </div>
+              {contractMessages.length === 0 ? null : (
+                <div className="conversation-info-preview-list">
+                  {contractMessages.slice(0, 1).map((msg) => (
+                    <div key={msg.id} className="conversation-info-preview-row">
+                      <div className="conversation-info-preview-main">
+                        <span className="conversation-info-preview-title">
+                          {getContractMessageLabel(msg)}
+                        </span>
+                        <span className="conversation-info-preview-subtitle">
+                          Partagé le {formatAppointmentDate(msg.created_at)}
+                        </span>
+                      </div>
+                      <ChevronRight size={16} className="conversation-info-arrow" />
                     </div>
                   ))}
                 </div>
@@ -2854,9 +3041,18 @@ const Messages = () => {
                       }}
                     />
                     <div>
-                      <p className="conversation-participant-name">
+                      <button
+                        type="button"
+                        className="conversation-participant-name conversation-participant-name-link"
+                        onClick={() => {
+                          const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
+                          if (!profileId) return
+                          setSelectedParticipant(null)
+                          openPublicProfile(profileId)
+                        }}
+                      >
                         {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
-                      </p>
+                      </button>
                       <p className="conversation-participant-role">
                         {selectedParticipant.user_id === selectedConversation?.group_creator_id
                           ? 'Créateur'
@@ -3199,16 +3395,142 @@ const Messages = () => {
             ) : (
               <div className="conversation-media-list">
                 {appointmentItems.map((msg) => (
-                  <div key={msg.id} className="conversation-media-row">
-                    <span>
-                      {(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}
-                    </span>
-                    <span className="conversation-info-role">
-                      {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
-                        ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
-                        : ''}
-                    </span>
-                  </div>
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-record-row conversation-record-row--appointment"
+                    onClick={() => openAppointmentDetailsFromMessage(msg)}
+                  >
+                    <div className="conversation-record-row-content">
+                      <span className="conversation-record-row-title">
+                        {(msg.calendar_request_data as { title?: string })?.title || 'Rendez-vous'}
+                      </span>
+                      <span className="conversation-record-row-subtitle">
+                        {(msg.calendar_request_data as { appointment_datetime?: string })?.appointment_datetime
+                          ? formatAppointmentDate((msg.calendar_request_data as { appointment_datetime?: string }).appointment_datetime as string)
+                          : 'Date à confirmer'}
+                      </span>
+                    </div>
+                    <div className="conversation-record-row-meta">
+                      <span className="conversation-record-row-badge">Rendez-vous</span>
+                      <ChevronRight size={16} className="conversation-record-row-chevron" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (isContractsView) {
+      const contractItems = messages.filter((msg) => msg.message_type === 'contract_share')
+
+      return (
+        <div className="messages-page-container conversation-page conversation-media-page">
+          <div className="conversation-header">
+            <BackButton
+              className="conversation-back-button"
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/info`)
+                } else {
+                  navigate('/messages')
+                }
+              }}
+            />
+            <div className="conversation-header-center">
+              <h1 className="conversation-header-name">Contrats</h1>
+            </div>
+          </div>
+
+          <div className="conversation-media-content">
+            {contractItems.length === 0 ? (
+              <div className="conversation-media-empty">
+                Aucun contrat partagé
+              </div>
+            ) : (
+              <div className="conversation-media-list">
+                {contractItems.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-record-row conversation-record-row--contract"
+                    onClick={() => openContractDetails(msg)}
+                  >
+                    <div className="conversation-record-row-content">
+                      <span className="conversation-record-row-title">{getContractMessageLabel(msg)}</span>
+                      <span className="conversation-record-row-subtitle">
+                        Partagé le {formatAppointmentDate(msg.created_at)}
+                      </span>
+                    </div>
+                    <div className="conversation-record-row-meta">
+                      <span className="conversation-record-row-badge">Contrat</span>
+                      <ChevronRight size={16} className="conversation-record-row-chevron" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (isPostsView) {
+      const postItems = messages.filter((msg) => msg.message_type === 'post_share')
+
+      return (
+        <div className="messages-page-container conversation-page conversation-media-page">
+          <div className="conversation-header">
+            <BackButton
+              className="conversation-back-button"
+              onClick={() => {
+                const currentId = selectedConversation?.id || conversationId
+                if (currentId) {
+                  navigate(`/messages/${currentId}/info`)
+                } else {
+                  navigate('/messages')
+                }
+              }}
+            />
+            <div className="conversation-header-center">
+              <h1 className="conversation-header-name">Annonces</h1>
+            </div>
+          </div>
+
+          <div className="conversation-media-content">
+            {postItems.length === 0 ? (
+              <div className="conversation-media-empty">
+                Aucune annonce partagée
+              </div>
+            ) : (
+              <div className="conversation-media-list">
+                {postItems.map((msg) => (
+                  <button
+                    key={msg.id}
+                    type="button"
+                    className="conversation-record-row conversation-record-row--post"
+                    onClick={() => {
+                      if (msg.shared_post_id) {
+                        navigate(`/post/${msg.shared_post_id}`)
+                      }
+                    }}
+                    disabled={!msg.shared_post_id}
+                  >
+                    <div className="conversation-record-row-content">
+                      <span className="conversation-record-row-title">{getSharedPostLabel(msg)}</span>
+                      <span className="conversation-record-row-subtitle">
+                        Partagée le {formatAppointmentDate(msg.created_at)}
+                      </span>
+                    </div>
+                    <div className="conversation-record-row-meta">
+                      <span className="conversation-record-row-badge">Annonce</span>
+                      <ChevronRight size={16} className="conversation-record-row-chevron" />
+                    </div>
+                  </button>
                 ))}
               </div>
             )}

@@ -41,6 +41,11 @@ const normalizeContractMessageLabel = (content?: string | null) => {
   if (!raw) return ''
   return raw.replace(/^Contrat partagé\s*[•:-]\s*/i, '').trim() || raw
 }
+const truncateCardLabel = (value?: string | null, max = 25) => {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text
+}
 
 interface MessageBubbleProps {
   message: {
@@ -81,6 +86,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
   const [contractEditorNotice, setContractEditorNotice] = useState<ContractEditorNotice | null>(null)
+  const [showContractSharePrompt, setShowContractSharePrompt] = useState(false)
   const [loadingSharedContract, setLoadingSharedContract] = useState(false)
   const [sharedPost, setSharedPost] = useState<{
     title?: string
@@ -115,6 +121,12 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
     || sharedContract?.contract_title
     || sharedContract?.post_title
     || 'Contrat'
+  const contractCardNameRaw =
+    (contractSnapshot?.kind === 'contract_share_snapshot' ? (contractSnapshot.contract_title || '') : '')
+    || sharedContract?.contract_title
+    || normalizeContractMessageLabel(message.content)
+    || ''
+  const contractCardName = truncateCardLabel(contractCardNameRaw, 25)
 
   const formatDurationMinutes = (minutes?: number | null) => {
     const total = Math.max(0, Number(minutes || 0))
@@ -428,6 +440,26 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
     }
   }
 
+  const navigateToContractEditor = ({
+    contractId,
+    fallbackTitle,
+    acceptSharedContract
+  }: {
+    contractId: string
+    fallbackTitle: string
+    acceptSharedContract: boolean
+  }) => {
+    const params = new URLSearchParams()
+    if (contractId) params.set('contract', contractId)
+    if (fallbackTitle) params.set('draftName', fallbackTitle)
+    if (acceptSharedContract && contractId) params.set('acceptContract', '1')
+
+    setShowContractModal(false)
+    setShowContractDocumentPreview(false)
+    setShowContractSharePrompt(false)
+    navigate(`/profile/contracts?${params.toString()}`)
+  }
+
   const handleOpenContractEditor = async () => {
     const fallbackTitle =
       (contractSnapshot?.kind === 'contract_share_snapshot' ? (contractSnapshot.contract_title || '') : '')
@@ -442,14 +474,16 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
       return
     }
 
-    const params = new URLSearchParams()
-    if (contractId) params.set('contract', contractId)
-    if (fallbackTitle) params.set('draftName', fallbackTitle)
-    if (!isOwn && contractId) params.set('acceptContract', '1')
+    if (!isOwn && contractId) {
+      setShowContractSharePrompt(true)
+      return
+    }
 
-    setShowContractModal(false)
-    setShowContractDocumentPreview(false)
-    navigate(`/profile/contracts?${params.toString()}`)
+    navigateToContractEditor({
+      contractId,
+      fallbackTitle,
+      acceptSharedContract: false
+    })
   }
 
   const renderMessageContent = () => {
@@ -543,6 +577,21 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
         const appointmentDateTime = calendarData?.appointment_datetime || calendarData?.start_date
         const appointmentTitle = calendarData?.title || calendarData?.event_name || 'Rendez-vous'
         const appointmentDurationLabel = formatDurationMinutes(calendarData?.duration_minutes)
+        const appointmentCardSubtitle = appointmentDateTime
+          ? truncateCardLabel(
+              [
+                new Date(appointmentDateTime).toLocaleDateString('fr-FR'),
+                new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }),
+                appointmentDurationLabel || ''
+              ]
+                .filter(Boolean)
+                .join(' • '),
+              25
+            )
+          : truncateCardLabel(appointmentTitle, 25)
         
         return (
           <>
@@ -553,30 +602,12 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             >
               <Calendar size={24} />
               <div className="message-calendar-info">
-                <span className="message-calendar-title">{appointmentTitle}</span>
-                {appointmentDateTime && (
-                  <div className="message-calendar-datetime">
-                    <span className="message-calendar-date">
-                      {new Date(appointmentDateTime).toLocaleDateString('fr-FR', { 
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                    <span className="message-calendar-time">
-                      à {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                    {appointmentDurationLabel && (
-                      <span className="message-calendar-duration">
-                        durée : {appointmentDurationLabel}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <span className="message-calendar-title">Rendez-vous</span>
+                <span className="message-calendar-subtitle">
+                  {appointmentCardSubtitle || (appointmentDateTime
+                    ? new Date(appointmentDateTime).toLocaleDateString('fr-FR')
+                    : 'Rendez-vous')}
+                </span>
               </div>
             </div>
             {showAppointmentModal && canUsePortal && createPortal((
@@ -703,23 +734,26 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
           </>
         )
       case 'post_share':
+        const postCardLabel = truncateCardLabel(sharedPost?.title || message.content || 'Annonce', 25)
         return (
           <div 
             className="message-post-share"
             onClick={() => message.shared_post_id && navigate(`/post/${message.shared_post_id}`)}
           >
-            {sharedPost?.user?.avatar_url && (
-              <img 
-                src={sharedPost.user.avatar_url} 
-                alt={sharedPost.user.full_name || sharedPost.user.username || ''}
-                className="message-post-share-avatar"
-              />
-            )}
+            <div className="message-post-share-icon" aria-hidden="true">
+              {sharedPost?.user?.avatar_url ? (
+                <img 
+                  src={sharedPost.user.avatar_url} 
+                  alt=""
+                  className="message-post-share-avatar"
+                />
+              ) : (
+                <Share2 size={16} />
+              )}
+            </div>
             <div className="message-post-share-content">
-              <h4 className="message-post-share-title">
-                {sharedPost?.title || 'Annonce'}
-              </h4>
-              <span className="message-post-share-link">Voir l'annonce →</span>
+              <h4 className="message-post-share-title">Annonce</h4>
+              <span className="message-post-share-subtitle">{postCardLabel}</span>
             </div>
           </div>
         )
@@ -739,11 +773,10 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
               <File size={18} />
             </div>
             <div className="message-contract-share-content">
-              <h4 className="message-contract-share-title">{isOwn ? 'Contrat envoyé' : 'Contrat reçu'}</h4>
+              <h4 className="message-contract-share-title">Contrat</h4>
               <p className="message-contract-share-subtitle">
-                {contractDisplayLabel}
+                {contractCardName || contractDisplayLabel}
               </p>
-              <span className="message-contract-share-link">Appuyer pour ouvrir</span>
             </div>
           </div>
         )
@@ -931,6 +964,51 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
                 onClick={() => setContractEditorNotice(null)}
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+
+      {showContractSharePrompt && canUsePortal && createPortal((
+        <div className="appointment-overlay" onClick={() => setShowContractSharePrompt(false)}>
+          <div className="contract-status-notice-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="appointment-inline-header">
+              <h4>Partager ce contrat ?</h4>
+              <button
+                className="appointment-inline-close"
+                onClick={() => setShowContractSharePrompt(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="contract-status-notice-body">
+              <p>
+                Voulez-vous rejoindre ce contrat et le partager avec l’autre partie ? Si vous acceptez,
+                le même contrat s’ouvrira avec vos informations de votre côté.
+              </p>
+              <button
+                type="button"
+                className="contract-inline-btn contract-inline-btn-primary"
+                onClick={() =>
+                  navigateToContractEditor({
+                    contractId: message.shared_contract_id ? String(message.shared_contract_id) : '',
+                    fallbackTitle:
+                      (contractSnapshot?.kind === 'contract_share_snapshot'
+                        ? (contractSnapshot.contract_title || '')
+                        : '') || normalizeContractMessageLabel(message.content),
+                    acceptSharedContract: true
+                  })
+                }
+              >
+                Oui, partager le contrat
+              </button>
+              <button
+                type="button"
+                className="contract-inline-btn"
+                onClick={() => setShowContractSharePrompt(false)}
+              >
+                Non
               </button>
             </div>
           </div>

@@ -185,6 +185,12 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body {
+  background-color: var(--background);
+  overscroll-behavior-y: none;
+}
+
 /* Bloc UI commun : utiliser .ui-block ou les variables --ui-block-* */
 .ui-block {
   background: var(--ui-block-bg);
@@ -198,6 +204,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--background);
 }
 
 a {
@@ -226,4 +233,3 @@ input {
     --ui-block-padding: 12px;
   }
 }
-

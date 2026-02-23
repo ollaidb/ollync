@@ -24,6 +24,8 @@
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  background-color: var(--background);
+  overscroll-behavior: contain;
 }
 
 .publish-content-wrapper.has-actions {

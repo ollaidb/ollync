@@ -265,6 +265,8 @@
   -webkit-overflow-scrolling: touch;
   margin-top: 0;
   scrollbar-width: none;
+  background-color: var(--background);
+  overscroll-behavior: contain;
 }
 
 .feed-scrollable::-webkit-scrollbar {
@@ -330,4 +332,3 @@
   padding-bottom: 32px;
   overflow-y: visible;
 }
-

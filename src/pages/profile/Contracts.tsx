@@ -610,8 +610,36 @@ const Contracts = () => {
           agreement_confirmed,
           created_at,
           post:posts(title),
-          counterparty:profiles!contracts_counterparty_id_fkey(id, username, full_name, avatar_url),
-          creator:profiles!contracts_creator_id_fkey(id, username, full_name, avatar_url)
+          counterparty:profiles!contracts_counterparty_id_fkey(
+            id,
+            username,
+            full_name,
+            avatar_url,
+            email,
+            phone,
+            contract_full_name,
+            contract_email,
+            contract_phone,
+            contract_city,
+            contract_country,
+            contract_siren,
+            contract_signature
+          ),
+          creator:profiles!contracts_creator_id_fkey(
+            id,
+            username,
+            full_name,
+            avatar_url,
+            email,
+            phone,
+            contract_full_name,
+            contract_email,
+            contract_phone,
+            contract_city,
+            contract_country,
+            contract_siren,
+            contract_signature
+          )
         `
         )
         .or(`creator_id.eq.${user.id},counterparty_id.eq.${user.id}`)
@@ -656,10 +684,10 @@ const Contracts = () => {
       .catch((error: unknown) => console.error('Error marking shared contract as opened:', error))
 
     if (shouldAcceptSharedContract) {
-      const accepted = window.confirm(
-        'Acceptez-vous de remplir ce contrat avec cet utilisateur ? Vous pourrez compléter vos informations et signer de votre côté.'
+      const alreadyAccepted = Boolean(
+        isCreator ? targetContract.creator_accepted_at : targetContract.counterparty_accepted_at
       )
-      if (accepted) {
+      if (!alreadyAccepted) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(supabase.from('contracts') as any)
           .update({ [openField]: new Date().toISOString(), [acceptField]: new Date().toISOString() })
@@ -1236,6 +1264,23 @@ const Contracts = () => {
   const resolveContractSignature = (profile?: ProfileSummary | null) =>
     resolveContractValue(profile?.contract_signature || '')
 
+  const applyCurrentUserContractProfileTo = useCallback((profile?: ProfileSummary | null): ProfileSummary | null => {
+    if (!profile) return null
+    return {
+      ...profile,
+      contract_full_name:
+        resolveContractValue(contractProfile.fullName) || profile.contract_full_name || profile.full_name,
+      contract_email:
+        resolveContractValue(contractProfile.email) || profile.contract_email || profile.email,
+      contract_phone:
+        resolveContractValue(contractProfile.phone) || profile.contract_phone || profile.phone,
+      contract_city: resolveContractValue(contractProfile.city) || profile.contract_city,
+      contract_country: resolveContractValue(contractProfile.country) || profile.contract_country,
+      contract_siren: resolveContractValue(contractProfile.siren) || profile.contract_siren,
+      contract_signature: resolveContractValue(contractProfile.signature) || profile.contract_signature
+    }
+  }, [contractProfile, resolveContractValue])
+
   const resolveCreatorProfile = useCallback((): ProfileSummary | null => {
     if (!user) return null
     const baseProfile: ProfileSummary = currentUserProfile || {
@@ -1255,20 +1300,8 @@ const Contracts = () => {
       contract_default_type: null
     }
 
-    return {
-      ...baseProfile,
-      contract_full_name:
-        resolveContractValue(contractProfile.fullName) || baseProfile.contract_full_name || baseProfile.full_name,
-      contract_email:
-        resolveContractValue(contractProfile.email) || baseProfile.contract_email || baseProfile.email,
-      contract_phone:
-        resolveContractValue(contractProfile.phone) || baseProfile.contract_phone || baseProfile.phone,
-      contract_city: resolveContractValue(contractProfile.city) || baseProfile.contract_city,
-      contract_country: resolveContractValue(contractProfile.country) || baseProfile.contract_country,
-      contract_siren: resolveContractValue(contractProfile.siren) || baseProfile.contract_siren,
-      contract_signature: resolveContractValue(contractProfile.signature) || baseProfile.contract_signature
-    }
-  }, [contractProfile, currentUserProfile, resolveContractValue, user])
+    return applyCurrentUserContractProfileTo(baseProfile)
+  }, [applyCurrentUserContractProfileTo, currentUserProfile, user])
 
   const getSignaturePoint = (event: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
     const canvas = signatureCanvasRef.current
@@ -1513,7 +1546,70 @@ const Contracts = () => {
     }
   }
 
+  const activeSharedContract = useMemo(
+    () => (sharedContractParam ? contracts.find((contract) => contract.id === sharedContractParam) || null : null),
+    [contracts, sharedContractParam]
+  )
+
+  const sharedContractPreviewParties = useMemo<{
+    creator: ProfileSummary | null
+    counterparty: ProfileSummary | null
+  } | null>(() => {
+    if (!user || !activeSharedContract || hydratedSharedContractId !== activeSharedContract.id) return null
+
+    const creatorBase: ProfileSummary =
+      activeSharedContract.creator || {
+        id: activeSharedContract.creator_id,
+        full_name: 'Créateur du contrat',
+        username: null,
+        avatar_url: null,
+        email: null,
+        phone: null,
+        contract_full_name: null,
+        contract_email: null,
+        contract_phone: null,
+        contract_city: null,
+        contract_country: null,
+        contract_siren: null,
+        contract_signature: null,
+        contract_default_type: null
+      }
+
+    const counterpartyBase: ProfileSummary =
+      activeSharedContract.counterparty || {
+        id: activeSharedContract.counterparty_id,
+        full_name: 'Autre partie',
+        username: null,
+        avatar_url: null,
+        email: null,
+        phone: null,
+        contract_full_name: null,
+        contract_email: null,
+        contract_phone: null,
+        contract_city: null,
+        contract_country: null,
+        contract_siren: null,
+        contract_signature: null,
+        contract_default_type: null
+      }
+
+    const creator =
+      user.id === activeSharedContract.creator_id ? applyCurrentUserContractProfileTo(creatorBase) : creatorBase
+    const counterparty =
+      user.id === activeSharedContract.counterparty_id
+        ? applyCurrentUserContractProfileTo(counterpartyBase)
+        : counterpartyBase
+
+    return {
+      creator: creator || creatorBase,
+      counterparty: counterparty || counterpartyBase
+    }
+  }, [activeSharedContract, applyCurrentUserContractProfileTo, hydratedSharedContractId, user])
+
   const previewCounterparty = useMemo<ProfileSummary>(() => {
+    if (sharedContractPreviewParties?.counterparty) {
+      return sharedContractPreviewParties.counterparty
+    }
     if (!selectedContext) {
       return {
         id: 'preview-counterparty',
@@ -1558,10 +1654,10 @@ const Contracts = () => {
       )
     }
     return selectedContext.owner
-  }, [acceptedApplications, selectedApplicantsList, selectedContext])
+  }, [acceptedApplications, selectedApplicantsList, selectedContext, sharedContractPreviewParties])
 
   const previewContractContent = useMemo(() => {
-    const creatorProfile = resolveCreatorProfile()
+    const creatorProfile = sharedContractPreviewParties?.creator || resolveCreatorProfile()
     if (!creatorProfile) return ''
     const previewPost: PostSummary =
       selectedContext?.post || {
@@ -1584,6 +1680,7 @@ const Contracts = () => {
   }, [
     buildContractContent,
     previewCounterparty,
+    sharedContractPreviewParties,
     resolvedContractType,
     resolvedPaymentType,
     resolveCreatorProfile,

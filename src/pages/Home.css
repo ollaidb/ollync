@@ -298,6 +298,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
+  overscroll-behavior: contain;
 }
 
 .app--web .home-header-fixed {
