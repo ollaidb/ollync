@@ -58,3 +58,26 @@
     font-size: 14px;
   }
 }
+
+@media (min-width: 1024px) {
+  .step3-platform {
+    max-width: 100%;
+  }
+
+  .platforms-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .platform-card {
+    padding: 18px 14px;
+    min-height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .platform-name {
+    font-size: 15px;
+  }
+}

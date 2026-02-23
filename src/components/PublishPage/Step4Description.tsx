@@ -1078,14 +1078,27 @@ export const Step4Description = ({
     panelClassName = ''
   ) => {
     if (!open || typeof document === 'undefined') return null
-    const panelStyle: CSSProperties = keyboardInset > 0
+    const basePanelStyle: CSSProperties = keyboardInset > 0
       ? { bottom: keyboardInset, maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - 84px - ${keyboardInset}px)` }
       : {}
+    const isDesktopSheet = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+    const panelStyle: CSSProperties = isDesktopSheet
+      ? {
+          ...basePanelStyle,
+          left: `calc(240px + ((100vw - 240px) / 2))`,
+          right: 'auto',
+          width: `min(360px, calc(100vw - 240px - 40px))`,
+          transform: 'translateX(-50%)',
+          animation: 'none',
+          bottom: typeof basePanelStyle.bottom === 'number' ? basePanelStyle.bottom : 14,
+          maxHeight: typeof basePanelStyle.maxHeight === 'string' ? basePanelStyle.maxHeight : 'min(76vh, 680px)'
+        }
+      : basePanelStyle
     return createPortal(
       <>
-        <div className="publish-dropdown-backdrop" onClick={onClose} />
+        <div className="publish-dropdown-backdrop publish-form-sheet-backdrop" onClick={onClose} />
         <div
-          className={`publish-dropdown-panel ${panelClassName}`.trim()}
+          className={`publish-dropdown-panel publish-form-sheet-panel ${panelClassName}`.trim()}
           style={panelStyle}
           onClick={(event) => event.stopPropagation()}
         >

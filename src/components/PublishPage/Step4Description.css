@@ -240,6 +240,68 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .step4-description {
+    max-width: 640px;
+  }
+
+  .step4-description .step-title {
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 22px;
+  }
+
+  .form-label {
+    font-size: 15px;
+  }
+
+  .form-field-meta {
+    font-size: 11px;
+  }
+
+  .social-networks-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .payment-options-list {
+    max-height: 420px;
+  }
+
+  .publish-form-sheet-panel {
+    left: calc(240px + ((100vw - 240px) / 2));
+    right: auto;
+    bottom: 14px;
+    width: min(360px, calc(100vw - 240px - 40px));
+    max-height: min(76vh, 680px);
+    margin: 0;
+    transform: translateX(-50%);
+    animation: searchSheetUp 0.22s ease-out;
+    border-radius: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .publish-form-sheet-panel.publish-calendar-panel {
+    max-height: min(76vh, 680px);
+  }
+
+  .publish-form-sheet-panel .publish-calendar-panel-content {
+    padding: 14px 14px 16px;
+    max-height: min(76vh, 680px);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1240px) {
+  .publish-form-sheet-panel {
+    left: calc(240px + ((100vw - 240px) / 2));
+    right: auto;
+    width: min(340px, calc(100vw - 240px - 24px));
+  }
+}
+
 .dropdown-list.custom-list {
   gap: 6px;
 }

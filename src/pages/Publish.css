@@ -711,17 +711,43 @@
 }
 
 .app--web .publish-content-wrapper {
-  padding-top: 16px;
-  padding-bottom: 32px;
+  padding-top: 18px;
+  padding-bottom: 104px;
   overflow-y: visible;
 }
 
 .app--web .publish-content {
-  padding: 0;
+  max-width: 760px;
+  padding: 0 0 20px;
 }
 
 .app--web .publish-content-not-connected {
   position: static;
   min-height: 60vh;
   padding: 32px;
+}
+
+@media (min-width: 1024px) {
+  .app--web .publish-page-container {
+    background: transparent;
+  }
+
+  .app--web .publish-content {
+    max-width: 760px;
+    padding: 0 0 22px;
+  }
+
+  .app--web .publish-step {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 14px 16px 16px;
+    border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+    background: color-mix(in srgb, var(--card) 96%, transparent);
+    border-radius: 16px;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+  }
+
+  .app--web .publish-content-wrapper.has-actions {
+    padding-bottom: 118px;
+  }
 }

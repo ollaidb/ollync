@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties, 
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Save, X, Camera, Plus, ChevronUp, ChevronDown } from 'lucide-react'
+import { Save, X, Camera, Plus, ChevronUp, ChevronDown, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
@@ -35,6 +35,7 @@ const EditPublicProfile = () => {
     bio: '',
     skills: [] as string[],
     display_categories: [] as string[],
+    display_subcategories: [] as string[],
     profile_types: [] as string[],
     services: [] as Array<{
       name: string
@@ -63,6 +64,10 @@ const EditPublicProfile = () => {
   const [displayCategorySearch, setDisplayCategorySearch] = useState('')
   const [showDisplayCategorySuggestions, setShowDisplayCategorySuggestions] = useState(false)
   const displayCategorySearchRef = useRef<HTMLDivElement>(null)
+  const [activeDisplaySubcategoryCategory, setActiveDisplaySubcategoryCategory] = useState<string | null>(null)
+  const [displaySubcategorySearch, setDisplaySubcategorySearch] = useState('')
+  const [showDisplaySubcategorySuggestions, setShowDisplaySubcategorySuggestions] = useState(false)
+  const displaySubcategorySearchRef = useRef<HTMLDivElement>(null)
   const [profileTypeSearch, setProfileTypeSearch] = useState('')
   const [showProfileTypeSuggestions, setShowProfileTypeSuggestions] = useState(false)
   const profileTypeSearchRef = useRef<HTMLDivElement>(null)
@@ -78,12 +83,14 @@ const EditPublicProfile = () => {
   })
   const [showServiceNameSuggestions, setShowServiceNameSuggestions] = useState(false)
   const [isServicePaymentOpen, setIsServicePaymentOpen] = useState(false)
+  const [isVenueSettingsPanelOpen, setIsVenueSettingsPanelOpen] = useState(false)
   const [isVenuePaymentOpen, setIsVenuePaymentOpen] = useState(false)
   const [isVenueOpeningDaysOpen, setIsVenueOpeningDaysOpen] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
   const fromProfileProgress = searchParams.get('from') === 'profile-progress'
 
   const VENUE_CATEGORY_SLUGS = useMemo(() => (['studio-lieu', 'lieu']), [])
+  const SERVICE_CATEGORY_SLUGS = useMemo(() => (['services', 'service', 'mission', 'poste-service']), [])
   const venueDayLabels: Record<string, string> = useMemo(() => ({
     lundi: 'Lundi',
     mardi: 'Mardi',
@@ -133,6 +140,22 @@ const EditPublicProfile = () => {
     
     const profileData = data || {}
     const socialLinksObj = (profileData as { social_links?: Record<string, string> | null }).social_links || {}
+
+    const parseTextArray = (value: unknown) => {
+      if (!value) return [] as string[]
+      if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean)
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.map((item) => String(item)).filter(Boolean)
+          }
+        } catch {
+          return value.split(',').map((item) => item.trim()).filter(Boolean)
+        }
+      }
+      return [] as string[]
+    }
     
     // Convertir l'objet social_links en tableau de chaînes
     const socialLinksArray: string[] = []
@@ -243,6 +266,7 @@ const EditPublicProfile = () => {
       bio: (profileData as { bio?: string | null }).bio || '',
       skills: (profileData as { skills?: string[] | null }).skills || [],
       display_categories: (profileData as { display_categories?: string[] | null }).display_categories || [],
+      display_subcategories: parseTextArray((profileData as { display_subcategories?: unknown }).display_subcategories),
       profile_types: initialProfileTypes,
       services: (() => {
         const servicesData = (profileData as { services?: Array<{ name: string; description: string; payment_type: string; value: string }> | string[] | null }).services
@@ -348,6 +372,10 @@ const EditPublicProfile = () => {
   const isVenueDisplayCategory = useMemo(
     () => profile.display_categories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug)),
     [profile.display_categories, VENUE_CATEGORY_SLUGS]
+  )
+  const isServicesDisplayCategory = useMemo(
+    () => profile.display_categories.some((slug) => SERVICE_CATEGORY_SLUGS.includes(slug)),
+    [profile.display_categories, SERVICE_CATEGORY_SLUGS]
   )
   const venuePaymentOptions = useMemo(
     () => getPaymentOptionsForCategory('studio-lieu'),
@@ -476,10 +504,25 @@ const EditPublicProfile = () => {
 
   useEffect(() => {
     if (!isVenueDisplayCategory) {
+      setIsVenueSettingsPanelOpen(false)
       setIsVenuePaymentOpen(false)
       setIsVenueOpeningDaysOpen(false)
     }
   }, [isVenueDisplayCategory])
+
+  useEffect(() => {
+    if (profile.display_categories.length === 0) {
+      setActiveDisplaySubcategoryCategory(null)
+      setShowDisplaySubcategorySuggestions(false)
+      return
+    }
+    if (
+      !activeDisplaySubcategoryCategory ||
+      !profile.display_categories.includes(activeDisplaySubcategoryCategory)
+    ) {
+      setActiveDisplaySubcategoryCategory(profile.display_categories[0])
+    }
+  }, [profile.display_categories, activeDisplaySubcategoryCategory])
 
   useEffect(() => {
     if (!isVenueDisplayCategory) return
@@ -497,21 +540,24 @@ const EditPublicProfile = () => {
       if (displayCategorySearchRef.current && !displayCategorySearchRef.current.contains(target)) {
         setShowDisplayCategorySuggestions(false)
       }
+      if (displaySubcategorySearchRef.current && !displaySubcategorySearchRef.current.contains(target)) {
+        setShowDisplaySubcategorySuggestions(false)
+      }
       if (profileTypeSearchRef.current && !profileTypeSearchRef.current.contains(target)) {
         setShowProfileTypeSuggestions(false)
       }
     }
 
-    if (showDisplayCategorySuggestions || showProfileTypeSuggestions) {
+    if (showDisplayCategorySuggestions || showDisplaySubcategorySuggestions || showProfileTypeSuggestions) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showDisplayCategorySuggestions, showProfileTypeSuggestions])
+  }, [showDisplayCategorySuggestions, showDisplaySubcategorySuggestions, showProfileTypeSuggestions])
 
-  const hasOverlayOpen = isServicePaymentOpen || isVenuePaymentOpen || isVenueOpeningDaysOpen
+  const hasOverlayOpen = isServicePaymentOpen || isVenueSettingsPanelOpen || isVenuePaymentOpen || isVenueOpeningDaysOpen
 
   useEffect(() => {
     if (!hasOverlayOpen) return
@@ -523,7 +569,7 @@ const EditPublicProfile = () => {
   }, [hasOverlayOpen])
 
   useEffect(() => {
-    if ((!isVenuePaymentOpen && !isVenueOpeningDaysOpen) || typeof window === 'undefined') {
+    if ((!isVenueSettingsPanelOpen && !isVenuePaymentOpen && !isVenueOpeningDaysOpen) || typeof window === 'undefined') {
       setKeyboardInset(0)
       return
     }
@@ -547,7 +593,7 @@ const EditPublicProfile = () => {
       viewport.removeEventListener('scroll', updateInset)
       setKeyboardInset(0)
     }
-  }, [isVenuePaymentOpen, isVenueOpeningDaysOpen])
+  }, [isVenueSettingsPanelOpen, isVenuePaymentOpen, isVenueOpeningDaysOpen])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -651,6 +697,31 @@ const EditPublicProfile = () => {
     return map
   }, [displayCategoryOptions])
 
+  const displaySubcategoryOptionsByCategory = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; key: string; label: string }>>()
+    publicationTypes.forEach((category) => {
+      const options = category.subcategories
+        .filter((sub) => sub.slug !== 'tout')
+        .map((sub) => ({
+          id: sub.slug,
+          key: `${category.slug}::${sub.slug}`,
+          label: sub.name
+        }))
+      map.set(category.slug, options)
+    })
+    return map
+  }, [])
+
+  const selectedDisplaySubcategoryCategory = useMemo(() => {
+    if (
+      activeDisplaySubcategoryCategory &&
+      profile.display_categories.includes(activeDisplaySubcategoryCategory)
+    ) {
+      return activeDisplaySubcategoryCategory
+    }
+    return profile.display_categories[0] || null
+  }, [activeDisplaySubcategoryCategory, profile.display_categories])
+
   const filteredDisplayCategoryOptions = useCallback(() => {
     if (!displayCategorySearch.trim()) {
       return displayCategoryOptions
@@ -660,6 +731,14 @@ const EditPublicProfile = () => {
       option.label.toLowerCase().includes(searchLower)
     )
   }, [displayCategorySearch, displayCategoryOptions])
+
+  const filteredDisplaySubcategoryOptions = useCallback(() => {
+    if (!selectedDisplaySubcategoryCategory) return []
+    const base = displaySubcategoryOptionsByCategory.get(selectedDisplaySubcategoryCategory) || []
+    if (!displaySubcategorySearch.trim()) return base
+    const searchLower = displaySubcategorySearch.toLowerCase()
+    return base.filter((option) => option.label.toLowerCase().includes(searchLower))
+  }, [selectedDisplaySubcategoryCategory, displaySubcategoryOptionsByCategory, displaySubcategorySearch])
 
   const filteredProfileTypeOptions = useCallback(() => {
     if (!profileTypeSearch.trim()) {
@@ -680,20 +759,40 @@ const EditPublicProfile = () => {
     }
     setDisplayCategorySearch('')
     setShowDisplayCategorySuggestions(false)
+    setActiveDisplaySubcategoryCategory(categorySlug)
+    setShowDisplaySubcategorySuggestions(true)
   }
 
   const handleRemoveDisplayCategory = (categorySlug: string) => {
     setProfile(prev => ({
       ...prev,
-      display_categories: prev.display_categories.filter(cat => cat !== categorySlug)
+      display_categories: prev.display_categories.filter(cat => cat !== categorySlug),
+      display_subcategories: prev.display_subcategories.filter(
+        (item) => !item.startsWith(`${categorySlug}::`)
+      )
     }))
   }
 
-  const MAX_PROFILE_TYPES = 2
-
-  const formatProfileTypeLabel = (typeId: string) => {
-    return profileTypeOptions.find(option => option.id === typeId)?.label || typeId
+  const toggleDisplaySubcategory = (categorySlug: string, subcategorySlug: string) => {
+    const key = `${categorySlug}::${subcategorySlug}`
+    setProfile((prev) => {
+      const exists = prev.display_subcategories.includes(key)
+      return {
+        ...prev,
+        display_subcategories: exists
+          ? prev.display_subcategories.filter((item) => item !== key)
+          : [...prev.display_subcategories, key]
+      }
+    })
+    setDisplaySubcategorySearch('')
   }
+
+  const MAX_PROFILE_TYPES = 2
+  const knownProfileTypeIds = useMemo(() => new Set(profileTypeOptions.map((option) => option.id)), [profileTypeOptions])
+  const customSelectedProfileTypes = useMemo(
+    () => profile.profile_types.filter((typeId) => !knownProfileTypeIds.has(typeId)),
+    [profile.profile_types, knownProfileTypeIds]
+  )
 
   const handleAddProfileType = (typeId: string) => {
     if (!typeId) return
@@ -1015,6 +1114,7 @@ const EditPublicProfile = () => {
         avatar_url: profile.avatar_url || null,
         skills: skillsToSave,
         display_categories: profile.display_categories,
+        display_subcategories: profile.display_subcategories,
         profile_type: profileTypesToSave,
         services: servicesToSave,
         venue_opening_hours: profile.venue_opening_hours,
@@ -1034,11 +1134,17 @@ const EditPublicProfile = () => {
         .select()
 
       const profileErrorMessage = String((profileError as { message?: string } | null)?.message || '').toLowerCase()
-      if (profileError && profileErrorMessage.includes('show_in_users')) {
+      if (profileError && (profileErrorMessage.includes('show_in_users') || profileErrorMessage.includes('display_subcategories'))) {
         // Fallback si la colonne n'existe pas encore dans cet environnement
+        const retryPayload = {
+          ...baseProfilePayload
+        }
+        if (profileErrorMessage.includes('display_subcategories')) {
+          delete (retryPayload as Record<string, unknown>).display_subcategories
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const retry = await (supabase.from('profiles') as any)
-          .upsert(baseProfilePayload)
+          .upsert(retryPayload)
           .select()
         profileError = retry.error
         savedData = retry.data
@@ -1097,7 +1203,9 @@ const EditPublicProfile = () => {
     location: !profile.location.trim(),
     categories: profile.display_categories.length === 0,
     status: profile.profile_types.length === 0,
-    link: !((profile.socialLinks[0] || '').trim())
+    link: !((profile.socialLinks[0] || '').trim()),
+    venue_opening_hours: isVenueDisplayCategory && !profile.venue_opening_hours.some((slot) => slot.enabled),
+    services_required: isServicesDisplayCategory && profile.services.length === 0
   }
 
   return (
@@ -1195,25 +1303,122 @@ const EditPublicProfile = () => {
               <div className="char-count">{profile.bio.length}/500</div>
             </div>
 
+            {/* Statuts */}
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.status ? 'profile-progress-missing' : ''}`}>
+              <label>Statuts</label>
+
+              <div className="interest-search-container" ref={profileTypeSearchRef}>
+                <div className="interest-search-wrapper">
+                  <input
+                    type="text"
+                    className="interest-search-input"
+                    value={profileTypeSearch}
+                    onChange={(e) => {
+                      setProfileTypeSearch(e.target.value)
+                      setShowProfileTypeSuggestions(true)
+                    }}
+                    onFocus={() => setShowProfileTypeSuggestions(true)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        const exactMatch = filteredProfileTypeOptions().find(
+                          opt => opt.label.toLowerCase() === profileTypeSearch.toLowerCase()
+                        )
+                        if (exactMatch) {
+                          handleAddProfileType(exactMatch.id)
+                        }
+                      }
+                    }}
+                    placeholder="Choisir un statut (max 2)"
+                  />
+                </div>
+
+                {showProfileTypeSuggestions && (
+                  <div className="interest-suggestions">
+                    {filteredProfileTypeOptions().length > 0 ? (
+                      <>
+                        {filteredProfileTypeOptions().map((option) => {
+                          const isAlreadyAdded = profile.profile_types.includes(option.id)
+                          const isLimitReached = profile.profile_types.length >= MAX_PROFILE_TYPES
+                          const isDisabled = !isAlreadyAdded && isLimitReached
+                          return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`interest-suggestion-item ${isAlreadyAdded ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                            onClick={() => {
+                              if (isDisabled) return
+                              if (isAlreadyAdded) {
+                                handleRemoveProfileType(option.id)
+                                return
+                              }
+                              handleAddProfileType(option.id)
+                            }}
+                            disabled={isDisabled}
+                          >
+                            {option.label}
+                            {isAlreadyAdded && (
+                              <span className="interest-selected-indicator" aria-label="Sélectionné">
+                                <Check size={14} />
+                              </span>
+                            )}
+                          </button>
+                        )})}
+                      </>
+                    ) : (
+                      <div className="interest-suggestion-item no-results">
+                        Aucun résultat trouvé
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {customSelectedProfileTypes.length > 0 && (
+                <div className="profile-inline-selected-row" aria-label="Statuts personnalisés sélectionnés">
+                  {customSelectedProfileTypes.map((typeId) => (
+                    <button
+                      key={typeId}
+                      type="button"
+                      className="profile-inline-selected-pill"
+                      onClick={() => handleRemoveProfileType(typeId)}
+                      title="Retirer ce statut personnalisé"
+                    >
+                      <Check size={14} />
+                      <span>{typeId}</span>
+                      <X size={12} />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showCustomProfileTypeInput && (
+                <div className="custom-status-row">
+                  <input
+                    type="text"
+                    className="custom-status-input"
+                    value={customProfileType}
+                    onChange={(e) => setCustomProfileType(e.target.value)}
+                    placeholder="Précisez votre statut"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleConfirmCustomProfileType()
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="custom-status-button"
+                    onClick={handleConfirmCustomProfileType}
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Catégories d'affichage */}
             <div className={`form-group compact-top ${fromProfileProgress && missingCompletionSections.categories ? 'profile-progress-missing' : ''}`}>
               <label>Catégories d'affichage</label>
-              <p className="form-hint compact">Choisissez où vous voulez que votre profil apparaisse dans l'application.</p>
-
-              <div className="tags-list">
-                {profile.display_categories.map((categorySlug) => (
-                  <span key={categorySlug} className="tag">
-                    {displayCategoryLabelMap.get(categorySlug) || categorySlug}
-                    <button
-                      type="button"
-                      className="tag-remove"
-                      onClick={() => handleRemoveDisplayCategory(categorySlug)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-              </div>
 
               <div className="interest-search-container" ref={displayCategorySearchRef}>
                 <div className="interest-search-wrapper">
@@ -1251,12 +1456,21 @@ const EditPublicProfile = () => {
                             <button
                               key={option.id}
                               type="button"
-                              className={`interest-suggestion-item ${isAlreadyAdded ? 'disabled' : ''}`}
-                              onClick={() => !isAlreadyAdded && handleAddDisplayCategory(option.id)}
-                              disabled={isAlreadyAdded}
+                              className={`interest-suggestion-item ${isAlreadyAdded ? 'selected' : ''}`}
+                              onClick={() => {
+                                if (isAlreadyAdded) {
+                                  handleRemoveDisplayCategory(option.id)
+                                } else {
+                                  handleAddDisplayCategory(option.id)
+                                }
+                              }}
                             >
                               {option.label}
-                              {isAlreadyAdded && <span className="already-added-badge">Ajouté</span>}
+                              {isAlreadyAdded && (
+                                <span className="interest-selected-indicator" aria-label="Sélectionné">
+                                  <Check size={14} />
+                                </span>
+                              )}
                             </button>
                           )
                         })}
@@ -1271,316 +1485,339 @@ const EditPublicProfile = () => {
               </div>
             </div>
 
-            {isVenueDisplayCategory && (
-              <div className="form-group venue-settings-group">
-                <div className="form-group dropdown-field venue-dropdown-field">
-                  <label className="form-label">Moyen de paiement *</label>
-                  <button
-                    type="button"
-                    className={`dropdown-trigger ${isVenuePaymentOpen ? 'open' : ''}`}
-                    onClick={() => setIsVenuePaymentOpen((prev) => !prev)}
-                  >
-                    <span>{selectedVenuePaymentName}</span>
-                    <span className="dropdown-caret" aria-hidden="true" />
-                  </button>
-                  {renderVenueBottomSheet(
-                    isVenuePaymentOpen,
-                    () => setIsVenuePaymentOpen(false),
-                    'Choisissez un moyen de paiement',
-                    <CustomList
-                      items={venuePaymentOptions}
-                      selectedId={selectedVenuePaymentType}
-                      onSelectItem={(optionId) => {
-                        setVenuePaymentType(optionId)
-                        setIsVenuePaymentOpen(false)
+            {profile.display_categories.length > 0 && (
+              <div className="form-group compact-top">
+                <label>Sous-catégories (optionnel)</label>
+
+                <div className="profile-subcategory-category-switcher">
+                  {profile.display_categories.map((categorySlug) => (
+                    <button
+                      key={categorySlug}
+                      type="button"
+                      className={`profile-subcategory-category-chip ${selectedDisplaySubcategoryCategory === categorySlug ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveDisplaySubcategoryCategory(categorySlug)
+                        setShowDisplaySubcategorySuggestions(true)
                       }}
-                      className="payment-options-list publish-list"
-                      showCheckbox={false}
-                      showDescription
-                      truncateDescription={false}
-                    />
-                  )}
+                    >
+                      {displayCategoryLabelMap.get(categorySlug) || categorySlug}
+                    </button>
+                  ))}
                 </div>
 
-                {selectedVenuePaymentType === 'remuneration' && (
-                  <div className="form-group venue-payment-value-group">
-                    <label className="form-label">Prix *</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      min="0"
-                      step="0.01"
-                      placeholder="Ex: 50"
-                      value={selectedVenuePaymentValue}
-                      onChange={(event) => setVenuePaymentValue(event.target.value)}
-                    />
-                  </div>
-                )}
-
-                {selectedVenuePaymentType === 'visibilite-contre-service' && (
-                  <div className="form-group venue-payment-value-group">
-                    <label className="form-label">Heures offertes (gratuit) *</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      min="0.5"
-                      step="0.5"
-                      placeholder="Ex: 2"
-                      value={selectedVenuePaymentValue}
-                      onChange={(event) => setVenuePaymentValue(event.target.value)}
-                    />
-                  </div>
-                )}
-
-                <div className="form-group venue-opening-group">
-                  <label className="form-label">Jours et horaires d'ouverture *</label>
-                  <div className="dropdown-field venue-dropdown-field">
-                    <button
-                      type="button"
-                      className={`dropdown-trigger ${isVenueOpeningDaysOpen ? 'open' : ''}`}
-                      onClick={() => setIsVenueOpeningDaysOpen((prev) => !prev)}
-                    >
-                      <span>
-                        {selectedVenueOpeningDays.length > 0
-                          ? `${selectedVenueOpeningDays.length} jour(s) sélectionné(s)`
-                          : 'Choisir les jours d’ouverture'}
-                      </span>
-                      <span className="dropdown-caret" aria-hidden="true" />
-                    </button>
-                    {renderVenueBottomSheet(
-                      isVenueOpeningDaysOpen,
-                      () => setIsVenueOpeningDaysOpen(false),
-                      '',
-                      <div className="opening-hours-sheet-content">
-                        <div className="opening-hours-sheet-header">
-                          <h3>Jours d’ouverture</h3>
-                          <button
-                            type="button"
-                            className="opening-hours-sheet-close"
-                            onClick={() => setIsVenueOpeningDaysOpen(false)}
-                            aria-label="Fermer"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                        <div className="opening-hours-sheet-divider" />
-                        <div className="opening-days-list">
-                          {profile.venue_opening_hours.map((slot) => (
-                            <div
-                              key={slot.day}
-                              className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
-                            >
-                              <button
-                                type="button"
-                                className="opening-day-row"
-                                onClick={() => toggleVenueOpeningDay(slot.day)}
-                              >
-                                <span>{venueDayLabels[slot.day] || slot.day}</span>
-                                <span className={`opening-day-check ${slot.enabled ? 'checked' : ''}`} aria-hidden="true">
-                                  <span className="opening-day-checkmark">✓</span>
-                                </span>
-                              </button>
-                              {slot.enabled && (
-                                <div className="opening-day-hours-inline">
-                                  <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
-                                  <div className="opening-day-hours-grid">
-                                    <div className="opening-hours-time-block">
-                                      <span className="opening-hours-time-label">De</span>
-                                      <div className="time-input-row">
-                                        <input
-                                          type="text"
-                                          className="form-input opening-hours-time"
-                                          value={slot.start}
-                                          onChange={(event) =>
-                                            updateVenueDay(slot.day, { start: normalizeTime(event.target.value) })
-                                          }
-                                          onBlur={() =>
-                                            updateVenueDay(slot.day, { start: formatTime(slot.start || '09:00') })
-                                          }
-                                          placeholder="HH:MM"
-                                          inputMode="numeric"
-                                        />
-                                        <div className="time-stepper">
-                                          <button
-                                            type="button"
-                                            className="time-stepper-btn"
-                                            onClick={() => stepVenueTime(slot.day, 'start', 30)}
-                                            aria-label="Augmenter de 30 minutes"
-                                          >
-                                            <ChevronUp size={14} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="time-stepper-btn"
-                                            onClick={() => stepVenueTime(slot.day, 'start', -30)}
-                                            aria-label="Diminuer de 30 minutes"
-                                          >
-                                            <ChevronDown size={14} />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="opening-hours-time-block">
-                                      <span className="opening-hours-time-label">À</span>
-                                      <div className="time-input-row">
-                                        <input
-                                          type="text"
-                                          className="form-input opening-hours-time"
-                                          value={slot.end}
-                                          onChange={(event) =>
-                                            updateVenueDay(slot.day, { end: normalizeTime(event.target.value) })
-                                          }
-                                          onBlur={() =>
-                                            updateVenueDay(slot.day, { end: formatTime(slot.end || '18:00') })
-                                          }
-                                          placeholder="HH:MM"
-                                          inputMode="numeric"
-                                        />
-                                        <div className="time-stepper">
-                                          <button
-                                            type="button"
-                                            className="time-stepper-btn"
-                                            onClick={() => stepVenueTime(slot.day, 'end', 30)}
-                                            aria-label="Augmenter de 30 minutes"
-                                          >
-                                            <ChevronUp size={14} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="time-stepper-btn"
-                                            onClick={() => stepVenueTime(slot.day, 'end', -30)}
-                                            aria-label="Diminuer de 30 minutes"
-                                          >
-                                            <ChevronDown size={14} />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>,
-                      'opening-hours-sheet'
-                    )}
-                  </div>
-                  {selectedVenueOpeningDays.length > 0 && (
-                    <div className="opening-hours-summary">
-                      {selectedVenueOpeningDays.map((slot) => (
-                        <span key={slot.day} className="opening-hours-summary-chip">
-                          {venueDayLabels[slot.day] || slot.day}: {slot.start} - {slot.end}
-                        </span>
-                      ))}
+                {selectedDisplaySubcategoryCategory && (
+                  <div className="interest-search-container profile-subcategory-search-container" ref={displaySubcategorySearchRef}>
+                    <div className="interest-search-wrapper">
+                      <input
+                        type="text"
+                        className="interest-search-input"
+                        value={displaySubcategorySearch}
+                        onChange={(e) => {
+                          setDisplaySubcategorySearch(e.target.value)
+                          setShowDisplaySubcategorySuggestions(true)
+                        }}
+                        onFocus={() => setShowDisplaySubcategorySuggestions(true)}
+                        placeholder={`Choisir une sous-catégorie (${displayCategoryLabelMap.get(selectedDisplaySubcategoryCategory) || selectedDisplaySubcategoryCategory})`}
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {/* Statuts */}
-            <div className={`form-group ${fromProfileProgress && missingCompletionSections.status ? 'profile-progress-missing' : ''}`}>
-              <label>Statuts</label>
-              <p className="form-hint compact">Choisissez jusqu’à 2 statuts pour aider les autres à mieux vous identifier.</p>
-
-              <div className="tags-list">
-                {profile.profile_types.map((typeId) => (
-                  <span key={typeId} className="tag">
-                    {formatProfileTypeLabel(typeId)}
-                    <button
-                      type="button"
-                      className="tag-remove"
-                      onClick={() => handleRemoveProfileType(typeId)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-
-              <div className="interest-search-container" ref={profileTypeSearchRef}>
-                <div className="interest-search-wrapper">
-                  <input
-                    type="text"
-                    className="interest-search-input"
-                    value={profileTypeSearch}
-                    onChange={(e) => {
-                      setProfileTypeSearch(e.target.value)
-                      setShowProfileTypeSuggestions(true)
-                    }}
-                    onFocus={() => setShowProfileTypeSuggestions(true)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        const exactMatch = filteredProfileTypeOptions().find(
-                          opt => opt.label.toLowerCase() === profileTypeSearch.toLowerCase()
-                        )
-                        if (exactMatch) {
-                          handleAddProfileType(exactMatch.id)
-                        }
-                      }
-                    }}
-                    placeholder="Choisir un statut (max 2)"
-                  />
-                </div>
-
-                {showProfileTypeSuggestions && (
-                  <div className="interest-suggestions">
-                    {filteredProfileTypeOptions().length > 0 ? (
-                      <>
-                        {filteredProfileTypeOptions().map((option) => {
-                          const isAlreadyAdded = profile.profile_types.includes(option.id)
-                          const isLimitReached = profile.profile_types.length >= MAX_PROFILE_TYPES
-                          const isDisabled = isAlreadyAdded || isLimitReached
-                          return (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`interest-suggestion-item ${isDisabled ? 'disabled' : ''}`}
-                            onClick={() => !isDisabled && handleAddProfileType(option.id)}
-                            disabled={isDisabled}
-                          >
-                            {option.label}
-                          </button>
-                        )})}
-                      </>
-                    ) : (
-                      <div className="interest-suggestion-item no-results">
-                        Aucun résultat trouvé
+                    {showDisplaySubcategorySuggestions && (
+                      <div className="interest-suggestions">
+                        {filteredDisplaySubcategoryOptions().length > 0 ? (
+                          filteredDisplaySubcategoryOptions().map((option) => {
+                            const isSelected = profile.display_subcategories.includes(option.key)
+                            return (
+                              <button
+                                key={option.key}
+                                type="button"
+                                className={`interest-suggestion-item ${isSelected ? 'selected' : ''}`}
+                                onClick={() => {
+                                  if (!selectedDisplaySubcategoryCategory) return
+                                  toggleDisplaySubcategory(selectedDisplaySubcategoryCategory, option.id)
+                                }}
+                              >
+                                {option.label}
+                                {isSelected && (
+                                  <span className="interest-selected-indicator" aria-label="Sélectionné">
+                                    <Check size={14} />
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="interest-suggestion-item no-results">
+                            Aucune sous-catégorie trouvée
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
               </div>
-              {showCustomProfileTypeInput && (
-                <div className="custom-status-row">
-                  <input
-                    type="text"
-                    className="custom-status-input"
-                    value={customProfileType}
-                    onChange={(e) => setCustomProfileType(e.target.value)}
-                    placeholder="Précisez votre statut"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleConfirmCustomProfileType()
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="custom-status-button"
-                    onClick={handleConfirmCustomProfileType}
-                  >
-                    Ajouter
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
+
+            {isVenueDisplayCategory &&
+              selectedDisplaySubcategoryCategory &&
+              VENUE_CATEGORY_SLUGS.includes(selectedDisplaySubcategoryCategory) && (
+              <div className={`form-group venue-settings-entry-group ${fromProfileProgress && missingCompletionSections.venue_opening_hours ? 'profile-progress-missing' : ''}`}>
+                <button
+                  type="button"
+                  className="venue-settings-entry-button"
+                  onClick={() => setIsVenueSettingsPanelOpen(true)}
+                >
+                  <span className="venue-settings-entry-title">
+                    {selectedVenueOpeningDays.length > 0 ? 'Modifier vos jours ouvrables' : 'Ajouter vos jours ouvrables'}
+                  </span>
+                  <span className="venue-settings-entry-subtitle">
+                    {selectedVenueOpeningDays.length > 0
+                      ? `${selectedVenueOpeningDays.length} jour(s) configuré(s)${selectedVenuePaymentType ? ' · paiement configuré' : ''}`
+                      : 'Cliquez pour configurer les horaires et le moyen de paiement'}
+                  </span>
+                </button>
+
+                {selectedVenueOpeningDays.length > 0 && (
+                  <div className="opening-hours-summary">
+                    {selectedVenueOpeningDays.map((slot) => (
+                      <span key={slot.day} className="opening-hours-summary-chip">
+                        {venueDayLabels[slot.day] || slot.day}: {slot.start} - {slot.end}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {renderVenueBottomSheet(
+                  isVenueSettingsPanelOpen,
+                  () => setIsVenueSettingsPanelOpen(false),
+                  '',
+                  <div className="venue-settings-sheet-content">
+                    <div className="opening-hours-sheet-header">
+                      <h3>Configurer le lieu</h3>
+                      <button
+                        type="button"
+                        className="opening-hours-sheet-close"
+                        onClick={() => setIsVenueSettingsPanelOpen(false)}
+                        aria-label="Fermer"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="opening-hours-sheet-divider" />
+
+                    <div className="form-group venue-settings-group">
+                      <div className="form-group dropdown-field venue-dropdown-field">
+                        <label className="form-label">Moyen de paiement *</label>
+                        <button
+                          type="button"
+                          className={`dropdown-trigger ${isVenuePaymentOpen ? 'open' : ''}`}
+                          onClick={() => setIsVenuePaymentOpen((prev) => !prev)}
+                        >
+                          <span>{selectedVenuePaymentName}</span>
+                          <span className="dropdown-caret" aria-hidden="true" />
+                        </button>
+                        {renderVenueBottomSheet(
+                          isVenuePaymentOpen,
+                          () => setIsVenuePaymentOpen(false),
+                          'Choisissez un moyen de paiement',
+                          <CustomList
+                            items={venuePaymentOptions}
+                            selectedId={selectedVenuePaymentType}
+                            onSelectItem={(optionId) => {
+                              setVenuePaymentType(optionId)
+                              setIsVenuePaymentOpen(false)
+                            }}
+                            className="payment-options-list publish-list"
+                            showCheckbox={false}
+                            showDescription
+                            truncateDescription={false}
+                          />
+                        )}
+                      </div>
+
+                      {selectedVenuePaymentType === 'remuneration' && (
+                        <div className="form-group venue-payment-value-group">
+                          <label className="form-label">Prix *</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            min="0"
+                            step="0.01"
+                            placeholder="Ex: 50"
+                            value={selectedVenuePaymentValue}
+                            onChange={(event) => setVenuePaymentValue(event.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      {selectedVenuePaymentType === 'visibilite-contre-service' && (
+                        <div className="form-group venue-payment-value-group">
+                          <label className="form-label">Heures offertes (gratuit) *</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            min="0.5"
+                            step="0.5"
+                            placeholder="Ex: 2"
+                            value={selectedVenuePaymentValue}
+                            onChange={(event) => setVenuePaymentValue(event.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      <div className="form-group venue-opening-group">
+                        <label className="form-label">Jours et horaires d'ouverture *</label>
+                        <div className="dropdown-field venue-dropdown-field">
+                          <button
+                            type="button"
+                            className={`dropdown-trigger ${isVenueOpeningDaysOpen ? 'open' : ''}`}
+                            onClick={() => setIsVenueOpeningDaysOpen((prev) => !prev)}
+                          >
+                            <span>
+                              {selectedVenueOpeningDays.length > 0
+                                ? `${selectedVenueOpeningDays.length} jour(s) sélectionné(s)`
+                                : 'Choisir les jours d’ouverture'}
+                            </span>
+                            <span className="dropdown-caret" aria-hidden="true" />
+                          </button>
+                          {renderVenueBottomSheet(
+                            isVenueOpeningDaysOpen,
+                            () => setIsVenueOpeningDaysOpen(false),
+                            '',
+                            <div className="opening-hours-sheet-content">
+                              <div className="opening-hours-sheet-header">
+                                <h3>Jours d’ouverture</h3>
+                                <button
+                                  type="button"
+                                  className="opening-hours-sheet-close"
+                                  onClick={() => setIsVenueOpeningDaysOpen(false)}
+                                  aria-label="Fermer"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                              <div className="opening-hours-sheet-divider" />
+                              <div className="opening-days-list">
+                                {profile.venue_opening_hours.map((slot) => (
+                                  <div
+                                    key={slot.day}
+                                    className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      className="opening-day-row"
+                                      onClick={() => toggleVenueOpeningDay(slot.day)}
+                                    >
+                                      <span>{venueDayLabels[slot.day] || slot.day}</span>
+                                      <span className={`opening-day-check ${slot.enabled ? 'checked' : ''}`} aria-hidden="true">
+                                        <span className="opening-day-checkmark">✓</span>
+                                      </span>
+                                    </button>
+                                    {slot.enabled && (
+                                      <div className="opening-day-hours-inline">
+                                        <label className="opening-hours-time-label">Entre quelle heure et quelle heure ?</label>
+                                        <div className="opening-day-hours-grid">
+                                          <div className="opening-hours-time-block">
+                                            <span className="opening-hours-time-label">De</span>
+                                            <div className="time-input-row">
+                                              <input
+                                                type="text"
+                                                className="form-input opening-hours-time"
+                                                value={slot.start}
+                                                onChange={(event) =>
+                                                  updateVenueDay(slot.day, { start: normalizeTime(event.target.value) })
+                                                }
+                                                onBlur={() =>
+                                                  updateVenueDay(slot.day, { start: formatTime(slot.start || '09:00') })
+                                                }
+                                                placeholder="HH:MM"
+                                                inputMode="numeric"
+                                              />
+                                              <div className="time-stepper">
+                                                <button
+                                                  type="button"
+                                                  className="time-stepper-btn"
+                                                  onClick={() => stepVenueTime(slot.day, 'start', 30)}
+                                                  aria-label="Augmenter de 30 minutes"
+                                                >
+                                                  <ChevronUp size={14} />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  className="time-stepper-btn"
+                                                  onClick={() => stepVenueTime(slot.day, 'start', -30)}
+                                                  aria-label="Diminuer de 30 minutes"
+                                                >
+                                                  <ChevronDown size={14} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="opening-hours-time-block">
+                                            <span className="opening-hours-time-label">À</span>
+                                            <div className="time-input-row">
+                                              <input
+                                                type="text"
+                                                className="form-input opening-hours-time"
+                                                value={slot.end}
+                                                onChange={(event) =>
+                                                  updateVenueDay(slot.day, { end: normalizeTime(event.target.value) })
+                                                }
+                                                onBlur={() =>
+                                                  updateVenueDay(slot.day, { end: formatTime(slot.end || '18:00') })
+                                                }
+                                                placeholder="HH:MM"
+                                                inputMode="numeric"
+                                              />
+                                              <div className="time-stepper">
+                                                <button
+                                                  type="button"
+                                                  className="time-stepper-btn"
+                                                  onClick={() => stepVenueTime(slot.day, 'end', 30)}
+                                                  aria-label="Augmenter de 30 minutes"
+                                                >
+                                                  <ChevronUp size={14} />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  className="time-stepper-btn"
+                                                  onClick={() => stepVenueTime(slot.day, 'end', -30)}
+                                                  aria-label="Diminuer de 30 minutes"
+                                                >
+                                                  <ChevronDown size={14} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>,
+                            'opening-hours-sheet'
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="venue-settings-sheet-actions">
+                        <button
+                          type="button"
+                          className="venue-settings-sheet-save"
+                          onClick={() => setIsVenueSettingsPanelOpen(false)}
+                        >
+                          Enregistrer
+                        </button>
+                      </div>
+                    </div>
+                  </div>,
+                  'venue-settings-sheet'
+                )}
+              </div>
+            )}
 
             {/* Services */}
-            <div className="form-group">
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.services_required ? 'profile-progress-missing' : ''}`}>
               <label>Services</label>
               <p className="form-hint">Cliquez sur un service pour le modifier</p>
               

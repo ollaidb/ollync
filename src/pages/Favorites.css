@@ -569,12 +569,40 @@
 
 .app--web .favorites-header-container {
   position: static;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .app--web .favorites-content {
-  padding-top: 16px;
+  max-width: 720px;
+  padding-top: 12px;
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 32px;
   overflow-y: visible;
+}
+
+@media (min-width: 1024px) {
+  .app--web .favorites-header {
+    padding: 12px 14px 10px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--card) 96%, transparent);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+  }
+
+  .app--web .favorites-content {
+    max-width: 680px;
+    padding-top: 10px;
+  }
+
+  .app--web .posts-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .app--web .profiles-list {
+    gap: 10px;
+  }
 }

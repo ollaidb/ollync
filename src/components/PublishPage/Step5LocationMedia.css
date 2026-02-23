@@ -126,6 +126,65 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .step5-location-media {
+    max-width: 640px;
+  }
+
+  .step5-location-media .step-title {
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+
+  .step5-location-media .form-group {
+    margin-bottom: 22px;
+  }
+
+  .media-type-toggle {
+    max-width: 420px;
+  }
+
+  .images-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .upload-area {
+    min-height: 148px;
+  }
+
+  .publish-form-sheet-panel {
+    left: calc(240px + ((100vw - 240px) / 2));
+    right: auto;
+    bottom: 14px;
+    width: min(360px, calc(100vw - 240px - 40px));
+    max-height: min(76vh, 680px);
+    margin: 0;
+    transform: translateX(-50%);
+    animation: publishSheetUp 0.22s ease-out;
+    border-radius: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .publish-form-sheet-panel .publish-list {
+    max-height: min(70vh, 620px);
+    overflow-y: auto;
+  }
+
+  .publish-form-sheet-panel.tagged-post-panel .tagged-post-list,
+  .publish-form-sheet-panel.profile-dropdown-panel .profile-dropdown-list {
+    max-height: min(70vh, 560px);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1240px) {
+  .publish-form-sheet-panel {
+    left: calc(240px + ((100vw - 240px) / 2));
+    right: auto;
+    width: min(340px, calc(100vw - 240px - 24px));
+  }
+}
+
 .dropdown-list.custom-list {
   gap: 6px;
 }

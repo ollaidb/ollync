@@ -111,3 +111,26 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .app--web .publish-header-container {
+    max-width: 640px;
+    margin: 0 auto 10px;
+    padding: 14px 22px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--foreground) 4%, transparent);
+  }
+
+  .app--web .publish-header-content {
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+
+  .app--web .publish-title {
+    font-size: 20px;
+  }
+
+  .app--web .publish-breadcrumb {
+    font-size: 13px;
+  }
+}

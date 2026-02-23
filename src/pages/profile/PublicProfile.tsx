@@ -141,6 +141,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const profileId = userId || user?.id
   const isOwnerViewingProfile = Boolean(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id)))
   const VENUE_CATEGORY_SLUGS = ['studio-lieu', 'lieu']
+  const SERVICE_CATEGORY_SLUGS = ['services', 'service', 'mission', 'poste-service']
   const venueDayLabels: Record<string, string> = {
     lundi: 'Lundi',
     mardi: 'Mardi',
@@ -1129,12 +1130,35 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const socialLinksValues = profile.social_links
     ? Object.values(profile.social_links).filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
     : []
+  const venueOpeningHoursForCompletion = Array.isArray(profile.venue_opening_hours)
+    ? profile.venue_opening_hours
+    : []
+  const hasAtLeastOneVenueOpeningDay = venueOpeningHoursForCompletion.some((slot) => Boolean(slot?.enabled))
+  const rawServicesForCompletion = Array.isArray(profile.services) ? profile.services : []
+  const hasAtLeastOneService = rawServicesForCompletion.some((service) => {
+    if (!service) return false
+    if (typeof service === 'string') return service.trim().length > 0
+    if (typeof service === 'object') {
+      const serviceObj = service as { name?: string | null }
+      return String(serviceObj.name || '').trim().length > 0
+    }
+    return false
+  })
+  const requiresVenueOpeningHours = normalizedDisplayCategories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug))
+  const requiresServicesForCompletion = normalizedDisplayCategories.some((slug) => SERVICE_CATEGORY_SLUGS.includes(slug))
+
   const profileCompletionChecks = [
     { key: 'avatar', label: 'Photo de profil', done: Boolean(profile.avatar_url) },
     { key: 'location', label: 'Ville', done: Boolean(profile.location?.trim()) },
     { key: 'categories', label: "Catégories d'affichage", done: normalizedDisplayCategories.length > 0 },
     { key: 'status', label: 'Statut / type de profil', done: normalizedProfileTypes.length > 0 },
-    { key: 'link', label: 'Lien (réseau social ou site)', done: socialLinksValues.length > 0 }
+    { key: 'link', label: 'Lien (réseau social ou site)', done: socialLinksValues.length > 0 },
+    ...(requiresVenueOpeningHours
+      ? [{ key: 'venue_opening_hours', label: 'Jours ouvrables', done: hasAtLeastOneVenueOpeningDay }]
+      : []),
+    ...(requiresServicesForCompletion
+      ? [{ key: 'services', label: 'Services', done: hasAtLeastOneService }]
+      : [])
   ]
   const profileCompletionDoneCount = profileCompletionChecks.filter((item) => item.done).length
   const profileCompletionPercent = Math.round((profileCompletionDoneCount / profileCompletionChecks.length) * 100)

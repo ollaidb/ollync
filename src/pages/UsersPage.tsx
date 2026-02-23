@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Check } from 'lucide-react'
+import { Plus, Check, SlidersHorizontal, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
 import { EmptyState } from '../components/EmptyState'
+import { publicationTypes } from '../constants/publishData'
 import './UsersPage.css'
 
 interface User {
@@ -14,6 +16,7 @@ interface User {
   full_name?: string | null
   avatar_url?: string | null
   profile_type?: string | null
+  display_subcategories?: string[] | null
   email?: string | null
 }
 
@@ -35,6 +38,22 @@ const categoryOrder = [
 ]
 
 const MODERATOR_EMAIL = 'binta22116@gmail.com'
+const PROFILE_TYPE_FILTER_OPTIONS = [
+  { id: 'creator', label: 'Créateur(trice) de contenu' },
+  { id: 'freelance', label: 'Prestataire / Freelance' },
+  { id: 'company', label: 'Entreprise' },
+  { id: 'studio', label: 'Studio / Lieu' },
+  { id: 'institut', label: 'Institut / Beauté' },
+  { id: 'community-manager', label: 'Community manager' },
+  { id: 'monteur', label: 'Monteur(euse)' },
+  { id: 'animateur', label: 'Animateur(rice)' },
+  { id: 'redacteur', label: 'Rédacteur(rice)' },
+  { id: 'scenariste', label: 'Scénariste' },
+  { id: 'coach', label: 'Coach' },
+  { id: 'agence', label: 'Agence' },
+  { id: 'branding', label: 'Branding' },
+  { id: 'analyse-profil', label: 'Analyse de profil' }
+]
 
 const isModeratorEmail = (email?: string | null) =>
   (email || '').trim().toLowerCase() === MODERATOR_EMAIL
@@ -53,8 +72,15 @@ const UsersPage = () => {
   const [page, setPage] = useState(0)
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [pendingCategory, setPendingCategory] = useState<string>('all')
+  const [pendingSubcategory, setPendingSubcategory] = useState<string>('all')
+  const [pendingStatus, setPendingStatus] = useState<string>('all')
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({})
   const [supportsShowInUsers, setSupportsShowInUsers] = useState<boolean | null>(null)
+  const [supportsDisplaySubcategories, setSupportsDisplaySubcategories] = useState<boolean | null>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const USERS_PER_PAGE = 20
@@ -96,6 +122,36 @@ const UsersPage = () => {
     'analyse-profil': 'Analyse de profil',
     other: 'Autre'
   }), [])
+
+  const parseTextArray = (value: unknown) => {
+    if (!value) return [] as string[]
+    if (Array.isArray(value)) return value.map((item) => String(item)).filter(Boolean)
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) return parsed.map((item) => String(item)).filter(Boolean)
+      } catch {
+        return value.split(',').map((item) => item.trim()).filter(Boolean)
+      }
+    }
+    return [] as string[]
+  }
+
+  const subcategoryFilterOptions = useMemo(() => {
+    if (!pendingCategory || pendingCategory === 'all') return []
+    const category = publicationTypes.find((item) => item.slug === pendingCategory)
+    if (!category) return []
+    return category.subcategories
+      .filter((sub) => sub.slug !== 'tout')
+      .map((sub) => ({
+        id: `${category.slug}::${sub.slug}`,
+        label: sub.name
+      }))
+  }, [pendingCategory])
+
+  const activeFilterCount = useMemo(() => (
+    [selectedSubcategory, selectedStatus].filter((value) => value !== 'all').length
+  ), [selectedSubcategory, selectedStatus])
 
   const parseProfileTypes = (value: unknown) => {
     if (!value) return []
@@ -220,13 +276,41 @@ const UsersPage = () => {
         return firstTry
       }
 
-      // Filtre "Tout" : afficher tous les utilisateurs
+      const shouldFilterBySubcategory =
+        selectedSubcategory !== 'all' && supportsDisplaySubcategories !== false
+
+      const applyClientFilters = (profiles: User[]) => {
+        return profiles.filter((profile) => {
+          if (selectedStatus !== 'all') {
+            const profileTypes = parseProfileTypes(profile.profile_type)
+            if (!profileTypes.includes(selectedStatus)) return false
+          }
+          if (selectedSubcategory !== 'all' && supportsDisplaySubcategories === false) {
+            return true
+          }
+          if (selectedSubcategory !== 'all') {
+            const subcategories = parseTextArray(profile.display_subcategories)
+            if (!subcategories.includes(selectedSubcategory)) return false
+          }
+          return true
+        })
+      }
+
+      const selectColumns = supportsDisplaySubcategories === false
+        ? 'id, username, full_name, avatar_url, profile_type, email'
+        : 'id, username, full_name, avatar_url, profile_type, display_subcategories, email'
+
+      // Filtre "Tout" : afficher tous les utilisateurs (avec filtres avancés optionnels)
       if (!activeCategorySlug) {
         let query = supabase
           .from('profiles')
-          .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
+          .select(selectColumns, { count: 'exact' })
           .order('updated_at', { ascending: false })
           .range(start, end)
+
+        if (shouldFilterBySubcategory) {
+          query = query.contains('display_subcategories', [selectedSubcategory])
+        }
 
         if (user) {
           query = query.neq('id', user.id)
@@ -234,7 +318,23 @@ const UsersPage = () => {
 
         query = query.neq('email', MODERATOR_EMAIL)
 
-        const { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
+        let { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
+        const missingSubcatColumn =
+          String((profilesError as { message?: string } | null)?.message || '').includes('display_subcategories')
+        if (profilesError && missingSubcatColumn && supportsDisplaySubcategories !== false) {
+          setSupportsDisplaySubcategories(false)
+          let retryQuery = supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
+            .order('updated_at', { ascending: false })
+            .range(start, end)
+          if (user) retryQuery = retryQuery.neq('id', user.id)
+          retryQuery = retryQuery.neq('email', MODERATOR_EMAIL)
+          const retry = await executeProfilesQuery(retryQuery)
+          profilesData = retry.data
+          profilesError = retry.error
+          count = retry.count
+        }
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError)
@@ -243,7 +343,7 @@ const UsersPage = () => {
           return
         }
 
-        const fetchedUsers = (profilesData || []) as User[]
+        const fetchedUsers = applyClientFilters((profilesData || []) as User[])
         const visibleUsers = fetchedUsers.filter((profile) => !isModeratorEmail(profile.email))
 
         if (pageNum === 0) {
@@ -263,10 +363,14 @@ const UsersPage = () => {
 
       let query = supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
+        .select(selectColumns, { count: 'exact' })
         .contains('display_categories', [activeCategorySlug])
         .order('updated_at', { ascending: false })
         .range(start, end)
+
+      if (shouldFilterBySubcategory) {
+        query = query.contains('display_subcategories', [selectedSubcategory])
+      }
 
       if (user) {
         query = query.neq('id', user.id)
@@ -274,7 +378,24 @@ const UsersPage = () => {
 
       query = query.neq('email', MODERATOR_EMAIL)
 
-      const { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
+      let { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
+      const missingSubcatColumn =
+        String((profilesError as { message?: string } | null)?.message || '').includes('display_subcategories')
+      if (profilesError && missingSubcatColumn && supportsDisplaySubcategories !== false) {
+        setSupportsDisplaySubcategories(false)
+        let retryQuery = supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, profile_type, email', { count: 'exact' })
+          .contains('display_categories', [activeCategorySlug])
+          .order('updated_at', { ascending: false })
+          .range(start, end)
+        if (user) retryQuery = retryQuery.neq('id', user.id)
+        retryQuery = retryQuery.neq('email', MODERATOR_EMAIL)
+        const retry = await executeProfilesQuery(retryQuery)
+        profilesData = retry.data
+        profilesError = retry.error
+        count = retry.count
+      }
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError)
@@ -283,7 +404,7 @@ const UsersPage = () => {
         return
       }
 
-      const fetchedUsers = (profilesData || []) as User[]
+      const fetchedUsers = applyClientFilters((profilesData || []) as User[])
       const visibleUsers = fetchedUsers.filter((profile) => !isModeratorEmail(profile.email))
 
       if (pageNum === 0) {
@@ -304,7 +425,17 @@ const UsersPage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [selectedCategory, categories, categoryId, user, fetchFollowingStatus, supportsShowInUsers])
+  }, [
+    selectedCategory,
+    selectedSubcategory,
+    selectedStatus,
+    categories,
+    categoryId,
+    user,
+    fetchFollowingStatus,
+    supportsShowInUsers,
+    supportsDisplaySubcategories
+  ])
 
   useEffect(() => {
     // Reset when category changes
@@ -313,7 +444,7 @@ const UsersPage = () => {
     setHasMore(true)
     setFollowingMap({})
     fetchUsers(0)
-  }, [selectedCategory, categoryId, fetchUsers])
+  }, [selectedCategory, selectedSubcategory, selectedStatus, categoryId, fetchUsers])
 
   // Initialiser selectedCategory depuis categoryId si présent
   useEffect(() => {
@@ -321,9 +452,25 @@ const UsersPage = () => {
       const category = categories.find(c => c.id === categoryId)
       if (category) {
         setSelectedCategory(category.slug)
+        setPendingCategory(category.slug)
       }
     }
   }, [categoryId, categories])
+
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setSelectedSubcategory('all')
+    } else if (selectedSubcategory !== 'all' && !selectedSubcategory.startsWith(`${selectedCategory}::`)) {
+      setSelectedSubcategory('all')
+    }
+  }, [selectedCategory, selectedSubcategory])
+
+  useEffect(() => {
+    if (!showAdvancedFilters) return
+    setPendingCategory(selectedCategory)
+    setPendingSubcategory(selectedSubcategory)
+    setPendingStatus(selectedStatus)
+  }, [showAdvancedFilters, selectedCategory, selectedSubcategory, selectedStatus])
 
   // Infinite scroll avec Intersection Observer
   useEffect(() => {
@@ -384,6 +531,30 @@ const UsersPage = () => {
     }
   }
 
+  const openAdvancedFilters = () => {
+    setPendingCategory(selectedCategory)
+    setPendingSubcategory(selectedSubcategory)
+    setPendingStatus(selectedStatus)
+    setShowAdvancedFilters(true)
+  }
+
+  const applyAdvancedFilters = () => {
+    setSelectedCategory(pendingCategory)
+    setSelectedSubcategory(
+      pendingCategory === 'all' || !pendingSubcategory.startsWith(`${pendingCategory}::`)
+        ? 'all'
+        : pendingSubcategory
+    )
+    setSelectedStatus(pendingStatus)
+    setShowAdvancedFilters(false)
+  }
+
+  const resetAdvancedFilters = () => {
+    setPendingCategory('all')
+    setPendingSubcategory('all')
+    setPendingStatus('all')
+  }
+
   return (
     <div className="users-page">
       {/* Header fixe */}
@@ -391,7 +562,16 @@ const UsersPage = () => {
         <div className="users-header-content">
           <BackButton className="users-back-button" />
           <h1 className="users-title">Utilisateurs</h1>
-          <div className="users-header-spacer"></div>
+          <button
+            type="button"
+            className={`users-header-filter-btn ${activeFilterCount > 0 ? 'active' : ''}`}
+            onClick={openAdvancedFilters}
+            aria-label="Filtrer les utilisateurs"
+            title="Filtrer"
+          >
+            <SlidersHorizontal size={16} />
+            {activeFilterCount > 0 && <span className="users-header-filter-count">{activeFilterCount}</span>}
+          </button>
         </div>
         
         {/* Menu de filtres */}
@@ -402,6 +582,7 @@ const UsersPage = () => {
               className={`users-filter-btn ${selectedCategory === filter.id ? 'active' : ''}`}
               onClick={() => {
                 setSelectedCategory(filter.id)
+                setSelectedSubcategory('all')
                 setUsers([])
                 setPage(0)
                 setHasMore(true)
@@ -504,6 +685,113 @@ const UsersPage = () => {
           </div>
         )}
       </div>
+
+      {showAdvancedFilters && typeof document !== 'undefined' && createPortal(
+        <div className="users-filter-modal-overlay" onClick={() => setShowAdvancedFilters(false)}>
+          <div className="users-filter-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="users-filter-modal-header">
+              <h2>Filtrer</h2>
+              <button
+                type="button"
+                className="users-filter-modal-close"
+                onClick={() => setShowAdvancedFilters(false)}
+                aria-label="Fermer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="users-filter-modal-section">
+              <p className="users-filter-modal-title">Catégorie</p>
+              <div className="users-filter-modal-options">
+                {filters.map((filter) => (
+                  <button
+                    key={`modal-category-${filter.id}`}
+                    type="button"
+                    className={`users-filter-modal-option ${pendingCategory === filter.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setPendingCategory(filter.id)
+                      if (filter.id === 'all') {
+                        setPendingSubcategory('all')
+                        return
+                      }
+                      if (pendingSubcategory !== 'all' && !pendingSubcategory.startsWith(`${filter.id}::`)) {
+                        setPendingSubcategory('all')
+                      }
+                    }}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="users-filter-modal-section">
+              <p className="users-filter-modal-title">Sous-catégorie</p>
+              <div className="users-filter-modal-options">
+                <button
+                  type="button"
+                  className={`users-filter-modal-option ${pendingSubcategory === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingSubcategory('all')}
+                >
+                  Toutes
+                </button>
+                {pendingCategory !== 'all' ? (
+                  subcategoryFilterOptions.length > 0 ? (
+                    subcategoryFilterOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={`users-filter-modal-option ${pendingSubcategory === option.id ? 'active' : ''}`}
+                        onClick={() => setPendingSubcategory(option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="users-filter-modal-empty">Aucune sous-catégorie</div>
+                  )
+                ) : (
+                  <div className="users-filter-modal-empty">Choisissez d’abord une catégorie</div>
+                )}
+              </div>
+            </div>
+
+            <div className="users-filter-modal-section">
+              <p className="users-filter-modal-title">Statut</p>
+              <div className="users-filter-modal-options">
+                <button
+                  type="button"
+                  className={`users-filter-modal-option ${pendingStatus === 'all' ? 'active' : ''}`}
+                  onClick={() => setPendingStatus('all')}
+                >
+                  Tous
+                </button>
+                {PROFILE_TYPE_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`users-filter-modal-option ${pendingStatus === option.id ? 'active' : ''}`}
+                    onClick={() => setPendingStatus(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="users-filter-modal-actions">
+              <button type="button" className="users-filter-modal-reset" onClick={resetAdvancedFilters}>
+                Réinitialiser
+              </button>
+              <button type="button" className="users-filter-modal-apply" onClick={applyAdvancedFilters}>
+                Appliquer le filtrage
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

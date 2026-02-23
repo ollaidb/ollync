@@ -1444,6 +1444,74 @@
   overflow: hidden;
 }
 
+/* Web compact layout */
+@media (min-width: 1024px) {
+  .app--web .public-profile-page {
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    padding-top: 12px;
+    padding-bottom: 20px;
+  }
+
+  .app--web .profile-page-header {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    padding: 12px 14px 8px;
+    margin: 0 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--card) 96%, transparent);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+    z-index: 100;
+  }
+
+  .app--web .profile-page-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .app--web .profile-identity-block {
+    margin: 0 0 6px;
+  }
+
+  .app--web .profile-bio-block {
+    margin: 8px 0 0;
+  }
+
+  .app--web .profile-social-icons {
+    margin: 12px 0 0;
+  }
+
+  .app--web .profile-secondary-menu {
+    padding: 10px 0;
+    margin-top: 4px;
+  }
+
+  .app--web .profile-content-scrollable {
+    padding: 0 0 2px;
+  }
+
+  .app--web .profile-interests-section,
+  .app--web .profile-services-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .app--web .profile-posts-grid .post-card {
+    width: 58%;
+    min-width: 58%;
+  }
+
+  .app--web .profile-menu-dropdown {
+    right: 0;
+    left: auto;
+    max-width: 260px;
+  }
+}
+
 .profile-menu-item {
   width: 100%;
   display: flex;

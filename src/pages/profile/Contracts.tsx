@@ -10,11 +10,24 @@ import { useConfirmation } from '../../hooks/useConfirmation'
 import { useToastContext } from '../../contexts/ToastContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { EmptyState } from '../../components/EmptyState'
+import { CustomList } from '../../components/CustomList/CustomList'
 import type { Database } from '../../types/database'
 import { getAllPaymentOptions, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import './Contracts.css'
 
 const SYSTEM_SENDER_EMAIL = 'binta22116@gmail.com'
+const extractContractNameFromContent = (content?: string | null) => {
+  const raw = String(content || '')
+  const match = raw.match(/Nom du contrat\s*:\s*(.+)/i)
+  return match?.[1]?.trim() || ''
+}
+const getDraftDisplayName = (draft: ContractDraftSnapshot | null | undefined) => {
+  const snapshot = draft || {}
+  const contractName = String(snapshot.contract_name || '').trim()
+  if (contractName) return contractName
+  const selectedOption = String(snapshot.selected_option || '')
+  return selectedOption ? `Brouillon • ${selectedOption.replace(':', ' ')}` : 'Brouillon sans titre'
+}
 
 interface ProfileSummary {
   id: string
@@ -138,6 +151,8 @@ const Contracts = () => {
   const [searchParams] = useSearchParams()
   const counterpartyParam = searchParams.get('counterparty')
   const sharedContractParam = searchParams.get('contract')
+  const draftParam = searchParams.get('draft')
+  const draftNameParam = searchParams.get('draftName')
   const shouldAcceptSharedContract = searchParams.get('acceptContract') === '1'
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create')
   const [loading, setLoading] = useState(true)
@@ -193,9 +208,14 @@ const Contracts = () => {
   const [drafts, setDrafts] = useState<ContractDraftRow[]>([])
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
   const [handledSharedContractPrompt, setHandledSharedContractPrompt] = useState<string | null>(null)
+  const [handledDraftParam, setHandledDraftParam] = useState<string | null>(null)
+  const [handledDraftNameParam, setHandledDraftNameParam] = useState<string | null>(null)
+  const [hydratedSharedContractId, setHydratedSharedContractId] = useState<string | null>(null)
+  const [handledMissingLinkedContract, setHandledMissingLinkedContract] = useState<string | null>(null)
   const [contractPostSearch, setContractPostSearch] = useState('')
   const [showPostPicker, setShowPostPicker] = useState(false)
   const [showPaymentPicker, setShowPaymentPicker] = useState(false)
+  const [showVisibiliteOfferTypePicker, setShowVisibiliteOfferTypePicker] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareConversationsLoading, setShareConversationsLoading] = useState(false)
   const [shareConversationSearch, setShareConversationSearch] = useState('')
@@ -204,6 +224,7 @@ const Contracts = () => {
   const [sharingContract, setSharingContract] = useState(false)
   const [showDraftsPanel, setShowDraftsPanel] = useState(false)
   const [showContractPreviewPanel, setShowContractPreviewPanel] = useState(true)
+  const [postSelectionWarning, setPostSelectionWarning] = useState(false)
 
   const selectedContext = useMemo<SelectedContext | null>(() => {
     if (!selectedOption) return null
@@ -222,7 +243,31 @@ const Contracts = () => {
     return null
   }, [acceptedAsApplicant, applicantPostMap, ownedPosts, ownerProfileMap, selectedOption])
 
-  const paymentOptions = useMemo(() => getAllPaymentOptions(), [])
+  useEffect(() => {
+    if (selectedContext) {
+      setPostSelectionWarning(false)
+    }
+  }, [selectedContext])
+
+  const flagMissingPostSelection = () => {
+    setPostSelectionWarning(true)
+    setError('Sélectionnez une annonce avant d’envoyer le contrat.')
+    window.setTimeout(() => {
+      setPostSelectionWarning(false)
+    }, 1800)
+  }
+
+  const paymentOptions = useMemo(
+    () => getAllPaymentOptions().filter((option) => option.id !== 'prix'),
+    []
+  )
+  const visibiliteOfferTypeOptions = useMemo(
+    () => [
+      { id: 'visibilite', name: 'Visibilité', description: 'Tu offres une mention, un crédit ou une mise en avant.' },
+      { id: 'service', name: 'Service', description: 'Tu offres une prestation ou un service en échange.' }
+    ],
+    []
+  )
 
   const filteredOwnedPosts = useMemo(() => {
     const query = contractPostSearch.trim().toLowerCase()
@@ -270,6 +315,7 @@ const Contracts = () => {
     association: 'Association',
     collaboration: 'Collaboration'
   }
+  const buildCurrentContractTitle = () => contractName.trim() || `Contrat ${paymentLabels[resolvedContractType] || 'Collaboration'}`
 
   const selectedPaymentConfig = useMemo(() => getPaymentOptionConfig(resolvedPaymentType), [resolvedPaymentType])
   const shouldShowRevenueShare =
@@ -277,7 +323,6 @@ const Contracts = () => {
   const shouldShowPrice = resolvedPaymentType === 'remuneration'
   const shouldShowExchange =
     resolvedContractType === 'echange' ||
-    resolvedContractType === 'visibilite-contre-service' ||
     Boolean(selectedPaymentConfig?.requiresExchangeService)
   const shouldShowVisibiliteOfferType = resolvedPaymentType === 'visibilite-contre-service'
   const shouldShowVisibiliteServiceDetails =
@@ -390,10 +435,8 @@ const Contracts = () => {
 
         setDrafts(rows)
 
-        if (rows.length > 0) {
-          setActiveDraftId(rows[0].id)
-          applyDraftSnapshot(rows[0].draft)
-        }
+        // Ne pas charger automatiquement un brouillon au démarrage:
+        // l'utilisateur choisit explicitement quel brouillon ouvrir.
       } catch (err) {
         console.error('Error loading contract draft:', err)
       } finally {
@@ -449,20 +492,6 @@ const Contracts = () => {
               const next = prev.map((row) => (row.id === updated.id ? updated : row))
               return next.sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))
             })
-          }
-        } else {
-          const { data: insertedRows } = await (supabase.from('contract_drafts') as any)
-            .insert(payload)
-            .select('id, draft, updated_at')
-
-          const created = (insertedRows || [])[0] as ContractDraftRow | undefined
-          if (created) {
-            setActiveDraftId(created.id)
-            setDrafts((prev) =>
-              [created, ...prev.filter((row) => row.id !== created.id)].sort(
-                (a, b) => +new Date(b.updated_at) - +new Date(a.updated_at)
-              )
-            )
           }
         }
       } catch (err) {
@@ -539,7 +568,8 @@ const Contracts = () => {
       isSignatureModalOpen ||
       showPostPicker ||
       shareModalOpen ||
-      (showPaymentPicker && Boolean(selectedContext))
+      (showPaymentPicker && Boolean(selectedContext)) ||
+      (showVisibiliteOfferTypePicker && shouldShowVisibiliteOfferType)
     if (hasBlockingOverlay) {
       document.body.style.overflow = 'hidden'
       document.body.style.touchAction = 'none'
@@ -551,7 +581,7 @@ const Contracts = () => {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
-  }, [isSignatureModalOpen, selectedContext, shareModalOpen, showPaymentPicker, showPostPicker])
+  }, [isSignatureModalOpen, selectedContext, shareModalOpen, showPaymentPicker, showPostPicker, showVisibiliteOfferTypePicker, shouldShowVisibiliteOfferType])
 
   useEffect(() => {
     setPreferredCounterpartyId(counterpartyParam)
@@ -651,6 +681,59 @@ const Contracts = () => {
     user
   ])
 
+  useEffect(() => {
+    if (!user || !sharedContractParam || loading) return
+    if (hydratedSharedContractId === sharedContractParam) return
+    const targetContract = contracts.find((contract) => contract.id === sharedContractParam)
+    if (!targetContract) return
+
+    let nextSelectedOption = ''
+    const applicantMatch = targetContract.application_id
+      ? acceptedAsApplicant.find((app) => app.id === targetContract.application_id)
+      : null
+    const ownerPostMatch = targetContract.post_id
+      ? ownedPosts.find((post) => post.id === targetContract.post_id)
+      : null
+
+    if (applicantMatch) {
+      nextSelectedOption = `applicant:${applicantMatch.id}`
+      setSelectedApplicants({})
+    } else if (ownerPostMatch) {
+      nextSelectedOption = `owner:${ownerPostMatch.id}`
+      if (targetContract.application_id) {
+        setSelectedApplicants({ [targetContract.application_id]: true })
+      } else {
+        setSelectedApplicants({})
+      }
+    } else {
+      // Contrat visible mais contexte source indisponible (annonce/app candidature supprimée).
+      // On garde la page liste afin d'éviter un formulaire incohérent.
+      return
+    }
+
+    skipNextDraftSave.current = true
+    setActiveDraftId(null)
+    setActiveTab('create')
+    setSelectedOption(nextSelectedOption)
+    setContractType(targetContract.contract_type || 'auto')
+    setSelectedPaymentType(targetContract.payment_type || '')
+    setContractName(extractContractNameFromContent(targetContract.contract_content) || '')
+    setPriceValue(targetContract.price != null ? String(targetContract.price) : '')
+    setRevenueShare(targetContract.revenue_share_percentage != null ? String(targetContract.revenue_share_percentage) : '')
+    setExchangeService(targetContract.exchange_service || '')
+    setCustomClauses(targetContract.custom_clauses || '')
+    setAgreementConfirmed(Boolean(targetContract.agreement_confirmed))
+    setHydratedSharedContractId(sharedContractParam)
+  }, [
+    acceptedAsApplicant,
+    contracts,
+    hydratedSharedContractId,
+    loading,
+    ownedPosts,
+    sharedContractParam,
+    user
+  ])
+
   const findOrCreateDirectConversation = useCallback(
     async (otherUserId: string, postId?: string | null) => {
       if (!user) return null
@@ -694,12 +777,16 @@ const Contracts = () => {
       contractId,
       counterpartyId,
       postId,
-      postTitle
+      contractLabel,
+      contractContent,
+      contractStatus
     }: {
       contractId: string
       counterpartyId: string
       postId?: string | null
-      postTitle?: string | null
+      contractLabel?: string | null
+      contractContent?: string | null
+      contractStatus?: string | null
     }) => {
       if (!user) return
       const conversation = await findOrCreateDirectConversation(counterpartyId, postId || null)
@@ -710,8 +797,14 @@ const Contracts = () => {
         conversation_id: (conversation as { id: string }).id,
         sender_id: user.id,
         message_type: 'contract_share',
-        content: postTitle ? `Contrat partagé • ${postTitle}` : 'Contrat partagé',
-        shared_contract_id: contractId
+        content: (contractLabel || '').trim() ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
+        shared_contract_id: contractId,
+        calendar_request_data: {
+          kind: 'contract_share_snapshot',
+          contract_title: (contractLabel || '').trim() || null,
+          contract_content: contractContent || null,
+          status: contractStatus || null
+        }
       })
 
       if (error) {
@@ -725,11 +818,15 @@ const Contracts = () => {
     async ({
       contractId,
       conversationId,
-      postTitle
+      contractLabel,
+      contractContent,
+      contractStatus
     }: {
       contractId: string
       conversationId: string
-      postTitle?: string | null
+      contractLabel?: string | null
+      contractContent?: string | null
+      contractStatus?: string | null
     }) => {
       if (!user) return
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -737,8 +834,14 @@ const Contracts = () => {
         conversation_id: conversationId,
         sender_id: user.id,
         message_type: 'contract_share',
-        content: postTitle ? `Contrat partagé • ${postTitle}` : 'Contrat partagé',
-        shared_contract_id: contractId
+        content: (contractLabel || '').trim() ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
+        shared_contract_id: contractId,
+        calendar_request_data: {
+          kind: 'contract_share_snapshot',
+          contract_title: (contractLabel || '').trim() || null,
+          contract_content: contractContent || null,
+          status: contractStatus || null
+        }
       })
       if (error) {
         throw error
@@ -1813,6 +1916,40 @@ const Contracts = () => {
     showSuccess('Brouillon chargé.')
   }
 
+  useEffect(() => {
+    if (!draftParam || handledDraftParam === draftParam || drafts.length === 0) return
+    const targetDraft = drafts.find((draft) => draft.id === draftParam)
+    if (!targetDraft) return
+    setHandledDraftParam(draftParam)
+    handleLoadDraft(targetDraft)
+  }, [draftParam, drafts, handledDraftParam])
+
+  useEffect(() => {
+    if (!draftNameParam || handledDraftNameParam === draftNameParam || drafts.length === 0) return
+    const normalizedTarget = draftNameParam.trim().toLowerCase()
+    if (!normalizedTarget) return
+    const targetDraft = drafts.find((draft) => getDraftDisplayName(draft.draft).trim().toLowerCase() === normalizedTarget)
+    if (!targetDraft) return
+    setHandledDraftNameParam(draftNameParam)
+    handleLoadDraft(targetDraft)
+  }, [draftNameParam, drafts, handledDraftNameParam])
+
+  useEffect(() => {
+    if (!sharedContractParam || loading || !draftLoaded) return
+    if (handledMissingLinkedContract === sharedContractParam) return
+    if (contracts.some((contract) => contract.id === sharedContractParam)) return
+
+    const normalizedDraftName = (draftNameParam || '').trim().toLowerCase()
+    const hasMatchingDraft = normalizedDraftName
+      ? drafts.some((draft) => getDraftDisplayName(draft.draft).trim().toLowerCase() === normalizedDraftName)
+      : false
+
+    if (!hasMatchingDraft) {
+      setHandledMissingLinkedContract(sharedContractParam)
+      setError('Contrat supprimé.')
+    }
+  }, [contracts, draftLoaded, draftNameParam, drafts, handledMissingLinkedContract, loading, sharedContractParam])
+
   const handleSaveContractProfile = async () => {
     if (!user) return
     setContractProfileSaving(true)
@@ -1885,18 +2022,6 @@ const Contracts = () => {
     if (insertError) throw insertError
     const created = (createdContracts || [])[0] as ContractRecord | undefined
 
-    downloadContractPdf(
-      contractContent,
-      buildContractFileName(post.title, counterparty),
-      buildContractPdfData({
-        creator: creatorWithContractDetails,
-        counterparty,
-        post,
-        paymentType: resolvedPaymentType,
-        contractKind: resolvedContractType
-      })
-    )
-
     return created || null
   }
 
@@ -1934,7 +2059,9 @@ const Contracts = () => {
               contractId: created.id,
               counterpartyId: application.applicant.id,
               postId: selectedContext.post.id,
-              postTitle: selectedContext.post.title
+              contractLabel: buildCurrentContractTitle(),
+              contractContent: created.contract_content,
+              contractStatus: created.status
             })
           }
         }
@@ -1954,7 +2081,9 @@ const Contracts = () => {
             contractId: created.id,
             counterpartyId: selectedContext.owner.id,
             postId: selectedContext.post.id,
-            postTitle: selectedContext.post.title
+            contractLabel: buildCurrentContractTitle(),
+            contractContent: created.contract_content,
+            contractStatus: created.status
           })
         }
       }
@@ -1971,6 +2100,10 @@ const Contracts = () => {
   }
 
   const handleOpenShareModal = async () => {
+    if (!selectedContext) {
+      flagMissingPostSelection()
+      return
+    }
     setError(null)
     setShareConversations([])
     setShareConversationsLoading(true)
@@ -1983,7 +2116,7 @@ const Contracts = () => {
   const handleShareContractToConversation = async () => {
     if (!user || !selectedShareConversationId) return
     if (!selectedContext) {
-      setError('Sélectionnez une annonce avant d’envoyer le contrat.')
+      flagMissingPostSelection()
       return
     }
     const selectedConversation = shareConversations.find((conv) => conv.id === selectedShareConversationId)
@@ -2021,7 +2154,9 @@ const Contracts = () => {
       await sendContractShareMessageToConversation({
         contractId: created.id,
         conversationId: selectedShareConversationId,
-        postTitle: selectedContext.post.title
+        contractLabel: buildCurrentContractTitle(),
+        contractContent: created.contract_content,
+        contractStatus: created.status
       })
 
       setContracts((prev) => [created, ...prev])
@@ -2045,6 +2180,10 @@ const Contracts = () => {
     if (shouldShowExchange && exchangeService.trim().length === 0) return true
     return false
   }
+
+  const canGenerateWithoutContext = !selectedContext
+  const isGenerateDisabledForFields =
+    saving || (Boolean(selectedContext) && isGenerateDisabled())
 
   const renderContractsList = () => {
     if (contracts.length === 0) {
@@ -2246,7 +2385,7 @@ const Contracts = () => {
                 </div>
                 <button
                   type="button"
-                  className={`contracts-post-picker-trigger ${showPostPicker ? 'open' : ''}`}
+                  className={`contracts-post-picker-trigger ${showPostPicker ? 'open' : ''} ${postSelectionWarning ? 'warning' : ''}`}
                   onClick={() => setShowPostPicker(true)}
                 >
                   <span>
@@ -2269,7 +2408,7 @@ const Contracts = () => {
                       >
                         <span>
                           {resolvedPaymentType
-                            ? paymentOptions.find((o) => o.id === resolvedPaymentType)?.name || resolvedPaymentType
+                            ? getPaymentOptionConfig(resolvedPaymentType)?.name || resolvedPaymentType
                             : 'Choisir un moyen de paiement'}
                         </span>
                         <span className="contracts-payment-picker-trigger-action">
@@ -2314,18 +2453,27 @@ const Contracts = () => {
                       </label>
                     )}
                     {shouldShowVisibiliteOfferType && (
-                      <label>
-                        Tu offres quoi ? (visibilité / service)
-                        <select
-                          className="contracts-select"
-                          value={visibiliteOfferType}
-                          onChange={(event) => setVisibiliteOfferType(event.target.value as '' | 'visibilite' | 'service')}
+                      <div className="contracts-grid-wide contracts-post-picker-field">
+                        <div className="contracts-field-title">
+                          <span>Tu offres quoi ? (visibilité / service)</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={`contracts-post-picker-trigger ${showVisibiliteOfferTypePicker ? 'open' : ''}`}
+                          onClick={() => setShowVisibiliteOfferTypePicker(true)}
                         >
-                          <option value="">Choisir...</option>
-                          <option value="visibilite">Visibilité</option>
-                          <option value="service">Service</option>
-                        </select>
-                      </label>
+                          <span>
+                            {visibiliteOfferType === 'visibilite'
+                              ? 'Visibilité'
+                              : visibiliteOfferType === 'service'
+                                ? 'Service'
+                                : 'Choisir'}
+                          </span>
+                          <span className="contracts-post-picker-trigger-action">
+                            {visibiliteOfferType ? 'Changer' : 'Choisir'}
+                          </span>
+                        </button>
+                      </div>
                     )}
                     {shouldShowVisibiliteServiceDetails && (
                       <label className="contracts-grid-wide">
@@ -2511,22 +2659,61 @@ const Contracts = () => {
                         Choisissez un moyen de paiement. Le panneau se ferme après votre choix.
                       </p>
                       <div className="contracts-payment-sheet-list">
-                        {paymentOptions.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            className={`contracts-payment-sheet-item ${(resolvedPaymentType || '') === option.id ? 'active' : ''}`}
-                            onClick={() => {
-                              setSelectedPaymentType(option.id)
-                              setShowPaymentPicker(false)
-                            }}
-                          >
-                            <span className="contracts-payment-sheet-item-name">{option.name}</span>
-                            {option.description && (
-                              <span className="contracts-payment-sheet-item-desc">{option.description}</span>
-                            )}
-                          </button>
-                        ))}
+                        <CustomList
+                          items={paymentOptions}
+                          selectedId={resolvedPaymentType || ''}
+                          onSelectItem={(optionId) => {
+                            setSelectedPaymentType(optionId)
+                            setShowPaymentPicker(false)
+                          }}
+                          className="payment-options-list publish-list contracts-publish-list"
+                          showCheckbox={false}
+                          showDescription={true}
+                          truncateDescription={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ), document.body)
+              )}
+
+              {shouldShowVisibiliteOfferType && showVisibiliteOfferTypePicker && (
+                canUsePortal && createPortal((
+                  <div className="contracts-payment-sheet-overlay" onClick={() => setShowVisibiliteOfferTypePicker(false)}>
+                    <div
+                      className="contracts-payment-sheet"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="contracts-payment-sheet-header">
+                        <h3>Tu offres quoi ?</h3>
+                        <button
+                          type="button"
+                          className="contracts-payment-sheet-close"
+                          onClick={() => setShowVisibiliteOfferTypePicker(false)}
+                          aria-label="Fermer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="contracts-payment-sheet-help">
+                        Choisissez si vous proposez de la visibilité ou un service.
+                      </p>
+                      <div className="contracts-payment-sheet-list">
+                        <CustomList
+                          items={visibiliteOfferTypeOptions}
+                          selectedId={visibiliteOfferType || ''}
+                          onSelectItem={(optionId) => {
+                            setVisibiliteOfferType(optionId as '' | 'visibilite' | 'service')
+                            if (optionId !== 'service') {
+                              setVisibiliteServiceDetails('')
+                            }
+                            setShowVisibiliteOfferTypePicker(false)
+                          }}
+                          className="publish-list contracts-publish-list"
+                          showCheckbox={false}
+                          showDescription={true}
+                          truncateDescription={false}
+                        />
                       </div>
                     </div>
                   </div>
@@ -2567,7 +2754,8 @@ const Contracts = () => {
                 <div className="contracts-preview">{previewContractContent}</div>
                 <div className="contracts-actions">
                   <button
-                    className="contracts-secondary-btn"
+                    type="button"
+                    className="contracts-secondary-btn contracts-preview-download-btn"
                     onClick={() => {
                       const postTitle = selectedContext?.post.title || 'contrat'
                       const creatorProfile = resolveCreatorProfile()
@@ -2590,13 +2778,24 @@ const Contracts = () => {
                     Télécharger le contrat
                   </button>
                   <button
-                    className="contracts-primary-btn"
-                    disabled={isGenerateDisabled() || saving}
-                    onClick={handleGenerateContracts}
+                    type="button"
+                    className="contracts-primary-btn contracts-preview-send-btn"
+                    disabled={isGenerateDisabledForFields && !canGenerateWithoutContext}
+                    onClick={() => {
+                      if (!selectedContext) {
+                        flagMissingPostSelection()
+                        return
+                      }
+                      void handleGenerateContracts()
+                    }}
                   >
                     {saving ? 'Envoi...' : 'Envoyer le contrat'}
                   </button>
-                  <button className="contracts-secondary-btn" onClick={() => void handleResetWithDraftPrompt()}>
+                  <button
+                    type="button"
+                    className="contracts-secondary-btn contracts-preview-reset-btn"
+                    onClick={() => void handleResetWithDraftPrompt()}
+                  >
                     Réinitialiser
                   </button>
                 </div>

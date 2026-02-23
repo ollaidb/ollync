@@ -10,7 +10,6 @@ import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { mapPost, type MappedPost } from '../utils/postMapper'
-import { GoogleMapComponent } from '../components/Maps/GoogleMap'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
 import { useNavigationHistory } from '../hooks/useNavigationHistory'
@@ -1576,11 +1575,6 @@ const PostDetails = () => {
     : (post?.location || post?.location_address)
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(post.location || post.location_address || '')}`
       : null
-  const exactAddressMapsUrl = post?.location_address
-    ? (post?.location_lat && post?.location_lng
-      ? `https://www.google.com/maps/search/?api=1&query=${post.location_lat},${post.location_lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(post.location_address)}`)
-    : null
   const openingHoursList = getOpeningHoursList(post?.opening_hours)
   const categorySlug = (post?.category?.slug || '').trim().toLowerCase()
   const subCategorySlug = (post?.sub_category?.slug || '').trim().toLowerCase()
@@ -1692,6 +1686,17 @@ const PostDetails = () => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isMediaViewerOpen, handleCloseViewer, goToNextMedia, goToPrevMedia])
+
+  useEffect(() => {
+    if (!isMediaViewerOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isMediaViewerOpen])
 
   if (loading) {
     return (
@@ -1825,7 +1830,7 @@ const PostDetails = () => {
           )}
         </div>
 
-        {isMediaViewerOpen && mediaItems.length > 0 && (
+        {isMediaViewerOpen && mediaItems.length > 0 && createPortal(
           <div
             className="post-media-viewer-overlay"
             onClick={() => {
@@ -1843,6 +1848,7 @@ const PostDetails = () => {
           >
             <div
               className="post-media-viewer-content"
+              onClick={(event) => event.stopPropagation()}
             >
               <button
                 type="button"
@@ -1906,7 +1912,8 @@ const PostDetails = () => {
                 </div>
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Zone scrollable */}
@@ -2191,26 +2198,6 @@ const PostDetails = () => {
                       <div className="post-info-item">
                         <span className="post-info-label">Adresse</span>
                         <div className="post-info-value">
-                          <div className="post-address-text">
-                            <MapPin size={16} />
-                            {exactAddressMapsUrl ? (
-                              <a
-                                href={exactAddressMapsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="post-address-link"
-                              >
-                                {post.location_address}
-                              </a>
-                            ) : (
-                              <span>{post.location_address}</span>
-                            )}
-                          </div>
-                          {post.location_lat && post.location_lng && (
-                            <div className="post-address-coords">
-                              {post.location_lat.toFixed(6)}, {post.location_lng.toFixed(6)}
-                            </div>
-                          )}
                           {post.location_lat && post.location_lng && (
                             <button className="post-address-nav-btn-small" onClick={handleOpenNavigation}>
                               <Navigation size={18} />
@@ -2218,19 +2205,6 @@ const PostDetails = () => {
                             </button>
                           )}
                         </div>
-                      </div>
-                    )}
-                    {post.location_lat && post.location_lng && (
-                      <div className="post-map-section">
-                        <GoogleMapComponent
-                          lat={post.location_lat}
-                          lng={post.location_lng}
-                          address={post.location_address || post.location || undefined}
-                          height="400px"
-                          zoom={15}
-                          markerTitle={post.location_address || post.location || post.title}
-                          onMarkerClick={handleOpenNavigation}
-                        />
                       </div>
                     )}
                   </>

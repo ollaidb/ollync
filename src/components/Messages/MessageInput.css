@@ -357,21 +357,55 @@
   align-content: start;
 }
 
+.message-contract-selector-row {
+  display: block;
+  position: relative;
+}
+
 .message-contract-selector-item {
   width: 100%;
   text-align: left;
   border: 1px solid var(--border);
   background: var(--input);
   border-radius: 10px;
-  padding: 10px;
+  padding: 10px 42px 10px 10px;
   display: grid;
   gap: 4px;
   cursor: pointer;
+  position: relative;
 }
 
 .message-contract-selector-item.selected {
   border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 8%, var(--input));
+}
+
+.message-contract-selector-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  background: color-mix(in srgb, var(--card) 70%, var(--input));
+  color: var(--muted-foreground);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.message-contract-selector-delete:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #ef4444 45%, var(--border));
+  background: color-mix(in srgb, #ef4444 10%, var(--card));
+  color: #ef4444;
+}
+
+.message-contract-selector-delete:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .message-contract-selector-item-title {
@@ -414,6 +448,85 @@
   gap: 10px;
   padding: 12px 14px 14px;
   border-top: 1px solid var(--border);
+}
+
+.message-contract-delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12010;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(10, 10, 14, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.message-contract-delete-confirm {
+  width: min(100%, 360px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.message-contract-delete-confirm h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.message-contract-delete-confirm p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  word-break: break-word;
+}
+
+.message-contract-delete-confirm > span {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.message-contract-delete-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.message-contract-delete-confirm-btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.message-contract-delete-confirm-btn.secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--muted) 70%, var(--card));
+}
+
+.message-contract-delete-confirm-btn.danger {
+  border-color: color-mix(in srgb, #ef4444 35%, var(--border));
+  background: color-mix(in srgb, #ef4444 12%, var(--card));
+  color: #dc2626;
+}
+
+.message-contract-delete-confirm-btn.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #ef4444 16%, var(--card));
+}
+
+.message-contract-delete-confirm-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .message-contract-selector-btn {

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import ConsentModal from '../ConsentModal'
@@ -26,10 +26,91 @@ interface SelectableContract {
   status?: string | null
   created_at?: string | null
   updated_at?: string | null
+  creator_id?: string | null
+  counterparty_id?: string | null
+  contract_type?: string | null
+  payment_type?: string | null
+  contract_content?: string | null
+  display_name?: string | null
   draft_name?: string | null
   post?: {
     title?: string | null
   } | null
+}
+
+const TERMINAL_CONTRACT_STATUSES = new Set(['cancelled', 'canceled', 'completed', 'archived', 'deleted', 'rejected', 'expired'])
+const CONTRACT_KIND_LABELS: Record<string, string> = {
+  collaboration: 'Collaboration',
+  prestation: 'Prestation',
+  service: 'Service',
+  vente: 'Vente',
+  location: 'Location',
+  licence: 'Licence',
+  licensing: 'Licence',
+  partenariat: 'Partenariat',
+  sponsorship: 'Sponsoring',
+  sponsoring: 'Sponsoring'
+}
+
+const extractContractNameFromContent = (content?: string | null) => {
+  const raw = String(content || '')
+  const match = raw.match(/Nom du contrat\s*:\s*(.+)/i)
+  return match?.[1]?.trim() || null
+}
+
+const buildAutomaticContractName = (contractType?: string | null, paymentType?: string | null) => {
+  const key = String(contractType || paymentType || '').trim().toLowerCase()
+  if (!key) return 'Contrat'
+  return `Contrat ${CONTRACT_KIND_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1)}`
+}
+
+const getContractListLabel = (contract: SelectableContract) => {
+  if (contract.item_type === 'draft') {
+    return contract.draft_name || 'Brouillon de contrat'
+  }
+  return (
+    contract.display_name
+    || extractContractNameFromContent(contract.contract_content)
+    || buildAutomaticContractName(contract.contract_type, contract.payment_type)
+  )
+}
+
+const dedupeSelectableContracts = (items: SelectableContract[]) => {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const key = `${item.item_type}:${item.id}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+const makeSelectorLabelsUnique = (items: SelectableContract[]) => {
+  const baseCounts = new Map<string, number>()
+  const baseLabels = items.map((item) => {
+    const base = getContractListLabel(item).trim() || (item.item_type === 'draft' ? 'Brouillon de contrat' : 'Contrat')
+    baseCounts.set(base, (baseCounts.get(base) || 0) + 1)
+    return base
+  })
+
+  return items.map((item, index) => {
+    const base = baseLabels[index]
+    if ((baseCounts.get(base) || 0) <= 1) {
+      if (item.item_type === 'contract') return { ...item, display_name: base }
+      if (item.item_type === 'draft') return { ...item, draft_name: base }
+      return item
+    }
+
+    const dateLabel = (item.updated_at || item.created_at)
+      ? new Date(item.updated_at || item.created_at || '').toLocaleDateString('fr-FR')
+      : ''
+    const suffix = dateLabel || String(item.id).slice(0, 6)
+    const uniqueLabel = `${base} • ${suffix}`
+
+    if (item.item_type === 'contract') return { ...item, display_name: uniqueLabel }
+    if (item.item_type === 'draft') return { ...item, draft_name: uniqueLabel }
+    return item
+  })
 }
 
 const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId }: MessageInputProps) => {
@@ -41,6 +122,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [showPostSelector, setShowPostSelector] = useState(false)
   const [showContractSelector, setShowContractSelector] = useState(false)
   const [contractsLoading, setContractsLoading] = useState(false)
+  const [deletingContractItemId, setDeletingContractItemId] = useState<string | null>(null)
+  const [pendingDeleteContractItem, setPendingDeleteContractItem] = useState<SelectableContract | null>(null)
   const [contractItems, setContractItems] = useState<SelectableContract[]>([])
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null)
   const [appointmentDate, setAppointmentDate] = useState<string | null>(null)
@@ -194,7 +277,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       const [{ data: contractsData, error }, { data: draftsData, error: draftsError }] = await Promise.all([
         supabase
         .from('contracts')
-        .select('id, status, created_at, post:posts(title)')
+        .select('id, status, created_at, updated_at, creator_id, counterparty_id, contract_type, payment_type, contract_content, post:posts(title)')
         .or(
           `and(creator_id.eq.${senderId},counterparty_id.eq.${counterpartyId}),and(creator_id.eq.${counterpartyId},counterparty_id.eq.${senderId})`
         )
@@ -213,10 +296,15 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         console.error('Error loading contract drafts for selector:', draftsError)
       }
 
-      const contractRows = ((contractsData || []) as Array<Omit<SelectableContract, 'item_type'>>).map((item) => ({
-        ...item,
-        item_type: 'contract' as const
-      }))
+      const contractRows = ((contractsData || []) as Array<Omit<SelectableContract, 'item_type'>>)
+        .filter((item) => !TERMINAL_CONTRACT_STATUSES.has(String(item.status || '').toLowerCase()))
+        .map((item) => ({
+          ...item,
+          display_name:
+            extractContractNameFromContent((item as SelectableContract).contract_content)
+            || buildAutomaticContractName((item as SelectableContract).contract_type, (item as SelectableContract).payment_type),
+          item_type: 'contract' as const
+        }))
 
       const draftRows = (((draftsData || []) as Array<{ id: string; updated_at?: string | null; draft?: Record<string, unknown> | null }>))
         .map((row) => {
@@ -235,15 +323,15 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           } satisfies SelectableContract
         })
 
-      const allItems = [...contractRows, ...draftRows].sort((a, b) => {
+      const allItems = makeSelectorLabelsUnique(dedupeSelectableContracts([...contractRows, ...draftRows]).sort((a, b) => {
         const aTs = +(new Date(a.updated_at || a.created_at || 0))
         const bTs = +(new Date(b.updated_at || b.created_at || 0))
         return bTs - aTs
-      })
+      }))
 
-      const sendableContracts = allItems.filter((item) => item.item_type === 'contract')
-      setContractItems(sendableContracts)
-      setSelectedContractId(sendableContracts[0]?.id || null)
+      setContractItems(allItems)
+      const firstContract = allItems.find((item) => item.item_type === 'contract')
+      setSelectedContractId(firstContract?.id || allItems[0]?.id || null)
     } catch (error) {
       console.error('Error loading contracts for selector:', error)
       setContractItems([])
@@ -269,14 +357,68 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     const selected = contractItems.find((item) => item.id === selectedContractId)
     if (!selected) return
 
+    if (selected.item_type === 'draft') {
+      setShowContractSelector(false)
+      alert('Ce brouillon doit être finalisé dans la page Contrats avant envoi.')
+      navigate(counterpartyId ? `/profile/contracts?counterparty=${counterpartyId}` : '/profile/contracts')
+      return
+    }
+
     try {
+      const contractLabel = getContractListLabel(selected)
+      const contractSnapshot = selected.item_type === 'contract'
+        ? {
+            kind: 'contract_share_snapshot',
+            contract_title: contractLabel,
+            contract_content: selected.contract_content || null,
+            status: selected.status || null
+          }
+        : null
       sendMessageWithConsent('contract_share', {
           shared_contract_id: selectedContractId,
-          content: selected?.post?.title ? `Contrat partagé • ${selected.post.title}` : 'Contrat partagé'
+          content: contractLabel ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
+          calendar_request_data: contractSnapshot
         })
       setShowContractSelector(false)
     } catch (error) {
       console.error('Error sending contract share:', error)
+    }
+  }
+
+  const handleDeleteContractItem = async (item: SelectableContract) => {
+    if (!senderId || deletingContractItemId) return
+
+    setDeletingContractItemId(`${item.item_type}:${item.id}`)
+    try {
+      if (item.item_type === 'draft') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('contract_drafts') as any)
+          .delete()
+          .eq('id', item.id)
+          .eq('user_id', senderId)
+        if (error) throw error
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase.from('contracts') as any)
+          .delete()
+          .eq('id', item.id)
+          .or(`creator_id.eq.${senderId},counterparty_id.eq.${senderId}`)
+        if (error) throw error
+      }
+
+      setContractItems((prev) => {
+        const next = prev.filter((row) => !(row.item_type === item.item_type && row.id === item.id))
+        if (selectedContractId === item.id) {
+          const firstContract = next.find((row) => row.item_type === 'contract')
+          setSelectedContractId(firstContract?.id || next[0]?.id || null)
+        }
+        return next
+      })
+    } catch (error) {
+      console.error('Error deleting contract item from selector:', error)
+      alert('Impossible de supprimer cet élément pour le moment.')
+    } finally {
+      setDeletingContractItemId(null)
     }
   }
 
@@ -820,7 +962,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
                   </div>
                 ) : contractItems.length === 0 ? (
                   <div className="message-contract-selector-empty">
-                    <p>Aucun contrat trouvé avec cet utilisateur.</p>
+                    <p>Aucun brouillon ni contrat en cours disponible.</p>
                     <button
                       type="button"
                       className="message-contract-selector-link-btn"
@@ -833,28 +975,47 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
                     </button>
                   </div>
                 ) : (
-                  contractItems.map((contract) => (
-                    <button
-                      key={`${contract.item_type}-${contract.id}`}
-                      type="button"
-                      className={`message-contract-selector-item ${selectedContractId === contract.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedContractId(contract.id)}
-                    >
-                      <div className="message-contract-selector-item-title">
-                        {contract.item_type === 'draft'
-                          ? (contract.draft_name || 'Brouillon de contrat')
-                          : (contract.post?.title || 'Contrat')}
+                  contractItems.map((contract) => {
+                    const rowKey = `${contract.item_type}:${contract.id}`
+                    const isDeleting = deletingContractItemId === rowKey
+                    return (
+                      <div
+                        key={rowKey}
+                        className={`message-contract-selector-row ${selectedContractId === contract.id ? 'selected' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className={`message-contract-selector-item ${selectedContractId === contract.id ? 'selected' : ''}`}
+                          onClick={() => setSelectedContractId(contract.id)}
+                        >
+                          <div className="message-contract-selector-item-title">
+                            {getContractListLabel(contract)}
+                          </div>
+                          <div className="message-contract-selector-item-meta">
+                            <span>{contract.item_type === 'draft' ? 'brouillon' : (contract.status || 'generated')}</span>
+                            <span>
+                              {(contract.updated_at || contract.created_at)
+                                ? new Date(contract.updated_at || contract.created_at || '').toLocaleDateString('fr-FR')
+                                : ''}
+                            </span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          className="message-contract-selector-delete"
+                          aria-label={contract.item_type === 'draft' ? 'Supprimer le brouillon' : 'Supprimer le contrat'}
+                          title={contract.item_type === 'draft' ? 'Supprimer le brouillon' : 'Supprimer le contrat'}
+                          disabled={isDeleting}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setPendingDeleteContractItem(contract)
+                          }}
+                        >
+                          {isDeleting ? <Loader className="spinner" size={12} /> : <Trash2 size={12} />}
+                        </button>
                       </div>
-                      <div className="message-contract-selector-item-meta">
-                        <span>{contract.item_type === 'draft' ? 'brouillon' : (contract.status || 'generated')}</span>
-                        <span>
-                          {(contract.updated_at || contract.created_at)
-                            ? new Date(contract.updated_at || contract.created_at || '').toLocaleDateString('fr-FR')
-                            : ''}
-                        </span>
-                      </div>
-                    </button>
-                  ))
+                    )
+                  })
                 )}
               </div>
               <div className="message-contract-selector-actions">
@@ -868,17 +1029,64 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
                 >
                   Ouvrir Contrats
                 </button>
-                <button
-                  type="button"
-                  className="message-contract-selector-btn primary"
-                  onClick={() => void handleSendContractShare()}
-                  disabled={!selectedContractId || contractsLoading || sending}
-                >
-                  {sending ? 'Envoi...' : 'Envoyer'}
-                </button>
+              <button
+                type="button"
+                className="message-contract-selector-btn primary"
+                onClick={() => void handleSendContractShare()}
+                disabled={!selectedContractId || contractsLoading || sending}
+              >
+                {sending
+                  ? 'Envoi...'
+                  : (contractItems.find((item) => item.id === selectedContractId)?.item_type === 'draft'
+                      ? 'Ouvrir le brouillon'
+                      : 'Envoyer')}
+              </button>
               </div>
             </div>
           </div>
+          {pendingDeleteContractItem && (
+            <div
+              className="message-contract-delete-confirm-overlay"
+              onClick={() => setPendingDeleteContractItem(null)}
+            >
+              <div
+                className="message-contract-delete-confirm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h4>
+                  {pendingDeleteContractItem.item_type === 'draft'
+                    ? 'Supprimer le brouillon'
+                    : 'Supprimer le contrat'}
+                </h4>
+                <p>{getContractListLabel(pendingDeleteContractItem)}</p>
+                <span>
+                  Cette suppression est définitive.
+                </span>
+                <div className="message-contract-delete-confirm-actions">
+                  <button
+                    type="button"
+                    className="message-contract-delete-confirm-btn secondary"
+                    onClick={() => setPendingDeleteContractItem(null)}
+                    disabled={Boolean(deletingContractItemId)}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    className="message-contract-delete-confirm-btn danger"
+                    onClick={() => {
+                      const item = pendingDeleteContractItem
+                      setPendingDeleteContractItem(null)
+                      void handleDeleteContractItem(item)
+                    }}
+                    disabled={Boolean(deletingContractItemId)}
+                  >
+                    {deletingContractItemId ? 'Suppression...' : 'Supprimer'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>,
         document.body
       )}

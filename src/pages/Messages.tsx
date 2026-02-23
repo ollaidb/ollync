@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
 import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2 } from 'lucide-react'
@@ -238,6 +238,8 @@ const Messages = () => {
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
+  const loadMessagesRequestIdRef = useRef(0)
+  const loadConversationsRequestIdRef = useRef(0)
   const isInfoView = location.pathname.endsWith('/info')
   const isMediaView = location.pathname.endsWith('/media')
   const isAppointmentsView = location.pathname.endsWith('/appointments')
@@ -310,14 +312,6 @@ const Messages = () => {
       setMissingNotice(state.missingNotice)
     }
   }, [location.state])
-
-  // Recharger la conversation quand l'URL change
-  useEffect(() => {
-    if (user && conversationId && !selectedConversation) {
-      loadConversation(conversationId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId, user])
 
   useEffect(() => {
     if (conversationId) {
@@ -451,8 +445,10 @@ const Messages = () => {
         return `Rendez-vous ${directionLabel}`
       case 'post_share':
         return `Annonce ${directionLabel}`
-      case 'contract_share':
-        return `Contrat ${directionLabel}`
+      case 'contract_share': {
+        const text = (lastMessage.content || '').trim()
+        return text || `Contrat ${directionLabel}`
+      }
       default: {
         const text = (lastMessage.content || '').trim()
         if (!text || text === '0') return ''
@@ -842,6 +838,7 @@ const Messages = () => {
   const loadMessages = async (convId: string) => {
     if (!user) return
 
+    const requestId = ++loadMessagesRequestIdRef.current
     setMessagesLoading(true)
     // Utiliser select('*') pour éviter les problèmes de colonnes manquantes
     try {
@@ -861,6 +858,7 @@ const Messages = () => {
       )
 
       if (error) {
+        if (requestId !== loadMessagesRequestIdRef.current) return
         console.error('Error loading messages:', error)
         setMessages([])
         return
@@ -889,12 +887,19 @@ const Messages = () => {
           return true
         })
 
-        const senderIds = [...new Set(visibleMessages.map((msg) => msg.sender_id).filter(Boolean))]
+        const senderIdsNeedingFetch = [
+          ...new Set(
+            visibleMessages
+              .filter((msg) => !msg.sender)
+              .map((msg) => msg.sender_id)
+              .filter(Boolean)
+          )
+        ]
         
-        const { data: senders, error: sendersError } = senderIds.length > 0 ? await supabase
+        const { data: senders, error: sendersError } = senderIdsNeedingFetch.length > 0 ? await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url, email')
-          .in('id', senderIds) : { data: [], error: null }
+          .in('id', senderIdsNeedingFetch) : { data: [], error: null }
 
         if (sendersError) {
           console.error('Error loading senders:', sendersError)
@@ -904,9 +909,10 @@ const Messages = () => {
 
         const formattedMessages: Message[] = visibleMessages.map((msg) => ({
           ...msg,
-          sender: sendersMap.get(msg.sender_id) || null
+          sender: msg.sender || sendersMap.get(msg.sender_id) || null
         }))
 
+        if (requestId !== loadMessagesRequestIdRef.current) return
         shouldScrollToBottomRef.current = true
         setMessages(formattedMessages)
 
@@ -923,6 +929,7 @@ const Messages = () => {
           if (readError) {
             console.error('Error marking messages as read:', readError)
           } else {
+            if (requestId !== loadMessagesRequestIdRef.current) return
             const nowIso = new Date().toISOString()
             setMessages((prev) =>
               prev.map((msg) =>
@@ -940,10 +947,13 @@ const Messages = () => {
           )
         }
       } else {
+        if (requestId !== loadMessagesRequestIdRef.current) return
         setMessages([])
       }
     } finally {
-      setMessagesLoading(false)
+      if (requestId === loadMessagesRequestIdRef.current) {
+        setMessagesLoading(false)
+      }
     }
   }
 
@@ -1412,6 +1422,7 @@ const Messages = () => {
   const loadConversations = useCallback(async () => {
     if (!user) return
 
+    const requestId = ++loadConversationsRequestIdRef.current
     if (!isConversationView) {
       setLoading(true)
     }
@@ -1497,7 +1508,9 @@ const Messages = () => {
 
       if (error) {
         console.error('Error loading conversations:', error)
-        setLoading(false)
+        if (requestId === loadConversationsRequestIdRef.current) {
+          setLoading(false)
+        }
         return
       }
 
@@ -1727,14 +1740,18 @@ const Messages = () => {
           return new Date(dateB).getTime() - new Date(dateA).getTime()
         })
 
-        setConversations(filteredConvs)
+        if (requestId === loadConversationsRequestIdRef.current) {
+          setConversations(filteredConvs)
+        }
       } else {
-        setConversations([])
+        if (requestId === loadConversationsRequestIdRef.current) {
+          setConversations([])
+        }
       }
     } catch (error) {
       console.error('Error loading conversations:', error)
     } finally {
-      if (!isConversationView) {
+      if (!isConversationView && requestId === loadConversationsRequestIdRef.current) {
         setLoading(false)
       }
     }
@@ -1990,9 +2007,11 @@ const Messages = () => {
     }
   }, [user, postId, conversationId, selectedConversation, activeFilter, loadConversations])
 
+  const deferredSearchQuery = useDeferredValue(searchQuery)
+
   // Filtrer les match_requests selon l'onglet actif
   // Dans Messages, l'onglet "Demandes" affiche uniquement les demandes en attente
-  const filteredMatchRequests = matchRequests.filter((request) => {
+  const filteredMatchRequests = useMemo(() => matchRequests.filter((request) => {
     if (blockedUserIds.includes(request.other_user?.id || '')) {
       return false
     }
@@ -2001,12 +2020,12 @@ const Messages = () => {
       return request.status === 'pending'
     }
     return false
-  })
+  }), [matchRequests, blockedUserIds, activeFilter])
 
   // Filtrer les matches selon l'onglet actif
   // L'onglet "Match" affiche uniquement les matchs ACCEPTÉS (envoyés ou reçus)
   // Les conversations créées à partir de ces matches apparaîtront aussi dans "Tout" si elles ont des messages
-  const filteredMatches = matchRequests.filter((request) => {
+  const filteredMatches = useMemo(() => matchRequests.filter((request) => {
     if (blockedUserIds.includes(request.other_user?.id || '')) {
       return false
     }
@@ -2015,15 +2034,15 @@ const Messages = () => {
       return request.status === 'accepted'
     }
     return false
-  })
+  }), [matchRequests, blockedUserIds, activeFilter])
 
-  const filteredConversations = conversations.filter((conv) => {
+  const filteredConversations = useMemo(() => conversations.filter((conv) => {
     if (blockedUserIds.includes(conv.other_user?.id || '')) {
       return false
     }
     // Filtre par recherche textuelle
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+    if (deferredSearchQuery.trim()) {
+      const query = deferredSearchQuery.toLowerCase()
       const alias = (conversationAliases[conv.id] || '').toLowerCase()
       const groupName = (conv.group_name || conv.name || '').toLowerCase()
       const name = conv.is_group
@@ -2054,14 +2073,14 @@ const Messages = () => {
     }
 
     return true
-  })
+  }), [conversations, blockedUserIds, deferredSearchQuery, conversationAliases, activeFilter])
 
-  const filteredAppointments = appointments.filter((appointment) => {
+  const filteredAppointments = useMemo(() => appointments.filter((appointment) => {
     if (blockedUserIds.includes(appointment.other_user?.id || '')) {
       return false
     }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+    if (deferredSearchQuery.trim()) {
+      const query = deferredSearchQuery.toLowerCase()
       const title = appointment.title?.toLowerCase() || ''
       const name = (appointment.other_user?.full_name || appointment.other_user?.username || '').toLowerCase()
       if (!title.includes(query) && !name.includes(query)) {
@@ -2069,7 +2088,7 @@ const Messages = () => {
       }
     }
     return true
-  })
+  }), [appointments, blockedUserIds, deferredSearchQuery])
 
   const sortedAppointments = useMemo(() => {
     const now = Date.now()

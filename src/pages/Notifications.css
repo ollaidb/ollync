@@ -769,3 +769,71 @@
     font-size: 12px;
   }
 }
+
+/* Web-only layout adjustments */
+.app--web .notifications-page {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+.app--web .notifications-header-fixed {
+  position: static;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+}
+
+.app--web .notifications-header-content {
+  padding-top: 12px;
+  padding-left: 14px;
+  padding-right: 14px;
+  padding-bottom: 8px;
+}
+
+.app--web .notifications-filters {
+  padding: 0 14px 10px 14px;
+}
+
+.app--web .notifications-scrollable {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  padding-top: 10px;
+  padding-bottom: 28px;
+  overflow-y: visible;
+  background: transparent;
+}
+
+.app--web .notifications-list {
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .app--web .notifications-scrollable {
+    max-width: 680px;
+  }
+
+  .app--web .notifications-header-fixed {
+    max-width: 680px;
+  }
+
+  .app--web .notifications-date-group {
+    margin-bottom: 12px;
+  }
+
+  .app--web .notification-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--foreground) 2%, transparent);
+  }
+
+  .app--web .notification-item:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+}

@@ -898,3 +898,25 @@
   border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
   background: color-mix(in srgb, var(--primary) 10%, var(--background));
 }
+
+.contract-status-notice-panel {
+  width: min(100%, 280px);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 14px;
+  box-shadow: var(--shadow-xl);
+  padding: 8px;
+}
+
+.contract-status-notice-body {
+  display: grid;
+  gap: 10px;
+}
+
+.contract-status-notice-body p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  padding: 2px 2px 0;
+}

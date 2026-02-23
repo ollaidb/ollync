@@ -78,6 +78,46 @@
   visibility: hidden;
 }
 
+.users-header-filter-btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  justify-content: center;
+}
+
+.users-header-filter-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.users-header-filter-count {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 0 5px;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+}
+
 /* Menu de filtres */
 .users-filters {
   display: flex;
@@ -118,6 +158,153 @@
   background-color: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
+}
+
+.users-filter-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 999999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.users-filter-modal {
+  width: min(720px, 100%);
+  max-height: min(85vh, 760px);
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  box-shadow: var(--shadow-lg);
+  padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  overflow-y: auto;
+  position: relative;
+  z-index: 1000000;
+}
+
+.users-filter-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.users-filter-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.users-filter-modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.users-filter-modal-section {
+  margin-top: 12px;
+}
+
+.users-filter-modal-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.users-filter-modal-options {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.users-filter-modal-options::-webkit-scrollbar {
+  display: none;
+}
+
+.users-filter-modal-option {
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.users-filter-modal-option:hover {
+  background: var(--input);
+}
+
+.users-filter-modal-option.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--card));
+  color: var(--primary);
+}
+
+.users-filter-modal-empty {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  padding: 8px 4px;
+}
+
+.users-filter-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  z-index: 2;
+  padding-bottom: 4px;
+}
+
+.users-filter-modal-reset,
+.users-filter-modal-apply {
+  flex: 1;
+  min-height: 42px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.users-filter-modal-reset {
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.users-filter-modal-apply {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  min-width: 170px;
 }
 
 /* ============================================
@@ -446,6 +633,12 @@
     min-height: 40px;
   }
 
+  .users-header-filter-btn {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+
   .users-title {
     font-size: 18px;
     font-weight: 700;
@@ -494,6 +687,11 @@
 
   .users-card-bio {
     font-size: 13px;
+  }
+
+  .users-filter-modal {
+    border-radius: 18px 18px 0 0;
+    padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
   }
 }
 
