@@ -109,7 +109,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
   } | null>(null)
   const [sharedContract, setSharedContract] = useState<SharedContractDetails | null>(null)
   const navigate = useNavigate()
-  const { user } = useAuth()
+  useAuth()
   const contractSnapshot =
     message.message_type === 'contract_share'
       ? (message.calendar_request_data as ContractShareSnapshot | null)

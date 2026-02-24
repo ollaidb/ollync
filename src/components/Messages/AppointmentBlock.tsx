@@ -209,10 +209,8 @@ export function AppointmentBlock({
       const iso = dt.toISOString()
       const durationMinutes = durationTimeToMinutes(newDuration)
 
-      const { error: errApp } = await supabase
-        .from('appointments')
-        .update({ appointment_datetime: iso, updated_at: new Date().toISOString() })
-        .eq('id', appointmentDetails.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: errApp } = await (supabase as any).from('appointments').update({ appointment_datetime: iso, updated_at: new Date().toISOString() }).eq('id', appointmentDetails.id)
       if (errApp) throw errApp
 
       const nextCalendarData = {
@@ -222,10 +220,8 @@ export function AppointmentBlock({
         previous_appointment_datetime: appointmentDateTime || undefined,
         previous_duration_minutes: calendarData?.duration_minutes ?? undefined
       }
-      const { error: errMsg } = await supabase
-        .from('messages')
-        .update({ calendar_request_data: nextCalendarData })
-        .eq('id', message.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: errMsg } = await (supabase as any).from('messages').update({ calendar_request_data: nextCalendarData }).eq('id', message.id)
       if (errMsg) throw errMsg
 
       const newDateLabel = new Date(iso).toLocaleString('fr-FR', {
@@ -239,7 +235,8 @@ export function AppointmentBlock({
       if (appointmentDetails.sender_id && appointmentDetails.recipient_id) {
         const otherId = appointmentDetails.sender_id === user.id ? appointmentDetails.recipient_id : appointmentDetails.sender_id
         try {
-          await supabase.from('notifications').insert({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('notifications').insert({
             user_id: otherId,
             type: 'appointment',
             title: 'Rendez-vous modifié',
@@ -269,10 +266,8 @@ export function AppointmentBlock({
     if (!appointmentDetails?.id || !user || updating) return
     setUpdating(true)
     try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('id', appointmentDetails.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('appointments').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', appointmentDetails.id)
       if (error) throw error
       appointmentByMessageCache.set(message.id, { ...appointmentDetails, status: 'cancelled' })
       setAppointmentDetails((prev) => (prev ? { ...prev, status: 'cancelled' } : null))
