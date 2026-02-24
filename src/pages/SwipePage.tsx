@@ -546,7 +546,7 @@ const SwipePage = () => {
                     )}
                     
                     {/* Catégorie en haut à gauche */}
-                    {mainMedia && post.category && (
+                    {post.category && (
                       <div className="swipe-card-category">
                         {post.category.name}
                       </div>

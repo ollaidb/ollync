@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check } from 'lucide-react'
+import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
@@ -177,7 +178,7 @@ const Messages = () => {
   const postId = searchParams.get('post')
   const openAppointment = searchParams.get('openAppointment') === '1'
   const { user } = useAuth()
-  const { counts: unreadCommunicationCounts, markTypesAsRead } = useUnreadCommunicationCounts()
+  const { counts: unreadCommunicationCounts, markTypesAsRead, pendingRequestsCount } = useUnreadCommunicationCounts()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
   const [selectedMatchRequest, setSelectedMatchRequest] = useState<MatchRequest | null>(null)
@@ -224,6 +225,12 @@ const Messages = () => {
   const [mediaTab, setMediaTab] = useState<'media' | 'links' | 'documents'>('media')
   const [showAddParticipants, setShowAddParticipants] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<ConversationParticipant | null>(null)
+  const [showMemberBottomSheet, setShowMemberBottomSheet] = useState(false)
+  const [showLinkPostSheet, setShowLinkPostSheet] = useState(false)
+  const [selectablePostsForLink, setSelectablePostsForLink] = useState<Array<{ id: string; title: string }>>([])
+  const [linkPostLoading, setLinkPostLoading] = useState(false)
+  const [inviteLinkToken, setInviteLinkToken] = useState<string | null>(null)
+  const [inviteLinkLoading, setInviteLinkLoading] = useState(false)
   const [showMediaActions, setShowMediaActions] = useState(false)
   const [selectedMediaMessage, setSelectedMediaMessage] = useState<Message | null>(null)
   const [missingNotice, setMissingNotice] = useState<string | null>(null)
@@ -316,6 +323,38 @@ const Messages = () => {
       setMissingNotice(state.missingNotice)
     }
   }, [location.state])
+
+  const inviteToken = searchParams.get('invite')
+  useEffect(() => {
+    if (!user || !inviteToken) return
+    let cancelled = false
+    const run = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('group_invite_tokens')
+          .select('conversation_id')
+          .eq('token', inviteToken)
+          .gt('expires_at', new Date().toISOString())
+          .single()
+        if (cancelled || error || !data) return
+        const convId = (data as { conversation_id: string }).conversation_id
+        const { error: insertErr } = await (supabase.from('conversation_participants') as any).insert({
+          conversation_id: convId,
+          user_id: user.id,
+          is_active: true
+        }).select()
+        if (insertErr && insertErr.code !== '23505') return
+        if (!cancelled) {
+          navigate(`/messages/${convId}`, { replace: true })
+          loadConversations()
+        }
+      } catch {
+        // ignore
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [user, inviteToken, navigate])
 
   useEffect(() => {
     if (conversationId) {
@@ -426,36 +465,59 @@ const Messages = () => {
     }
   }
 
-  const getConversationPreview = (conv: Conversation) => {
+  const getConversationPreview = (conv: Conversation, matchReqs?: MatchRequest[]) => {
     const lastMessage = conv.lastMessage
-    if (!lastMessage) return ''
-    const isSentByUser = lastMessage.sender_id === user?.id
-    const directionLabel = isSentByUser ? 'envoyée' : 'reçue'
+    const isSentByUser = lastMessage ? lastMessage.sender_id === user?.id : false
+    const directionLabelFem = isSentByUser ? 'envoyée' : 'reçue'
+    const directionLabelMasc = isSentByUser ? 'envoyé' : 'reçu'
+
+    // Si pas de message mais qu'un match a été accepté pour cette conversation → Annonce acceptée
+    if (!lastMessage) {
+      const acceptedMatch = matchReqs?.find(
+        (r) => r.conversation_id === conv.id && r.status === 'accepted'
+      )
+      return acceptedMatch ? 'Annonce acceptée' : ''
+    }
 
     switch (lastMessage.message_type) {
       case 'photo':
-        return `Image ${directionLabel}`
+        return `Image ${directionLabelFem}`
       case 'video':
-        return `Vidéo ${directionLabel}`
+        return `Vidéo ${directionLabelFem}`
       case 'document':
-        return `Document ${directionLabel}`
+        return `Document ${directionLabelMasc}`
       case 'location':
-        return `Localisation ${directionLabel}`
+        return `Localisation ${directionLabelFem}`
       case 'price':
-        return `Prix proposé ${directionLabel}`
+        return `Prix proposé ${directionLabelMasc}`
       case 'rate':
-        return `Tarif ${directionLabel}`
+        return `Tarif ${directionLabelMasc}`
       case 'calendar_request':
-        return `Rendez-vous ${directionLabel}`
+        return `Rendez-vous ${directionLabelMasc}`
       case 'post_share':
-        return `Annonce ${directionLabel}`
+        return `Annonce ${directionLabelFem}`
       case 'contract_share': {
         const text = (lastMessage.content || '').trim()
-        return text || `Contrat ${directionLabel}`
+        return text || `Contrat ${directionLabelMasc}`
       }
+      case 'link':
+        return `Lien ${directionLabelMasc}`
+      case 'match_accepted':
+        return 'Annonce acceptée'
       default: {
+        // Vérifier si le match accepté est l'événement le plus récent
+        const acceptedMatch = matchReqs?.find(
+          (r) => r.conversation_id === conv.id && r.status === 'accepted'
+        )
+        const matchAcceptedAt = acceptedMatch?.accepted_at || acceptedMatch?.created_at
+        const lastMsgAt = lastMessage.created_at
+        if (matchAcceptedAt && lastMsgAt && new Date(matchAcceptedAt) > new Date(lastMsgAt)) {
+          return 'Annonce acceptée'
+        }
         const text = (lastMessage.content || '').trim()
         if (!text || text === '0') return ''
+        // Si le contenu est principalement un lien, afficher "Lien envoyé/reçu"
+        if (hasLinkContent(text)) return `Lien ${directionLabelMasc}`
         return text
       }
     }
@@ -898,6 +960,10 @@ const Messages = () => {
       } as Conversation)
 
       setMissingNotice(null)
+      // Recharger les match_requests pour afficher le bloc "Annonce acceptée"
+      // (y compris pour figurant : request_intent='request')
+      const requests = await loadMatchRequests()
+      setMatchRequests(requests)
       await loadMessages(convId)
     } catch (error) {
       console.error('Error loading conversation:', error)
@@ -1038,6 +1104,22 @@ const Messages = () => {
       setGroupNameDraft(groupDisplayName)
       setGroupDescriptionDraft(selectedConversation.group_description || '')
       setGroupPhotoDraft(selectedConversation.group_photo_url || null)
+      const loadInviteToken = async () => {
+        const { data } = await supabase
+          .from('group_invite_tokens')
+          .select('token')
+          .eq('conversation_id', selectedConversation.id)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (data && (data as { token?: string }).token) {
+          setInviteLinkToken((data as { token: string }).token)
+        } else {
+          setInviteLinkToken(null)
+        }
+      }
+      loadInviteToken().catch(() => setInviteLinkToken(null))
     } else {
       setAliasDraft(selectedConversation.id ? (conversationAliases[selectedConversation.id] || '') : '')
     }
@@ -1050,36 +1132,39 @@ const Messages = () => {
 
       setInfoLoading(true)
       try {
-        const { data, error } = await supabase
+        const { data: rows, error } = await supabase
           .from('conversation_participants')
-          .select('user_id, is_active, role, profiles:user_id (id, username, full_name, avatar_url)')
+          .select('user_id, is_active, role')
           .eq('conversation_id', selectedConversation.id)
           .order('joined_at', { ascending: true })
 
         if (error) throw error
 
-        const normalized = (data || []).filter((row) => {
-          const typedRow = row as { is_active?: boolean | null }
-          return typedRow.is_active !== false
-        }).map((row) => {
-          const typedRow = row as {
-            user_id: string
-            is_active?: boolean | null
-            role?: string | null
-            profiles?: {
-              id: string
-              username?: string | null
-              full_name?: string | null
-              avatar_url?: string | null
-            } | null
-          }
-          return {
-            user_id: typedRow.user_id,
-            is_active: typedRow.is_active ?? true,
-            role: typedRow.role ?? null,
-            profile: typedRow.profiles ?? null
-          }
-        })
+        type ParticipantRow = { user_id: string; is_active?: boolean | null; role?: string | null }
+        const activeRows = (rows || []) as ParticipantRow[]
+        const filteredRows = activeRows.filter((row) => row.is_active !== false)
+        const userIds = filteredRows.map((r) => r.user_id)
+        if (userIds.length === 0) {
+          setInfoParticipants([])
+          return
+        }
+
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', userIds)
+
+        type ProfileRow = { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }
+        const profileMap = new Map<string, ProfileRow>(
+          ((profileRows || []) as ProfileRow[]).map((p) => [p.id, p])
+        )
+
+        const normalized = filteredRows.map((row) => ({
+          user_id: row.user_id,
+          is_active: row.is_active ?? true,
+          role: (row as ParticipantRow & { role?: string | null }).role ?? null,
+          profile: profileMap.get(row.user_id) ?? null
+        }))
 
         setInfoParticipants(normalized)
       } catch (error) {
@@ -1261,12 +1346,23 @@ const Messages = () => {
     }
   }, [user])
 
+  // Charger match_requests dès l'entrée sur la page Messages (indépendant du filtre actif)
+  // pour que les badges Matchs et Demandes s'affichent immédiatement à côté des noms des menus
   useEffect(() => {
     if (!user) return
     loadMatchRequests().then((requests) => {
       setMatchRequests(requests)
     })
   }, [user, loadMatchRequests])
+
+  // Recharger match_requests quand on affiche la liste (filtres visibles) pour garantir
+  // que le badge Demandes s'affiche avant tout clic, comme pour Matchs
+  useEffect(() => {
+    if (!user || postId || conversationId || selectedConversation) return
+    loadMatchRequests().then((requests) => {
+      setMatchRequests(requests)
+    })
+  }, [user, postId, conversationId, selectedConversation, loadMatchRequests])
 
   const loadAppointments = useCallback(async () => {
     if (!user) return []
@@ -1529,11 +1625,10 @@ const Messages = () => {
       setBlockedUserIds(blockedIdsArray)
       const blockedIds = new Set(blockedIdsArray)
 
-      // Charger les match_requests uniquement si nécessaire
-      if (activeFilter === 'match_requests' || activeFilter === 'matches') {
-        const requestsData = await loadMatchRequests()
-        setMatchRequests(requestsData)
-      }
+      // Charger les match_requests dès l'entrée sur la page pour afficher
+      // les badges Matchs et Demandes immédiatement (comme les matchs)
+      const requestsData = await loadMatchRequests()
+      setMatchRequests(requestsData)
 
       if (activeFilter === 'appointments') {
         const appointmentsData = await loadAppointments()
@@ -2182,6 +2277,23 @@ const Messages = () => {
     return count + (seenByCurrentUser ? 0 : 1)
   }, 0)
 
+  // Badge Matchs : combiner match_requests et notifications pour affichage immédiat dès l'entrée sur la page
+  const matchsBadgeCount = Math.max(unseenAcceptedRequestsCount, unreadCommunicationCounts.match)
+
+  // Badge Demandes : même logique que Matchs - combiner toutes les sources pour affichage immédiat
+  // (notifications + match_requests détaillés + count léger du hook, chargé dès l'icône Messages)
+  const demandesBadgeCount = useMemo(() => {
+    const pendingFromMatchRequests = matchRequests.filter((request) => {
+      if (blockedUserIds.includes(request.other_user?.id || '')) return false
+      return request.status === 'pending'
+    }).length
+    return Math.max(
+      pendingFromMatchRequests,
+      unreadCommunicationCounts.request,
+      pendingRequestsCount ?? 0
+    )
+  }, [matchRequests, blockedUserIds, unreadCommunicationCounts.request, pendingRequestsCount])
+
   const markRequestAsOpenedByCurrentUser = useCallback(async (request: MatchRequest) => {
     if (!user) return null
 
@@ -2219,7 +2331,7 @@ const Messages = () => {
     return (
       <div className="messages-page-container">
         <div className="messages-header-not-connected">
-          <h1 className="messages-title-centered">{t('messages:title')}</h1>
+          <h1 className="messages-title-centered">Messages</h1>
         </div>
         <div className="messages-content-not-connected">
           <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
@@ -2393,7 +2505,11 @@ const Messages = () => {
     const lastDisplayMessageId = messagesForDisplay[messagesForDisplay.length - 1]?.id
 
     if (isInfoView) {
-      const isGroupOwner = !!user && selectedConversation?.group_creator_id === user.id
+      const isGroupCreator = !!user && selectedConversation?.group_creator_id === user.id
+      const currentUserParticipant = infoParticipants.find((p) => p.user_id === user?.id)
+      const isGroupAdmin = currentUserParticipant?.role === 'moderator'
+      const canEditGroup = isGroupCreator || isGroupAdmin
+      const canManageMembers = isGroupCreator
       const groupPhoto = groupPhotoDraft || selectedConversation?.group_photo_url || ''
       const groupName = groupNameDraft || groupDisplayName || 'Groupe'
       const appointmentMessages = messages.filter((msg) =>
@@ -2448,7 +2564,7 @@ const Messages = () => {
                     {displayName}
                   </button>
                 )}
-                {isGroupConversation && isGroupOwner && (
+                {isGroupConversation && canEditGroup && (
                   <button
                     type="button"
                     className="conversation-info-photo-btn"
@@ -2487,7 +2603,7 @@ const Messages = () => {
                       value={groupNameDraft}
                       onChange={(event) => setGroupNameDraft(event.target.value)}
                       placeholder="Nom du groupe"
-                      disabled={!isGroupOwner || savingGroup}
+                      disabled={!canEditGroup || savingGroup}
                     />
                   </div>
                   <div className="conversation-info-field">
@@ -2496,11 +2612,11 @@ const Messages = () => {
                       value={groupDescriptionDraft}
                       onChange={(event) => setGroupDescriptionDraft(event.target.value)}
                       placeholder="Décrivez votre groupe"
-                      disabled={!isGroupOwner || savingGroup}
+                      disabled={!canEditGroup || savingGroup}
                       rows={3}
                     />
                   </div>
-                  {isGroupOwner && (
+                  {canEditGroup && (
                     <button
                       type="button"
                       className="conversation-info-save"
@@ -2549,6 +2665,37 @@ const Messages = () => {
                             group_description: groupDescriptionDraft.trim() || null,
                             group_photo_url: photoUrl || prev.group_photo_url
                           }) : prev)
+
+                          const groupNameForMsg = groupNameDraft.trim()
+                          const groupDescForMsg = (groupDescriptionDraft || '').trim()
+                          const updates: string[] = []
+                          if (groupNameForMsg && groupNameForMsg !== (selectedConversation.group_name || '').trim()) {
+                            updates.push('le nom du groupe')
+                          }
+                          if (groupDescForMsg !== (selectedConversation.group_description || '').trim()) {
+                            updates.push('la description du groupe')
+                          }
+                          if (photoUrl && photoUrl !== selectedConversation.group_photo_url) {
+                            updates.push('la photo du groupe')
+                          }
+                          if (updates.length > 0) {
+                            const content = updates.length === 1
+                              ? `${updates[0]} a été modifié`
+                              : `${updates.join(' et ')} ont été modifiés`
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('messages') as any).insert({
+                              conversation_id: selectedConversation.id,
+                              sender_id: user?.id,
+                              message_type: 'text',
+                              content,
+                              calendar_request_data: {
+                                kind: 'group_event',
+                                event_type: 'group_updated',
+                                group_name: groupNameForMsg
+                              }
+                            })
+                            loadMessages(selectedConversation.id)
+                          }
                         } catch (error) {
                           console.error('Error saving group:', error)
                           alert('Erreur lors de la mise à jour du groupe')
@@ -2610,26 +2757,27 @@ const Messages = () => {
             </div>
 
             {isGroupConversation && (
-              <div className="conversation-info-card">
-                <div className="conversation-info-header-row">
-                  <button
-                    type="button"
-                    className="conversation-info-add"
-                    onClick={async () => {
-                      if (!isGroupOwner) return
-                      setShowAddParticipants(true)
-                      await loadSelectableUsers()
-                    }}
-                    disabled={!isGroupOwner}
-                  >
-                    <Plus size={16} />
-                    Ajouter un membre
-                  </button>
-                </div>
-                {infoLoading ? (
-                  <p className="conversation-info-muted">Chargement...</p>
-                ) : (
-                  <div className="conversation-info-list">
+              <div className="conversation-info-members-section">
+                <h3 className="conversation-info-members-title">Membres ({infoParticipants.length})</h3>
+                <div className="conversation-info-card">
+                  <div className="conversation-info-members-body">
+                    <button
+                      type="button"
+                      className="conversation-info-add"
+                      onClick={async () => {
+                        if (!canEditGroup) return
+                        setShowAddParticipants(true)
+                        await loadSelectableUsers()
+                      }}
+                      disabled={!canEditGroup}
+                      aria-label="Ajouter un membre"
+                    >
+                      <Plus size={16} />
+                    </button>
+                    {infoLoading ? (
+                      <p className="conversation-info-muted">Chargement...</p>
+                    ) : (
+                      <div className="conversation-info-list">
                     {infoParticipants.map((participant) => {
                       const display = participant.profile?.full_name || participant.profile?.username || 'Utilisateur'
                       const isModerator = participant.role === 'moderator'
@@ -2638,8 +2786,11 @@ const Messages = () => {
                         <button
                           key={participant.user_id}
                           type="button"
-                          className="conversation-info-row conversation-info-row-button"
-                          onClick={() => setSelectedParticipant(participant)}
+                          className="conversation-info-row conversation-info-row-clickable"
+                          onClick={() => {
+                            setSelectedParticipant(participant)
+                            setShowMemberBottomSheet(true)
+                          }}
                         >
                           <div className="conversation-info-row-left">
                             <img
@@ -2649,9 +2800,7 @@ const Messages = () => {
                                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(display)}`
                               }}
                             />
-                            <span>{display}</span>
-                          </div>
-                          <div className="conversation-info-row-actions">
+                            <span className="conversation-info-member-name">{display}</span>
                             {isCreator && (
                               <span className="conversation-info-role">Créateur</span>
                             )}
@@ -2659,11 +2808,14 @@ const Messages = () => {
                               <span className="conversation-info-role">Admin</span>
                             )}
                           </div>
+                          <ChevronRight size={18} className="conversation-info-row-chevron" />
                         </button>
                       )
                     })}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -2825,6 +2977,164 @@ const Messages = () => {
               )}
             </div>
 
+            {isGroupConversation && (
+              <div className="conversation-info-members-section">
+                <h3 className="conversation-info-members-title">Annonce liée</h3>
+                <div className="conversation-info-card">
+                  {selectedConversation?.post_id ? (
+                    <div className="conversation-info-linked-post">
+                      <p className="conversation-info-linked-post-label">Le groupe est lié à :</p>
+                      <button
+                        type="button"
+                        className="conversation-info-linked-post-link"
+                        onClick={() => navigate(`/post/${selectedConversation.post_id}`)}
+                      >
+                        {selectedConversation.postTitle || 'Voir l\'annonce'}
+                      </button>
+                      {canEditGroup && (
+                        <button
+                          type="button"
+                          className="conversation-info-unlink-btn"
+                          onClick={async () => {
+                            if (!selectedConversation?.id) return
+                            try {
+                              const { error } = await (supabase.from('conversations') as any).update({ post_id: null }).eq('id', selectedConversation.id)
+                              if (error) throw error
+                              setSelectedConversation((prev) => prev ? { ...prev, post_id: null, postTitle: null } : prev)
+                            } catch (e) {
+                              console.error(e)
+                              alert('Erreur lors de la dissociation')
+                            }
+                          }}
+                        >
+                          Dissocier
+                        </button>
+                      )}
+                    </div>
+                  ) : canEditGroup ? (
+                    <button
+                      type="button"
+                      className="conversation-info-link-post-btn"
+                      onClick={async () => {
+                        setShowLinkPostSheet(true)
+                        setLinkPostLoading(true)
+                        const { data } = await supabase.from('posts').select('id, title').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(50)
+                        setSelectablePostsForLink((data || []) as Array<{ id: string; title: string }>)
+                        setLinkPostLoading(false)
+                      }}
+                    >
+                      + Lier à une annonce
+                    </button>
+                  ) : (
+                    <p className="conversation-info-muted">Aucune annonce liée</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {showLinkPostSheet && canEditGroup && createPortal(
+              <>
+                <div className="conversation-member-sheet-backdrop" onClick={() => setShowLinkPostSheet(false)} />
+                <div className="conversation-member-sheet-panel">
+                  <div className="conversation-member-sheet-header">
+                    <h3>Lier à une annonce</h3>
+                    <button type="button" className="conversation-member-sheet-close" onClick={() => setShowLinkPostSheet(false)}>×</button>
+                  </div>
+                  <div className="conversation-member-sheet-body">
+                    {linkPostLoading ? (
+                      <p className="conversation-info-muted">Chargement...</p>
+                    ) : (
+                      <div className="conversation-link-post-list">
+                        {selectablePostsForLink.map((post) => (
+                            <button
+                              key={post.id}
+                              type="button"
+                              className="conversation-link-post-item"
+                              onClick={async () => {
+                                if (!selectedConversation?.id) return
+                                try {
+                                  const { error } = await (supabase.from('conversations') as any).update({ post_id: post.id }).eq('id', selectedConversation.id)
+                                  if (error) throw error
+                                  setSelectedConversation((prev) => prev ? { ...prev, post_id: post.id, postTitle: post.title } : prev)
+                                  setShowLinkPostSheet(false)
+                                } catch (e) {
+                                  console.error(e)
+                                  alert('Erreur lors de la liaison')
+                                }
+                              }}
+                            >
+                              {post.title}
+                            </button>
+                          ))}
+                        {selectablePostsForLink.length === 0 && (
+                          <p className="conversation-info-muted">Aucune annonce trouvée</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>,
+              document.body
+            )}
+
+            {isGroupConversation && canEditGroup && (
+              <div className="conversation-info-members-section">
+                <h3 className="conversation-info-members-title">Lien d&apos;invitation</h3>
+                <div className="conversation-info-card">
+                  {inviteLinkToken ? (
+                    <div className="conversation-info-invite-link">
+                      <p className="conversation-info-muted">Partagez ce lien pour inviter à rejoindre le groupe :</p>
+                      <div className="conversation-info-invite-link-row">
+                        <code className="conversation-info-invite-link-code">
+                          {typeof window !== 'undefined' ? `${window.location.origin}/messages?invite=${inviteLinkToken}` : `.../messages?invite=${inviteLinkToken}`}
+                        </code>
+                        <button
+                          type="button"
+                          className="conversation-info-copy-invite-btn"
+                          onClick={() => {
+                            const url = typeof window !== 'undefined' ? `${window.location.origin}/messages?invite=${inviteLinkToken}` : ''
+                            navigator.clipboard?.writeText(url).then(() => alert('Lien copié'))
+                          }}
+                        >
+                          <Copy size={16} />
+                          Copier
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="conversation-info-link-post-btn"
+                      disabled={inviteLinkLoading}
+                      onClick={async () => {
+                        if (!selectedConversation?.id || !user) return
+                        setInviteLinkLoading(true)
+                        try {
+                          const token = `${crypto.randomUUID().replace(/-/g, '')}${Date.now().toString(36)}`
+                          const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                          const { error } = await (supabase.from('group_invite_tokens') as any).insert({
+                            conversation_id: selectedConversation.id,
+                            token,
+                            created_by: user.id,
+                            expires_at: expiresAt
+                          })
+                          if (error) throw error
+                          setInviteLinkToken(token)
+                        } catch (e) {
+                          console.error(e)
+                          alert('Impossible de créer le lien. Vérifiez que la migration add_group_invite_tokens.sql a été exécutée.')
+                        } finally {
+                          setInviteLinkLoading(false)
+                        }
+                      }}
+                    >
+                      {inviteLinkLoading ? 'Création...' : '+ Créer un lien d\'invitation'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {!isSystemConversation && (
               <div className="conversation-info-card">
                 <div className="conversation-info-actions">
@@ -2854,6 +3164,29 @@ const Messages = () => {
                       onClick={async () => {
                         if (!selectedConversation?.id || !user) return
                         try {
+                          const { data: myProfile } = await supabase
+                            .from('profiles')
+                            .select('full_name, username')
+                            .eq('id', user.id)
+                            .single()
+                          const myName = (myProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
+                            || (myProfile as { full_name?: string | null; username?: string | null } | null)?.username
+                            || 'Un membre'
+                          const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                          // Message avant de quitter pour que l'utilisateur soit encore participant
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          await (supabase.from('messages') as any).insert({
+                            conversation_id: selectedConversation.id,
+                            sender_id: user.id,
+                            message_type: 'text',
+                            content: `${myName} a quitté le groupe`,
+                            calendar_request_data: {
+                              kind: 'group_event',
+                              event_type: 'member_left',
+                              members: [{ user_id: user.id, name: myName }],
+                              group_name: groupNameForMsg
+                            }
+                          })
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           const { error } = await (supabase.from('conversation_participants') as any)
                             .update({ is_active: false })
@@ -2975,7 +3308,7 @@ const Messages = () => {
             emptyText="Aucun utilisateur disponible"
             onClose={() => setShowAddParticipants(false)}
             onConfirm={async (usersToAdd) => {
-              if (!selectedConversation?.id) return
+              if (!selectedConversation?.id || !user) return
               try {
                 const rows = usersToAdd.map((participant) => ({
                   conversation_id: selectedConversation.id,
@@ -2987,7 +3320,53 @@ const Messages = () => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const { error } = await (supabase.from('conversation_participants') as any).insert(rows)
                   if (error) throw error
+
+                  const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                  const members = usersToAdd.map((p) => ({
+                    user_id: p.id,
+                    name: p.full_name || p.username || 'Utilisateur'
+                  }))
+                  const names = members.map((m) => m.name)
+                  const content =
+                    names.length === 1
+                      ? `${names[0]} a été ajouté au groupe`
+                      : `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]} ont été ajoutés au groupe`
+
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('messages') as any).insert({
+                    conversation_id: selectedConversation.id,
+                    sender_id: user.id,
+                    message_type: 'text',
+                    content,
+                    calendar_request_data: {
+                      kind: 'group_event',
+                      event_type: 'member_added',
+                      members,
+                      group_name: groupNameForMsg
+                    }
+                  })
+
+                  const { data: adderProfile } = await supabase
+                    .from('profiles')
+                    .select('full_name, username')
+                    .eq('id', user.id)
+                    .single()
+                  const adderName = (adderProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
+                    || (adderProfile as { full_name?: string | null; username?: string | null } | null)?.username
+                    || 'Un membre'
+                  for (const p of usersToAdd) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase.from('notifications') as any).insert({
+                      user_id: p.id,
+                      type: 'message',
+                      title: 'Vous avez été ajouté à un groupe',
+                      content: `${adderName} vous a ajouté au groupe "${groupNameForMsg}"`,
+                      related_id: selectedConversation.id,
+                      metadata: { conversation_id: selectedConversation.id, group_name: groupNameForMsg }
+                    })
+                  }
                 }
+
                 setInfoParticipants((prev) => [
                   ...prev,
                   ...usersToAdd.map((participant) => ({
@@ -3003,28 +3382,31 @@ const Messages = () => {
                   }))
                 ])
                 setShowAddParticipants(false)
+                loadMessages(selectedConversation.id)
               } catch (error) {
                 console.error('Error adding participants:', error)
                 alert('Impossible d\'ajouter les participants')
               }
             }}
           />
-          {selectedParticipant && (
-            <div
-              className="conversation-modal-overlay"
-              onClick={() => setSelectedParticipant(null)}
-            >
-              <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
-                <div className="conversation-modal-header">
-                  <h2>Participant</h2>
+          {selectedParticipant && showMemberBottomSheet && createPortal(
+            <>
+              <div
+                className="conversation-member-sheet-backdrop"
+                onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
+              />
+              <div className="conversation-member-sheet-panel">
+                <div className="conversation-member-sheet-header">
+                  <h3>Membre</h3>
                   <button
-                    className="conversation-modal-close"
-                    onClick={() => setSelectedParticipant(null)}
+                    type="button"
+                    className="conversation-member-sheet-close"
+                    onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
                   >
                     ×
                   </button>
                 </div>
-                <div className="conversation-modal-body">
+                <div className="conversation-member-sheet-body">
                   <div className="conversation-participant-detail">
                     <img
                       src={selectedParticipant.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`}
@@ -3040,6 +3422,7 @@ const Messages = () => {
                         onClick={() => {
                           const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
                           if (!profileId) return
+                          setShowMemberBottomSheet(false)
                           setSelectedParticipant(null)
                           openPublicProfile(profileId)
                         }}
@@ -3055,7 +3438,38 @@ const Messages = () => {
                       </p>
                     </div>
                   </div>
-                  {isGroupOwner && selectedParticipant.user_id !== user?.id && (
+                  <div className="conversation-member-sheet-actions">
+                    <button
+                      type="button"
+                      className="conversation-member-sheet-action-btn"
+                      onClick={() => {
+                        const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
+                        if (!profileId) return
+                        setShowMemberBottomSheet(false)
+                        setSelectedParticipant(null)
+                        openPublicProfile(profileId)
+                      }}
+                    >
+                      Voir le profil
+                    </button>
+                    <button
+                      type="button"
+                      className="conversation-member-sheet-action-btn"
+                      onClick={async () => {
+                        if (!user) return
+                        const conv = await findOrCreateConversation(selectedParticipant.user_id)
+                        setShowMemberBottomSheet(false)
+                        setSelectedParticipant(null)
+                        if (conv && (conv as { id: string }).id) {
+                          navigate(`/messages/${(conv as { id: string }).id}`)
+                        }
+                      }}
+                    >
+                      <MessageCircle size={18} />
+                      Message privé
+                    </button>
+                  </div>
+                  {canManageMembers && selectedParticipant.user_id !== user?.id && (
                     <div className="conversation-participant-actions">
                       <button
                         type="button"
@@ -3074,6 +3488,7 @@ const Messages = () => {
                               role: nextRole
                             } : p))
                             setSelectedParticipant((prev) => prev ? { ...prev, role: nextRole } : prev)
+                            setShowMemberBottomSheet(false)
                           } catch (error) {
                             console.error('Error updating role:', error)
                             alert('Impossible de mettre à jour le rôle')
@@ -3086,15 +3501,32 @@ const Messages = () => {
                         type="button"
                         className="conversation-action-item danger"
                         onClick={async () => {
-                          if (!selectedConversation?.id) return
+                          if (!selectedConversation?.id || !user) return
                           try {
+                            const removedName = selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Un membre'
+                            const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             await (supabase.from('conversation_participants') as any)
                               .update({ is_active: false })
                               .eq('conversation_id', selectedConversation.id)
                               .eq('user_id', selectedParticipant.user_id)
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            await (supabase.from('messages') as any).insert({
+                              conversation_id: selectedConversation.id,
+                              sender_id: user.id,
+                              message_type: 'text',
+                              content: `${removedName} a été retiré du groupe`,
+                              calendar_request_data: {
+                                kind: 'group_event',
+                                event_type: 'member_removed',
+                                members: [{ user_id: selectedParticipant.user_id, name: removedName }],
+                                group_name: groupNameForMsg
+                              }
+                            })
                             setInfoParticipants((prev) => prev.filter((p) => p.user_id !== selectedParticipant.user_id))
+                            setShowMemberBottomSheet(false)
                             setSelectedParticipant(null)
+                            loadMessages(selectedConversation.id)
                           } catch (error) {
                             console.error('Error removing participant:', error)
                             alert('Impossible de retirer ce participant')
@@ -3107,7 +3539,8 @@ const Messages = () => {
                   )}
                 </div>
               </div>
-            </div>
+            </>,
+            document.body
           )}
         </div>
       )
@@ -3720,31 +4153,27 @@ const Messages = () => {
             <div className="conversation-messages-list" ref={messagesListRef}>
               {!isSystemConversation && (
                 <div className="conversation-safety-card">
-                <div className="conversation-safety-header">
-                  <div className="conversation-safety-texts">
-                    <h3 className="conversation-safety-title">Conseils de sécurité</h3>
-                  </div>
-                </div>
-                <div className="conversation-safety-actions">
+                {!showScamPrevention ? (
                   <button
                     type="button"
-                    className="conversation-safety-toggle"
+                    className="conversation-safety-title-btn"
                     onClick={() => setShowScamPrevention(true)}
-                    disabled={showScamPrevention}
                   >
-                    Voir les conseils
+                    Conseils de sécurité
                   </button>
-                  <button
-                    type="button"
-                    className="conversation-safety-toggle conversation-safety-toggle-secondary"
-                    onClick={() => setShowScamPrevention(false)}
-                    disabled={!showScamPrevention}
-                  >
-                    Masquer
-                  </button>
-                </div>
-                {showScamPrevention && (
-                  <div className="conversation-safety-details">
+                ) : (
+                  <>
+                    <div className="conversation-safety-header-row">
+                      <h3 className="conversation-safety-title">Conseils de sécurité</h3>
+                      <button
+                        type="button"
+                        className="conversation-safety-toggle conversation-safety-toggle-secondary"
+                        onClick={() => setShowScamPrevention(false)}
+                      >
+                        Masquer
+                      </button>
+                    </div>
+                    <div className="conversation-safety-details">
                     <div className="conversation-safety-section">
                       <h3>Repérer un comportement suspect</h3>
                       <ul>
@@ -3814,6 +4243,14 @@ const Messages = () => {
                       </ul>
                     </div>
                   </div>
+                    <button
+                      type="button"
+                      className="conversation-safety-toggle conversation-safety-toggle-secondary conversation-safety-masquer-bottom"
+                      onClick={() => setShowScamPrevention(false)}
+                    >
+                      Masquer
+                    </button>
+                  </>
                 )}
                 </div>
               )}
@@ -3880,6 +4317,28 @@ const Messages = () => {
                     const acceptedMatchForMessage = acceptedMatchId
                       ? acceptedMatchesForConversation.find((request) => request.id === acceptedMatchId)
                       : null
+
+                    const groupEvent = (msg.calendar_request_data as { kind?: string; event_type?: string; members?: Array<{ user_id: string; name: string }> } | null)?.kind === 'group_event'
+                      ? (msg.calendar_request_data as { kind: string; event_type: string; members?: Array<{ user_id: string; name: string }> })
+                      : null
+
+                    if (groupEvent) {
+                      const isLastMessage = msg.id === lastDisplayMessageId
+                      const eventText = msg.content || (groupEvent.members?.length
+                        ? `${(groupEvent.members as Array<{ name: string }>).map((m) => m.name).join(', ')} ${
+                            groupEvent.event_type === 'member_added'
+                              ? ((groupEvent.members?.length ?? 0) === 1 ? 'a été ajouté au groupe' : 'ont été ajoutés au groupe')
+                              : groupEvent.event_type === 'member_removed'
+                                ? 'a été retiré du groupe'
+                                : 'a quitté le groupe'
+                          }`
+                        : '')
+                      return (
+                        <div key={msg.id} ref={isLastMessage ? lastMessageRef : null} className="conversation-date-separator">
+                          {eventText}
+                        </div>
+                      )
+                    }
 
                     if (msg.message_type === 'match_accepted' && acceptedMatchForMessage?.related_post_id) {
                       const isLastMessage = msg.id === lastDisplayMessageId
@@ -4157,7 +4616,7 @@ const Messages = () => {
       <div className="messages-header" ref={headerRef}>
         <div className="messages-header-title-row">
           <BackButton />
-          <h1 className="messages-title">{t('messages:title')}</h1>
+          <h1 className="messages-title">Messages</h1>
           <div className="messages-header-actions">
             <button
               className="messages-create-group-btn"
@@ -4199,9 +4658,9 @@ const Messages = () => {
             onClick={() => setActiveFilter('matches')}
           >
             Matchs
-            {unseenAcceptedRequestsCount > 0 && (
+            {matchsBadgeCount > 0 && (
               <span className="messages-filter-badge">
-                {unseenAcceptedRequestsCount > 99 ? '99+' : unseenAcceptedRequestsCount}
+                {matchsBadgeCount > 99 ? '99+' : matchsBadgeCount}
               </span>
             )}
           </button>
@@ -4210,9 +4669,9 @@ const Messages = () => {
             onClick={() => setActiveFilter('match_requests')}
           >
             Demandes
-            {filteredMatchRequests.length > 0 && (
+            {demandesBadgeCount > 0 && (
               <span className="messages-filter-badge">
-                {filteredMatchRequests.length > 99 ? '99+' : filteredMatchRequests.length}
+                {demandesBadgeCount > 99 ? '99+' : demandesBadgeCount}
               </span>
             )}
           </button>
@@ -4532,7 +4991,7 @@ const Messages = () => {
               const avatarFallback = isGroupConv
                 ? (groupName || 'Groupe')
                 : (conv.other_user?.full_name || conv.other_user?.username || 'User')
-              const preview = conv.has_messages ? getConversationPreview(conv) : ''
+              const preview = getConversationPreview(conv, matchRequests)
               return (
                 <div key={conv.id}>
                   <div

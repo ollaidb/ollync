@@ -390,7 +390,7 @@ const PostCard = ({
           >
             <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
           </button>
-          {mainMedia && categoryLabel && !hideCategoryBadge && (
+          {!hideCategoryBadge && categoryLabel && (
             <div className="post-card-category-badge">{categoryLabel}</div>
           )}
         </div>
@@ -480,7 +480,7 @@ const PostCard = ({
         {getPaymentDisplay() && (
           <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
         )}
-        {mainMedia && categoryLabel && !hideCategoryBadge && (
+        {!hideCategoryBadge && categoryLabel && (
           <div className="post-card-category-badge">{categoryLabel}</div>
         )}
         {post.is_urgent && (

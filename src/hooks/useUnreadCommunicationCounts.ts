@@ -13,15 +13,30 @@ const EMPTY_COUNTS: CommunicationCounts = {
   appointment: 0
 }
 
-const COMM_TYPES: CommunicationNotificationType[] = ['message', 'request', 'match', 'appointment']
+// Types réels en base (match_request_received, match_request_accepted) vs types de l'app (request, match)
+const NOTIFICATION_TYPES_TO_QUERY = [
+  'message',
+  'match_request_received', // → request (demandes reçues)
+  'match_request_accepted', // → match (demandes acceptées)
+  'appointment'
+]
+
+const mapDbTypeToAppType = (dbType: string | null | undefined): CommunicationNotificationType | null => {
+  if (dbType === 'message' || dbType === 'appointment') return dbType
+  if (dbType === 'match_request_received') return 'request'
+  if (dbType === 'match_request_accepted') return 'match'
+  return null
+}
 
 export const useUnreadCommunicationCounts = () => {
   const { user } = useAuth()
   const [counts, setCounts] = useState<CommunicationCounts>(EMPTY_COUNTS)
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0)
 
   useEffect(() => {
     if (!user?.id) {
       setCounts(EMPTY_COUNTS)
+      setPendingRequestsCount(0)
       return
     }
 
@@ -33,7 +48,7 @@ export const useUnreadCommunicationCounts = () => {
         .select('type')
         .eq('user_id', user.id)
         .eq('read', false)
-        .in('type', COMM_TYPES)
+        .in('type', NOTIFICATION_TYPES_TO_QUERY)
 
       if (error) {
         console.error('Error loading unread communication counts:', error)
@@ -48,14 +63,30 @@ export const useUnreadCommunicationCounts = () => {
       }
 
       ;((data || []) as Array<{ type?: string | null }>).forEach((row) => {
-        const type = row.type
-        if (type === 'message' || type === 'request' || type === 'match' || type === 'appointment') {
-          next[type] += 1
-        }
+        const appType = mapDbTypeToAppType(row.type)
+        if (appType) next[appType] += 1
       })
 
       if (isMounted) {
         setCounts(next)
+      }
+    }
+
+    // Requête légère : nombre de demandes en attente (envoyées + reçues)
+    // S'exécute au chargement comme pour les matchs, pour affichage immédiat du badge Demandes
+    const loadPendingRequestsCount = async () => {
+      const { count, error } = await supabase
+        .from('match_requests')
+        .select('*', { count: 'exact', head: true })
+        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
+        .eq('status', 'pending')
+
+      if (error) {
+        console.error('Error loading pending requests count:', error)
+        return
+      }
+      if (isMounted) {
+        setPendingRequestsCount(count ?? 0)
       }
     }
 
@@ -73,9 +104,21 @@ export const useUnreadCommunicationCounts = () => {
           loadCounts()
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'match_requests'
+        },
+        () => {
+          loadPendingRequestsCount()
+        }
+      )
       .subscribe()
 
     loadCounts()
+    loadPendingRequestsCount()
 
     return () => {
       isMounted = false
@@ -88,16 +131,23 @@ export const useUnreadCommunicationCounts = () => {
     [counts]
   )
 
+  const mapAppTypeToDbTypes = (appType: CommunicationNotificationType): string[] => {
+    if (appType === 'request') return ['match_request_received']
+    if (appType === 'match') return ['match_request_accepted']
+    return [appType]
+  }
+
   const markTypesAsRead = useCallback(async (types: CommunicationNotificationType[]) => {
     if (!user?.id || types.length === 0) return
 
     const uniqueTypes = Array.from(new Set(types))
+    const dbTypes = uniqueTypes.flatMap(mapAppTypeToDbTypes)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('notifications') as any)
       .update({ read: true })
       .eq('user_id', user.id)
       .eq('read', false)
-      .in('type', uniqueTypes)
+      .in('type', dbTypes)
 
     if (error) {
       console.error('Error marking communication notifications as read:', error)
@@ -113,5 +163,5 @@ export const useUnreadCommunicationCounts = () => {
     })
   }, [user?.id])
 
-  return { counts, total, markTypesAsRead }
+  return { counts, total, markTypesAsRead, pendingRequestsCount }
 }

@@ -216,15 +216,15 @@ const Tickets = () => {
       <div className="tickets-list">
         {loading ? (
           <div className="tickets-empty">
-            <p>Chargement des billets...</p>
+            <p>Chargement des tickets...</p>
           </div>
         ) : filteredTickets.length === 0 ? (
           <EmptyState
             type="category"
-            customTitle={activeTab === 'upcoming' ? 'Ta prochaine place t’attend.' : 'Garde l’élan, vise le prochain billet.'}
+            customTitle={activeTab === 'upcoming' ? 'Ta prochaine place t’attend.' : 'Garde l’élan, vise le prochain ticket.'}
             customSubtext={
               activeTab === 'upcoming'
-                ? 'Découvre les événements et réserve ton billet en quelques secondes.'
+                ? 'Découvre les événements et réserve ton ticket en quelques secondes.'
                 : 'Retrouve de nouveaux événements à rejoindre dès maintenant.'
             }
             actionLabel="Voir les événements"
@@ -265,7 +265,7 @@ const Tickets = () => {
                   <span className="ticket-mode-chip">
                     {ticket.eventMode === 'remote' ? 'À distance' : 'Présentiel'}
                   </span>
-                  <span className="ticket-open-hint">Voir le billet</span>
+                  <span className="ticket-open-hint">Voir le ticket</span>
                 </div>
               </button>
             )

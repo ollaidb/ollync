@@ -242,7 +242,7 @@ i18n.use(initReactI18next).init({
         welcomeSuffix: 'sur Ollyc'
       },
       messages: {
-        title: 'Messages',
+        title: 'Messages', // Nom de la page messagerie
         searchPlaceholder: 'Rechercher une conversation'
       },
       search: {
@@ -566,7 +566,7 @@ i18n.use(initReactI18next).init({
         welcomeSuffix: 'on Ollyc'
       },
       messages: {
-        title: 'Messages',
+        title: 'Messages', // Nom de la page messagerie
         searchPlaceholder: 'Search a conversation'
       },
       search: {

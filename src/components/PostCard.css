@@ -183,8 +183,9 @@
   border-radius: 6px;
   font-size: 10px;
   font-weight: 600;
-  z-index: 2;
+  z-index: 15;
   box-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 .post-card-list .post-card-category-badge {

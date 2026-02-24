@@ -340,7 +340,7 @@ const RecentPosts = () => {
                       />
                     )}
 
-                    {mainMedia && post.category && (
+                    {post.category && (
                       <div className="swipe-card-category">
                         {post.category.name}
                       </div>

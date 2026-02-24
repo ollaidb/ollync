@@ -750,10 +750,11 @@ const PostDetails = () => {
     if (!user || !id || !post) return
     const catSlug = (post?.category?.slug || '').trim().toLowerCase()
     const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const subName = (post?.sub_category?.name || '').trim().toLowerCase()
     const isFigurant =
       (catSlug === 'casting-role' || catSlug === 'casting') &&
       post?.listing_type === 'request' &&
-      subSlug === 'figurant'
+      (subSlug === 'figurant' || subName.includes('figurant'))
     if (post.listing_type === 'request' && !isFigurant) {
       setMatchRequest(null)
       return
@@ -790,10 +791,11 @@ const PostDetails = () => {
 
     const catSlug = (post?.category?.slug || '').trim().toLowerCase()
     const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const subName = (post?.sub_category?.name || '').trim().toLowerCase()
     const isFigurant =
       (catSlug === 'casting-role' || catSlug === 'casting') &&
       post?.listing_type === 'request' &&
-      subSlug === 'figurant'
+      (subSlug === 'figurant' || subName.includes('figurant'))
     if (post?.listing_type === 'request' && !isFigurant) {
       const reviewerName = post?.user?.full_name || post?.user?.username || ''
       const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
@@ -1123,10 +1125,10 @@ const PostDetails = () => {
 
       if (data?.id) {
         setTicketValidationState('valid')
-        setTicketValidationMessage('Billet validé: invitation confirmée.')
+        setTicketValidationMessage('Ticket validé: invitation confirmée.')
       } else {
         setTicketValidationState('invalid')
-        setTicketValidationMessage('QR code invalide ou billet non confirmé.')
+        setTicketValidationMessage('QR code invalide ou ticket non confirmé.')
       }
     } catch (error) {
       console.error('Error validating ticket QR:', error)
@@ -1140,10 +1142,13 @@ const PostDetails = () => {
     const isRequestListingPost = post.listing_type === 'request'
     const catSlug = (post?.category?.slug || '').trim().toLowerCase()
     const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const subName = (post?.sub_category?.name || '').trim().toLowerCase()
+    // Figurant : flux demande uniquement (match_request), PAS de message direct.
+    // La conversation n'est créée qu'après acceptation de la demande.
     const isCastingFigurant =
       (catSlug === 'casting-role' || catSlug === 'casting') &&
       post?.listing_type === 'request' &&
-      subSlug === 'figurant'
+      (subSlug === 'figurant' || subName.includes('figurant'))
 
     if (isRequestListingPost && !isCastingFigurant) {
       setLoadingRequest(true)
@@ -2240,7 +2245,7 @@ const PostDetails = () => {
                   <h3>Annonce taguée</h3>
                 </div>
                 <div className="other-posts-grid">
-                  <PostCard post={taggedPost} viewMode="grid" hideCategoryBadge />
+                  <PostCard post={taggedPost} viewMode="grid" />
                 </div>
               </div>
             )}
@@ -2329,7 +2334,7 @@ const PostDetails = () => {
                 </button>
                 <div className="other-posts-grid">
                   {recommendedPosts.map((relatedPost) => (
-                    <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" hideCategoryBadge />
+                    <PostCard key={relatedPost.id} post={relatedPost} viewMode="grid" />
                   ))}
                   <button
                     className="other-posts-plus-btn"
