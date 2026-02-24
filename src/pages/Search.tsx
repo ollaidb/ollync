@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon, X, CheckCircle2, Circle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -9,6 +9,11 @@ import { LocationAutocomplete } from '../components/Location/LocationAutocomplet
 import { EmptyState } from '../components/EmptyState'
 import { publicationTypes } from '../constants/publishData'
 import { filterPaymentOptionsByCategory } from '../utils/paymentOptions'
+import {
+  useRecentSearches,
+  getRecentSearchDisplayLabel,
+  type RecentSearchItem
+} from '../hooks/useRecentSearches'
 import './Search.css'
 import './SwipePage.css'
 
@@ -56,6 +61,7 @@ interface SubCategory {
 
 const Search = () => {
   const { user } = useAuth()
+  const { recentSearches, addRecentSearch, removeRecentSearchesByIds } = useRecentSearches()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState('all')
   const [results, setResults] = useState<Post[]>([])
@@ -82,7 +88,9 @@ const Search = () => {
   const [selectedLocations, setSelectedLocations] = useState<Array<{ label: string; lat?: number; lng?: number }>>([])
   const [radiusKm, setRadiusKm] = useState<number>(50)
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false)
-  const { t } = useTranslation(['categories'])
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
+  const searchDropdownRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation(['categories', 'search'])
 
   const categoryOrder = useMemo(() => [
     'creation-contenu',
@@ -122,6 +130,90 @@ const Search = () => {
     if (selectedSubCategoryLabel) return selectedSubCategoryLabel
     return selectedCategoryLabel
   }, [selectedCategory, selectedSubCategoryLabel, selectedCategoryLabel])
+
+  /** Suggestions d'annonces à chercher quand aucune recherche récente (phrases complètes, titres, catégories) */
+  const searchSuggestions = useMemo((): RecentSearchItem[] => {
+    const phrases: RecentSearchItem[] = [
+      { id: 's-photographe', searchQuery: 'photographe', timestamp: 0 },
+      { id: 's-mannequin', searchQuery: 'mannequin', timestamp: 0 },
+      { id: 's-voix-off', searchQuery: 'voix off', timestamp: 0 },
+      { id: 's-montage', searchQuery: 'montage vidéo', timestamp: 0 },
+      { id: 's-studio', searchQuery: 'studio', timestamp: 0 },
+      { id: 's-influenceur', searchQuery: 'influenceur', timestamp: 0 },
+      { id: 's-podcast', searchQuery: 'podcast', timestamp: 0 }
+    ]
+    const categories: RecentSearchItem[] = publicationTypes
+      .filter((cat) => cat.slug !== 'tout' && categoryOrder.includes(cat.slug))
+      .slice(0, 6)
+      .map((cat) => ({
+        id: `s-cat-${cat.slug}`,
+        categorySlug: cat.slug,
+        categoryName: t(`categories:titles.${cat.slug}`, { defaultValue: cat.name }),
+        timestamp: 0
+      }))
+    const subcats: RecentSearchItem[] = [
+      { id: 's-modele-photo', categorySlug: 'casting-role', categoryName: 'Casting', subcategorySlug: 'modele-photo', subcategoryName: 'Modèle photo', timestamp: 0 },
+      { id: 's-modele-video', categorySlug: 'casting-role', categoryName: 'Casting', subcategorySlug: 'modele-video', subcategoryName: 'Modèle vidéo', timestamp: 0 },
+      { id: 's-figurant', categorySlug: 'casting-role', categoryName: 'Casting', subcategorySlug: 'figurant', subcategoryName: 'Figurant', timestamp: 0 }
+    ]
+    return [...phrases, ...categories, ...subcats]
+  }, [categoryOrder, t])
+
+  /**
+   * Déduplique les suggestions : si plusieurs libellés sont des sous-chaînes les uns des autres
+   * (ex. "phot", "photo", "photographe"), on ne garde que le plus long pour n'afficher qu'une seule entrée.
+   */
+  const deduplicateByLabel = useCallback(
+    (items: RecentSearchItem[]): RecentSearchItem[] => {
+      const withLabel = items.map((item) => ({
+        item,
+        label: getRecentSearchDisplayLabel(item).toLowerCase()
+      }))
+      const sorted = [...withLabel].sort((a, b) => b.label.length - a.label.length)
+      const kept: typeof withLabel = []
+      for (const { item, label } of sorted) {
+        const isSubstringOfKept = kept.some((k) => k.label !== label && k.label.includes(label))
+        if (!isSubstringOfKept) kept.push({ item, label })
+      }
+      return kept.map((x) => x.item)
+    },
+    []
+  )
+
+  /** Suggestions filtrées par la saisie : phrases complètes uniquement, dédupliquées (pas "photo" 10 fois) */
+  const filteredDropdownSuggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return searchSuggestions
+    const filtered = searchSuggestions.filter((item) => {
+      const label = getRecentSearchDisplayLabel(item).toLowerCase()
+      return label.includes(q)
+    })
+    return deduplicateByLabel(filtered)
+  }, [searchQuery, searchSuggestions, deduplicateByLabel])
+
+  /** Historique en haut du dropdown : recherches récentes filtrées + dédupliquées */
+  const dropdownRecentItems = useMemo((): RecentSearchItem[] => {
+    const q = searchQuery.trim().toLowerCase()
+    if (recentSearches.length === 0) return []
+    const filtered = q
+      ? recentSearches.filter((item) =>
+          getRecentSearchDisplayLabel(item).toLowerCase().includes(q)
+        )
+      : recentSearches
+    return deduplicateByLabel(filtered)
+  }, [recentSearches, searchQuery, deduplicateByLabel])
+
+  /** Suggestions par défaut en bas : exclure les libellés déjà dans l’historique pour éviter doublons */
+  const dropdownSuggestionItems = useMemo((): RecentSearchItem[] => {
+    const recentLabels = new Set(
+      dropdownRecentItems.map((item) => getRecentSearchDisplayLabel(item).toLowerCase())
+    )
+    return filteredDropdownSuggestions.filter(
+      (item) => !recentLabels.has(getRecentSearchDisplayLabel(item).toLowerCase())
+    )
+  }, [dropdownRecentItems, filteredDropdownSuggestions])
+
+  const hasDropdownItems = dropdownRecentItems.length > 0 || dropdownSuggestionItems.length > 0
 
   const sortSubCategories = useCallback((items: SubCategory[]) => {
     return [...items].sort((a, b) => {
@@ -398,7 +490,6 @@ const Search = () => {
   }
 
   useEffect(() => {
-    // Debounce pour recherches de localisation
     const timeoutId = setTimeout(() => {
       if (searchQuery && searchQuery.trim().length > 0) {
         searchPosts(searchQuery)
@@ -410,6 +501,20 @@ const Search = () => {
     return () => clearTimeout(timeoutId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedCategory, selectedSubCategory, locationCoords, paymentTypeFilter, user?.id, categories, subCategories])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        isSearchDropdownOpen &&
+        searchDropdownRef.current &&
+        !searchDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchDropdownOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [isSearchDropdownOpen])
 
   const filteredResults = useMemo(() => {
     const now = Date.now()
@@ -500,6 +605,67 @@ const Search = () => {
     setLocationCoords(null)
   }
 
+  const applyRecentSearch = useCallback(
+    async (item: RecentSearchItem) => {
+      const subs =
+        item.categorySlug && item.categorySlug !== 'all'
+          ? await loadSubCategories(item.categorySlug)
+          : []
+
+      setSearchQuery(item.searchQuery || '')
+      setSelectedCategory(item.categorySlug || 'all')
+      setSubCategories(sortSubCategories(subs))
+      setSelectedSubCategory(
+        item.categorySlug && item.categorySlug !== 'all'
+          ? (item.subcategorySlug || 'all')
+          : 'all'
+      )
+      setSelectedLocations(
+        (item.locationLabels || []).map((label) => ({ label }))
+      )
+      setHasSearchedOnce(true)
+    },
+    [loadSubCategories, sortSubCategories]
+  )
+
+  useEffect(() => {
+    if (
+      !loading &&
+      hasSearchedOnce &&
+      hasAnyFilterApplied
+    ) {
+      addRecentSearch({
+        searchQuery:
+          searchQuery.trim().length > 0 ? searchQuery.trim() : undefined,
+        categorySlug:
+          selectedCategory !== 'all' ? selectedCategory : undefined,
+        categoryName:
+          selectedCategory !== 'all' ? selectedCategoryLabel : undefined,
+        subcategorySlug:
+          selectedSubCategory !== 'all' ? selectedSubCategory : undefined,
+        subcategoryName:
+          selectedSubCategory !== 'all'
+            ? (selectedSubCategoryLabel ?? undefined)
+            : undefined,
+        locationLabels:
+          selectedLocations.length > 0
+            ? selectedLocations.map((l) => l.label)
+            : undefined
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    loading,
+    hasSearchedOnce,
+    hasAnyFilterApplied,
+    searchQuery,
+    selectedCategory,
+    selectedCategoryLabel,
+    selectedSubCategory,
+    selectedSubCategoryLabel,
+    selectedLocations
+  ])
+
   const handleLike = () => {
     // Le PostCard gère déjà les likes
   }
@@ -511,15 +677,101 @@ const Search = () => {
         <div className="search-header-content">
           <BackButton className="search-back-button" />
 
-          <div className="search-input-wrapper" style={{ flex: 1 }}>
-            <SearchIcon className="search-input-icon" size={16} />
-            <input
-              className="search-input"
-              type="text"
-              placeholder="Rechercher"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div
+            ref={searchDropdownRef}
+            className="search-input-dropdown-wrap"
+            style={{ flex: 1 }}
+          >
+            <div className="search-input-wrapper">
+              <SearchIcon className="search-input-icon" size={16} />
+              <input
+                className="search-input"
+                type="text"
+                placeholder="Rechercher"
+                value={searchQuery}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setSearchQuery(value)
+                  if (value.trim() === '') {
+                    setIsSearchDropdownOpen(true)
+                  }
+                }}
+                onFocus={() => setIsSearchDropdownOpen(true)}
+              />
+            </div>
+            {isSearchDropdownOpen && hasDropdownItems && (
+              <>
+                <div
+                  className="search-dropdown-backdrop"
+                  onClick={() => setIsSearchDropdownOpen(false)}
+                  aria-label={t('search:closeSuggestions')}
+                />
+                <div className="search-dropdown">
+                  <div className="search-dropdown-inner">
+                {dropdownRecentItems.length > 0 && (
+                  <>
+                    <p className="search-dropdown-section-title">{t('search:recentSearches')}</p>
+                    <ul className="search-dropdown-list" role="list">
+                      {dropdownRecentItems.map((item) => (
+                        <li key={item.id} className="search-dropdown-item">
+                          <button
+                            type="button"
+                            className="search-dropdown-item-btn"
+                            onClick={() => {
+                              applyRecentSearch(item)
+                              setIsSearchDropdownOpen(false)
+                            }}
+                          >
+                            {getRecentSearchDisplayLabel(item)}
+                          </button>
+                          <button
+                            type="button"
+                            className="search-dropdown-item-remove"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const clickedLabel = getRecentSearchDisplayLabel(item).toLowerCase()
+                              const idsToRemove = recentSearches
+                                .filter((i) => {
+                                  const label = getRecentSearchDisplayLabel(i).toLowerCase()
+                                  return label === clickedLabel || label.includes(clickedLabel) || clickedLabel.includes(label)
+                                })
+                                .map((i) => i.id)
+                              removeRecentSearchesByIds(idsToRemove)
+                            }}
+                            aria-label={t('search:removeSearch')}
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {dropdownSuggestionItems.length > 0 && (
+                  <>
+                    <p className="search-dropdown-section-title">{t('search:suggestions')}</p>
+                    <ul className="search-dropdown-list" role="list">
+                      {dropdownSuggestionItems.map((item) => (
+                        <li key={item.id} className="search-dropdown-item">
+                          <button
+                            type="button"
+                            className="search-dropdown-item-btn"
+                            onClick={() => {
+                              applyRecentSearch(item)
+                              setIsSearchDropdownOpen(false)
+                            }}
+                          >
+                            {getRecentSearchDisplayLabel(item)}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <div className="search-filter-menu-container">
@@ -624,11 +876,7 @@ const Search = () => {
           </>
         ) : (
           <div className="search-empty-state">
-              <div className="search-empty-icon">
-                <SearchIcon size={36} />
-              </div>
-              <h2 className="search-empty-title">{t('search:emptyTitle')}</h2>
-              <p className="search-empty-text">Saisissez un mot pour commencer</p>
+            <p className="search-empty-text">{t('search:emptyTitle')}</p>
           </div>
         )}
       </div>

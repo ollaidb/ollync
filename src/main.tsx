@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
+import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import './i18n'
 import './index.css'
 
@@ -33,6 +34,15 @@ if (shouldUseDark) {
   document.documentElement.classList.remove('dark')
 }
 
+const savedContrast = localStorage.getItem('accessibility-contrast')
+const savedFontSize = localStorage.getItem('accessibility-font-size')
+if (savedContrast === 'high' || savedContrast === 'default') {
+  document.documentElement.setAttribute('data-accessibility-contrast', savedContrast)
+}
+if (savedFontSize === 'large' || savedFontSize === 'normal') {
+  document.documentElement.setAttribute('data-accessibility-font-size', savedFontSize)
+}
+
 updateThemeColor()
 
 if ('serviceWorker' in navigator) {
@@ -45,7 +55,9 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <AccessibilityProvider>
+      <App />
+    </AccessibilityProvider>
   </React.StrictMode>,
 )
 

@@ -9,6 +9,11 @@ import CalendarPicker from './CalendarPicker'
 import PostSelector from './PostSelector'
 import './MessageInput.css'
 
+export interface MentionableMember {
+  user_id: string
+  profile?: { full_name?: string | null; username?: string | null } | null
+}
+
 interface MessageInputProps {
   conversationId: string
   senderId: string
@@ -16,6 +21,7 @@ interface MessageInputProps {
   disabled?: boolean
   openCalendarOnMount?: boolean
   counterpartyId?: string | null
+  groupMembers?: MentionableMember[]
 }
 
 type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share' | 'contract_share'
@@ -113,7 +119,10 @@ const makeSelectorLabelsUnique = (items: SelectableContract[]) => {
   })
 }
 
-const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId }: MessageInputProps) => {
+const getMemberDisplayName = (m: MentionableMember) =>
+  (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
+
+const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId, groupMembers = [] }: MessageInputProps) => {
   const navigate = useNavigate()
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -132,6 +141,11 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
   const mediaInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLInputElement>(null)
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [mentionStartIndex, setMentionStartIndex] = useState(0)
+  const [mentionHighlightIndex, setMentionHighlightIndex] = useState(0)
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
@@ -612,10 +626,82 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     setAppointmentDurationText(minutesToTime(next))
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const mentionableMembers = groupMembers.filter((m) => m.user_id !== senderId)
+  const filteredMentionMembers = mentionableMembers.filter((m) => {
+    const name = getMemberDisplayName(m).toLowerCase()
+    return name.includes(mentionQuery.toLowerCase())
+  })
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const cursor = e.target.selectionStart ?? value.length
+    setMessage(value)
+    if (mentionableMembers.length === 0) return
+    const textBeforeCursor = value.slice(0, cursor)
+    const lastAt = textBeforeCursor.lastIndexOf('@')
+    if (lastAt === -1) {
+      setMentionOpen(false)
+      return
+    }
+    const afterAt = textBeforeCursor.slice(lastAt + 1)
+    if (afterAt.includes(' ')) {
+      setMentionOpen(false)
+      return
+    }
+    setMentionStartIndex(lastAt)
+    setMentionQuery(afterAt)
+    setMentionOpen(true)
+    setMentionHighlightIndex(0)
+  }
+
+  const insertMention = (member: MentionableMember) => {
+    const displayName = getMemberDisplayName(member)
+    const before = message.slice(0, mentionStartIndex)
+    const after = message.slice(messageInputRef.current?.selectionStart ?? message.length)
+    const nextMessage = `${before}@${displayName} ${after}`
+    setMessage(nextMessage)
+    setMentionOpen(false)
+    setMentionQuery('')
+    const newCursor = before.length + displayName.length + 2
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus()
+      messageInputRef.current?.setSelectionRange(newCursor, newCursor)
+    })
+  }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (mentionOpen && filteredMentionMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionHighlightIndex((i) => (i + 1) % filteredMentionMembers.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionHighlightIndex((i) => (i - 1 + filteredMentionMembers.length) % filteredMentionMembers.length)
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        insertMention(filteredMentionMembers[mentionHighlightIndex])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setMentionOpen(false)
+        return
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       void sendMessageWithConsent('text')
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (!mentionOpen) void sendMessageWithConsent('text')
     }
   }
 
@@ -868,30 +954,58 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
       <div className="message-input-wrapper">
         <button
+          type="button"
           className="message-options-toggle"
           onClick={() => setShowOptions(!showOptions)}
           title="Options"
+          aria-label="Ouvrir les options d'envoi (photo, vidéo, document, etc.)"
         >
-          <Plus size={20} />
+          <Plus size={20} aria-hidden />
         </button>
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Message..."
-          disabled={disabled || sending}
-          className="message-input-field"
-        />
+        <div className="message-input-field-wrapper">
+          <input
+            ref={messageInputRef}
+            type="text"
+            value={message}
+            onChange={handleMessageChange}
+            onKeyDown={handleInputKeyDown}
+            onKeyPress={handleKeyPress}
+            placeholder="Message..."
+            disabled={disabled || sending}
+            className="message-input-field"
+          />
+          {mentionOpen && mentionableMembers.length > 0 && (
+            <div className="message-mention-dropdown" role="listbox">
+              {filteredMentionMembers.length === 0 ? (
+                <div className="message-mention-dropdown-empty">Aucun membre</div>
+              ) : (
+                filteredMentionMembers.map((member, index) => (
+                  <button
+                    key={member.user_id}
+                    type="button"
+                    role="option"
+                    aria-selected={index === mentionHighlightIndex}
+                    className={`message-mention-dropdown-item ${index === mentionHighlightIndex ? 'highlighted' : ''}`}
+                    onClick={() => insertMention(member)}
+                  >
+                    {getMemberDisplayName(member)}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <button
+          type="button"
           onClick={() => void sendMessageWithConsent('text')}
           disabled={!message.trim() || disabled || sending}
           className="message-send-btn"
+          aria-label={sending ? 'Envoi en cours' : 'Envoyer le message'}
         >
           {sending ? (
-            <Loader className="spinner" size={16} />
+            <Loader className="spinner" size={16} aria-hidden />
           ) : (
-            <Send size={16} />
+            <Send size={16} aria-hidden />
           )}
         </button>
       </div>
@@ -947,7 +1061,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
               <div className="message-contract-selector-handle" aria-hidden="true" />
               <div className="message-contract-selector-header">
                 <h3>Choisir un contrat</h3>
-                <button className="message-contract-selector-close" onClick={() => setShowContractSelector(false)}>
+                <button type="button" className="message-contract-selector-close" onClick={() => setShowContractSelector(false)} aria-label="Fermer">
                   ✕
                 </button>
               </div>

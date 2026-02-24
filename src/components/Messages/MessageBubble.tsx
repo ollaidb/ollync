@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import CalendarPicker from './CalendarPicker'
 import Logo from '../Logo'
+import type { MentionableMember } from './MessageInput'
 import './MessageBubble.css'
 
 type SharedContractDetails = {
@@ -78,9 +79,14 @@ interface MessageBubbleProps {
   onDelete?: () => void
   onLike?: () => void
   onReport?: () => void
+  groupParticipants?: MentionableMember[]
+  onMentionClick?: (participant: MentionableMember) => void
 }
 
-const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }: MessageBubbleProps) => {
+const getMemberDisplayName = (m: MentionableMember) =>
+  (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
+
+const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick }: MessageBubbleProps) => {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
@@ -382,6 +388,84 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
         >
           {part.label}
         </a>
+      )
+    })
+  }
+
+  type ContentSegment = { type: 'text'; value: string } | { type: 'mention'; participant: MentionableMember; displayName: string }
+
+  const parseContentWithMentions = (content: string): ContentSegment[] => {
+    if (!content || !groupParticipants.length) return [{ type: 'text', value: content }]
+    const segments: ContentSegment[] = []
+    const sortedParticipants = [...groupParticipants].sort(
+      (a, b) => getMemberDisplayName(b).length - getMemberDisplayName(a).length
+    )
+    let remaining = content
+    while (remaining.length > 0) {
+      const atIndex = remaining.indexOf('@')
+      if (atIndex === -1) {
+        segments.push({ type: 'text', value: remaining })
+        break
+      }
+      if (atIndex > 0) {
+        segments.push({ type: 'text', value: remaining.slice(0, atIndex) })
+      }
+      const afterAt = remaining.slice(atIndex + 1)
+      let matched: { participant: MentionableMember; displayName: string } | null = null
+      for (const p of sortedParticipants) {
+        const name = getMemberDisplayName(p)
+        const nameLower = name.toLowerCase()
+        const afterLower = afterAt.toLowerCase()
+        if (
+          afterLower === nameLower ||
+          afterLower.startsWith(nameLower + ' ') ||
+          afterAt === name ||
+          afterAt.startsWith(name + ' ')
+        ) {
+          matched = { participant: p, displayName: name }
+          break
+        }
+      }
+      if (matched) {
+        segments.push({ type: 'mention', participant: matched.participant, displayName: matched.displayName })
+        let nextStart = atIndex + 1 + matched.displayName.length
+        if (afterAt.startsWith(matched.displayName + ' ')) nextStart += 1
+        remaining = remaining.slice(nextStart)
+      } else {
+        segments.push({ type: 'text', value: '@' })
+        remaining = afterAt
+      }
+    }
+    return segments
+  }
+
+  const renderContentWithMentions = (content: string) => {
+    const segments = parseContentWithMentions(content)
+    return segments.map((seg, index) => {
+      if (seg.type === 'text') {
+        return <span key={`seg-${index}`}>{renderTextWithLinks(seg.value)}</span>
+      }
+      return (
+        <button
+          key={`seg-${index}`}
+          type="button"
+          className="message-mention"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onMentionClick?.(seg.participant)
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onMentionClick?.(seg.participant)
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          @{seg.displayName}
+        </button>
       )
     })
   }
@@ -803,7 +887,15 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
           </div>
         )
       default:
-        return <p>{message.content ? renderTextWithLinks(message.content) : ''}</p>
+        return (
+          <p>
+            {message.content
+              ? groupParticipants.length > 0 && onMentionClick
+                ? renderContentWithMentions(message.content)
+                : renderTextWithLinks(message.content)
+              : ''}
+          </p>
+        )
     }
   }
 

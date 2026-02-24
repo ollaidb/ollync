@@ -249,7 +249,11 @@ i18n.use(initReactI18next).init({
         inputPlaceholder: 'Rechercher...',
         locationPlaceholder: 'Rechercher un lieu (ex: Paris, Lyon...)',
         searching: 'Recherche en cours...',
-        emptyTitle: 'Rechercher une annonce'
+        emptyTitle: 'Rechercher une annonce',
+        recentSearches: 'Recherches récentes',
+        suggestions: 'Suggestions',
+        removeSearch: 'Supprimer cette recherche',
+        closeSuggestions: 'Fermer les suggestions'
       },
       favorites: {
         title: 'Favoris',
@@ -573,7 +577,11 @@ i18n.use(initReactI18next).init({
         inputPlaceholder: 'Search...',
         locationPlaceholder: 'Search a location (e.g. Paris, Lyon...)',
         searching: 'Searching...',
-        emptyTitle: 'Search a listing'
+        emptyTitle: 'Search a listing',
+        recentSearches: 'Recent searches',
+        suggestions: 'Suggestions',
+        removeSearch: 'Remove this search',
+        closeSuggestions: 'Close suggestions'
       },
       favorites: {
         title: 'Favorites',

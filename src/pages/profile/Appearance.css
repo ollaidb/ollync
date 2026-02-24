@@ -9,6 +9,17 @@
   margin: 0 auto;
 }
 
+.appearance-section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 24px 0 12px;
+}
+
+.appearance-section-title:first-of-type {
+  margin-top: 8px;
+}
+
 .appearance-title {
   font-size: 22px;
   font-weight: 700;

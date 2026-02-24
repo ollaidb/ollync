@@ -187,9 +187,10 @@ function AppContent() {
           onAskAgainChange={cookiesConsent.setAskAgainNextTime}
         />
         <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
+          <a href="#main-content" className="skip-link">Aller au contenu principal</a>
           {isMobile ? (
             <>
-              <main className="main-content without-header">
+              <main id="main-content" className="main-content without-header" tabIndex={-1}>
                 <div key={routeTransitionKey} className="route-transition-shell">
                   {routes}
                 </div>
@@ -198,7 +199,7 @@ function AppContent() {
             </>
           ) : (
             <WebLayout>
-              <main className="main-content without-header">
+              <main id="main-content" className="main-content without-header" tabIndex={-1}>
                 <div key={routeTransitionKey} className="route-transition-shell">
                   {routes}
                 </div>

@@ -51,6 +51,7 @@ interface Conversation {
     avatar_url?: string | null
     email?: string | null
     last_activity_at?: string | null
+    is_online?: boolean | null
   } | null
   postTitle?: string | null
   unread?: number
@@ -234,6 +235,10 @@ const Messages = () => {
   const [showMediaActions, setShowMediaActions] = useState(false)
   const [selectedMediaMessage, setSelectedMediaMessage] = useState<Message | null>(null)
   const [missingNotice, setMissingNotice] = useState<string | null>(null)
+  const [showRemoveMemberConfirm, setShowRemoveMemberConfirm] = useState(false)
+  const [participantToRemove, setParticipantToRemove] = useState<ConversationParticipant | null>(null)
+  const [showDissociateConfirm, setShowDissociateConfirm] = useState(false)
+  const [groupActionFeedback, setGroupActionFeedback] = useState<string | null>(null)
 
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
@@ -247,6 +252,7 @@ const Messages = () => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const aliasSaveFeedbackTimerRef = useRef<number | null>(null)
+  const groupActionFeedbackTimerRef = useRef<number | null>(null)
   const loadMessagesRequestIdRef = useRef(0)
   const loadConversationsRequestIdRef = useRef(0)
   const isInfoView = location.pathname.endsWith('/info')
@@ -644,12 +650,26 @@ const Messages = () => {
       if (aliasSaveFeedbackTimerRef.current) {
         window.clearTimeout(aliasSaveFeedbackTimerRef.current)
       }
+      if (groupActionFeedbackTimerRef.current) {
+        window.clearTimeout(groupActionFeedbackTimerRef.current)
+      }
     }
   }, [])
 
   useEffect(() => {
     setAliasSaveFeedback('idle')
   }, [selectedConversation?.id])
+
+  const showGroupActionFeedback = useCallback((message: string) => {
+    setGroupActionFeedback(message)
+    if (groupActionFeedbackTimerRef.current) {
+      window.clearTimeout(groupActionFeedbackTimerRef.current)
+    }
+    groupActionFeedbackTimerRef.current = window.setTimeout(() => {
+      setGroupActionFeedback(null)
+      groupActionFeedbackTimerRef.current = null
+    }, 3500)
+  }, [])
 
   const handleShareMedia = async (msg: Message, type: 'link' | 'media') => {
     try {
@@ -920,7 +940,7 @@ const Messages = () => {
       // Récupérer les informations de l'utilisateur
       const { data: otherUser } = !isGroupConversation && otherUserId ? await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, email, last_activity_at')
+        .select('id, username, full_name, avatar_url, email, last_activity_at, is_online')
         .eq('id', otherUserId)
         .single() : { data: null }
 
@@ -954,12 +974,54 @@ const Messages = () => {
             full_name?: string | null
             avatar_url?: string | null
             last_activity_at?: string | null
+            is_online?: boolean | null
           })
         } : null,
         postTitle
       } as Conversation)
 
       setMissingNotice(null)
+
+      if (isGroupConversation) {
+        try {
+          const { data: rows, error } = await supabase
+            .from('conversation_participants')
+            .select('user_id, is_active, role')
+            .eq('conversation_id', convId)
+            .order('joined_at', { ascending: true })
+          if (!error && rows?.length) {
+            type ParticipantRow = { user_id: string; is_active?: boolean | null; role?: string | null }
+            const activeRows = (rows as ParticipantRow[]).filter((row) => row.is_active !== false)
+            const userIds = activeRows.map((r) => r.user_id)
+            if (userIds.length > 0) {
+              const { data: profileRows } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .in('id', userIds)
+              type ProfileRow = { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }
+              const profileMap = new Map<string, ProfileRow>(
+                ((profileRows || []) as ProfileRow[]).map((p) => [p.id, p])
+              )
+              const normalized = activeRows.map((row) => ({
+                user_id: row.user_id,
+                is_active: row.is_active ?? true,
+                role: (row as ParticipantRow & { role?: string | null }).role ?? null,
+                profile: profileMap.get(row.user_id) ?? null
+              }))
+              setInfoParticipants(normalized)
+            } else {
+              setInfoParticipants([])
+            }
+          } else {
+            setInfoParticipants([])
+          }
+        } catch {
+          setInfoParticipants([])
+        }
+      } else {
+        setInfoParticipants([])
+      }
+
       // Recharger les match_requests pour afficher le bloc "Annonce acceptée"
       // (y compris pour figurant : request_intent='request')
       const requests = await loadMatchRequests()
@@ -1924,8 +1986,16 @@ const Messages = () => {
   }, [user, activeFilter, loadMatchRequests, loadAppointments, isConversationView, loadConversationSummaries])
 
   const handleReportSubmit = async () => {
-    if (!user || !selectedConversation?.other_user?.id || !reportReason) {
+    if (!user || !selectedConversation || !reportReason) {
       alert('Veuillez sélectionner une raison.')
+      return
+    }
+    const isGroup = !!selectedConversation.is_group
+    const reportedUserId = isGroup
+      ? selectedConversation.group_creator_id
+      : selectedConversation.other_user?.id
+    if (!reportedUserId) {
+      alert(isGroup ? 'Impossible de signaler ce groupe.' : 'Veuillez sélectionner une raison.')
       return
     }
 
@@ -1934,12 +2004,12 @@ const Messages = () => {
       const { error } = await (supabase.from('reports') as any)
         .insert({
           reporter_id: user.id,
-          reported_user_id: selectedConversation.other_user.id,
+          reported_user_id: reportedUserId,
           reported_post_id: null,
           report_type: 'profile',
           report_reason: reportReason,
-          report_category: 'behavior',
-          description: null
+          report_category: isGroup ? 'group' : 'behavior',
+          description: isGroup ? `Signalement du groupe (conversation: ${selectedConversation.id})` : null
         })
 
       if (error) {
@@ -2540,6 +2610,9 @@ const Messages = () => {
           </div>
           <div className="conversation-info-content">
             <div className="conversation-info-card">
+              {isGroupConversation && (
+                <h2 className="conversation-info-card-title">{groupName}</h2>
+              )}
               <div className="conversation-info-avatar">
                 <img
                   src={
@@ -2556,13 +2629,17 @@ const Messages = () => {
                   }}
                 />
                 {!isGroupConversation && (
-                  <button
-                    type="button"
-                    className="conversation-info-profile-link"
-                    onClick={() => openPublicProfile(selectedConversation?.other_user?.id)}
-                  >
-                    {displayName}
-                  </button>
+                  selectedConversation?.other_user?.id ? (
+                    <button
+                      type="button"
+                      className="conversation-info-profile-link"
+                      onClick={() => openPublicProfile(selectedConversation.other_user?.id)}
+                    >
+                      {displayName}
+                    </button>
+                  ) : (
+                    <span className="conversation-info-profile-name">{displayName}</span>
+                  )
                 )}
                 {isGroupConversation && canEditGroup && (
                   <button
@@ -2695,6 +2772,11 @@ const Messages = () => {
                               }
                             })
                             loadMessages(selectedConversation.id)
+                            const firstUpdate = updates[0]
+                            if (firstUpdate === 'la photo du groupe') showGroupActionFeedback('Photo modifiée')
+                            else if (firstUpdate === 'le nom du groupe') showGroupActionFeedback('Nom modifié')
+                            else if (firstUpdate === 'la description du groupe') showGroupActionFeedback('Description modifiée')
+                            else showGroupActionFeedback('Modifications enregistrées')
                           }
                         } catch (error) {
                           console.error('Error saving group:', error)
@@ -2778,18 +2860,27 @@ const Messages = () => {
                       <p className="conversation-info-muted">Chargement...</p>
                     ) : (
                       <div className="conversation-info-list">
-                    {infoParticipants.map((participant) => {
+                    {[...infoParticipants]
+                      .sort((a, b) => {
+                        if (a.user_id === user?.id) return -1
+                        if (b.user_id === user?.id) return 1
+                        return 0
+                      })
+                      .map((participant) => {
                       const display = participant.profile?.full_name || participant.profile?.username || 'Utilisateur'
                       const isModerator = participant.role === 'moderator'
                       const isCreator = participant.user_id === selectedConversation.group_creator_id
+                      const isSelf = participant.user_id === user?.id
                       return (
                         <button
                           key={participant.user_id}
                           type="button"
-                          className="conversation-info-row conversation-info-row-clickable"
+                          className={`conversation-info-row conversation-info-row-clickable ${isSelf ? 'conversation-info-row-self' : ''}`}
                           onClick={() => {
-                            setSelectedParticipant(participant)
-                            setShowMemberBottomSheet(true)
+                            if (!isSelf) {
+                              setSelectedParticipant(participant)
+                              setShowMemberBottomSheet(true)
+                            }
                           }}
                         >
                           <div className="conversation-info-row-left">
@@ -2802,10 +2893,13 @@ const Messages = () => {
                             />
                             <span className="conversation-info-member-name">{display}</span>
                             {isCreator && (
-                              <span className="conversation-info-role">Créateur</span>
+                              <span className="conversation-info-role">Créateur(trice)</span>
                             )}
                             {!isCreator && isModerator && (
-                              <span className="conversation-info-role">Admin</span>
+                              <span className="conversation-info-role">Administrateur(trice)</span>
+                            )}
+                            {!isCreator && !isModerator && (
+                              <span className="conversation-info-role">Membre</span>
                             )}
                           </div>
                           <ChevronRight size={18} className="conversation-info-row-chevron" />
@@ -2995,17 +3089,7 @@ const Messages = () => {
                         <button
                           type="button"
                           className="conversation-info-unlink-btn"
-                          onClick={async () => {
-                            if (!selectedConversation?.id) return
-                            try {
-                              const { error } = await (supabase.from('conversations') as any).update({ post_id: null }).eq('id', selectedConversation.id)
-                              if (error) throw error
-                              setSelectedConversation((prev) => prev ? { ...prev, post_id: null, postTitle: null } : prev)
-                            } catch (e) {
-                              console.error(e)
-                              alert('Erreur lors de la dissociation')
-                            }
-                          }}
+                          onClick={() => setShowDissociateConfirm(true)}
                         >
                           Dissocier
                         </button>
@@ -3120,6 +3204,7 @@ const Messages = () => {
                           })
                           if (error) throw error
                           setInviteLinkToken(token)
+                          showGroupActionFeedback('Lien d\'invitation créé')
                         } catch (e) {
                           console.error(e)
                           alert('Impossible de créer le lien. Vérifiez que la migration add_group_invite_tokens.sql a été exécutée.')
@@ -3136,84 +3221,89 @@ const Messages = () => {
             )}
 
             {!isSystemConversation && (
-              <div className="conversation-info-card">
-                <div className="conversation-info-actions">
+              <div className="conversation-info-actions">
+                <button
+                  type="button"
+                  className="conversation-action-item"
+                  onClick={() => {
+                    setReportReason('')
+                    setShowReportModal(true)
+                  }}
+                >
+                  {isGroupConversation ? 'Signaler le groupe' : 'Signaler l\'utilisateur'}
+                </button>
+                {!isGroupConversation && (
                   <button
                     type="button"
                     className="conversation-action-item"
-                    onClick={() => {
-                      setReportReason('')
-                      setShowReportModal(true)
-                    }}
+                    onClick={() => setShowBlockConfirm(true)}
                   >
-                    {isGroupConversation ? 'Signaler le groupe' : 'Signaler l\'utilisateur'}
+                    Bloquer l'utilisateur
                   </button>
-                  {!isGroupConversation && (
-                    <button
-                      type="button"
-                      className="conversation-action-item"
-                      onClick={() => setShowBlockConfirm(true)}
-                    >
-                      Bloquer l'utilisateur
-                    </button>
-                  )}
-                  {isGroupConversation && (
-                    <button
-                      type="button"
-                      className="conversation-action-item danger"
-                      onClick={async () => {
-                        if (!selectedConversation?.id || !user) return
-                        try {
-                          const { data: myProfile } = await supabase
-                            .from('profiles')
-                            .select('full_name, username')
-                            .eq('id', user.id)
-                            .single()
-                          const myName = (myProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
-                            || (myProfile as { full_name?: string | null; username?: string | null } | null)?.username
-                            || 'Un membre'
-                          const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
-                          // Message avant de quitter pour que l'utilisateur soit encore participant
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          await (supabase.from('messages') as any).insert({
-                            conversation_id: selectedConversation.id,
-                            sender_id: user.id,
-                            message_type: 'text',
-                            content: `${myName} a quitté le groupe`,
-                            calendar_request_data: {
-                              kind: 'group_event',
-                              event_type: 'member_left',
-                              members: [{ user_id: user.id, name: myName }],
-                              group_name: groupNameForMsg
-                            }
-                          })
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          const { error } = await (supabase.from('conversation_participants') as any)
-                            .update({ is_active: false })
-                            .eq('conversation_id', selectedConversation.id)
-                            .eq('user_id', user.id)
-                          if (error) throw error
-                          navigate('/messages')
-                        } catch (error) {
-                          console.error('Error leaving group:', error)
-                          alert('Impossible de quitter le groupe')
-                        }
-                      }}
-                    >
-                      Quitter ce groupe
-                    </button>
-                  )}
+                )}
+                {isGroupConversation && (
                   <button
                     type="button"
                     className="conversation-action-item danger"
-                    onClick={() => {
-                      setListActionConversation(null)
-                      setShowDeleteConfirm(true)
+                    onClick={async () => {
+                      if (!selectedConversation?.id || !user) return
+                      try {
+                        const { data: myProfile } = await supabase
+                          .from('profiles')
+                          .select('full_name, username')
+                          .eq('id', user.id)
+                          .single()
+                        const myName = (myProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
+                          || (myProfile as { full_name?: string | null; username?: string | null } | null)?.username
+                          || 'Un membre'
+                        const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                        // Message avant de quitter pour que l'utilisateur soit encore participant
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        await (supabase.from('messages') as any).insert({
+                          conversation_id: selectedConversation.id,
+                          sender_id: user.id,
+                          message_type: 'text',
+                          content: `${myName} a quitté le groupe`,
+                          calendar_request_data: {
+                            kind: 'group_event',
+                            event_type: 'member_left',
+                            members: [{ user_id: user.id, name: myName }],
+                            group_name: groupNameForMsg
+                          }
+                        })
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const { error } = await (supabase.from('conversation_participants') as any)
+                          .update({ is_active: false })
+                          .eq('conversation_id', selectedConversation.id)
+                          .eq('user_id', user.id)
+                        if (error) throw error
+                        navigate('/messages')
+                      } catch (error) {
+                        console.error('Error leaving group:', error)
+                        alert('Impossible de quitter le groupe')
+                      }
                     }}
                   >
-                    Supprimer la conversation
+                    Quitter ce groupe
                   </button>
-                </div>
+                )}
+                <button
+                  type="button"
+                  className="conversation-action-item danger"
+                  onClick={() => {
+                    setListActionConversation(null)
+                    setShowDeleteConfirm(true)
+                  }}
+                >
+                  Supprimer la conversation
+                </button>
+              </div>
+            )}
+
+            {groupActionFeedback && (
+              <div className="conversation-info-action-feedback" role="status" aria-live="polite">
+                <Check size={16} />
+                {groupActionFeedback}
               </div>
             )}
           </div>
@@ -3228,38 +3318,34 @@ const Messages = () => {
             >
               <div className="conversation-modal-content" onClick={(event) => event.stopPropagation()}>
                 <div className="conversation-modal-header">
-                  <h2>Signaler</h2>
+                  <h2>{isGroupConversation ? 'Signaler le groupe' : 'Signaler l\'utilisateur'}</h2>
                   <button
+                    type="button"
                     className="conversation-modal-close"
                     onClick={() => {
                       setShowReportModal(false)
                       setReportReason('')
                     }}
+                    aria-label="Fermer"
                   >
                     ×
                   </button>
                 </div>
                 <div className="conversation-modal-body">
-                  <p>Pourquoi souhaitez-vous signaler ?</p>
-                  <div className="conversation-report-options">
-                    {['Spam', 'Harcèlement', 'Contenu inapproprié', 'Autre'].map((reason) => (
-                      <button
-                        key={reason}
-                        className={`conversation-report-option ${reportReason === reason ? 'active' : ''}`}
-                        onClick={() => setReportReason(reason)}
-                      >
-                        {reason}
-                      </button>
-                    ))}
+                  <p className="conversation-modal-question">Raison du signalement :</p>
+                  <div className="conversation-reasons-list">
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'suspect' ? 'active' : ''}`} onClick={() => setReportReason('suspect')}>Suspect</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'fraudeur' ? 'active' : ''}`} onClick={() => setReportReason('fraudeur')}>Fraudeur</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`} onClick={() => setReportReason('fondant')}>Fondant / Inapproprié</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`} onClick={() => setReportReason('sexuel')}>Contenu sexuel</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'spam' ? 'active' : ''}`} onClick={() => setReportReason('spam')}>Spam</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'autre' ? 'active' : ''}`} onClick={() => setReportReason('autre')}>Autre</button>
                   </div>
-                </div>
-                <div className="conversation-modal-footer">
-                  <button onClick={() => setShowReportModal(false)} className="conversation-modal-cancel">
-                    Annuler
-                  </button>
-                  <button onClick={handleReportSubmit} className="conversation-modal-submit" disabled={!reportReason}>
-                    Envoyer
-                  </button>
+                  {reportReason && (
+                    <button type="button" className="conversation-submit-btn" onClick={handleReportSubmit}>
+                      Envoyer le signalement
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -3277,6 +3363,80 @@ const Messages = () => {
               confirmLabel="Bloquer"
               cancelLabel="Annuler"
               isDestructive={true}
+            />
+          )}
+          {showRemoveMemberConfirm && participantToRemove && (
+            <ConfirmationModal
+              visible={showRemoveMemberConfirm}
+              title="Retirer du groupe"
+              message={`Voulez-vous vraiment retirer ${participantToRemove.profile?.full_name || participantToRemove.profile?.username || 'cet utilisateur'} du groupe ?`}
+              onCancel={() => {
+                setShowRemoveMemberConfirm(false)
+                setParticipantToRemove(null)
+              }}
+              onConfirm={async () => {
+                if (!selectedConversation?.id || !user || !participantToRemove) return
+                try {
+                  const removedName = participantToRemove.profile?.full_name || participantToRemove.profile?.username || 'Un membre'
+                  const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('conversation_participants') as any)
+                    .update({ is_active: false })
+                    .eq('conversation_id', selectedConversation.id)
+                    .eq('user_id', participantToRemove.user_id)
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('messages') as any).insert({
+                    conversation_id: selectedConversation.id,
+                    sender_id: user.id,
+                    message_type: 'text',
+                    content: `${removedName} a été retiré du groupe`,
+                    calendar_request_data: {
+                      kind: 'group_event',
+                      event_type: 'member_removed',
+                      members: [{ user_id: participantToRemove.user_id, name: removedName }],
+                      group_name: groupNameForMsg
+                    }
+                  })
+                  setInfoParticipants((prev) => prev.filter((p) => p.user_id !== participantToRemove.user_id))
+                  setShowMemberBottomSheet(false)
+                  setSelectedParticipant(null)
+                  setShowRemoveMemberConfirm(false)
+                  setParticipantToRemove(null)
+                  loadMessages(selectedConversation.id)
+                  showGroupActionFeedback('Membre retiré(e)')
+                } catch (error) {
+                  console.error('Error removing participant:', error)
+                  alert('Impossible de retirer ce participant')
+                }
+              }}
+              confirmLabel="Retirer"
+              cancelLabel="Annuler"
+              isDestructive={true}
+            />
+          )}
+          {showDissociateConfirm && (
+            <ConfirmationModal
+              visible={showDissociateConfirm}
+              title="Dissocier l'annonce"
+              message="Voulez-vous vraiment dissocier cette annonce du groupe ?"
+              onCancel={() => setShowDissociateConfirm(false)}
+              onConfirm={async () => {
+                if (!selectedConversation?.id) return
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error } = await (supabase.from('conversations') as any).update({ post_id: null }).eq('id', selectedConversation.id)
+                  if (error) throw error
+                  setSelectedConversation((prev) => prev ? { ...prev, post_id: null, postTitle: null } : prev)
+                  setShowDissociateConfirm(false)
+                  showGroupActionFeedback('Annonce dissociée')
+                } catch (e) {
+                  console.error(e)
+                  alert('Erreur lors de la dissociation')
+                }
+              }}
+              confirmLabel="Dissocier"
+              cancelLabel="Annuler"
+              isDestructive={false}
             />
           )}
           {showDeleteConfirm && (
@@ -3383,6 +3543,11 @@ const Messages = () => {
                 ])
                 setShowAddParticipants(false)
                 loadMessages(selectedConversation.id)
+                showGroupActionFeedback(
+                  usersToAdd.length === 1
+                    ? 'Membre ajouté(e)'
+                    : `${usersToAdd.length} membres ajouté(e)s`
+                )
               } catch (error) {
                 console.error('Error adding participants:', error)
                 alert('Impossible d\'ajouter les participants')
@@ -3396,18 +3561,18 @@ const Messages = () => {
                 onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
               />
               <div className="conversation-member-sheet-panel">
-                <div className="conversation-member-sheet-header">
-                  <h3>Membre</h3>
+                <div className="conversation-member-sheet-header conversation-member-sheet-header-minimal">
                   <button
                     type="button"
                     className="conversation-member-sheet-close"
                     onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
+                    aria-label="Fermer"
                   >
                     ×
                   </button>
                 </div>
                 <div className="conversation-member-sheet-body">
-                  <div className="conversation-participant-detail">
+                  <div className="conversation-member-sheet-profile-centered">
                     <img
                       src={selectedParticipant.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`}
                       alt={selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
@@ -3415,10 +3580,10 @@ const Messages = () => {
                         (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`
                       }}
                     />
-                    <div>
+                    {selectedParticipant.user_id !== user?.id ? (
                       <button
                         type="button"
-                        className="conversation-participant-name conversation-participant-name-link"
+                        className="conversation-member-sheet-name conversation-member-sheet-name-link"
                         onClick={() => {
                           const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
                           if (!profileId) return
@@ -3429,113 +3594,76 @@ const Messages = () => {
                       >
                         {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
                       </button>
-                      <p className="conversation-participant-role">
-                        {selectedParticipant.user_id === selectedConversation?.group_creator_id
-                          ? 'Créateur'
-                          : selectedParticipant.role === 'moderator'
-                            ? 'Admin'
-                            : 'Membre'}
+                    ) : (
+                      <p className="conversation-member-sheet-name">
+                        {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
                       </p>
-                    </div>
-                  </div>
-                  <div className="conversation-member-sheet-actions">
-                    <button
-                      type="button"
-                      className="conversation-member-sheet-action-btn"
-                      onClick={() => {
-                        const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
-                        if (!profileId) return
-                        setShowMemberBottomSheet(false)
-                        setSelectedParticipant(null)
-                        openPublicProfile(profileId)
-                      }}
-                    >
-                      Voir le profil
-                    </button>
-                    <button
-                      type="button"
-                      className="conversation-member-sheet-action-btn"
-                      onClick={async () => {
-                        if (!user) return
-                        const conv = await findOrCreateConversation(selectedParticipant.user_id)
-                        setShowMemberBottomSheet(false)
-                        setSelectedParticipant(null)
-                        if (conv && (conv as { id: string }).id) {
-                          navigate(`/messages/${(conv as { id: string }).id}`)
-                        }
-                      }}
-                    >
-                      <MessageCircle size={18} />
-                      Message privé
-                    </button>
-                  </div>
-                  {canManageMembers && selectedParticipant.user_id !== user?.id && (
-                    <div className="conversation-participant-actions">
+                    )}
+                    <p className="conversation-member-sheet-role">
+                      {selectedParticipant.user_id === selectedConversation?.group_creator_id
+                        ? 'Créateur(trice)'
+                        : selectedParticipant.role === 'moderator'
+                          ? 'Administrateur(trice)'
+                          : 'Membre'}
+                    </p>
+                    {selectedParticipant.user_id !== user?.id && (
                       <button
                         type="button"
-                        className="conversation-action-item"
+                        className="conversation-member-sheet-action-icon"
                         onClick={async () => {
-                          if (!selectedConversation?.id) return
-                          try {
-                            const nextRole = selectedParticipant.role === 'moderator' ? 'member' : 'moderator'
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (supabase.from('conversation_participants') as any)
-                              .update({ role: nextRole })
-                              .eq('conversation_id', selectedConversation.id)
-                              .eq('user_id', selectedParticipant.user_id)
-                            setInfoParticipants((prev) => prev.map((p) => p.user_id === selectedParticipant.user_id ? {
-                              ...p,
-                              role: nextRole
-                            } : p))
-                            setSelectedParticipant((prev) => prev ? { ...prev, role: nextRole } : prev)
-                            setShowMemberBottomSheet(false)
-                          } catch (error) {
-                            console.error('Error updating role:', error)
-                            alert('Impossible de mettre à jour le rôle')
+                          if (!user) return
+                          const conv = await findOrCreateConversation(selectedParticipant.user_id)
+                          setShowMemberBottomSheet(false)
+                          setSelectedParticipant(null)
+                          if (conv && (conv as { id: string }).id) {
+                            navigate(`/messages/${(conv as { id: string }).id}`)
                           }
                         }}
+                        title="Message privé"
                       >
-                        {selectedParticipant.role === 'moderator' ? 'Retirer admin' : 'Définir admin'}
+                        <MessageCircle size={20} />
                       </button>
-                      <button
-                        type="button"
-                        className="conversation-action-item danger"
-                        onClick={async () => {
-                          if (!selectedConversation?.id || !user) return
-                          try {
-                            const removedName = selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Un membre'
-                            const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (supabase.from('conversation_participants') as any)
-                              .update({ is_active: false })
-                              .eq('conversation_id', selectedConversation.id)
-                              .eq('user_id', selectedParticipant.user_id)
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            await (supabase.from('messages') as any).insert({
-                              conversation_id: selectedConversation.id,
-                              sender_id: user.id,
-                              message_type: 'text',
-                              content: `${removedName} a été retiré du groupe`,
-                              calendar_request_data: {
-                                kind: 'group_event',
-                                event_type: 'member_removed',
-                                members: [{ user_id: selectedParticipant.user_id, name: removedName }],
-                                group_name: groupNameForMsg
+                    )}
+                  </div>
+                  {selectedParticipant.user_id !== user?.id && canManageMembers && (
+                        <div className="conversation-member-sheet-list">
+                          <button
+                            type="button"
+                            className="conversation-member-sheet-list-item"
+                            onClick={async () => {
+                              if (!selectedConversation?.id) return
+                              try {
+                                const nextRole = selectedParticipant.role === 'moderator' ? 'member' : 'moderator'
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                await (supabase.from('conversation_participants') as any)
+                                  .update({ role: nextRole })
+                                  .eq('conversation_id', selectedConversation.id)
+                                  .eq('user_id', selectedParticipant.user_id)
+                                setInfoParticipants((prev) => prev.map((p) => p.user_id === selectedParticipant.user_id ? { ...p, role: nextRole } : p))
+                                setSelectedParticipant((prev) => prev ? { ...prev, role: nextRole } : prev)
+                                setShowMemberBottomSheet(false)
+                                showGroupActionFeedback(nextRole === 'moderator' ? 'Administrateur(trice) ajouté(e)' : 'Administrateur(trice) retiré(e)')
+                              } catch (error) {
+                                console.error('Error updating role:', error)
+                                alert('Impossible de mettre à jour le rôle')
                               }
-                            })
-                            setInfoParticipants((prev) => prev.filter((p) => p.user_id !== selectedParticipant.user_id))
-                            setShowMemberBottomSheet(false)
-                            setSelectedParticipant(null)
-                            loadMessages(selectedConversation.id)
-                          } catch (error) {
-                            console.error('Error removing participant:', error)
-                            alert('Impossible de retirer ce participant')
-                          }
-                        }}
-                      >
-                        Retirer du groupe
-                      </button>
-                    </div>
+                            }}
+                          >
+                            <span>{selectedParticipant.role === 'moderator' ? 'Retirer administrateur(trice)' : 'Définir administrateur(trice)'}</span>
+                            <ChevronRight size={18} className="conversation-member-sheet-chevron" />
+                          </button>
+                          <button
+                            type="button"
+                            className="conversation-member-sheet-list-item danger"
+                            onClick={() => {
+                              setParticipantToRemove(selectedParticipant)
+                              setShowRemoveMemberConfirm(true)
+                            }}
+                          >
+                            <span>Retirer du groupe</span>
+                            <ChevronRight size={18} className="conversation-member-sheet-chevron" />
+                          </button>
+                        </div>
                   )}
                 </div>
               </div>
@@ -3977,6 +4105,7 @@ const Messages = () => {
           />
           <div
             className={`conversation-header-center ${!isSystemConversation ? 'clickable' : ''}`}
+            title={!isSystemConversation ? 'Infos de la conversation' : undefined}
             role={!isSystemConversation ? 'button' : undefined}
             tabIndex={!isSystemConversation ? 0 : undefined}
             onClick={() => {
@@ -4002,17 +4131,27 @@ const Messages = () => {
               </div>
             )}
             <div className="conversation-header-text">
-              <h1 className="conversation-header-name">{headerName}</h1>
+              <div className="conversation-header-name-row">
+                <h1 className="conversation-header-name">{headerName}</h1>
+                {!isSystemConversation && !isGroupConversation && selectedConversation?.other_user?.is_online && (
+                  <span className="conversation-header-online-dot" title="En ligne" aria-hidden />
+                )}
+              </div>
               {!isSystemConversation && (
                 <p className="conversation-header-status">
-                  {formatLastSeen(
-                    isGroupConversation
-                      ? (selectedConversation?.last_message_at || null)
-                      : (selectedConversation?.other_user?.last_activity_at || null)
-                  )}
+                  {!isGroupConversation && selectedConversation?.other_user?.is_online
+                    ? 'En ligne'
+                    : formatLastSeen(
+                        isGroupConversation
+                          ? (selectedConversation?.last_message_at || null)
+                          : (selectedConversation?.other_user?.last_activity_at || null)
+                      )}
                 </p>
               )}
             </div>
+            {!isSystemConversation && (
+              <ChevronRight className="conversation-header-chevron" size={20} aria-hidden />
+            )}
           </div>
         </div>
         {!isSystemConversation && showReportModal && (
@@ -4283,7 +4422,6 @@ const Messages = () => {
                       </div>
                       <div className="group-intro-text">
                         <p className="group-intro-title">{displayName || 'Groupe'}</p>
-                        <p className="group-intro-subtitle">Créé par {groupCreatorName}</p>
                       </div>
                     </button>
                     <p className="group-intro-meta">
@@ -4454,6 +4592,18 @@ const Messages = () => {
                                 }
                               }
                             }}
+                            groupParticipants={isGroupConversation ? infoParticipants : undefined}
+                            onMentionClick={
+                              isGroupConversation
+                                ? (participant) => {
+                                    const full = infoParticipants.find((p) => p.user_id === participant.user_id)
+                                    if (full) {
+                                      setSelectedParticipant(full)
+                                      setShowMemberBottomSheet(true)
+                                    }
+                                  }
+                                : undefined
+                            }
                           />
                           {messageReactions[msg.id]?.length ? (
                             <div className={`message-reaction-row ${isOwn ? 'own' : 'other'}`}>
@@ -4593,6 +4743,7 @@ const Messages = () => {
               senderId={user.id}
               openCalendarOnMount={openAppointment}
               counterpartyId={!isGroupConversation ? (selectedConversation?.other_user?.id || null) : null}
+              groupMembers={isGroupConversation ? infoParticipants : undefined}
               disabled={isSystemConversation}
               onMessageSent={async () => {
                 const currentId = selectedConversation?.id || conversationId

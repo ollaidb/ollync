@@ -217,7 +217,7 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
           <div className="create-group-photo-section">
             <div className="create-group-photo-preview">
               {photoPreview ? (
-                <img src={photoPreview} alt="Aperçu" />
+                <img src={photoPreview} alt="Aperçu de la photo du groupe" />
               ) : (
                 <div className="create-group-photo-placeholder">
                   <Upload size={32} />

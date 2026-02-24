@@ -109,9 +109,10 @@ const Header = () => {
     <header className="header">
       {/* Section 1: Logo et Notifications */}
       <div className="header-section-1">
-        <button 
+        <button
           className="header-logo-btn"
           onClick={() => navigate('/')}
+          aria-label={t('common:nav.home') || 'Accueil'}
         >
           <Logo className="header-logo" width={100} height={50} />
         </button>
@@ -127,17 +128,28 @@ const Header = () => {
 
       {/* Section 2: Barre de recherche */}
       <div className="header-section-2">
-        <div 
+        <div
           className="search-bar"
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/search')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              navigate('/search')
+            }
+          }}
+          aria-label={t('home:searchPlaceholder') || 'Rechercher une annonce'}
           style={{ cursor: 'pointer' }}
         >
-          <Search className="search-icon" size={20} />
+          <Search className="search-icon" size={20} aria-hidden />
           <input
             type="text"
             placeholder={t('home:searchPlaceholder')}
             className="search-input"
             readOnly
+            tabIndex={-1}
+            aria-hidden
             onClick={(e) => {
               e.stopPropagation()
               navigate('/search')

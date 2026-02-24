@@ -79,12 +79,14 @@ const Settings = () => {
                     key={item.id}
                     className={`settings-menu-item ${isActive ? 'active' : ''} ${isDestructive ? 'settings-menu-item-destructive' : ''}`}
                     onClick={() => navigate(item.path)}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <div className={`settings-menu-item-icon ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`}>
+                    <div className={`settings-menu-item-icon ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`} aria-hidden>
                       <Icon size={20} />
                     </div>
                     <span className="settings-menu-item-label">{item.label}</span>
-                    {!isDestructive && <ChevronRight size={18} className="settings-menu-item-chevron" />}
+                    {!isDestructive && <ChevronRight size={18} className="settings-menu-item-chevron" aria-hidden />}
                   </button>
                 )
               })}

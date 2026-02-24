@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { Heart, Share, MapPin, Check, X, Navigation, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays, Upload, FileText } from 'lucide-react'
+import { Heart, Share, MapPin, Check, X, Navigation, Plus, ChevronRight, ChevronLeft, ChevronUp, ChevronDown, CalendarDays, Upload, FileText, HelpCircle, Flag } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
@@ -163,6 +163,8 @@ const PostDetails = () => {
   const [viewerTouchStart, setViewerTouchStart] = useState<number | null>(null)
   const [viewerTouchEnd, setViewerTouchEnd] = useState<number | null>(null)
   const [viewerDidSwipe, setViewerDidSwipe] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportReason, setReportReason] = useState('')
   const [relatedPosts, setRelatedPosts] = useState<Array<{
     id: string
     title: string
@@ -1358,6 +1360,37 @@ const PostDetails = () => {
     }
   }
 
+  const handleReportSubmit = async () => {
+    if (!user || !post || !reportReason) {
+      alert('Veuillez sélectionner une raison.')
+      return
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('reports') as any)
+        .insert({
+          reporter_id: user.id,
+          reported_user_id: post.user_id,
+          reported_post_id: post.id,
+          report_type: 'post',
+          report_reason: reportReason,
+          report_category: 'post',
+          description: null
+        })
+      if (error) {
+        console.error('Error submitting report:', error)
+        alert('Erreur lors de l\'envoi du signalement')
+      } else {
+        showSuccess?.('Signalement envoyé. Merci de votre contribution.')
+        setShowReportModal(false)
+        setReportReason('')
+      }
+    } catch (err) {
+      console.error('Error in handleReportSubmit:', err)
+      alert('Erreur lors de l\'envoi du signalement')
+    }
+  }
+
   const handleDelete = async () => {
     if (!id || !user || post?.user_id !== user.id) return
 
@@ -2238,6 +2271,29 @@ const PostDetails = () => {
               </div>
             )}
 
+            {/* Aide et Signaler */}
+            <div className="post-details-help-report-section">
+              <button
+                type="button"
+                className="post-details-help-btn"
+                onClick={() => navigate('/profile/help')}
+              >
+                <HelpCircle size={20} />
+                Aide
+              </button>
+              <button
+                type="button"
+                className="post-details-report-btn"
+                onClick={() => {
+                  setReportReason('')
+                  setShowReportModal(true)
+                }}
+              >
+                <Flag size={20} />
+                Signaler
+              </button>
+            </div>
+
             {/* Annonce taguée */}
             {taggedPost && (
               <div className="other-posts-section">
@@ -2354,6 +2410,38 @@ const PostDetails = () => {
             )}
           </div>
         </div>
+
+        {/* Modal Signaler */}
+        {showReportModal && (
+          <div className="post-details-report-overlay" onClick={() => { setShowReportModal(false); setReportReason('') }}>
+            <div className="post-details-report-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="post-details-report-header">
+                <h2>Signaler cette annonce</h2>
+                <button type="button" className="post-details-report-close" onClick={() => { setShowReportModal(false); setReportReason('') }} aria-label="Fermer">×</button>
+              </div>
+              <div className="post-details-report-body">
+                <p className="post-details-report-question">Raison du signalement :</p>
+                <div className="post-details-report-reasons">
+                  {['suspect', 'fraudeur', 'fondant', 'sexuel', 'spam', 'autre'].map((reason) => (
+                    <button
+                      key={reason}
+                      type="button"
+                      className={`post-details-report-reason-btn ${reportReason === reason ? 'active' : ''}`}
+                      onClick={() => setReportReason(reason)}
+                    >
+                      {reason === 'suspect' ? 'Suspect' : reason === 'fraudeur' ? 'Fraudeur' : reason === 'fondant' ? 'Fondant / Inapproprié' : reason === 'sexuel' ? 'Contenu sexuel' : reason === 'spam' ? 'Spam' : 'Autre'}
+                    </button>
+                  ))}
+                </div>
+                {reportReason && (
+                  <button type="button" className="post-details-report-submit" onClick={handleReportSubmit}>
+                    Envoyer le signalement
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Barre d'action fixe en bas */}
         {user && !isOwner && (

@@ -355,6 +355,27 @@
   cursor: pointer;
 }
 
+.message-mention {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.message-bubble-wrapper.own .message-mention {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.message-mention:hover {
+  opacity: 0.9;
+}
+
 .message-bubble.own .message-link {
   color: var(--primary-foreground);
 }

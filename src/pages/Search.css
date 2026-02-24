@@ -76,6 +76,102 @@
   color: var(--muted-foreground);
 }
 
+.search-input-dropdown-wrap {
+  position: relative;
+}
+
+/* Fond bloquant : quand la barre de recherche est ouverte, l'arrière-plan est fixe, un clic ferme le dropdown */
+.search-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 10px + 44px + 10px + 4px);
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: default;
+}
+
+/* Dropdown pleine largeur : mêmes marges gauche/droite que la page */
+.search-dropdown {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  top: calc(env(safe-area-inset-top, 0px) + 10px + 44px + 10px + 4px);
+  margin-top: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  z-index: 200;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.search-dropdown-inner {
+  /* wrapper pour le contenu du dropdown */
+}
+
+.search-dropdown-section-title {
+  margin: 0;
+  padding: 10px 14px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.search-dropdown-section-title:not(:first-child) {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.search-dropdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.search-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-dropdown-item-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: var(--foreground);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.search-dropdown-item-btn:hover {
+  background: var(--muted);
+}
+
+.search-dropdown-item-remove {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 18px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.search-dropdown-item-remove:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
 .search-clear-button {
   background: none;
   border: none;
@@ -659,6 +755,105 @@
   margin: 0;
 }
 
+.search-suggestions-wrapper {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 20px;
+}
+
+/* Recherches récentes */
+.search-recent-searches {
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+}
+
+.search-recent-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  margin: 0 0 12px 0;
+}
+
+.search-recent-title svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.search-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.search-recent-item-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  background: none;
+  color: var(--foreground);
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.search-recent-item-btn:hover {
+  background: var(--muted);
+}
+
+.search-recent-item-btn svg {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.search-recent-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-recent-item-remove {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--muted-foreground);
+  font-size: 18px;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.search-recent-item-remove:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
 .search-page-container .swipe-filter-modal {
   width: min(300px, 90vw);
   max-height: min(88vh, 760px);
@@ -720,6 +915,11 @@
     padding-left: 12px;
     padding-right: 12px;
     padding-bottom: 12px;
+  }
+
+  .search-dropdown {
+    left: 12px;
+    right: 12px;
   }
 
   .search-header-content {
