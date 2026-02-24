@@ -199,10 +199,9 @@ export const LocationAutocomplete = ({
         console.warn('Autocomplete lieu indisponible (CORS/Nominatim). Nouvelle tentative dans quelques secondes.')
       }
     } finally {
-      if (abortControllerRef.current?.signal.aborted) {
-        return
+      if (!abortControllerRef.current?.signal.aborted) {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
   }
 

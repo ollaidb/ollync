@@ -82,18 +82,18 @@ export const publicationTypes: PublicationType[] = [
           'Lancer un podcast avec des profils complémentaires'
       },
       {
+        id: 'ugc',
+        name: 'UGC',
+        slug: 'ugc',
+        description:
+          'Créer du contenu UGC (User Generated Content) : vidéos courtes, témoignages, tests produit pour les marques'
+      },
+      {
         id: 'court-metrage',
         name: 'Court-métrage',
         slug: 'court-metrage',
         description:
           'Créer un court-métrage en collaboration'
-      },
-      {
-        id: 'magazine-blog',
-        name: 'Magazine/Blog',
-        slug: 'magazine-blog',
-        description:
-          'Créer un magazine/blog en collaboration'
       },
       {
         id: 'media',
@@ -104,10 +104,10 @@ export const publicationTypes: PublicationType[] = [
       },
       {
         id: 'newsletter',
-        name: 'Newsletter',
+        name: 'Newsletter/Magazine/Blog',
         slug: 'newsletter',
         description:
-          'Collaborer pour lancer une newsletter'
+          'Collaborer pour lancer une newsletter, un magazine ou un blog'
       },
       {
         id: 'chaine-youtube',

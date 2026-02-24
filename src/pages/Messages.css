@@ -15,10 +15,10 @@
   z-index: 100;
   background-color: var(--background);
   border-bottom: none;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 .messages-header > *:first-child {
@@ -202,8 +202,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(var(--messages-header-offset, 160px) + 16px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  padding-top: calc(var(--messages-header-offset, 160px) + 4px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
   padding-left: 20px;
   padding-right: 20px;
   -webkit-overflow-scrolling: touch;
@@ -2114,6 +2114,25 @@
   color: var(--primary-foreground);
 }
 
+/* Indicateur non vu pour demandes et matchs */
+.conversation-item--unseen .conversation-avatar-wrapper {
+  position: relative;
+}
+.conversation-item--unseen .conversation-avatar-wrapper::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  border: 2px solid var(--background);
+}
+.conversation-item--unseen .conversation-name {
+  font-weight: 700;
+}
+
 .conversation-status-text {
   font-size: 12px;
   color: var(--muted-foreground);
@@ -2423,10 +2442,10 @@
 /* Responsive */
 @media (max-width: 768px) {
   .messages-header {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
     padding-left: 16px;
     padding-right: 16px;
-    padding-bottom: 12px;
+    padding-bottom: 6px;
   }
 
   .messages-title {
@@ -2443,8 +2462,8 @@
   }
 
   .messages-content {
-    padding-top: calc(var(--messages-header-offset, 160px) + 16px);
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+    padding-top: calc(var(--messages-header-offset, 160px) + 4px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
     padding-left: 16px;
     padding-right: 16px;
   }

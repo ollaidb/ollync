@@ -1,17 +1,16 @@
 /* Page Notifications - Structure principale */
 .notifications-page {
-  min-height: 100vh;
-  height: 100vh;
-  height: 100dvh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
 }
 
 .notifications-page-container {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -345,6 +344,7 @@
 /* Zone scrollable */
 .notifications-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 108px);

@@ -69,7 +69,7 @@ const PostSelector = ({ onPostSelect, onClose }: PostSelectorProps) => {
   const searchPosts = async (query: string) => {
     setLoading(true)
     try {
-      let postsQuery = supabase
+      const postsQuery = supabase
         .from('posts')
         .select('*')
         .eq('status', 'active')
@@ -84,7 +84,7 @@ const PostSelector = ({ onPostSelect, onClose }: PostSelectorProps) => {
       if (data) {
         // Mapper les posts avec leurs relations
         const postsWithRelations = await Promise.all(
-          (data as any[]).map(async (post) => {
+          (data as Record<string, unknown>[]).map(async (post: Record<string, unknown>) => {
             // Récupérer la catégorie
             let category = null
             if (post.category_id) {

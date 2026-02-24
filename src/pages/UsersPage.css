@@ -3,13 +3,12 @@
    ============================================ */
 
 .users-page {
-  min-height: 100vh;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   background: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
 }
 
 /* ============================================
@@ -313,9 +312,9 @@
 
 .users-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  height: 100vh;
   touch-action: pan-y;
   padding-top: calc(env(safe-area-inset-top, 0px) + 110px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);

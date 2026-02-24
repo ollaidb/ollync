@@ -23,21 +23,8 @@ export const GoogleMapComponent = ({
   onMarkerClick
 }: GoogleMapProps) => {
   // Récupération de la clé API depuis les variables d'environnement
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const apiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY
-
-  if (!apiKey || apiKey === 'YOUR_API_KEY') {
-    return (
-      <div className="google-map-error" style={{ height }}>
-        <p>⚠️ Clé API Google Maps non configurée</p>
-        <p className="error-detail">
-          Veuillez configurer VITE_GOOGLE_MAPS_API_KEY dans votre fichier .env
-          <br />
-          Consultez GOOGLE_MAPS_SETUP.md pour plus d'informations
-        </p>
-      </div>
-    )
-  }
+  const apiKey = import.meta.env?.VITE_GOOGLE_MAPS_API_KEY ?? ''
+  const hasValidKey = apiKey && apiKey !== 'YOUR_API_KEY'
 
   const { isLoaded, loadError } = useLoadScript({
     id: GOOGLE_MAPS_SCRIPT_ID,
@@ -46,6 +33,19 @@ export const GoogleMapComponent = ({
   })
 
   const center = useMemo(() => ({ lat, lng }), [lat, lng])
+
+  if (!hasValidKey) {
+    return (
+      <div className="google-map-error" style={{ height }}>
+        <p>⚠️ Clé API Google Maps non configurée</p>
+        <p className="error-detail">
+          Veuillez configurer VITE_GOOGLE_MAPS_API_KEY dans votre fichier .env
+          <br />
+          Consultez GOOGLE_MAPS_SETUP.md pour plus d&apos;informations
+        </p>
+      </div>
+    )
+  }
 
   if (loadError) {
     return (

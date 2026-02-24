@@ -9,10 +9,10 @@ export const DEFAULT_SUBMENUS: Record<string, Array<{ name: string; slug: string
     { name: 'Live', slug: 'live' },
     { name: 'Interview/Émission', slug: 'interview-emission' },
     { name: 'Podcast', slug: 'podcast' },
+    { name: 'UGC', slug: 'ugc' },
     { name: 'Court-métrage', slug: 'court-metrage' },
-    { name: 'Magazine/Blog', slug: 'magazine-blog' },
     { name: 'Média', slug: 'media' },
-    { name: 'Newsletter', slug: 'newsletter' },
+    { name: 'Newsletter/Magazine/Blog', slug: 'newsletter' },
     { name: 'Chaîne YouTube', slug: 'chaine-youtube' },
     { name: 'Autre', slug: 'autre' }
   ],

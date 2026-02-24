@@ -294,7 +294,7 @@ const PostRecommendations = () => {
                               src={post.user.avatar_url}
                               alt={displayName}
                               onError={(e) => {
-                                ;(e.target as HTMLImageElement).src =
+                                (e.target as HTMLImageElement).src =
                                   'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
                               }}
                             />

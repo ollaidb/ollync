@@ -2175,13 +2175,6 @@ const Messages = () => {
     })
   }, [filteredAppointments])
 
-  const sentUnopenedRequestsCount = matchRequests.reduce((count, request) => {
-    if (request.request_type !== 'sent') return count
-    if (request.status !== 'pending') return count
-    if (request.opened_by_sender_at) return count
-    return count + 1
-  }, 0)
-
   const unseenAcceptedRequestsCount = matchRequests.reduce((count, request) => {
     if (request.status !== 'accepted') return count
     const seenByCurrentUser =
@@ -4217,9 +4210,9 @@ const Messages = () => {
             onClick={() => setActiveFilter('match_requests')}
           >
             Demandes
-            {sentUnopenedRequestsCount > 0 && (
+            {filteredMatchRequests.length > 0 && (
               <span className="messages-filter-badge">
-                {sentUnopenedRequestsCount > 99 ? '99+' : sentUnopenedRequestsCount}
+                {filteredMatchRequests.length > 99 ? '99+' : filteredMatchRequests.length}
               </span>
             )}
           </button>
@@ -4277,10 +4270,15 @@ const Messages = () => {
             />
           ) : (
             <div className="conversations-list conversations-list--compact">
-              {filteredMatchRequests.map((request) => (
+              {filteredMatchRequests.map((request) => {
+                const isUnseen =
+                  request.request_type === 'sent'
+                    ? !request.opened_by_sender_at
+                    : !request.opened_by_recipient_at
+                return (
                 <div
                   key={request.id}
-                  className="conversation-item"
+                  className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
                   onClick={async () => {
                     const openedAt = await markRequestAsOpenedByCurrentUser(request)
                     if (openedAt) {
@@ -4342,7 +4340,7 @@ const Messages = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )
         ) : activeFilter === 'matches' ? (
@@ -4359,10 +4357,15 @@ const Messages = () => {
             />
           ) : (
             <div className="conversations-list conversations-list--compact">
-              {filteredMatches.map((request) => (
+              {filteredMatches.map((request) => {
+                const isUnseen =
+                  request.request_type === 'sent'
+                    ? !request.opened_by_sender_at
+                    : !request.opened_by_recipient_at
+                return (
                 <div
                   key={request.id}
-                  className="conversation-item"
+                  className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
                   onClick={async (e) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -4442,7 +4445,7 @@ const Messages = () => {
                     </p>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )
         ) : activeFilter === 'appointments' ? (

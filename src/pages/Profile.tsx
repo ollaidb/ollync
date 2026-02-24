@@ -602,8 +602,8 @@ const Profile = () => {
   return (
     <div className="app">
       <div className="profile-page">
-        {/* Header fixe - Ne pas afficher pour les profils publics (ils ont leur propre header) */}
-        {!isPublicProfile && (
+        {/* Header fixe - Ne pas afficher pour les profils publics ni pour /profile/edit (EditPublicProfile a son propre header) */}
+        {!isPublicProfile && location.pathname !== '/profile/edit' && (
           <div className="profile-header-fixed">
             <div className="profile-header-content">
               <BackButton />

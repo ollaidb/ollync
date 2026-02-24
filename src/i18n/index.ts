@@ -55,10 +55,10 @@ i18n.use(initReactI18next).init({
           'video': 'Vidéo',
           'interview-emission': 'Interview/Émission',
           'podcast': 'Podcast',
+          'ugc': 'UGC',
           'court-metrage': 'Court-métrage',
-          'magazine-blog': 'Magazine/Blog',
           'media': 'Média',
-          'newsletter': 'Newsletter',
+          'newsletter': 'Newsletter/Magazine/Blog',
           'chaine-youtube': 'Chaîne YouTube',
           'live': 'Live',
           'autre': 'Autre',
@@ -180,6 +180,7 @@ i18n.use(initReactI18next).init({
           askAgain: 'Me redemander la prochaine fois',
           learnMore: 'En savoir plus'
         },
+        retryMessage: 'Pour continuer, vous devez accepter.',
         blocked: 'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres de gestion des données.',
         types: {
           location: {
@@ -291,7 +292,7 @@ i18n.use(initReactI18next).init({
       profile: {
         accountTitle: 'Mon compte',
         annoncesTitle: 'Mes annonces',
-        contractsTitle: 'Contrats',
+        contractsTitle: 'Contrat',
         walletTitle: 'Porte-monnaie',
         transactionsTitle: 'Transactions',
         ticketsTitle: 'Billets',
@@ -378,10 +379,10 @@ i18n.use(initReactI18next).init({
           'video': 'Video',
           'interview-emission': 'Interview/Show',
           'podcast': 'Podcast',
+          'ugc': 'UGC',
           'court-metrage': 'Short film',
-          'magazine-blog': 'Magazine/Blog',
           'media': 'Media',
-          'newsletter': 'Newsletter',
+          'newsletter': 'Newsletter/Magazine/Blog',
           'chaine-youtube': 'YouTube channel',
           'live': 'Live',
           'autre': 'Other',
@@ -503,6 +504,7 @@ i18n.use(initReactI18next).init({
           askAgain: 'Ask me again next time',
           learnMore: 'Learn more'
         },
+        retryMessage: 'To continue, you must accept.',
         blocked: 'This action requires consent. You can update this choice in data management settings.',
         types: {
           location: {
@@ -614,7 +616,7 @@ i18n.use(initReactI18next).init({
       profile: {
         accountTitle: 'My account',
         annoncesTitle: 'My listings',
-        contractsTitle: 'Contracts',
+        contractsTitle: 'Contract',
         walletTitle: 'Wallet',
         transactionsTitle: 'Transactions',
         ticketsTitle: 'Tickets',

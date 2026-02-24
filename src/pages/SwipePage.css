@@ -3,13 +3,12 @@
    ============================================ */
 
 .swipe-page {
-  min-height: 100vh;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   background: var(--background);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
 }
 
 /* ============================================

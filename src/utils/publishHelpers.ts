@@ -55,7 +55,7 @@ interface FormData {
     end: string
   }>
   billingHours?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface ValidationResult {
@@ -177,8 +177,8 @@ export const validatePublishForm = (
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
     'interview-emission',
     'podcast',
+    'ugc',
     'court-metrage',
-    'magazine-blog',
     'media',
     'newsletter',
     'chaine-youtube',
@@ -186,6 +186,7 @@ export const validatePublishForm = (
     'projet-emission',
     'projet-interview',
     'projet-podcast',
+    'projet-ugc',
     'projet-court-metrage',
     'projet-magazine',
     'projet-blog',
@@ -400,6 +401,14 @@ export const validatePublishForm = (
     errors.push('Le réseau social est obligatoire')
   }
 
+  // UGC : marque ou créateur (obligatoire pour sous-catégorie UGC)
+  const isUgSubcategory =
+    formData.category === 'creation-contenu' &&
+    (formData.subcategory || '').trim().toLowerCase() === 'ugc'
+  if (isUgSubcategory && (!formData.ugc_actor_type || formData.ugc_actor_type.trim().length === 0)) {
+    errors.push('Indiquez si vous êtes une marque ou un créateur')
+  }
+
   return {
     isValid: errors.length === 0,
     errors
@@ -477,8 +486,8 @@ export const handlePublish = async (
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
     'interview-emission',
     'podcast',
+    'ugc',
     'court-metrage',
-    'magazine-blog',
     'media',
     'newsletter',
     'chaine-youtube',
@@ -486,6 +495,7 @@ export const handlePublish = async (
     'projet-emission',
     'projet-interview',
     'projet-podcast',
+    'projet-ugc',
     'projet-court-metrage',
     'projet-magazine',
     'projet-blog',
@@ -563,7 +573,7 @@ export const handlePublish = async (
       return rows[0] || null
     }
 
-    const categoryFromSlug = categoryBySlug ? pickCategoryByPriority(categoryBySlug as any[]) : null
+    const categoryFromSlug = categoryBySlug ? pickCategoryByPriority(categoryBySlug as { id: string; slug: string }[]) : null
 
     const { data: categoryById } = await supabase
       .from('categories')
@@ -574,17 +584,19 @@ export const handlePublish = async (
     const categoryRecord = categoryFromSlug || (categoryById && categoryById[0]) || null
 
     if (categoryRecord) {
-      categoryId = (categoryRecord as any).id
-      categorySlug = (categoryRecord as any).slug
+      categoryId = (categoryRecord as { id: string; slug?: string }).id
+      categorySlug = (categoryRecord as { id: string; slug?: string }).slug ?? null
 
       // Récupérer la sous-catégorie (N2) si elle existe
       if (formData.subcategory && formData.subcategory !== 'tout') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: subCategoryBySlug } = await (supabase.from('sub_categories') as any)
           .select('id, slug')
           .eq('category_id', categoryId)
           .eq('slug', formData.subcategory)
           .limit(1)
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: subCategoryById } = await (supabase.from('sub_categories') as any)
           .select('id, slug')
           .eq('id', formData.subcategory)
@@ -594,8 +606,8 @@ export const handlePublish = async (
           (subCategoryBySlug && subCategoryBySlug[0]) || (subCategoryById && subCategoryById[0]) || null
 
         if (subCategoryRecord) {
-          subCategoryId = (subCategoryRecord as any).id
-          subcategorySlug = (subCategoryRecord as any).slug
+          subCategoryId = (subCategoryRecord as { id: string; slug?: string }).id
+          subcategorySlug = (subCategoryRecord as { id: string; slug?: string }).slug ?? null
         }
       }
     }
@@ -700,9 +712,10 @@ export const handlePublish = async (
     : { score: 0, reasons: [], shouldBlock: false }
   const finalStatus = moderationResult.shouldBlock ? 'pending' : status
   const isEvenementCategory = (normalizedCategorySlug || '').toLowerCase() === 'evenements'
-  const eventMode = ((formData.event_mode || '').trim() as 'in_person' | 'remote' | '')
+  const eventMode = (String(formData.event_mode ?? '').trim() || '') as 'in_person' | 'remote' | ''
   const isEventRemote = isEvenementCategory && eventMode === 'remote'
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const postData: any = {
     user_id: user.id,
     listing_type: formData.listingType || null,
@@ -733,9 +746,9 @@ export const handlePublish = async (
     // Stocker le réseau social dans media_type si disponible, sinon utiliser N3/N4
     // Priorité : socialNetwork > subSubCategory/option
     // Ne pas inclure si toutes les valeurs sont vides/null
-    media_type: (formData.socialNetwork && formData.socialNetwork.trim()) 
-      || (formData.subSubCategory && formData.subSubCategory.trim()) 
-      || (formData.option && formData.option.trim()) 
+    media_type: (formData.socialNetwork && String(formData.socialNetwork).trim()) 
+      || (formData.subSubCategory && String(formData.subSubCategory).trim()) 
+      || (formData.option && String(formData.option).trim()) 
       || null,
     needed_date:
       normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || isCastingFigurantRequest || isProjetsEquipeRequest
@@ -798,7 +811,11 @@ export const handlePublish = async (
     moderation_status: moderationResult.shouldBlock ? 'flagged' : 'clean',
     moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
     moderation_score: moderationResult.score || 0,
-    moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null
+    moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null,
+    ugc_actor_type:
+      normalizedSubcategorySlug === 'ugc' && formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0
+        ? formData.ugc_actor_type.trim()
+        : null
   }
 
   if (normalizedCategorySlug === 'studio-lieu') {
@@ -824,16 +841,17 @@ export const handlePublish = async (
     const maxAttempts = 8
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const postsTable = supabase.from('posts') as any
       const query = existingPostId
         ? postsTable.update(payload).eq('id', existingPostId).eq('user_id', user.id)
         : postsTable.insert(payload)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (query as any).select().single()
+      const result = await query.select().single()
+      const { data, error } = result as { data: unknown; error: { message?: string; code?: string } | null }
 
       if (!error) {
-        return { data, error: null as any }
+        return { data, error: null }
       }
 
       const errorMessage = String((error as { message?: string } | null)?.message || '')
@@ -878,10 +896,10 @@ export const handlePublish = async (
               : 'Annonce publiée avec succès !')
         )
       }
-      navigate(`/post/${(data as any).id}`)
+      navigate(`/post/${(data as { id: string }).id}`)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error publishing post:', error)
-    alert(`Erreur lors de la publication: ${error.message || 'Erreur inconnue'}`)
+    alert(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
   }
 }

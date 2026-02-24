@@ -15,6 +15,7 @@ import './SwipePage.css'
 interface Post {
   id: string
   user_id?: string
+  category_id?: string
   title: string
   description: string
   price?: number | null
@@ -331,8 +332,8 @@ const Search = () => {
         return
       }
 
-      const userIds = [...new Set(filteredPosts.map((p: any) => p.user_id).filter(Boolean))]
-      const categoryIds = [...new Set(filteredPosts.map((p: any) => p.category_id).filter(Boolean))]
+      const userIds = [...new Set(filteredPosts.map((p) => p.user_id).filter(Boolean))]
+      const categoryIds = [...new Set(filteredPosts.map((p) => p.category_id).filter(Boolean))]
 
       const profilesMap = new Map()
       const categoriesMap = new Map()
@@ -352,10 +353,10 @@ const Search = () => {
           : Promise.resolve({ data: null })
       ])
 
-      if (profilesResult.data) profilesResult.data.forEach((p: any) => profilesMap.set(p.id, p))
-      if (categoriesResult.data) categoriesResult.data.forEach((c: any) => categoriesMap.set(c.id, c))
+      if (profilesResult.data) profilesResult.data.forEach((p: Record<string, unknown>) => profilesMap.set(p.id as string, p))
+      if (categoriesResult.data) categoriesResult.data.forEach((c: Record<string, unknown>) => categoriesMap.set(c.id as string, c))
 
-      const postsWithRelations: Post[] = filteredPosts.map((post: any) => {
+      const postsWithRelations: Post[] = filteredPosts.map((post) => {
         const profile = profilesMap.get(post.user_id)
         const category = categoriesMap.get(post.category_id)
         return {

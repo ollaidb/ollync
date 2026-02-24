@@ -76,6 +76,7 @@ export const enablePushForUser = async (userId: string) => {
     updated_at: new Date().toISOString()
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('push_subscriptions') as any)
     .upsert(payload, { onConflict: 'endpoint' })
 
@@ -94,6 +95,7 @@ export const disablePushForUser = async (userId: string) => {
   if (subscription) {
     const endpoint = subscription.endpoint
     await subscription.unsubscribe()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('push_subscriptions') as any)
       .delete()
       .eq('user_id', userId)

@@ -3,7 +3,8 @@
    ============================================ */
 
 .post-details-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -234,6 +235,12 @@
   touch-action: pan-y;
 }
 
+/* Hero image à l'intérieur du scroll : pas de margin-top, défile avec le contenu */
+.post-hero-image.post-hero-image-scrolls {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
 .post-hero-image-carousel {
   display: flex;
   width: 100%;
@@ -435,23 +442,20 @@
   pointer-events: auto;
 }
 
-/* Ajustement du padding quand il y a une image hero */
-.post-details-page.has-hero-image .post-details-scrollable {
-  padding-top: 0;
-}
-
 /* ============================================
    C. INFORMATIONS PRINCIPALES
    ============================================ */
 
 .post-details-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  overscroll-behavior: contain;
 }
 
 .post-details-scrollable::-webkit-scrollbar {
@@ -464,8 +468,9 @@
   padding: 16px 20px;
 }
 
-.post-details-page.has-media .post-details-scrollable {
-  padding-top: 0;
+/* Avec hero image à l'intérieur du scroll, garder padding-top pour le header fixe */
+.post-details-page.has-hero-image .post-details-scrollable {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
 }
 
 /* Section titre */
@@ -1893,8 +1898,8 @@
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
   }
 
-  .post-details-page.has-media .post-details-scrollable {
-    padding-top: 0;
+  .post-details-page.has-hero-image .post-details-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
   }
 
   .post-details-content {

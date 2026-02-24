@@ -12,6 +12,7 @@ import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
+import SaveChangesModal from '../../components/SaveChangesModal'
 import { LocationAutocomplete } from '../../components/Location/LocationAutocomplete'
 import { CustomList } from '../../components/CustomList/CustomList'
 import { publicationTypes } from '../../constants/publishData'
@@ -105,7 +106,51 @@ const EditPublicProfile = () => {
   const profileConsent = useConsent('profile_data')
   const confirmation = useConfirmation()
   const { showSuccess, showError } = useToastContext()
-  const { markNavigatingBack } = useNavigationHistory()
+  const { markNavigatingBack, getPreviousPath } = useNavigationHistory()
+  const initialProfileRef = useRef<string | null>(null)
+  const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false)
+  const pendingNavigateTargetRef = useRef<string | null>(null)
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (initialProfileRef.current === null) return false
+    return JSON.stringify(profile) !== initialProfileRef.current
+  }, [profile])
+
+  const getBackNavigationTarget = useCallback(() => {
+    const prev = getPreviousPath()
+    if (prev === '/profile/public' || prev.startsWith('/profile/public')) return '/profile/public'
+    return prev || '/profile'
+  }, [getPreviousPath])
+
+  const performBackNavigation = useCallback(() => {
+    const target = pendingNavigateTargetRef.current || getBackNavigationTarget()
+    pendingNavigateTargetRef.current = null
+    markNavigatingBack()
+    navigate(target)
+  }, [getBackNavigationTarget, markNavigatingBack, navigate])
+
+  const handleBackClick = useCallback(() => {
+    if (hasUnsavedChanges) {
+      pendingNavigateTargetRef.current = getBackNavigationTarget()
+      setShowSaveConfirmModal(true)
+    } else {
+      performBackNavigation()
+    }
+  }, [hasUnsavedChanges, getBackNavigationTarget, performBackNavigation])
+
+  const handleSaveConfirmDiscard = useCallback(() => {
+    setShowSaveConfirmModal(false)
+    performBackNavigation()
+  }, [performBackNavigation])
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [hasUnsavedChanges])
 
   // Gérer le refus : rediriger vers la page de profil
   const handleRejectConsent = () => {
@@ -258,7 +303,7 @@ const EditPublicProfile = () => {
     const initialProfileTypes = parseProfileTypes((profileData as { profile_type?: string | null }).profile_type)
       .filter(type => type !== 'other')
 
-    setProfile({
+    const initialProfile = {
       avatar_url: (profileData as { avatar_url?: string | null }).avatar_url || '',
       username: authUsername || (profileData as { username?: string | null }).username || '',
       full_name: authFullName || (profileData as { full_name?: string | null }).full_name || '',
@@ -364,8 +409,10 @@ const EditPublicProfile = () => {
       phone_verified: (profileData as { phone_verified?: boolean | null }).phone_verified || false,
       email_verified: !!user.email_confirmed_at,
       show_in_users: (profileData as { show_in_users?: boolean | null }).show_in_users ?? true
-    })
-    
+    }
+    setProfile(initialProfile)
+    initialProfileRef.current = JSON.stringify(initialProfile)
+
     setLoading(false)
   }, [user])
 
@@ -1045,6 +1092,15 @@ const EditPublicProfile = () => {
     })
   }
 
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
+
+  const handleSaveConfirmSave = useCallback(() => {
+    setShowSaveConfirmModal(false)
+    pendingNavigateTargetRef.current = null
+    handleSaveRef.current()
+  }, [])
+
   const performSave = async () => {
     if (!user) return
 
@@ -1175,7 +1231,7 @@ const EditPublicProfile = () => {
   if (loading) {
     return (
       <div className="page">
-        <PageHeader title="Éditer le profil" />
+        <PageHeader title="Éditer le profil" onBackClick={handleBackClick} />
         <div className="page-content">
           <div className="loading-state">Chargement...</div>
         </div>
@@ -1186,7 +1242,7 @@ const EditPublicProfile = () => {
   if (!user) {
     return (
       <div className="page">
-        <PageHeader title="Éditer le profil" />
+        <PageHeader title="Éditer le profil" onBackClick={handleBackClick} />
         <div className="page-content edit-public-profile-page">
           <div className="edit-public-profile-container">
             <div className="empty-state">
@@ -1210,7 +1266,7 @@ const EditPublicProfile = () => {
 
   return (
     <div className="page">
-      <PageHeader title="Éditer le profil" />
+      <PageHeader title="Éditer le profil" onBackClick={handleBackClick} />
       <div className="page-content edit-public-profile-page">
         <div className="edit-public-profile-spacer" />
         <div className="edit-public-profile-container">
@@ -2127,6 +2183,17 @@ const EditPublicProfile = () => {
         learnMoreHref="/profile/legal/politique-confidentialite"
         askAgainChecked={profileConsent.askAgainNextTime}
         onAskAgainChange={profileConsent.setAskAgainNextTime}
+      />
+
+      {/* Modal de confirmation pour quitter sans enregistrer */}
+      <SaveChangesModal
+        visible={showSaveConfirmModal}
+        message="Voulez-vous enregistrer vos modifications avant de quitter ?"
+        onDiscard={handleSaveConfirmDiscard}
+        onSave={handleSaveConfirmSave}
+        discardLabel="Non"
+        saveLabel="Oui"
+        isSaving={saving}
       />
 
       {/* Modal de confirmation */}

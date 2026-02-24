@@ -51,7 +51,7 @@ export const useExamplePosts = (
         let query = supabase
           .from('posts')
           .select('id, title, description, images, is_urgent, user_id, likes_count')
-          .eq('category_id', (categoryData as any).id)
+          .eq('category_id', (categoryData as { id: string }).id)
           .eq('status', 'active')
           .limit(3)
           .order('created_at', { ascending: false })
@@ -61,12 +61,12 @@ export const useExamplePosts = (
           const { data: subcategoryData } = await supabase
             .from('sub_categories')
             .select('id')
-            .eq('category_id', (categoryData as any).id)
+            .eq('category_id', (categoryData as { id: string }).id)
             .eq('slug', subcategorySlug)
             .single()
 
           if (subcategoryData) {
-            query = query.eq('sub_category_id', (subcategoryData as any).id)
+            query = query.eq('sub_category_id', (subcategoryData as { id: string }).id)
           }
         }
 
@@ -77,8 +77,8 @@ export const useExamplePosts = (
           setExamplePosts([])
         } else if (postsData && postsData.length > 0) {
           // Récupérer les profils utilisateurs
-          const userIds = [...new Set(postsData.map((p: any) => p.user_id).filter(Boolean))]
-          let usersMap = new Map()
+          const userIds = [...new Set(postsData.map((p: Record<string, unknown>) => p.user_id).filter(Boolean))]
+          const usersMap = new Map()
           
           if (userIds.length > 0) {
             const { data: profilesData } = await supabase
@@ -87,17 +87,17 @@ export const useExamplePosts = (
               .in('id', userIds)
             
             if (profilesData) {
-              profilesData.forEach((profile: any) => {
+              profilesData.forEach((profile: Record<string, unknown>) => {
                 usersMap.set(profile.id, profile)
               })
             }
           }
           
           // Combiner les posts avec les profils
-          const postsWithUsers = postsData.map((post: any) => ({
+          const postsWithUsers = postsData.map((post: Record<string, unknown> & { user_id?: string }) => ({
             ...post,
             user: usersMap.get(post.user_id) || null
-          }))
+          })) as ExamplePost[]
           
           setExamplePosts(postsWithUsers)
         } else {

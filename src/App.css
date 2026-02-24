@@ -1,7 +1,8 @@
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app--web {
@@ -11,9 +12,11 @@
 .main-content {
   flex: 1;
   padding-bottom: 3px;
-  overflow-y: auto;
   background-color: var(--background);
   overscroll-behavior-y: contain;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .main-content.with-header {
@@ -26,7 +29,7 @@
 
 .app--web .main-content {
   padding: 0;
-  overflow-y: visible;
+  min-height: 0;
 }
 
 .app--web .main-content.with-header {
@@ -38,9 +41,28 @@
 }
 
 .route-transition-shell {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   animation: routeFadeIn 140ms ease-out;
   will-change: opacity;
+}
+
+/* Pages fullscreen : transmettre la contrainte de hauteur pour le scroll mobile */
+.route-transition-shell > .app,
+.route-transition-shell > .publish-page-container,
+.route-transition-shell > .search-page-container,
+.route-transition-shell > .favorites-page-container,
+.route-transition-shell > .favorites-page,
+.route-transition-shell > .notifications-page-container,
+.route-transition-shell > .notifications-page,
+.route-transition-shell > .swipe-page,
+.route-transition-shell > .users-page,
+.route-transition-shell > .category-page-new {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 
 @keyframes routeFadeIn {

@@ -56,6 +56,7 @@ interface Post {
   tagged_post_id?: string | null
   contract_type?: string | null
   work_schedule?: string | null
+  ugc_actor_type?: string | null
   responsibilities?: string | null
   required_skills?: string | null
   benefits?: string | null
@@ -420,14 +421,12 @@ const PostDetails = () => {
       // 2. Récupérer le profil de l'utilisateur
       let userProfile = null
       if (post.user_id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profileData } = await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url, bio')
           .eq('id', post.user_id)
           .single()
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (profileData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const profile = profileData as any
@@ -454,7 +453,6 @@ const PostDetails = () => {
           console.warn('Category query failed:', categoryError)
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (catData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const category = catData as any
@@ -540,7 +538,6 @@ const PostDetails = () => {
           console.warn('Subcategory query failed:', subCategoryError)
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (subCatData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const subCategory = subCatData as any
@@ -751,13 +748,18 @@ const PostDetails = () => {
 
   const checkMatchRequest = async () => {
     if (!user || !id || !post) return
-    if (post.listing_type === 'request') {
+    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
+    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const isFigurant =
+      (catSlug === 'casting-role' || catSlug === 'casting') &&
+      post?.listing_type === 'request' &&
+      subSlug === 'figurant'
+    if (post.listing_type === 'request' && !isFigurant) {
       setMatchRequest(null)
       return
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('match_requests') as any)
         .select('id, status')
@@ -786,7 +788,13 @@ const PostDetails = () => {
       return
     }
 
-    if (post?.listing_type === 'request') {
+    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
+    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const isFigurant =
+      (catSlug === 'casting-role' || catSlug === 'casting') &&
+      post?.listing_type === 'request' &&
+      subSlug === 'figurant'
+    if (post?.listing_type === 'request' && !isFigurant) {
       const reviewerName = post?.user?.full_name || post?.user?.username || ''
       const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
       setRequestMessage(`${greeting} votre annonce de demande m’intéresse. Êtes-vous disponible ?`)
@@ -1130,8 +1138,14 @@ const PostDetails = () => {
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
     const isRequestListingPost = post.listing_type === 'request'
+    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
+    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+    const isCastingFigurant =
+      (catSlug === 'casting-role' || catSlug === 'casting') &&
+      post?.listing_type === 'request' &&
+      subSlug === 'figurant'
 
-    if (isRequestListingPost) {
+    if (isRequestListingPost && !isCastingFigurant) {
       setLoadingRequest(true)
       try {
         const conversation = await findOrCreateDirectConversation(user.id, post.user_id, id)
@@ -1535,7 +1549,7 @@ const PostDetails = () => {
   }
 
   const getActionButtonLabel = () => {
-    if (isRequestListingPost) return 'Contacter'
+    if (isRequestListingPost && !isCastingFigurantRequestPost) return 'Contacter'
 
     if (matchRequest?.status === 'pending') {
       if (contactIntent === 'reserve') return 'Demande envoyée'
@@ -1745,12 +1759,11 @@ const PostDetails = () => {
           </div>
         </div>
 
-        {/* Bloc vide pour l'espace en haut */}
-        <div className="post-hero-spacer"></div>
-
-        {/* Carrousel d'images avec swipe */}
-        <div 
-          className="post-hero-image"
+        {/* Zone scrollable : image + contenu défilent ensemble */}
+        <div className="post-details-scrollable">
+          {/* Carrousel d'images avec swipe (défile avec le contenu) */}
+          <div 
+            className="post-hero-image post-hero-image-scrolls"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -1830,7 +1843,7 @@ const PostDetails = () => {
           )}
         </div>
 
-        {isMediaViewerOpen && mediaItems.length > 0 && createPortal(
+          {isMediaViewerOpen && mediaItems.length > 0 && createPortal(
           <div
             className="post-media-viewer-overlay"
             onClick={() => {
@@ -1916,8 +1929,6 @@ const PostDetails = () => {
           document.body
         )}
 
-        {/* Zone scrollable */}
-        <div className="post-details-scrollable">
           <div className="post-details-content">
             {/* Titre */}
             <div className="post-title-section">
@@ -2056,6 +2067,16 @@ const PostDetails = () => {
                 <div className="post-info-item">
                   <span className="post-info-label">Réseau</span>
                   <span className="post-info-value">{post.media_type}</span>
+                </div>
+              )}
+
+              {/* UGC : Marque ou créateur */}
+              {post.ugc_actor_type && (
+                <div className="post-info-item">
+                  <span className="post-info-label">Profil</span>
+                  <span className="post-info-value">
+                    {post.ugc_actor_type === 'marque' ? 'Marque' : post.ugc_actor_type === 'createur' ? 'Créateur' : post.ugc_actor_type}
+                  </span>
                 </div>
               )}
 
@@ -2334,14 +2355,14 @@ const PostDetails = () => {
           <div className="post-action-bar">
             <button 
               className={`post-action-btn post-action-btn-primary ${
-                !isRequestListingPost && matchRequest?.status === 'pending'
+                (!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'pending'
                   ? 'post-action-button-sent'
-                  : !isRequestListingPost && matchRequest?.status === 'accepted'
+                  : (!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'accepted'
                     ? 'post-action-button-accepted'
                     : ''
               }`}
               onClick={handleApply}
-              disabled={loadingRequest || (!isRequestListingPost && matchRequest?.status === 'accepted')}
+              disabled={loadingRequest || ((!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'accepted')}
             >
               {getActionButtonLabel()}
             </button>
@@ -2354,7 +2375,7 @@ const PostDetails = () => {
             visible={showSendRequestModal}
             presentation="bottom-sheet"
             title={
-              isRequestListingPost
+              isRequestListingPost && !isCastingFigurantRequestPost
                 ? 'Contacter'
                 : contactIntent === 'apply'
                 ? 'Postuler'
@@ -2367,7 +2388,7 @@ const PostDetails = () => {
                       : 'Message personnalisé'
             }
             message={
-              isRequestListingPost
+              isRequestListingPost && !isCastingFigurantRequestPost
                 ? 'Votre message sera envoyé directement dans la messagerie.'
                 : contactIntent === 'apply'
                 ? 'Envoyez votre candidature avec votre CV.'
@@ -2397,7 +2418,7 @@ const PostDetails = () => {
             confirmLabel={
               loadingRequest
                 ? 'Envoi...'
-                : isRequestListingPost
+                : isRequestListingPost && !isCastingFigurantRequestPost
                   ? 'Envoyer le message'
                   : contactIntent === 'ticket'
                     ? 'Envoyer ma demande'
@@ -2409,7 +2430,7 @@ const PostDetails = () => {
             }
             cancelLabel="Annuler"
           >
-            {!isRequestListingPost && !isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
+            {(!isRequestListingPost || isCastingFigurantRequestPost) && !isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
               <div className="confirmation-modal-field">
                 <label className="confirmation-modal-label">
                   Poste recherché

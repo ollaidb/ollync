@@ -7,7 +7,7 @@ interface FormData {
   subcategory: string | null
   option: string | null
   platform: string | null
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export const usePublishNavigation = (

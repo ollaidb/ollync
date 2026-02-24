@@ -135,7 +135,7 @@ const BlockedProfiles = () => {
                           src={profile?.avatar_url || avatarFallback}
                           alt={displayName}
                           onError={(event) => {
-                            ;(event.target as HTMLImageElement).src = avatarFallback
+                            (event.target as HTMLImageElement).src = avatarFallback
                           }}
                         />
                       </div>

@@ -6,10 +6,10 @@ export const interestCatalog: Record<string, string[]> = {
     'Live',
     'Interview/Émission',
     'Podcast',
+    'UGC',
     'Court-métrage',
-    'Magazine/Blog',
     'Média',
-    'Newsletter',
+    'Newsletter/Magazine/Blog',
     'Chaîne YouTube',
     'Autre'
   ],

@@ -35,7 +35,7 @@ export function useBatchLikes(postIds: string[]) {
           console.error('Error checking likes:', error)
           setLikedPosts(new Set())
         } else {
-          const likedSet = new Set(data?.map((like: any) => like.post_id) || [])
+          const likedSet = new Set(data?.map((like: { post_id: string }) => like.post_id) || [])
           setLikedPosts(likedSet)
         }
       } catch (error) {

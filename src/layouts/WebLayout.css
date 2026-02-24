@@ -1,7 +1,11 @@
 .web-layout {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
-  min-height: 100vh;
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
   background-color: var(--background);
 }
 
@@ -64,6 +68,11 @@
 }
 
 .web-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   padding: 24px 32px 80px;
   width: 100%;
 }

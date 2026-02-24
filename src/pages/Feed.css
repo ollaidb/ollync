@@ -1,6 +1,7 @@
 /* Page Feed - Structure principale */
 .feed-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -256,6 +257,7 @@
 /* Zone scrollable */
 .feed-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 100px);

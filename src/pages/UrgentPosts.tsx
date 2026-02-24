@@ -69,9 +69,9 @@ const UrgentPosts = () => {
 
       // Filtrer les posts urgents
       const urgentPosts = fetchedPosts
-        .filter((post: any) => post.is_urgent === true)
-        .filter((post: any) => (user ? post.user_id !== user.id : true))
-        .sort((a: any, b: any) => {
+        .filter((post) => post.is_urgent === true)
+        .filter((post) => (user ? post.user_id !== user.id : true))
+        .sort((a, b) => {
           if (a.needed_date && b.needed_date) {
             return new Date(a.needed_date).getTime() - new Date(b.needed_date).getTime()
           }

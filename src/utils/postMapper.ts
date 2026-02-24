@@ -37,6 +37,8 @@ export interface SupabasePost {
 export interface MappedPost {
   id: string
   user_id?: string
+  category_id?: string
+  views_count?: number
   listing_type?: string | null
   payment_type?: string | null
   title: string

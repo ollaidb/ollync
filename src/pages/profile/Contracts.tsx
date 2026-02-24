@@ -478,7 +478,6 @@ const Contracts = () => {
 
     const timer = window.setTimeout(async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (activeDraftId) {
           const { data: updatedRows } = await (supabase.from('contract_drafts') as any)
             .update({ draft: payload.draft, updated_at: payload.updated_at })
@@ -689,7 +688,7 @@ const Contracts = () => {
       )
       if (!alreadyAccepted) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(supabase.from('contracts') as any)
+        (supabase.from('contracts') as any)
           .update({ [openField]: new Date().toISOString(), [acceptField]: new Date().toISOString() })
           .eq('id', targetContract.id)
           .then(async () => {
@@ -1860,7 +1859,6 @@ const Contracts = () => {
     const updatedAt = new Date().toISOString()
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (activeDraftId) {
         const { data } = await (supabase.from('contract_drafts') as any)
           .update({ draft: draftSnapshot, updated_at: updatedAt })

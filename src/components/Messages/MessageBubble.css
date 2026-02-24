@@ -351,6 +351,8 @@
 .message-link {
   color: var(--primary);
   text-decoration: underline;
+  word-break: break-all;
+  cursor: pointer;
 }
 
 .message-bubble.own .message-link {

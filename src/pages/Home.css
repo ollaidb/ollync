@@ -1,6 +1,7 @@
 /* Page d'accueil - Nouveau design avec bloc bleu clair */
 .home-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -204,7 +205,7 @@
 
 .app--web .home-categories-scroll {
   padding-top: 0;
-  margin-top: 12px;
+  margin-top: 8px;
   margin-bottom: 12px;
   margin-left: 0;
   margin-right: 0;
@@ -289,6 +290,7 @@
 
 .home-scrollable {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(env(safe-area-inset-top, 0px) + 125px);
@@ -758,7 +760,7 @@
   }
 
   .home-categories-scroll {
-    padding-top: 6px;
+    padding-top: 4px;
     gap: 10px;
   }
 

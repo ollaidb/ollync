@@ -1,7 +1,11 @@
 /* Page Category - Nouveau design avec header bleu clair */
 
 .category-page-new {
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
+  display: flex;
+  flex-direction: column;
   position: relative;
 }
 

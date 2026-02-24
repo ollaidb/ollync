@@ -34,7 +34,7 @@ interface FormData {
   documentUrl?: string
   documentName?: string
   taggedPostId?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface Step5LocationMediaProps {
@@ -70,8 +70,8 @@ export const Step5LocationMedia = ({
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
     'interview-emission',
     'podcast',
+    'ugc',
     'court-metrage',
-    'magazine-blog',
     'media',
     'newsletter',
     'chaine-youtube',
@@ -307,7 +307,7 @@ export const Step5LocationMedia = ({
           .from('posts')
           .select('id, title, created_at, images')
           .eq('user_id', user.id)
-          .in('status', ['active', 'pending'] as any)
+          .in('status', ['active', 'pending'])
           .order('created_at', { ascending: false })
           .returns<Array<{ id: string; title: string | null; created_at: string; images: string[] | null }>>()
 

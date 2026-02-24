@@ -1,5 +1,6 @@
 .favorites-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -31,7 +32,8 @@
 /* Dégradé en bas supprimé */
 
 .favorites-page-container {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -136,6 +138,7 @@
 /* Content */
 .favorites-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: calc(var(--favorites-header-offset, 100px) + 22px);

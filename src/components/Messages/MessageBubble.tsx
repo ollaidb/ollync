@@ -346,15 +346,23 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
 
   const renderTextWithLinks = (text: string) => {
     const parts: Array<string | { label: string; url: string }> = []
-    const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+    // Détecte les liens Markdown [texte](url) et les URLs brutes (http:// ou https://)
+    const combinedRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+)/g
     let lastIndex = 0
     let match: RegExpExecArray | null
 
-    while ((match = linkRegex.exec(text)) !== null) {
+    while ((match = combinedRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.slice(lastIndex, match.index))
       }
-      parts.push({ label: match[1], url: match[2] })
+      if (match[1] && match[2]) {
+        // Lien Markdown [label](url)
+        parts.push({ label: match[1], url: match[2] })
+      } else if (match[3]) {
+        // URL brute - retirer la ponctuation finale (.,;:!?) pour l'href
+        const rawUrl = match[3].replace(/[.,;:!?)]+$/, '')
+        parts.push({ label: rawUrl, url: rawUrl })
+      }
       lastIndex = match.index + match[0].length
     }
 
@@ -370,7 +378,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
           href={part.url}
           className="message-link"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
         >
           {part.label}
         </a>
@@ -566,7 +574,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             </div>
           </div>
         )
-      case 'calendar_request':
+      case 'calendar_request': {
         const calendarData = message.calendar_request_data as { 
           title?: string
           event_name?: string
@@ -733,7 +741,8 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             ), document.body)}
           </>
         )
-      case 'post_share':
+      }
+      case 'post_share': {
         const postCardLabel = truncateCardLabel(sharedPost?.title || message.content || 'Annonce', 25)
         return (
           <div 
@@ -757,6 +766,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail }
             </div>
           </div>
         )
+      }
       case 'contract_share':
         return (
           <div

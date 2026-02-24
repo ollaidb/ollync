@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { useAuth } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabaseClient'
+import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
 import './Footer.css'
 
 const Footer = () => {
@@ -12,6 +13,7 @@ const Footer = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
+  const { counts: unreadCommunicationCounts } = useUnreadCommunicationCounts()
 
   useEffect(() => {
     if (!user?.id) {
@@ -160,8 +162,13 @@ const Footer = () => {
     }
   }, [user?.id])
 
-  const formattedUnreadMessagesCount =
-    unreadMessagesCount > 99 ? '+99' : String(unreadMessagesCount)
+  const messagesBadgeTotal =
+    unreadMessagesCount +
+    unreadCommunicationCounts.request +
+    unreadCommunicationCounts.match +
+    unreadCommunicationCounts.appointment
+  const formattedMessagesBadge =
+    messagesBadgeTotal > 99 ? '+99' : String(messagesBadgeTotal)
 
   const navItems = [
     { path: '/home', icon: Home, label: t('nav.home') },
@@ -198,9 +205,9 @@ const Footer = () => {
             ) : (
               <div className="footer-icon-wrapper">
                 <Icon size={24} strokeWidth={1.5} />
-                {item.path === '/messages' && unreadMessagesCount > 0 && (
+                {item.path === '/messages' && messagesBadgeTotal > 0 && (
                   <span className="footer-badge">
-                    {formattedUnreadMessagesCount}
+                    {formattedMessagesBadge}
                   </span>
                 )}
               </div>

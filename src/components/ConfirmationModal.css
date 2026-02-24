@@ -208,6 +208,33 @@
   transform: translateY(0);
 }
 
+/* SaveChangesModal - 2 boutons (Non, Oui) */
+.save-changes-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.save-changes-modal-actions .confirmation-modal-button {
+  flex: 1;
+  min-width: 0;
+}
+
+.save-changes-modal-button-discard {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.save-changes-modal-button-discard:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.save-changes-modal-button-discard:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 /* Responsive - mobile */
 @media (max-width: 768px) {
   .confirmation-modal-content {

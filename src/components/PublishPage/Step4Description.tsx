@@ -35,10 +35,11 @@ interface FormData {
   visibilite_service_details?: string
   revenue_share_percentage?: string
   co_creation_details?: string
+  ugc_actor_type?: '' | 'marque' | 'createur'
   category?: string | null
   subcategory?: string | null
   subSubCategory?: string | null
-  [key: string]: any
+  [key: string]: string | null | undefined | unknown
 }
 
 interface Step4DescriptionProps {
@@ -70,8 +71,8 @@ export const Step4Description = ({
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
     'interview-emission',
     'podcast',
+    'ugc',
     'court-metrage',
-    'magazine-blog',
     'media',
     'newsletter',
     'chaine-youtube',
@@ -79,10 +80,12 @@ export const Step4Description = ({
     'projet-emission',
     'projet-interview',
     'projet-podcast',
+    'projet-ugc',
     'projet-court-metrage',
     'projet-magazine',
     'projet-blog',
-    'projet-media'
+    'projet-media',
+    'projet-newsletter'
   ])
   const isCreationContenuProjectSubcategory =
     categorySlugValue === 'creation-contenu' &&
@@ -113,8 +116,15 @@ export const Step4Description = ({
     isVisibiliteContreService && formData.visibilite_offer_type === 'service'
   const showCoCreationDetails = !isJobRequest && formData.exchange_type === 'co-creation'
   const showPaymentSection = !isJobRequest && !isVenteCategory && !isJobCategory
+  const isUgSubcategory = categorySlugValue === 'creation-contenu' && subcategorySlugValue === 'ugc'
+  const showUgActorTypeSection = isUgSubcategory
+  const ugcActorTypeOptions = [
+    { id: 'marque', name: 'Marque', description: 'Je suis une marque et je cherche un créateur UGC' },
+    { id: 'createur', name: 'Créateur', description: 'Je suis un créateur et je cherche une marque' }
+  ]
   const [isSocialNetworkOpen, setIsSocialNetworkOpen] = useState(false)
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [isUgActorTypeOpen, setIsUgActorTypeOpen] = useState(false)
   const [isContractOpen, setIsContractOpen] = useState(false)
   const [isVisibiliteOfferTypeOpen, setIsVisibiliteOfferTypeOpen] = useState(false)
   const [isMaterialConditionOpen, setIsMaterialConditionOpen] = useState(false)
@@ -619,15 +629,15 @@ export const Step4Description = ({
       description:
         'Ex : Je lance un podcast (thème, format). Je cherche co‑animation/montage audio.'
     },
+    ugc: {
+      title: 'Ex : [Nom du projet UGC]',
+      description:
+        'Ex : Je crée du contenu UGC (vidéos courtes, témoignages). Je cherche création/montage pour marques.'
+    },
     'court-metrage': {
       title: 'Ex : [Nom du projet court‑métrage]',
       description:
         'Ex : Je crée un court‑métrage (scénario prêt). Je cherche acteurs/montage.'
-    },
-    'magazine-blog': {
-      title: 'Ex : [Nom du projet magazine/blog]',
-      description:
-        'Ex : Je crée un magazine/blog (thème). Je cherche rédaction/design/édition.'
     },
     media: {
       title: 'Ex : [Nom du projet média]',
@@ -635,9 +645,9 @@ export const Step4Description = ({
         'Ex : Je crée un média (ligne édito). Je cherche production/édition/diffusion.'
     },
     newsletter: {
-      title: 'Ex : [Nom du projet newsletter]',
+      title: 'Ex : [Nom du projet newsletter/magazine/blog]',
       description:
-        'Ex : Je lance une newsletter (thème, fréquence). Je cherche rédaction/design.'
+        'Ex : Je lance une newsletter, un magazine ou un blog (thème, fréquence). Je cherche rédaction/design/édition.'
     },
     'chaine-youtube': {
       title: 'Ex : [Nom du projet chaîne YouTube]',
@@ -650,9 +660,9 @@ export const Step4Description = ({
         'Ex : Je lance une émission (format, sujets, rythme). Je cherche montage/animation.'
     },
     'projet-newsletter': {
-      title: 'Ex : [Nom du projet newsletter]',
+      title: 'Ex : [Nom du projet newsletter/magazine/blog]',
       description:
-        'Ex : Je lance une newsletter (thème, fréquence). Je cherche rédaction/design.'
+        'Ex : Je lance une newsletter, un magazine ou un blog (thème, fréquence). Je cherche rédaction/design/édition.'
     },
     'projet-interview': {
       title: 'Ex : [Nom du projet interview]',
@@ -663,6 +673,11 @@ export const Step4Description = ({
       title: 'Ex : [Nom du projet podcast]',
       description:
         'Ex : Je lance un podcast (thème, format). Je cherche co‑animation/montage audio.'
+    },
+    'projet-ugc': {
+      title: 'Ex : [Nom du projet UGC]',
+      description:
+        'Ex : Je crée du contenu UGC (vidéos courtes, témoignages). Je cherche création/montage pour marques.'
     },
     'projet-documentaire': {
       title: 'Ex : [Nom du projet documentaire]',
@@ -680,14 +695,14 @@ export const Step4Description = ({
         'Ex : Je lance une chaîne YouTube (concept). Je cherche tournage/montage.'
     },
     'projet-magazine': {
-      title: 'Ex : [Nom du projet magazine]',
+      title: 'Ex : [Nom du projet newsletter/magazine/blog]',
       description:
-        'Ex : Je crée un magazine (thème). Je cherche rédaction/design/édition.'
+        'Ex : Je crée une newsletter, un magazine ou un blog (thème). Je cherche rédaction/design/édition.'
     },
     'projet-blog': {
-      title: 'Ex : [Nom du projet blog]',
+      title: 'Ex : [Nom du projet newsletter/magazine/blog]',
       description:
-        'Ex : Je lance un blog (thème). Je cherche rédaction/SEO/visuels.'
+        'Ex : Je lance une newsletter, un magazine ou un blog (thème). Je cherche rédaction/SEO/visuels.'
     },
     'projet-media': {
       title: 'Ex : [Nom du projet média]',
@@ -711,12 +726,12 @@ export const Step4Description = ({
       description:
         'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
     },
-    'court-metrage': {
+    ugc: {
       title: 'Ex : Profil créatif pour projet en équipe',
       description:
-        'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
+        "Ex : Indique tes compétences principales, ton rôle idéal dans l'équipe et tes disponibilités."
     },
-    'magazine-blog': {
+    'court-metrage': {
       title: 'Ex : Profil créatif pour projet en équipe',
       description:
         'Ex : Indique tes compétences principales, ton rôle idéal dans l’équipe et tes disponibilités.'
@@ -845,6 +860,12 @@ export const Step4Description = ({
   }, [paymentOptions])
 
   useEffect(() => {
+    if (!showUgActorTypeSection && formData.ugc_actor_type) {
+      onUpdateFormData({ ugc_actor_type: '' })
+    }
+  }, [showUgActorTypeSection])
+
+  useEffect(() => {
     if (isJobRequest) return
     if (isJobCategory && formData.exchange_type !== 'remuneration') {
       onUpdateFormData({
@@ -895,6 +916,7 @@ export const Step4Description = ({
     isContractOpen ||
     isSocialNetworkOpen ||
     isPaymentOpen ||
+    isUgActorTypeOpen ||
     isMaterialConditionOpen ||
     isDatePickerOpen ||
     isOpeningDaysOpen
@@ -1025,13 +1047,15 @@ export const Step4Description = ({
     (!isStudioLieuCategory || (
       hasValidStudioBillingHours &&
       hasValidOpeningHours
-    ))
+    )) &&
+    (!showUgActorTypeSection || (formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0))
 
   const titleInvalid = titleLength < MIN_TITLE_CHARS
   const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS
   const contractTypeInvalid = isJobCategory && !(formData.contract_type && formData.contract_type.trim().length > 0)
   const socialNetworkInvalid = showSocialNetwork && !(formData.socialNetwork && formData.socialNetwork.trim().length > 0)
   const paymentInvalid = showPaymentSection && !isJobRequest && !(formData.exchange_type && formData.exchange_type.trim().length > 0)
+  const ugcActorTypeInvalid = showUgActorTypeSection && !(formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0)
   const materialConditionInvalid = isMaterialSale && !(formData.materialCondition && formData.materialCondition.trim().length > 0)
   const visibiliteOfferTypeInvalid = isVisibiliteContreService && !(formData.visibilite_offer_type && formData.visibilite_offer_type.trim().length > 0)
   const priceInvalid = !!requiresPrice && !(formData.price && parseFloat(formData.price) > 0)
@@ -1232,6 +1256,43 @@ export const Step4Description = ({
               className="publish-list"
               showCheckbox={false}
               showDescription={false}
+            />
+          )}
+        </div>
+      )}
+
+      {showUgActorTypeSection && (
+        <div className={`form-group dropdown-field ${showError(ugcActorTypeInvalid) ? 'has-error' : ''}`}>
+          <label className="form-label">Marque ou créateur ? *</label>
+          <button
+            type="button"
+            className={`dropdown-trigger ${isUgActorTypeOpen ? 'open' : ''} ${showError(ugcActorTypeInvalid) ? 'field-error' : ''}`}
+            onClick={() => setIsUgActorTypeOpen((prev) => !prev)}
+          >
+            <span>
+              {formData.ugc_actor_type === 'marque'
+                ? 'Marque'
+                : formData.ugc_actor_type === 'createur'
+                  ? 'Créateur'
+                  : 'Choisir'}
+            </span>
+            <span className="dropdown-caret" aria-hidden="true" />
+          </button>
+          {renderBottomSheet(
+            isUgActorTypeOpen,
+            () => setIsUgActorTypeOpen(false),
+            'Marque ou créateur ?',
+            <CustomList
+              items={ugcActorTypeOptions}
+              selectedId={formData.ugc_actor_type || ''}
+              onSelectItem={(optionId) => {
+                onUpdateFormData({ ugc_actor_type: optionId as 'marque' | 'createur' })
+                setIsUgActorTypeOpen(false)
+              }}
+              className="payment-options-list publish-list"
+              showCheckbox={false}
+              showDescription={true}
+              truncateDescription={false}
             />
           )}
         </div>

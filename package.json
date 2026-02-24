@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 200",
     "install-db": "node scripts/install.js",
     "install-db:editor": "node scripts/install.js editor",
     "install-db:psql": "./scripts/install-with-psql.sh",

@@ -198,12 +198,10 @@ const Home = () => {
       })
 
       // Filtrer les posts urgents (is_urgent: true)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const urgent = urgentPosts
-        .filter((post: any) => post.is_urgent === true)
-        .filter((post: any) => (user ? post.user_id !== user.id : true))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .sort((a: any, b: any) => {
+        .filter((post) => post.is_urgent === true)
+        .filter((post) => (user ? post.user_id !== user.id : true))
+        .sort((a, b) => {
           if (a.needed_date && b.needed_date) {
             return new Date(a.needed_date).getTime() - new Date(b.needed_date).getTime()
           }
@@ -420,20 +418,17 @@ const Home = () => {
         })
 
         // Filtrer et mélanger aléatoirement
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const availablePosts = allPosts.filter((post: any) => 
+        const availablePosts = allPosts.filter((post) => 
           !excludePostIds.includes(post.id) && 
           post.user_id !== user.id
         )
 
         // Mélanger aléatoirement (algorithme Fisher-Yates)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const shuffled = [...availablePosts].sort(() => Math.random() - 0.5)
         
         // Prendre les premiers posts mélangés
         const randomPosts = shuffled.slice(0, maxPostsPerSection)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((post: any) => ({
+          .map((post) => ({
             ...post,
             recommendationScore: Math.random() * 50 + 50 // Score aléatoire entre 50-100 pour l'affichage
           }))
@@ -515,14 +510,13 @@ const Home = () => {
           post.user_id !== user.id &&
           !swipedIds.has(post.id)
         )
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((post: any) => {
+        .map((post) => {
           // Score de localisation (0-100, pondération 30%)
           const locationScore = calculateLocationScore(userLocation, post.location || null)
           const normalizedLocationScore = (locationScore / 100) * 30
 
           // Score de catégorie (0-100, pondération 25%)
-          const categoryPreference = categoryCounts.get(post.category_id) || 0
+          const categoryPreference = categoryCounts.get(post.category_id ?? '') || 0
           const maxCategoryCount = Math.max(...Array.from(categoryCounts.values()), 1)
           const normalizedCategoryScore = (categoryPreference / maxCategoryCount) * 100
           const weightedCategoryScore = (normalizedCategoryScore / 100) * 25
@@ -561,8 +555,7 @@ const Home = () => {
             recencyScore: weightedRecencyScore
           }
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .sort((a: any, b: any) => b.recommendationScore - a.recommendationScore)
+        .sort((a, b) => b.recommendationScore - a.recommendationScore)
         .slice(0, maxPostsPerSection)
 
       setRecommendedPosts(postsWithScores)

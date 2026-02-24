@@ -173,6 +173,7 @@ export const useConsent = (consentType: ConsentType) => {
         [consentType]: record
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase.from('profiles') as any)
         .update({
           data_consent: nextConsent,
@@ -272,17 +273,8 @@ export const useConsent = (consentType: ConsentType) => {
           return false
         }
       } else {
-        if (!shouldAskAgain && versionMatches) {
-          if (consentType !== 'cookies' && typeof window !== 'undefined') {
-            window.alert(
-              t('blocked', {
-                defaultValue:
-                  'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres.'
-              })
-            )
-          }
-          return false
-        }
+        // L'utilisateur a refusé : ne pas bloquer l'accès, re-afficher le modal à chaque tentative
+        // On ne fait pas de return ici pour tomber dans le flux qui affiche le modal
       }
     } else if (loading) {
       // Si le chargement est en cours, on attend la décision en ouvrant le modal
@@ -380,9 +372,15 @@ export const useConsent = (consentType: ConsentType) => {
     return value
   }
 
+  const isRetryAfterRefusal = !!consentRecord && !consentRecord.accepted
+  const retryFallback = 'Pour continuer, vous devez accepter.'
+  const retryMessage = safeTranslate('retryMessage', retryFallback)
+
   const consentMessages = {
     title: safeTranslate(`types.${consentType}.title`, consentFallbacks[consentType].title),
-    message: safeTranslate(`types.${consentType}.message`, consentFallbacks[consentType].message)
+    message: isRetryAfterRefusal
+      ? retryMessage
+      : safeTranslate(`types.${consentType}.message`, consentFallbacks[consentType].message)
   }
 
   return {

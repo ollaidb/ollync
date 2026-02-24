@@ -68,6 +68,7 @@ export default function Publish() {
     tagged_post_id?: string | null
     opening_hours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | null
     billing_hours?: number | null
+    ugc_actor_type?: string | null
   }
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -111,6 +112,7 @@ export default function Publish() {
     revenue_share_percentage: '',
     co_creation_details: '',
     materialCondition: '',
+    ugc_actor_type: '' as '' | 'marque' | 'createur',
     urgent: false,
     images: [] as string[],
     video: null as string | null,
@@ -235,6 +237,8 @@ export default function Publish() {
     const requiresRevenueShare = !isJobRequest && !!paymentConfig?.requiresPercentage
     const requiresMaterialCondition =
       category?.slug === 'vente' && subcategory?.slug === 'gorille'
+    const isUgSubcategory =
+      category?.slug === 'creation-contenu' && subcategory?.slug === 'ugc'
 
     const hasStep3Required =
       data.title.trim().length > 0 &&
@@ -248,7 +252,8 @@ export default function Publish() {
           parseFloat(data.revenue_share_percentage) > 0 &&
           parseFloat(data.revenue_share_percentage) <= 100)) &&
       (!requiresMaterialCondition || (data.materialCondition && data.materialCondition.trim().length > 0)) &&
-      (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0))
+      (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0)) &&
+      (!isUgSubcategory || (data.ugc_actor_type && data.ugc_actor_type.trim().length > 0))
 
     if (!hasStep3Required) return 4
     return 5
@@ -397,6 +402,7 @@ export default function Publish() {
           revenue_share_percentage: postData.revenue_share_percentage ? String(postData.revenue_share_percentage) : '',
           co_creation_details: postData.co_creation_details || '',
           materialCondition: parseMaterialConditionFromDescription(postData.description),
+          ugc_actor_type: (postData.ugc_actor_type as '' | 'marque' | 'createur') || '',
           urgent: postData.is_urgent || false,
           images: postData.images || [],
           video: postData.video || null,

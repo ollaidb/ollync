@@ -151,8 +151,8 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       .eq('slug', categorySlug)
       .maybeSingle()
 
-    if (category && (category as any).id) {
-      categoryId = (category as any).id
+    if (category && (category as { id: string }).id) {
+      categoryId = (category as { id: string }).id
     }
 
     // Si "Tout" est sélectionné ou aucun sous-menu, on ne filtre pas par sous-catégorie
@@ -164,8 +164,8 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
         .eq('category_id', categoryId)
         .maybeSingle()
 
-      if (subCategory && (subCategory as any).id) {
-        subCategoryId = (subCategory as any).id
+      if (subCategory && (subCategory as { id: string }).id) {
+        subCategoryId = (subCategory as { id: string }).id
       }
     }
 

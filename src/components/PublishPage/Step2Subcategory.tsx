@@ -106,17 +106,17 @@ export const Step2Subcategory = ({
           request:
             'Lancer un podcast avec des profils complémentaires.'
         },
+        ugc: {
+          offer:
+            'Créer du contenu UGC : vidéos courtes, témoignages, tests produit pour les marques.',
+          request:
+            'Créer du contenu UGC : vidéos courtes, témoignages, tests produit pour les marques.'
+        },
         'court-metrage': {
           offer:
             'Créer un court-métrage en collaboration.',
           request:
             'Créer un court-métrage en collaboration.'
-        },
-        'magazine-blog': {
-          offer:
-            'Créer un magazine/blog en collaboration.',
-          request:
-            'Créer un magazine/blog en collaboration.'
         },
         media: {
           offer:
@@ -126,9 +126,9 @@ export const Step2Subcategory = ({
         },
         newsletter: {
           offer:
-            'Collaborer pour lancer une newsletter.',
+            'Collaborer pour lancer une newsletter, un magazine ou un blog.',
           request:
-            'Collaborer pour lancer une newsletter.'
+            'Collaborer pour lancer une newsletter, un magazine ou un blog.'
         },
         'chaine-youtube': {
           offer:
@@ -210,8 +210,8 @@ export const Step2Subcategory = ({
               live: 8,
               'interview-emission': 7,
               podcast: 6,
+              ugc: 6,
               'court-metrage': 6,
-              'magazine-blog': 6,
               media: 7
             },
             'casting-role': {

@@ -82,7 +82,7 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
           const fileName = `${user.id}/${Date.now()}.${fileExt}`
           
           // Essayer d'abord avec le bucket group-photos
-          let { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('group-photos')
             .upload(fileName, groupPhoto, {
               cacheControl: '3600',
@@ -148,6 +148,7 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
 
       // Ajouter le créateur comme participant
       if (conversation) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: creatorParticipantError } = await (supabase.from('conversation_participants') as any)
           .insert({
             conversation_id: conversation.id,
@@ -168,6 +169,7 @@ const CreateGroupModal = ({ visible, onClose, onSuccess, participants = [] }: Cr
           }))
 
         if (participantRows.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error: participantsError } = await (supabase.from('conversation_participants') as any)
             .insert(participantRows)
           if (participantsError) {
