@@ -405,7 +405,8 @@ export const validatePublishForm = (
   const isUgSubcategory =
     formData.category === 'creation-contenu' &&
     (formData.subcategory || '').trim().toLowerCase() === 'ugc'
-  if (isUgSubcategory && (!formData.ugc_actor_type || formData.ugc_actor_type.trim().length === 0)) {
+  const ugcActorType = typeof formData.ugc_actor_type === 'string' ? formData.ugc_actor_type : ''
+  if (isUgSubcategory && (!ugcActorType || ugcActorType.trim().length === 0)) {
     errors.push('Indiquez si vous êtes une marque ou un créateur')
   }
 
@@ -813,8 +814,8 @@ export const handlePublish = async (
     moderation_score: moderationResult.score || 0,
     moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null,
     ugc_actor_type:
-      normalizedSubcategorySlug === 'ugc' && formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0
-        ? formData.ugc_actor_type.trim()
+      normalizedSubcategorySlug === 'ugc'
+        ? (typeof formData.ugc_actor_type === 'string' ? formData.ugc_actor_type : '').trim() || null
         : null
   }
 
