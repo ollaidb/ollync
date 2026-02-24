@@ -1777,6 +1777,20 @@
   line-height: 1.2;
 }
 
+.messages-appointment-preview-cancelled {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--destructive);
+}
+
+.messages-appointment-preview-modified {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
 .messages-appointment-preview-date {
   margin: 0 0 10px 0;
   font-size: 16px;
@@ -1952,6 +1966,15 @@
   color: var(--primary);
 }
 
+.conversation-match-removed-hint {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  text-align: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
 .dark .conversation-match-bubble {
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--primary) 32%, var(--card)) 0%,
@@ -1960,20 +1983,44 @@
   border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
 }
 
+/* Liste rendez-vous : mode sombre */
 .dark .conversation-item.appointment-item {
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--primary) 28%, var(--card)) 0%,
-    color-mix(in srgb, var(--primary) 12%, var(--card)) 100%
+    color-mix(in srgb, var(--primary) 20%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 8%, var(--card)) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+.dark .conversation-item.appointment-item .conversation-name,
+.dark .conversation-item.appointment-item .conversation-time,
+.dark .conversation-item.appointment-item .appointment-user-name {
+  color: var(--foreground);
+}
+
+.dark .conversation-item.appointment-item .conversation-time {
+  color: var(--muted-foreground);
+}
+
+.dark .conversation-item.appointment-item .appointment-user-name {
+  color: var(--muted-foreground);
 }
 
 .dark .conversation-item.appointment-item.appointment-item--past {
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--muted) 58%, var(--card)) 0%,
-    color-mix(in srgb, var(--muted) 42%, var(--card)) 100%
+    color-mix(in srgb, var(--muted) 45%, var(--card)) 0%,
+    color-mix(in srgb, var(--muted) 28%, var(--card)) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--muted-foreground) 25%);
+  border: 1px solid color-mix(in srgb, var(--border) 90%, var(--muted-foreground) 10%);
+}
+
+.dark .conversation-item.appointment-item.appointment-item--past .conversation-name,
+.dark .conversation-item.appointment-item.appointment-item--past .appointment-user-name {
+  color: var(--foreground);
+}
+
+.dark .conversation-item.appointment-item.appointment-item--past .conversation-time {
+  color: var(--muted-foreground);
 }
 
 .conversation-bottom-anchor {
@@ -2403,6 +2450,76 @@
   border: 1px solid color-mix(in srgb, var(--muted-foreground) 30%, transparent);
 }
 
+.appointment-status-badge--cancelled {
+  background: color-mix(in srgb, var(--destructive) 18%, var(--card));
+  color: var(--destructive);
+  border: 1px solid color-mix(in srgb, var(--destructive) 40%, transparent);
+}
+
+.appointment-status-badge--modified {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.appointment-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.conversation-item.appointment-item.appointment-item--cancelled {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--destructive) 8%, var(--card)) 0%,
+    color-mix(in srgb, var(--destructive) 4%, var(--card)) 100%
+  );
+}
+
+.conversation-item.appointment-item.appointment-item--cancelled .conversation-name,
+.conversation-item.appointment-item.appointment-item--cancelled .appointment-user-name {
+  color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground) 22%);
+}
+
+.dark .appointment-status-badge--cancelled {
+  background: color-mix(in srgb, var(--destructive) 24%, var(--card));
+  color: var(--destructive);
+  border-color: color-mix(in srgb, var(--destructive) 45%, transparent);
+}
+
+.dark .appointment-status-badge--modified {
+  background: color-mix(in srgb, var(--primary) 28%, var(--card));
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+}
+
+.dark .conversation-item.appointment-item.appointment-item--cancelled {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--destructive) 14%, var(--card)) 0%,
+    color-mix(in srgb, var(--destructive) 8%, var(--card)) 100%
+  );
+  border-color: color-mix(in srgb, var(--destructive) 30%, var(--border));
+}
+
+.dark .conversation-item.appointment-item.appointment-item--cancelled .conversation-name,
+.dark .conversation-item.appointment-item.appointment-item--cancelled .appointment-user-name {
+  color: var(--foreground);
+}
+
+.dark .conversation-item.appointment-item.appointment-item--cancelled .conversation-time {
+  color: var(--muted-foreground);
+}
+
+/* Carte d’aperçu rendez-vous (modal) en mode sombre */
+.dark .messages-appointment-preview-card {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--primary) 20%, var(--card)) 0%,
+    color-mix(in srgb, var(--primary) 8%, var(--card)) 100%
+  );
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
 .dark .appointment-status-badge--upcoming {
   background: color-mix(in srgb, var(--primary) 32%, var(--card));
   color: color-mix(in srgb, var(--primary) 92%, var(--primary-foreground));
@@ -2413,6 +2530,14 @@
   background: color-mix(in srgb, var(--muted-foreground) 22%, var(--card));
   color: var(--muted-foreground);
   border-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+}
+
+.dark .conversation-member-sheet-list-item {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background)), var(--card));
+}
+
+.dark .conversation-record-row {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, var(--background)), var(--card));
 }
 
 .conversation-item:hover {
@@ -2551,6 +2676,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.conversation-post-removed-hint {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin: 0 0 4px 0;
 }
 
 .conversation-post-role {

@@ -468,6 +468,25 @@
   padding: 16px 20px;
 }
 
+.post-details-content.post-details-removed {
+  padding-top: 24px;
+  text-align: center;
+}
+
+.post-details-removed .post-details-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 8px 0;
+}
+
+.post-details-removed-message {
+  font-size: 15px;
+  color: var(--muted-foreground);
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* Avec hero image à l'intérieur du scroll, garder padding-top pour le header fixe */
 .post-details-page.has-hero-image .post-details-scrollable {
   padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
@@ -2239,4 +2258,62 @@
     min-width: calc((100% - (3 * 12px)) / 4);
     width: 100%;
   }
+}
+
+/* Mode sombre */
+.dark .post-media-indicator {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.dark .post-media-indicator.active {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.dark .post-swipe-btn.reject {
+  background: var(--card);
+  color: var(--destructive);
+}
+
+.dark .post-swipe-btn.accept {
+  background: var(--card);
+  color: var(--chart-1);
+}
+
+.dark .post-swipe-view-details-btn {
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.dark .post-details-page.vinted-mode .post-dynamic-fields-section {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .post-details-page.vinted-mode .post-field-label {
+  color: var(--foreground);
+}
+
+.dark .post-details-page.vinted-mode .post-field-value {
+  color: var(--foreground);
+}
+
+.dark .modal-content {
+  background: var(--card);
+}
+
+.dark .modal-content h3 {
+  color: var(--foreground);
+}
+
+.dark .modal-content p {
+  color: var(--muted-foreground);
+}
+
+.dark .btn-cancel {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.dark .btn-cancel:hover {
+  background: var(--border);
 }

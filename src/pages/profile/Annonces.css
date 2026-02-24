@@ -517,3 +517,9 @@
     width: 85vw;
   }
 }
+
+/* Mode sombre */
+.dark .annonces-empty-btn {
+  background: var(--card);
+  color: var(--foreground);
+}

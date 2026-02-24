@@ -156,6 +156,13 @@
   color: var(--primary);
 }
 
+.match-request-detail-removed-hint {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
 .match-request-detail-post-subtitle {
   margin: 6px 0 0 0;
   font-size: 12px;

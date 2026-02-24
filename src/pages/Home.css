@@ -815,3 +815,9 @@
     min-width: 70%;
   }
 }
+
+/* Mode sombre */
+.dark .home-hero-cta {
+  background: var(--card);
+  color: var(--foreground);
+}

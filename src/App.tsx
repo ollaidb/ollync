@@ -32,13 +32,24 @@ import { useIsMobile } from './hooks/useIsMobile'
 import { useConsent } from './hooks/useConsent'
 import WebLayout from './layouts/WebLayout'
 import ConsentModal from './components/ConsentModal'
+import ReminderBlock from './components/ReminderBlock'
+import { useReminder } from './hooks/useReminder'
 import './App.css'
+
+function isReminderRoute(pathname: string): boolean {
+  if (pathname === '/' || pathname === '/home') return true
+  if (pathname === '/feed' || pathname === '/favorites' || pathname === '/likes') return true
+  if (pathname === '/search') return true
+  return false
+}
 
 function AppContent() {
   const location = useLocation()
   const routeTransitionKey = `${location.pathname}${location.search}`
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
+  const { reminder, dismiss } = useReminder()
+  const showReminder = reminder != null && isReminderRoute(location.pathname)
   const isConsentInfoPage =
     location.pathname === '/profile/legal/politique-cookies' ||
     location.pathname === '/profile/legal/politique-confidentialite'
@@ -187,6 +198,9 @@ function AppContent() {
           askAgainChecked={cookiesConsent.askAgainNextTime}
           onAskAgainChange={cookiesConsent.setAskAgainNextTime}
         />
+        {showReminder && reminder && (
+          <ReminderBlock reminder={reminder} onDismiss={dismiss} />
+        )}
         <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
           <a href="#main-content" className="skip-link">Aller au contenu principal</a>
           {isMobile ? (

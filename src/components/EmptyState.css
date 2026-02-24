@@ -90,6 +90,11 @@
   margin-top: 0;
 }
 
+.dark .empty-state-wrapper.marketing .empty-state-action {
+  background: var(--card);
+  color: var(--foreground);
+}
+
 .empty-state-wrapper.marketing-purple {
   background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
 }

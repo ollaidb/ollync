@@ -465,6 +465,7 @@ const Home = () => {
           .from('posts')
           .select('id, category_id')
           .in('id', allInteractedPostIds)
+          .eq('status', 'active')
 
         if (interactedPosts) {
           const favoritePostIdsSet = new Set(favoritePostIds)

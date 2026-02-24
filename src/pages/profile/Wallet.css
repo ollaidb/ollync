@@ -414,3 +414,9 @@
     padding: 14px 16px;
   }
 }
+
+/* Mode sombre */
+.dark .wallet-balance-meta {
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-color: color-mix(in srgb, var(--foreground) 22%, transparent);
+}

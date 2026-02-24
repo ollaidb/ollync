@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BarChart3, CheckCircle2, FileDown, Flag, LayoutDashboard, ShieldAlert, BookOpen, Trash2, XCircle } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, FileDown, Flag, LayoutDashboard, ShieldAlert, Trash2, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import BackButton from '../components/BackButton'
@@ -12,7 +12,7 @@ const MODERATOR_EMAIL = 'binta22116@gmail.com'
 
 type ReportStatus = 'pending' | 'reviewed' | 'resolved' | 'dismissed'
 type ReportType = 'profile' | 'post'
-type MainTab = 'dashboard' | 'reports' | 'stats' | 'suspicious' | 'rules'
+type MainTab = 'dashboard' | 'reports' | 'stats' | 'suspicious'
 
 interface ReportRelationProfile {
   id: string
@@ -43,16 +43,34 @@ interface ModerationReport {
   reported_post: ReportRelationPost | null
 }
 
+interface CategoryBreakdownItem {
+  category_name: string
+  slug: string
+  user_count: number
+  percentage: number
+}
+
+interface ReportsByStatus {
+  pending?: number
+  reviewed?: number
+  resolved?: number
+  dismissed?: number
+}
+
 interface ModerationStats {
   total_users?: number
+  users_with_profile?: number
+  users_online?: number
   total_posts?: number
   posts_last_7_days?: number
   posts_last_30_days?: number
   pending_reports?: number
+  reports_by_status?: ReportsByStatus
   profile_reports_count?: number
   post_reports_count?: number
   flagged_posts_count?: number
   suspicious_activity_count?: number
+  category_breakdown?: CategoryBreakdownItem[]
   error?: string
 }
 
@@ -724,28 +742,30 @@ const Moderation = () => {
           <AlertTriangle size={18} />
           Activité suspecte
         </button>
-        <button
-          type="button"
-          className={`moderation-main-nav-btn ${mainTab === 'rules' ? 'active' : ''}`}
-          onClick={() => setMainTab('rules')}
-        >
-          <BookOpen size={18} />
-          Règles
-        </button>
       </nav>
 
       <div className="moderation-content">
         {mainTab === 'dashboard' && (
           <>
-            <div className="moderation-overview">
+            <div className="moderation-overview moderation-overview-mobile">
               <div className="moderation-overview-users">
-                <span className="moderation-overview-users-label">Utilisateurs dans l&apos;application</span>
+                <span className="moderation-overview-users-label">Personnes avec un profil</span>
                 {statsLoading ? (
                   <span className="moderation-overview-users-value">...</span>
                 ) : stats?.error ? (
                   <span className="moderation-overview-users-value">—</span>
                 ) : (
-                  <span className="moderation-overview-users-value">{stats?.total_users ?? '—'}</span>
+                  <span className="moderation-overview-users-value">{stats?.users_with_profile ?? stats?.total_users ?? '—'}</span>
+                )}
+              </div>
+              <div className="moderation-overview-users">
+                <span className="moderation-overview-users-label">Utilisateurs en temps réel</span>
+                {statsLoading ? (
+                  <span className="moderation-overview-users-value">...</span>
+                ) : stats?.error ? (
+                  <span className="moderation-overview-users-value">—</span>
+                ) : (
+                  <span className="moderation-overview-users-value">{stats?.users_online ?? '—'}</span>
                 )}
               </div>
             </div>
@@ -763,24 +783,14 @@ const Moderation = () => {
                 <span className="moderation-summary-value">{pendingReportsCount}</span>
               </div>
             </div>
-            <div className="moderation-rules-block">
-              <h3 className="moderation-rules-block-title">Comment ça se passe</h3>
-              <ul className="moderation-rules-list">
-                <li>Un utilisateur signale un <strong>profil</strong> ou une <strong>annonce</strong> depuis l&apos;application.</li>
-                <li>Vous recevez le signalement dans l&apos;onglet <strong>Signalements</strong> avec la raison et la description.</li>
-                <li>Vous avez accès au profil signalé, au profil de l&apos;auteur du signalement, à l&apos;annonce et aux conversations.</li>
-                <li>Si vous déterminez que le compte ou l&apos;annonce est suspect : vous pouvez <strong>supprimer définitivement</strong> le profil ou l&apos;annonce (avec confirmation).</li>
-                <li>Sinon : marquez le signalement comme <strong>Examiné</strong>, <strong>Résolu</strong> ou <strong>Ignorer</strong>.</li>
-              </ul>
-              <p className="moderation-rules-note">Cette page est réservée au compte modérateur. Un seul profil a accès.</p>
-            </div>
           </>
         )}
 
         {mainTab === 'reports' && renderReportsList()}
 
         {mainTab === 'stats' && (
-          <div className="moderation-stats-section">
+          <div className="moderation-stats-section moderation-stats-mobile">
+            <h2 className="moderation-stats-title">Analyse des utilisateurs</h2>
             {statsLoading ? (
               <div className="moderation-loading">Chargement des statistiques...</div>
             ) : stats?.error ? (
@@ -788,44 +798,98 @@ const Moderation = () => {
                 <p>Impossible de charger les statistiques : {stats.error}</p>
               </div>
             ) : (
-              <div className="moderation-stats-grid">
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Utilisateurs</span>
-                  <span className="moderation-stats-value">{stats?.total_users ?? '—'}</span>
+              <>
+                <div className="moderation-stats-chart-wrap">
+                  <h3 className="moderation-stats-chart-title">Répartition par catégorie (% utilisateurs)</h3>
+                  {stats?.category_breakdown && stats.category_breakdown.length > 0 ? (
+                    <div className="moderation-stats-donut-wrap">
+                      <div
+                        className="moderation-stats-donut"
+                        role="img"
+                        aria-label="Répartition des utilisateurs par catégorie"
+                        style={{
+                          background: (() => {
+                            const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#fb923c', '#eab308', '#22c55e', '#14b8a6']
+                            let acc = 0
+                            const parts = stats.category_breakdown!.map((item, i) => {
+                              const start = acc
+                              acc += item.percentage
+                              return `${colors[i % colors.length]} ${start}% ${acc}%`
+                            })
+                            return `conic-gradient(from 0deg, ${parts.join(', ')})`
+                          })()
+                        }}
+                      >
+                        <div className="moderation-stats-donut-hole" />
+                      </div>
+                      <ul className="moderation-stats-donut-legend">
+                        {stats.category_breakdown.map((item, i) => {
+                          const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#fb923c', '#eab308', '#22c55e', '#14b8a6']
+                          return (
+                            <li key={item.slug}>
+                              <span className="moderation-stats-donut-legend-dot" style={{ background: colors[i % colors.length] }} />
+                              <span>{item.category_name}</span>
+                              <span className="moderation-stats-donut-legend-pct">{item.percentage}%</span>
+                              <span className="moderation-stats-donut-legend-count">({item.user_count})</span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="moderation-stats-no-chart">Aucune donnée par catégorie.</p>
+                  )}
                 </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Annonces publiées</span>
-                  <span className="moderation-stats-value">{stats?.total_posts ?? '—'}</span>
+                <div className="moderation-stats-grid">
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Personnes avec un profil</span>
+                    <span className="moderation-stats-value">{stats?.users_with_profile ?? stats?.total_users ?? '—'}</span>
+                  </div>
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Utilisateurs en temps réel</span>
+                    <span className="moderation-stats-value">{stats?.users_online ?? '—'}</span>
+                  </div>
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Temps moyen sur l&apos;app</span>
+                    <span className="moderation-stats-value">—</span>
+                  </div>
                 </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Annonces (7 derniers jours)</span>
-                  <span className="moderation-stats-value">{stats?.posts_last_7_days ?? '—'}</span>
+                <div className="moderation-stats-by-status">
+                  <h3 className="moderation-stats-chart-title">Signalements par statut</h3>
+                  <div className="moderation-stats-status-grid">
+                    <div className="moderation-stats-card moderation-stats-status-card">
+                      <span className="moderation-stats-label">En attente</span>
+                      <span className="moderation-stats-value">{stats?.reports_by_status?.pending ?? stats?.pending_reports ?? '—'}</span>
+                    </div>
+                    <div className="moderation-stats-card moderation-stats-status-card">
+                      <span className="moderation-stats-label">Examiné</span>
+                      <span className="moderation-stats-value">{stats?.reports_by_status?.reviewed ?? '—'}</span>
+                    </div>
+                    <div className="moderation-stats-card moderation-stats-status-card">
+                      <span className="moderation-stats-label">Résolu</span>
+                      <span className="moderation-stats-value">{stats?.reports_by_status?.resolved ?? '—'}</span>
+                    </div>
+                    <div className="moderation-stats-card moderation-stats-status-card">
+                      <span className="moderation-stats-label">Ignoré</span>
+                      <span className="moderation-stats-value">{stats?.reports_by_status?.dismissed ?? '—'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Annonces (30 derniers jours)</span>
-                  <span className="moderation-stats-value">{stats?.posts_last_30_days ?? '—'}</span>
+                <div className="moderation-stats-grid moderation-stats-grid-extra">
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Annonces publiées</span>
+                    <span className="moderation-stats-value">{stats?.total_posts ?? '—'}</span>
+                  </div>
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Contenus flagués</span>
+                    <span className="moderation-stats-value">{stats?.flagged_posts_count ?? '—'}</span>
+                  </div>
+                  <div className="moderation-stats-card">
+                    <span className="moderation-stats-label">Activité suspecte</span>
+                    <span className="moderation-stats-value">{stats?.suspicious_activity_count ?? '—'}</span>
+                  </div>
                 </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Annonces par utilisateur (moy.)</span>
-                  <span className="moderation-stats-value">
-                    {stats?.total_users != null && stats?.total_users > 0 && stats?.total_posts != null
-                      ? (stats.total_posts / stats.total_users).toFixed(1)
-                      : '—'}
-                  </span>
-                </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Contenus flagués (auto)</span>
-                  <span className="moderation-stats-value">{stats?.flagged_posts_count ?? '—'}</span>
-                </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Activité suspecte (total)</span>
-                  <span className="moderation-stats-value">{stats?.suspicious_activity_count ?? '—'}</span>
-                </div>
-                <div className="moderation-stats-card">
-                  <span className="moderation-stats-label">Signalements en attente</span>
-                  <span className="moderation-stats-value">{stats?.pending_reports ?? '—'}</span>
-                </div>
-              </div>
+              </>
             )}
           </div>
         )}
@@ -894,34 +958,6 @@ const Moderation = () => {
           </div>
         )}
 
-        {mainTab === 'rules' && (
-          <div className="moderation-rules-page">
-            <h2>Règles et procédures de modération</h2>
-            <section>
-              <h3>1. Signalement reçu</h3>
-              <p>Un utilisateur signale un profil ou une annonce depuis l&apos;application (bouton « Signaler »). Le signalement est enregistré avec une raison (suspect, fraudeur, contenu inapproprié, spam, etc.) et une description optionnelle.</p>
-            </section>
-            <section>
-              <h3>2. Accès modérateur</h3>
-              <p>Vous voyez la liste des signalements dans l&apos;onglet <strong>Signalements</strong>. Chaque carte affiche : le type (profil ou annonce), la raison, la catégorie, la date, l&apos;auteur du signalement et le profil ou l&apos;annonce signalé(e).</p>
-            </section>
-            <section>
-              <h3>3. Vérification</h3>
-              <p>Vous pouvez : <strong>Voir profil signalé</strong>, <strong>Voir profil auteur</strong>, <strong>Voir annonce</strong>, <strong>Voir messages avec signalé</strong>, <strong>Voir messages avec auteur</strong>, <strong>Voir conversation entre eux</strong>. Utilisez ces liens pour juger du bien-fondé du signalement.</p>
-            </section>
-            <section>
-              <h3>4. Décision</h3>
-              <ul>
-                <li><strong>Si suspect :</strong> utilisez <strong>Supprimer profil</strong> ou <strong>Supprimer annonce</strong>. La suppression est définitive (avec confirmation).</li>
-                <li><strong>Sinon :</strong> <strong>Marquer examiné</strong>, <strong>Résolu</strong> ou <strong>Ignorer</strong> pour clôturer le signalement.</li>
-              </ul>
-            </section>
-            <section>
-              <h3>5. Accès à la page</h3>
-              <p>Un seul compte (modérateur) a accès à cette page. Les autres utilisateurs voient « Accès refusé ».</p>
-            </section>
-          </div>
-        )}
       </div>
 
       <ConfirmationModal

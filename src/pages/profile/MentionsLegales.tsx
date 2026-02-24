@@ -27,6 +27,10 @@ const MentionsLegales = () => {
           'This site is also hosted by Vercel Inc.',
           'Address: 440 N Barranca Avenue #4133, Covina, CA 91723, United States'
         ],
+        designTitle: 'Application design',
+        designParagraphs: [
+          'Part of the Ollync application was designed and developed with the help of modern tools, including AI-assisted tools. Editorial content, product decisions, and responsibility for the service remain entirely with the publisher.'
+        ],
         intellectualTitle: 'Intellectual property',
         intellectualParagraphs: [
           'All content on this site is protected by French and international copyright and intellectual property laws. All rights of reproduction are reserved, including for downloadable documents and iconographic and photographic representations.',
@@ -66,6 +70,10 @@ const MentionsLegales = () => {
           'Adresse : c/- Incorporating Services, Ltd., 3500 S. DuPont Highway, Dover, Kent 19901, Delaware, USA',
           'Ce site est également hébergé par Vercel Inc.',
           'Adresse : 440 N Barranca Avenue #4133, Covina, CA 91723, United States'
+        ],
+        designTitle: 'Conception de l\'application',
+        designParagraphs: [
+          "Une partie de l'application Ollync a été conçue et développée avec l'aide d'outils modernes, dont des assistants basés sur l'intelligence artificielle. Le contenu éditorial, les choix fonctionnels et la responsabilité du service restent assurés par l'éditeur."
         ],
         intellectualTitle: 'Propriété intellectuelle',
         intellectualParagraphs: [
@@ -115,6 +123,11 @@ const MentionsLegales = () => {
               </span>
             ))}
           </p>
+
+          <h4>{content.designTitle}</h4>
+          {content.designParagraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
 
           <h4>{content.intellectualTitle}</h4>
           {content.intellectualParagraphs.map((paragraph) => (

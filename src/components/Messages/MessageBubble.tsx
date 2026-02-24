@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { File, MapPin, DollarSign, Calendar, Share2, X, Trash2, User } from 'lucide-react'
+import { File, MapPin, DollarSign, Share2, X, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
-import CalendarPicker from './CalendarPicker'
 import Logo from '../Logo'
 import type { MentionableMember } from './MessageInput'
+import { AppointmentBlock } from './AppointmentBlock'
 import './MessageBubble.css'
 
 type SharedContractDetails = {
@@ -28,7 +28,6 @@ type ContractEditorNotice = {
   message: string
 }
 
-const appointmentIdByMessageCache = new Map<string, string | null>()
 const sharedContractCache = new Map<string, SharedContractDetails>()
 
 const extractContractNameFromContent = (content?: string | null) => {
@@ -66,6 +65,7 @@ interface MessageBubbleProps {
     shared_post_id?: string | null
     shared_contract_id?: string | null
     shared_profile_id?: string | null
+    conversation_id?: string | null
     sender?: {
       username?: string | null
       full_name?: string | null
@@ -81,13 +81,16 @@ interface MessageBubbleProps {
   onReport?: () => void
   groupParticipants?: MentionableMember[]
   onMentionClick?: (participant: MentionableMember) => void
+  /** En groupe : seuls le créateur du rendez-vous et les admins peuvent modifier/annuler. En 1-to-1 : les deux peuvent. */
+  isGroupConversation?: boolean
+  /** Rôle de l'utilisateur dans la conversation (groupe) : 'moderator' = admin, 'member' = membre. */
+  currentUserGroupRole?: string | null
 }
 
 const getMemberDisplayName = (m: MentionableMember) =>
   (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
 
-const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick }: MessageBubbleProps) => {
-  const [showAppointmentModal, setShowAppointmentModal] = useState(false)
+const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null }: MessageBubbleProps) => {
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
@@ -96,6 +99,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
   const [loadingSharedContract, setLoadingSharedContract] = useState(false)
   const [sharedPost, setSharedPost] = useState<{
     title?: string
+    removed?: boolean
     user?: {
       id: string
       username?: string | null
@@ -104,11 +108,6 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
     } | null
   } | null>(null)
   const [sharedContract, setSharedContract] = useState<SharedContractDetails | null>(null)
-  const [appointmentId, setAppointmentId] = useState<string | null>(null)
-  const [editingAppointment, setEditingAppointment] = useState(false)
-  const [newAppointmentDate, setNewAppointmentDate] = useState<string | null>(null)
-  const [newAppointmentTime, setNewAppointmentTime] = useState('')
-  const [updatingAppointment, setUpdatingAppointment] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const contractSnapshot =
@@ -133,16 +132,6 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
     || normalizeContractMessageLabel(message.content)
     || ''
   const contractCardName = truncateCardLabel(contractCardNameRaw, 25)
-
-  const formatDurationMinutes = (minutes?: number | null) => {
-    const total = Math.max(0, Number(minutes || 0))
-    const h = Math.floor(total / 60)
-    const m = total % 60
-    if (h > 0 && m > 0) return `${h}h${String(m).padStart(2, '0')}`
-    if (h > 0) return `${h}h`
-    if (m > 0) return `${m} min`
-    return ''
-  }
 
   const fetchSharedContractDetails = async (contractId: string, options?: { force?: boolean }) => {
     const force = Boolean(options?.force)
@@ -189,42 +178,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
     }
   }
 
-  // Charger l'appointment_id si c'est un rendez-vous
-  useEffect(() => {
-    if (message.message_type === 'calendar_request' && message.id) {
-      const fetchAppointment = async () => {
-        const cachedAppointmentId = appointmentIdByMessageCache.get(message.id)
-        if (cachedAppointmentId !== undefined) {
-          setAppointmentId(cachedAppointmentId)
-          return
-        }
-
-        try {
-          const { data, error } = await supabase
-            .from('appointments')
-            .select('id')
-            .eq('message_id', message.id)
-            .maybeSingle()
-
-          if (error) throw error
-          
-          if (data) {
-            const nextId = (data as { id: string }).id
-            appointmentIdByMessageCache.set(message.id, nextId)
-            setAppointmentId(nextId)
-          } else {
-            appointmentIdByMessageCache.set(message.id, null)
-            setAppointmentId(null)
-          }
-        } catch (error) {
-          console.error('Error fetching appointment:', error)
-        }
-      }
-      fetchAppointment()
-    }
-  }, [message.message_type, message.id])
-
-  // Charger les infos du post partagé
+  // Charger les infos du post partagé (et si supprimé/archivé, afficher "Annonce supprimée" non cliquable)
   useEffect(() => {
     if (message.message_type === 'post_share' && message.shared_post_id) {
       const fetchPost = async () => {
@@ -234,14 +188,17 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
           
           const { data: postData } = await supabase
             .from('posts')
-            .select('title, user_id')
+            .select('title, user_id, status')
             .eq('id', postId)
-            .single()
+            .maybeSingle()
 
           if (postData) {
-            const post = postData as { title: string; user_id: string }
-            
-            // Récupérer le profil de l'utilisateur
+            const post = postData as { title: string; user_id: string; status?: string }
+            const isRemoved = post.status !== 'active'
+            if (isRemoved) {
+              setSharedPost({ title: 'Annonce supprimée', removed: true })
+              return
+            }
             const { data: userData } = await supabase
               .from('profiles')
               .select('id, username, full_name, avatar_url')
@@ -250,6 +207,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
 
             setSharedPost({
               title: post.title,
+              removed: false,
               user: userData as {
                 id: string
                 username?: string | null
@@ -257,9 +215,12 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
                 avatar_url?: string | null
               } | null
             })
+          } else {
+            setSharedPost({ title: 'Annonce supprimée', removed: true })
           }
         } catch (error) {
           console.error('Error fetching shared post:', error)
+          setSharedPost({ title: 'Annonce supprimée', removed: true })
         }
       }
       fetchPost()
@@ -276,79 +237,6 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
 
     void fetchContract()
   }, [message.message_type, message.shared_contract_id])
-
-  const handleUpdateAppointment = async () => {
-    if (!newAppointmentDate || !newAppointmentTime || !appointmentId || !user) return
-
-    setUpdatingAppointment(true)
-    try {
-      // Combiner date et heure
-      const [hours, minutes] = newAppointmentTime.split(':')
-      const newDateTime = new Date(newAppointmentDate)
-      newDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-
-      // Mettre à jour l'appointment
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: appointmentError } = await (supabase.from('appointments') as any).update({
-        appointment_datetime: newDateTime.toISOString(),
-        updated_at: new Date().toISOString()
-      }).eq('id', appointmentId)
-
-      if (appointmentError) throw appointmentError
-
-      // Mettre à jour le message avec les nouvelles données
-      const calendarData = message.calendar_request_data as Record<string, unknown> || {}
-      calendarData.appointment_datetime = newDateTime.toISOString()
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: messageError } = await (supabase.from('messages') as any).update({
-        calendar_request_data: calendarData
-      }).eq('id', message.id)
-
-      if (messageError) throw messageError
-
-      setEditingAppointment(false)
-      setShowAppointmentModal(false)
-      setNewAppointmentDate(null)
-      setNewAppointmentTime('')
-      
-      // Recharger la page pour voir les changements
-      window.location.reload()
-    } catch (error) {
-      console.error('Error updating appointment:', error)
-      alert('Erreur lors de la modification du rendez-vous')
-    } finally {
-      setUpdatingAppointment(false)
-    }
-  }
-
-  const handleCancelAppointment = async () => {
-    if (!appointmentId || !user) return
-    if (!confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) return
-
-    setUpdatingAppointment(true)
-    try {
-      // Mettre à jour le statut de l'appointment
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: appointmentError } = await (supabase.from('appointments') as any).update({
-        status: 'cancelled',
-        updated_at: new Date().toISOString()
-      }).eq('id', appointmentId)
-
-      if (appointmentError) throw appointmentError
-
-      setShowAppointmentModal(false)
-      setEditingAppointment(false)
-      
-      // Recharger la page pour voir les changements
-      window.location.reload()
-    } catch (error) {
-      console.error('Error cancelling appointment:', error)
-      alert('Erreur lors de l\'annulation du rendez-vous')
-    } finally {
-      setUpdatingAppointment(false)
-    }
-  }
 
   const renderTextWithLinks = (text: string) => {
     const parts: Array<string | { label: string; url: string }> = []
@@ -658,185 +546,30 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
             </div>
           </div>
         )
-      case 'calendar_request': {
-        const calendarData = message.calendar_request_data as { 
-          title?: string
-          event_name?: string
-          appointment_datetime?: string
-          start_date?: string
-          duration_minutes?: number
-        } | null
-        const appointmentDateTime = calendarData?.appointment_datetime || calendarData?.start_date
-        const appointmentTitle = calendarData?.title || calendarData?.event_name || 'Rendez-vous'
-        const appointmentDurationLabel = formatDurationMinutes(calendarData?.duration_minutes)
-        const appointmentCardSubtitle = appointmentDateTime
-          ? truncateCardLabel(
-              [
-                new Date(appointmentDateTime).toLocaleDateString('fr-FR'),
-                new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }),
-                appointmentDurationLabel || ''
-              ]
-                .filter(Boolean)
-                .join(' • '),
-              25
-            )
-          : truncateCardLabel(appointmentTitle, 25)
-        
+      case 'calendar_request':
         return (
-          <>
-            <div 
-              className={`message-calendar ${isOwn ? 'own' : 'other'}`}
-              onClick={() => setShowAppointmentModal(true)}
-              style={{ cursor: 'pointer' }}
-            >
-              <Calendar size={24} />
-              <div className="message-calendar-info">
-                <span className="message-calendar-title">Rendez-vous</span>
-                <span className="message-calendar-subtitle">
-                  {appointmentCardSubtitle || (appointmentDateTime
-                    ? new Date(appointmentDateTime).toLocaleDateString('fr-FR')
-                    : 'Rendez-vous')}
-                </span>
-              </div>
-            </div>
-            {showAppointmentModal && canUsePortal && createPortal((
-              <div className="appointment-overlay" onClick={() => {
-                setShowAppointmentModal(false)
-                setEditingAppointment(false)
-                setNewAppointmentDate(null)
-                setNewAppointmentTime('')
-              }}>
-                <div className="appointment-inline-panel" onClick={(e) => e.stopPropagation()}>
-                  <div className="appointment-inline-header">
-                    <h4>{appointmentTitle}</h4>
-                    <button 
-                      className="appointment-inline-close"
-                      onClick={() => {
-                        setShowAppointmentModal(false)
-                        setEditingAppointment(false)
-                        setNewAppointmentDate(null)
-                        setNewAppointmentTime('')
-                      }}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                  <div className="appointment-inline-body">
-                    {appointmentDateTime && (
-                      <>
-                        {!editingAppointment ? (
-                          <>
-                            <div className="appointment-inline-selected-date">
-                              <span className="appointment-inline-date-label">Date :</span>
-                              <span className="appointment-inline-date-value">
-                                {new Date(appointmentDateTime).toLocaleDateString('fr-FR', {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
-                              </span>
-                            </div>
-                            <div className="appointment-inline-selected-date">
-                              <span className="appointment-inline-date-label">Heure :</span>
-                              <span className="appointment-inline-date-value">
-                                {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            </div>
-                            {appointmentDurationLabel && (
-                              <div className="appointment-inline-selected-date">
-                                <span className="appointment-inline-date-label">Durée :</span>
-                                <span className="appointment-inline-date-value">{appointmentDurationLabel}</span>
-                              </div>
-                            )}
-                            <div className="appointment-inline-actions">
-                              <button
-                                className="appointment-inline-edit-btn"
-                                onClick={() => {
-                                  setEditingAppointment(true)
-                                  setNewAppointmentDate(new Date(appointmentDateTime).toISOString().split('T')[0])
-                                  const timeStr = new Date(appointmentDateTime).toTimeString().slice(0, 5)
-                                  setNewAppointmentTime(timeStr)
-                                }}
-                              >
-                                Modifier
-                              </button>
-                              <button
-                                className="appointment-inline-cancel-btn"
-                                onClick={handleCancelAppointment}
-                                disabled={updatingAppointment}
-                              >
-                                <Trash2 size={16} />
-                                Annuler le rendez-vous
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="appointment-inline-form-group">
-                              <label>Date *</label>
-                              <CalendarPicker
-                                selectedDate={newAppointmentDate}
-                                onDateSelect={setNewAppointmentDate}
-                                minDate={new Date().toISOString().split('T')[0]}
-                              />
-                            </div>
-                            <div className="appointment-inline-form-group">
-                              <label>Heure *</label>
-                              <input
-                                type="time"
-                                value={newAppointmentTime}
-                                onChange={(e) => setNewAppointmentTime(e.target.value)}
-                                className="appointment-inline-input"
-                              />
-                            </div>
-                            <div className="appointment-inline-actions">
-                              <button
-                                className="appointment-inline-back-btn"
-                                onClick={() => {
-                                  setEditingAppointment(false)
-                                  setNewAppointmentDate(null)
-                                  setNewAppointmentTime('')
-                                }}
-                              >
-                                Annuler
-                              </button>
-                              <button
-                                className="appointment-inline-save-btn"
-                                onClick={handleUpdateAppointment}
-                                disabled={updatingAppointment || !newAppointmentDate || !newAppointmentTime}
-                              >
-                                {updatingAppointment ? 'Enregistrement...' : 'Enregistrer'}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ), document.body)}
-          </>
+          <AppointmentBlock
+            message={message}
+            isOwn={isOwn}
+            isGroupConversation={isGroupConversation}
+            currentUserGroupRole={currentUserGroupRole}
+          />
         )
-      }
       case 'post_share': {
-        const postCardLabel = truncateCardLabel(sharedPost?.title || message.content || 'Annonce', 25)
+        const isSharedPostRemoved = sharedPost?.removed === true
+        const postCardLabel = isSharedPostRemoved
+          ? 'Cette annonce a été supprimée.'
+          : truncateCardLabel(sharedPost?.title || message.content || 'Annonce', 25)
         return (
-          <div 
-            className="message-post-share"
-            onClick={() => message.shared_post_id && navigate(`/post/${message.shared_post_id}`)}
+          <div
+            className={`message-post-share ${isSharedPostRemoved ? 'message-post-share--removed' : ''}`}
+            onClick={() => !isSharedPostRemoved && message.shared_post_id && navigate(`/post/${message.shared_post_id}`)}
+            role={isSharedPostRemoved ? undefined : 'button'}
           >
             <div className="message-post-share-icon" aria-hidden="true">
-              {sharedPost?.user?.avatar_url ? (
-                <img 
-                  src={sharedPost.user.avatar_url} 
+              {!isSharedPostRemoved && sharedPost?.user?.avatar_url ? (
+                <img
+                  src={sharedPost.user.avatar_url}
                   alt=""
                   className="message-post-share-avatar"
                 />
@@ -845,8 +578,11 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
               )}
             </div>
             <div className="message-post-share-content">
-              <h4 className="message-post-share-title">Annonce</h4>
+              <h4 className="message-post-share-title">{isSharedPostRemoved ? 'Annonce supprimée' : 'Annonce'}</h4>
               <span className="message-post-share-subtitle">{postCardLabel}</span>
+              {isSharedPostRemoved && (
+                <span className="message-post-share-removed-hint">Cette annonce a été supprimée.</span>
+              )}
             </div>
           </div>
         )
@@ -936,7 +672,7 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
             </span>
           </>
         ) : (
-          <div className={`message-bubble ${isOwn ? 'own' : 'other'} ${message.message_type === 'calendar_request' ? 'calendar-message' : ''}`}>
+          <div className={`message-bubble ${isOwn ? 'own' : 'other'} ${['calendar_request', 'post_share', 'contract_share'].includes(message.message_type || '') ? 'calendar-message' : ''}`}>
             {renderMessageContent()}
             <span className="message-time">
               {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

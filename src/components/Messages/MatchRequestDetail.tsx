@@ -38,6 +38,7 @@ interface MatchRequestDetailProps {
     related_post?: {
       id: string
       title: string
+      status?: string
     } | null
     request_type?: 'sent' | 'received'
   }
@@ -275,9 +276,10 @@ const MatchRequestDetail = ({
   }
 
   const handleOpenPost = () => {
-    if (!request.related_post?.id) return
+    const postId = request.related_post?.id || request.related_post_id
+    if (!postId) return
     onClose()
-    navigate(`/post/${request.related_post.id}`)
+    navigate(`/post/${postId}`)
   }
 
   return (
@@ -307,7 +309,7 @@ const MatchRequestDetail = ({
             </div>
           </div>
 
-          {request.related_post && (
+          {(request.related_post || request.related_post_id) && (
             <div className="match-request-detail-post">
               <p className="match-request-detail-post-label">Annonce concernée :</p>
               <button
@@ -315,8 +317,11 @@ const MatchRequestDetail = ({
                 className="match-request-detail-post-title match-request-detail-post-title-link"
                 onClick={handleOpenPost}
               >
-                {request.related_post.title}
+                {request.related_post?.status === 'active' ? request.related_post.title : 'Annonce supprimée'}
               </button>
+              {(!request.related_post || request.related_post.status !== 'active') && (
+                <p className="match-request-detail-removed-hint">Cette annonce a été supprimée.</p>
+              )}
               {request.request_role && (
                 <p className="match-request-detail-post-subtitle">
                   Poste demandé : {request.request_role}

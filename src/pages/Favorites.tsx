@@ -94,34 +94,15 @@ const Favorites = () => {
       // Récupérer les posts likés
       const postIds = likes.map((like: { post_id: string }) => like.post_id)
       
-      // Récupérer les posts avec relations via la vue (fallback sur tables si la vue n'existe pas)
-      const { data: postsData, error: postsError } = await supabase
-        .from('public_posts_with_relations' as any)
-        .select('*')
-        .in('id', postIds)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-
-      if (!postsError && postsData) {
-        setFavoritePosts(mapPosts(postsData))
-        return
-      }
-
-      if (postsError) {
-        console.error('Error fetching posts via view:', postsError)
-      }
-
-      // Fallback: requêtes séparées si la vue n'est pas disponible
+      // Toujours charger depuis la table posts (tous statuts) pour afficher "Annonce supprimée" pour les annonces retirées
       const { data: fallbackPosts, error: fallbackError } = await supabase
         .from('posts')
         .select('*')
         .in('id', postIds)
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
 
       if (fallbackError) {
-        console.error('Error fetching posts:', fallbackError)
-        // Vérifier si c'est une erreur réseau
+        console.error('Error fetching liked posts:', fallbackError)
         if (fallbackError.message?.includes('Failed to fetch') || 
             fallbackError.message?.includes('NetworkError') ||
             fallbackError.message?.includes('network') ||
@@ -480,7 +461,8 @@ const Favorites = () => {
                         post={post} 
                         viewMode="list" 
                         isLiked={true} 
-                        onLike={fetchLikedPosts} 
+                        onLike={fetchLikedPosts}
+                        isRemoved={(post as { status?: string }).status !== 'active'}
                       />
                     ))}
                   </div>

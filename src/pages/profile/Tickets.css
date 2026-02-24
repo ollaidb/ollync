@@ -366,3 +366,8 @@
     border-radius: 18px;
   }
 }
+
+/* Mode sombre */
+.dark .ticket-qr-image {
+  background: var(--card);
+}

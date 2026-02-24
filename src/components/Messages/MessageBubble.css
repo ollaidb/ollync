@@ -247,6 +247,16 @@
   overflow-wrap: anywhere;
 }
 
+.message-calendar-title-cancelled {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.message-calendar-title-modified {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .message-document-type {
   font-size: 12px;
   color: var(--muted-foreground);
@@ -308,6 +318,21 @@
 .message-bubble.calendar-message .message-calendar-subtitle {
   color: var(--muted-foreground);
   opacity: 1;
+}
+
+/* Titres contrat et annonce visibles sur le fond violet léger (calendar-message) */
+.message-bubble.calendar-message .message-contract-share-title,
+.message-bubble.calendar-message .message-post-share-title {
+  color: var(--foreground);
+}
+
+.message-bubble.calendar-message .message-contract-share-subtitle,
+.message-bubble.calendar-message .message-post-share-subtitle {
+  color: var(--muted-foreground);
+}
+
+.message-bubble.calendar-message .message-post-share--removed .message-post-share-title {
+  color: var(--muted-foreground);
 }
 
 .message-document-download,
@@ -415,6 +440,7 @@
   justify-content: center;
   padding: 20px;
   overflow-y: auto;
+  pointer-events: auto;
 }
 
 .appointment-overlay .appointment-inline-panel {
@@ -422,6 +448,78 @@
   margin: auto;
   max-width: 480px;
   width: 100%;
+  pointer-events: auto;
+}
+
+/* Confirmation d’annulation rendez-vous – intégrée au flux (pas de modal partagée) */
+.appointment-cancel-confirm-overlay {
+  z-index: 10000;
+}
+
+.appointment-cancel-confirm-panel {
+  position: relative;
+  z-index: 1;
+  background: var(--card);
+  padding: 20px;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+.appointment-cancel-confirm-panel button {
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.appointment-cancel-confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: var(--foreground);
+}
+
+.appointment-cancel-confirm-message {
+  margin: 0 0 18px 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.appointment-cancel-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: stretch;
+}
+
+.appointment-cancel-confirm-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.appointment-cancel-confirm-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.appointment-cancel-confirm-cancel {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.appointment-cancel-confirm-confirm {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
 }
 
 .appointment-inline-panel {
@@ -459,6 +557,11 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--foreground);
+}
+
+.appointment-inline-title-cancelled {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 .appointment-inline-close {
@@ -506,6 +609,31 @@
   color: var(--foreground);
   font-weight: 600;
   line-height: 1.25;
+}
+
+.appointment-inline-old-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 5px;
+  margin-bottom: 6px;
+  background: color-mix(in srgb, var(--muted) 80%, var(--card));
+  border-radius: 6px;
+}
+
+.appointment-inline-old-date-label {
+  font-size: 9px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.appointment-inline-old-date-value {
+  font-size: 9px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .appointment-inline-calendar-wrapper {
@@ -616,6 +744,54 @@
   border-color: var(--primary);
 }
 
+.appointment-inline-time-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.appointment-inline-time-input {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.appointment-inline-time-stepper {
+  width: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.appointment-inline-time-stepper-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  min-height: 16px;
+}
+
+.appointment-inline-time-stepper-btn + .appointment-inline-time-stepper-btn {
+  border-top: 1px solid var(--border);
+}
+
+.appointment-inline-time-stepper-btn:hover {
+  background: var(--muted);
+  color: var(--primary);
+}
+
 @media (max-width: 768px) {
   .appointment-overlay {
     align-items: center;
@@ -665,6 +841,14 @@
     min-width: 0;
     font-size: 11px;
     padding: 7px 9px;
+  }
+
+  .appointment-inline-time-row {
+    gap: 5px;
+  }
+
+  .appointment-inline-time-input {
+    font-size: 11px;
   }
 
   .message-calendar,
@@ -759,6 +943,15 @@
   background-color: rgba(255, 255, 255, 0.8);
 }
 
+.message-post-share--removed {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.message-post-share--removed:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
 .message-post-share-icon {
   width: 30px;
   height: 30px;
@@ -803,6 +996,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.message-post-share-removed-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.message-post-share--removed .message-post-share-title {
+  color: var(--muted-foreground);
 }
 
 .message-contract-share {
@@ -985,4 +1191,60 @@
   line-height: 1.35;
   color: var(--muted-foreground);
   padding: 2px 2px 0;
+}
+
+/* ========== Mode sombre ========== */
+.dark .message-post-share {
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
+}
+
+.dark .message-post-share:hover {
+  background-color: color-mix(in srgb, var(--card) 95%, var(--background));
+}
+
+.dark .message-post-share--removed:hover {
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
+}
+
+.dark .message-post-share-icon {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  color: var(--primary);
+}
+
+.dark .message-contract-share {
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
+}
+
+.dark .message-contract-share:hover {
+  background-color: color-mix(in srgb, var(--card) 95%, var(--background));
+}
+
+.dark .message-contract-share-icon {
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  color: var(--primary);
+}
+
+.dark .message-calendar {
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
+}
+
+.dark .message-calendar:hover {
+  background-color: color-mix(in srgb, var(--card) 95%, var(--background));
+}
+
+.dark .message-bubble-wrapper.own .message-mention {
+  color: var(--primary-foreground);
+}
+
+.dark .image-modal-close {
+  background: color-mix(in srgb, var(--foreground) 25%, transparent);
+  color: var(--background);
+}
+
+.dark .image-modal-close:hover {
+  background: color-mix(in srgb, var(--foreground) 35%, transparent);
+}
+
+.dark .appointment-inline-cancel-btn {
+  color: var(--destructive-foreground);
 }

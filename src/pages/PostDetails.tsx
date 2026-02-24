@@ -147,6 +147,8 @@ const PostDetails = () => {
   const [requestCvDocumentName, setRequestCvDocumentName] = useState<string>('')
   const [requestCoverLetterDocument, setRequestCoverLetterDocument] = useState<File | null>(null)
   const [requestCoverLetterDocumentName, setRequestCoverLetterDocumentName] = useState<string>('')
+  const [savedCandidateCvUrl, setSavedCandidateCvUrl] = useState<string | null>(null)
+  const [savedCandidateCoverLetterUrl, setSavedCandidateCoverLetterUrl] = useState<string | null>(null)
   const [reservationDate, setReservationDate] = useState('')
   const [reservationTime, setReservationTime] = useState('')
   const [reservationDurationMinutes, setReservationDurationMinutes] = useState<number>(60)
@@ -385,6 +387,44 @@ const PostDetails = () => {
     setCurrentImageIndex(0)
   }, [post?.images, post?.video])
 
+  // Charger le CV et la lettre de motivation enregistrés (espace candidature) pour les annonces emploi
+  useEffect(() => {
+    const slug = (post?.category?.slug || '').trim().toLowerCase()
+    if (!user || slug !== 'emploi') {
+      setSavedCandidateCvUrl(null)
+      setSavedCandidateCoverLetterUrl(null)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('candidate_cv_url, candidate_cover_letter_url')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (cancelled || error) return
+        const row = data as { candidate_cv_url?: string | null; candidate_cover_letter_url?: string | null } | null
+        if (row) {
+          setSavedCandidateCvUrl(row.candidate_cv_url && row.candidate_cv_url.trim() ? row.candidate_cv_url : null)
+          setSavedCandidateCoverLetterUrl(
+            row.candidate_cover_letter_url && row.candidate_cover_letter_url.trim() ? row.candidate_cover_letter_url : null
+          )
+        } else {
+          setSavedCandidateCvUrl(null)
+          setSavedCandidateCoverLetterUrl(null)
+        }
+      } catch {
+        if (!cancelled) {
+          setSavedCandidateCvUrl(null)
+          setSavedCandidateCoverLetterUrl(null)
+        }
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [user, post?.category?.slug])
+
   const fetchPost = async () => {
     if (!id) return
     const isUuid = (value: unknown) =>
@@ -413,13 +453,7 @@ const PostDetails = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const post = postData as any
 
-      if (post.status !== 'active' && post.user_id !== user?.id) {
-        setPost(null)
-        setIsRestricted(true)
-        setLoading(false)
-        return
-      }
-
+      // Ne plus masquer les annonces supprimées/archivées : on affiche "Cette annonce a été supprimée" pour les liens (favoris, messages, match_requests)
       // 2. Récupérer le profil de l'utilisateur
       let userProfile = null
       if (post.user_id) {
@@ -565,10 +599,12 @@ const PostDetails = () => {
         await fetchAuthorPostCount(post.user_id)
       }
 
-      // 6. Incrémenter les vues
-      const currentViews = post.views_count || 0
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('posts') as any).update({ views_count: currentViews + 1 }).eq('id', id)
+      // 6. Incrémenter les vues (uniquement pour les annonces actives)
+      if (post.status === 'active') {
+        const currentViews = post.views_count || 0
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('posts') as any).update({ views_count: currentViews + 1 }).eq('id', id)
+      }
     } catch (error) {
       console.error('Error in fetchPost:', error)
     } finally {
@@ -1209,8 +1245,8 @@ const PostDetails = () => {
       return
     }
 
-    if (contactIntent === 'apply' && !requestCvDocument) {
-      alert('Le CV est obligatoire pour postuler.')
+    if (contactIntent === 'apply' && !requestCvDocument && !savedCandidateCvUrl) {
+      alert('Le CV est obligatoire pour postuler. Ajoutez un CV ici ou dans votre espace candidature.')
       return
     }
 
@@ -1257,16 +1293,23 @@ const PostDetails = () => {
       let coverLetterUrl: string | null = null
       let coverLetterName: string | null = null
 
-      if (contactIntent === 'apply' && requestCvDocument) {
-        const uploadedCv = await uploadRequestFile(requestCvDocument, 'cv')
-        cvUrl = uploadedCv.url
-        cvName = uploadedCv.name
-      }
-
-      if (contactIntent === 'apply' && requestCoverLetterDocument) {
-        const uploadedCoverLetter = await uploadRequestFile(requestCoverLetterDocument, 'cover_letter')
-        coverLetterUrl = uploadedCoverLetter.url
-        coverLetterName = uploadedCoverLetter.name
+      if (contactIntent === 'apply') {
+        if (requestCvDocument) {
+          const uploadedCv = await uploadRequestFile(requestCvDocument, 'cv')
+          cvUrl = uploadedCv.url
+          cvName = uploadedCv.name
+        } else if (savedCandidateCvUrl) {
+          cvUrl = savedCandidateCvUrl
+          cvName = 'CV enregistré'
+        }
+        if (requestCoverLetterDocument) {
+          const uploadedCoverLetter = await uploadRequestFile(requestCoverLetterDocument, 'cover_letter')
+          coverLetterUrl = uploadedCoverLetter.url
+          coverLetterName = uploadedCoverLetter.name
+        } else if (savedCandidateCoverLetterUrl) {
+          coverLetterUrl = savedCandidateCoverLetterUrl
+          coverLetterName = 'Lettre de motivation enregistrée'
+        }
       }
 
       const trimmedMessage = requestMessage.trim()
@@ -1771,6 +1814,37 @@ const PostDetails = () => {
           <div className="post-details-scrollable">
             <div className="empty-state">
               <p>{isRestricted ? 'Annonce indisponible' : 'Annonce introuvable'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const isPostRemoved = post.status !== 'active'
+
+  if (isPostRemoved) {
+    return (
+      <div className="app">
+        <div className="post-details-page has-hero-image">
+          <div className="post-details-header-fixed">
+            <div className="post-details-header-content">
+              <BackButton onClick={handleBackFromPost} />
+              <div className="post-details-header-spacer" />
+            </div>
+          </div>
+          <div className="post-details-scrollable">
+            <div className="post-hero-image post-hero-image-scrolls">
+              <CategoryPlaceholderMedia
+                className="post-hero-image-placeholder"
+                categorySlug={post.category?.slug}
+              />
+            </div>
+            <div className="post-details-content post-details-removed">
+              <h1 className="post-details-title">Annonce supprimée</h1>
+              <p className="post-details-removed-message">
+                Cette annonce a été retirée ou supprimée par son auteur.
+              </p>
             </div>
           </div>
         </div>
@@ -2574,6 +2648,15 @@ const PostDetails = () => {
                     </label>
                     <span className="confirmation-upload-badge">Requis</span>
                   </div>
+                  {savedCandidateCvUrl && !requestCvDocument && (
+                    <div className="confirmation-modal-file-name confirmation-modal-file-name--saved">
+                      <div className="confirmation-modal-file-main">
+                        <Check size={15} className="confirmation-modal-file-saved-icon" />
+                        <span>Votre CV enregistré sera envoyé</span>
+                      </div>
+                      <span className="confirmation-modal-file-hint">Depuis votre espace candidature</span>
+                    </div>
+                  )}
                   <input
                     id="match-request-cv"
                     type="file"
@@ -2593,7 +2676,7 @@ const PostDetails = () => {
                   />
                   <label className="confirmation-upload-trigger" htmlFor="match-request-cv">
                     <Upload size={16} />
-                    <span>Choisir un fichier</span>
+                    <span>{requestCvDocument ? 'Remplacer le fichier' : savedCandidateCvUrl ? 'Choisir un autre fichier' : 'Choisir un fichier'}</span>
                   </label>
                   {requestCvDocumentName && (
                     <div className="confirmation-modal-file-name confirmation-modal-file-name--modern">
@@ -2622,6 +2705,15 @@ const PostDetails = () => {
                       Lettre de motivation (optionnel)
                     </label>
                   </div>
+                  {savedCandidateCoverLetterUrl && !requestCoverLetterDocument && (
+                    <div className="confirmation-modal-file-name confirmation-modal-file-name--saved">
+                      <div className="confirmation-modal-file-main">
+                        <Check size={15} className="confirmation-modal-file-saved-icon" />
+                        <span>Votre lettre enregistrée sera envoyée</span>
+                      </div>
+                      <span className="confirmation-modal-file-hint">Depuis votre espace candidature</span>
+                    </div>
+                  )}
                   <input
                     id="match-request-cover-letter"
                     type="file"
@@ -2641,7 +2733,7 @@ const PostDetails = () => {
                   />
                   <label className="confirmation-upload-trigger" htmlFor="match-request-cover-letter">
                     <Upload size={16} />
-                    <span>Choisir un fichier</span>
+                    <span>{requestCoverLetterDocument ? 'Remplacer le fichier' : savedCandidateCoverLetterUrl ? 'Choisir un autre fichier' : 'Choisir un fichier'}</span>
                   </label>
                   {requestCoverLetterDocumentName && (
                     <div className="confirmation-modal-file-name confirmation-modal-file-name--modern">
@@ -2662,7 +2754,7 @@ const PostDetails = () => {
                       </button>
                     </div>
                   )}
-                  </div>
+                </div>
               </>
             )}
 

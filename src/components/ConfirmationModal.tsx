@@ -111,14 +111,20 @@ const ConfirmationModal = ({
         {children}
         <div className="confirmation-modal-actions">
           <button
+            type="button"
             className="confirmation-modal-button confirmation-modal-button-cancel"
             onClick={onCancel}
           >
             {cancelLabel}
           </button>
           <button
+            type="button"
             className={`confirmation-modal-button confirmation-modal-button-confirm${isDestructive ? ' confirmation-modal-button-destructive' : ''}`}
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onConfirm()
+            }}
           >
             {confirmLabel}
           </button>

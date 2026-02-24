@@ -358,6 +358,12 @@
   margin-bottom: 16px;
 }
 
+.moderation-overview-mobile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
 .moderation-overview-users {
   background: var(--card);
   border: 1px solid var(--border);
@@ -418,10 +424,109 @@
   padding: 8px 0;
 }
 
+.moderation-stats-title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.moderation-stats-chart-wrap {
+  margin-bottom: 20px;
+}
+
+.moderation-stats-chart-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.moderation-stats-donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.moderation-stats-donut {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.moderation-stats-donut-hole {
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.moderation-stats-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 320px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.moderation-stats-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.moderation-stats-donut-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.moderation-stats-donut-legend-pct {
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.moderation-stats-donut-legend-count {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.moderation-stats-no-chart {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.moderation-stats-by-status {
+  margin-bottom: 20px;
+}
+
+.moderation-stats-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.moderation-stats-grid-extra {
+  margin-top: 8px;
+}
+
 .moderation-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
+  margin-bottom: 16px;
 }
 
 .moderation-stats-card {
@@ -499,4 +604,120 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
+}
+
+/* ========== Mobile ========== */
+@media (max-width: 768px) {
+  .moderation-header {
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+  }
+
+  .moderation-header h1 {
+    font-size: 18px;
+  }
+
+  .moderation-main-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 10px 12px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .moderation-main-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .moderation-main-nav-btn {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .moderation-content {
+    padding: 12px 12px 32px;
+  }
+
+  .moderation-overview-mobile {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .moderation-overview-users-value {
+    font-size: 20px;
+  }
+
+  .moderation-summary {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 0 0;
+  }
+
+  .moderation-summary-card {
+    padding: 10px 12px;
+  }
+
+  .moderation-summary-value {
+    font-size: 16px;
+  }
+
+  .moderation-filters {
+    padding: 10px 12px;
+  }
+
+  .moderation-tabs {
+    padding: 12px 0 0;
+  }
+
+  .moderation-stats-section.moderation-stats-mobile {
+    padding: 0;
+  }
+
+  .moderation-stats-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .moderation-stats-donut {
+    width: 180px;
+    height: 180px;
+  }
+
+  .moderation-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .moderation-stats-status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .moderation-stats-card {
+    padding: 12px 14px;
+  }
+
+  .moderation-stats-value {
+    font-size: 18px;
+  }
+
+  .moderation-list {
+    padding: 12px 12px 32px;
+    gap: 12px;
+  }
+
+  .moderation-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .moderation-overview-mobile {
+    grid-template-columns: 1fr;
+  }
+
+  .moderation-summary {
+    grid-template-columns: 1fr;
+  }
 }

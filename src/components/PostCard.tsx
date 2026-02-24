@@ -36,6 +36,7 @@ interface PostCardProps {
       name: string
       slug: string
     } | null
+    status?: string
   }
   viewMode?: 'list' | 'grid'
   isLiked?: boolean
@@ -43,6 +44,8 @@ interface PostCardProps {
   hideProfile?: boolean
   hideCategoryBadge?: boolean
   actionMenu?: React.ReactNode
+  /** Affiche le bloc "Annonce supprimée" (même format, image par défaut, lien vers détail) */
+  isRemoved?: boolean
   // onShare?: () => void
 }
 
@@ -53,7 +56,8 @@ const PostCard = ({
   onLike,
   hideProfile = false,
   hideCategoryBadge = false,
-  actionMenu
+  actionMenu,
+  isRemoved = false
 }: PostCardProps) => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
@@ -291,8 +295,9 @@ const PostCard = ({
   }
 
   const mainImage = post.images && post.images.length > 0 && isValidMediaUrl(post.images[0]) ? post.images[0] : null
-  const mainMedia = mainImage || (isValidMediaUrl(post.video) ? post.video : null)
-  const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(mainMedia.split('?')[0].split('#')[0])
+  const mainMedia = !isRemoved && (mainImage || (isValidMediaUrl(post.video) ? post.video : null))
+  const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(String(mainMedia).split('?')[0].split('#')[0])
+  const removedLabel = 'Annonce supprimée'
 
   const getPaymentDisplay = () => {
     const paymentType = post.payment_type || ''
@@ -353,13 +358,24 @@ const PostCard = ({
   }
 
   const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
+  /** Sur les cartes, on n’affiche que la ville (pas toute l’adresse) pour laisser de la place à la date et au nombre de personnes. */
+  const getLocationForCard = (location: string | null | undefined): string => {
+    if (!location || !location.trim()) return ''
+    const trimmed = location.trim()
+    const city = trimmed.includes(',') ? trimmed.split(',')[0].trim() : trimmed
+    const maxLen = 22
+    if (city.length <= maxLen) return city
+    return city.slice(0, maxLen) + '…'
+  }
+  const locationForCard = getLocationForCard(post.location)
+
   const categoryLabel = post.category
     ? t(`categories:titles.${post.category.slug}`, { defaultValue: post.category.name })
     : null
 
   if (viewMode === 'list') {
     return (
-      <div className={`post-card post-card-list ${post.is_urgent ? 'post-card-urgent-border' : ''}`} onClick={handleCardClick}>
+      <div className={`post-card post-card-list ${post.is_urgent && !isRemoved ? 'post-card-urgent-border' : ''} ${isRemoved ? 'post-card-removed' : ''}`} onClick={handleCardClick}>
       <div className="post-card-image">
         {mainMedia ? (
           isVideo ? (
@@ -375,37 +391,43 @@ const PostCard = ({
         ) : (
           <CategoryPlaceholderMedia
             className="post-card-image-placeholder"
-            categorySlug={post.category?.slug}
+            categorySlug={isRemoved ? undefined : post.category?.slug}
           />
         )}
-          <button
-            type="button"
-            className={`post-card-like-btn ${liked ? 'liked' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              handleLike(e)
-            }}
-            disabled={checkingLike}
-            aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
-          >
-            <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
-          </button>
-          {!hideCategoryBadge && categoryLabel && (
+          {!isRemoved && (
+            <button
+              type="button"
+              className={`post-card-like-btn ${liked ? 'liked' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleLike(e)
+              }}
+              disabled={checkingLike}
+              aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
+            >
+              <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
+            </button>
+          )}
+          {!isRemoved && !hideCategoryBadge && categoryLabel && (
             <div className="post-card-category-badge">{categoryLabel}</div>
+          )}
+          {isRemoved && (
+            <div className="post-card-removed-badge">{removedLabel}</div>
           )}
         </div>
         <div className="post-card-content">
           <div className="post-card-header">
-            <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
-            {actionMenu && (
+            <h3 className="post-card-title">{isRemoved ? removedLabel : truncateTitleToTwoSentences(post.title)}</h3>
+            {!isRemoved && actionMenu && (
               <div className="post-card-action-menu" onClick={(e) => e.stopPropagation()}>
                 {actionMenu}
               </div>
             )}
           </div>
-          <p className="post-card-description">{post.description.substring(0, 100)}...</p>
+          {!isRemoved && <p className="post-card-description">{post.description.substring(0, 100)}...</p>}
+          {isRemoved && <p className="post-card-description">Cette annonce a été retirée.</p>}
           <div className={`post-card-footer ${hideProfile || !post.user ? 'post-card-footer-right-only' : ''}`}>
-            {!hideProfile && post.user && (
+            {!hideProfile && post.user && !isRemoved && (
               <div className="post-card-profile" onClick={handleProfileClick}>
                 <div className="post-card-avatar">
                   {post.user.avatar_url ? (
@@ -425,7 +447,7 @@ const PostCard = ({
                 <div className="post-card-profile-name">{displayName}</div>
               </div>
             )}
-            {getPaymentDisplay() && (
+            {!isRemoved && getPaymentDisplay() && (
               <div className="post-card-payment-display">{getPaymentDisplay()}</div>
             )}
           </div>
@@ -436,7 +458,7 @@ const PostCard = ({
 
   return (
     <div 
-      className="post-card post-card-grid" 
+      className={`post-card post-card-grid ${isRemoved ? 'post-card-removed' : ''}`}
       onClick={handleCardClick} 
       role="button" 
       tabIndex={0} 
@@ -462,77 +484,85 @@ const PostCard = ({
         ) : (
           <CategoryPlaceholderMedia
             className="post-card-image-placeholder"
-            categorySlug={post.category?.slug}
+            categorySlug={isRemoved ? undefined : post.category?.slug}
           />
         )}
-        <button
-          type="button"
-          className={`post-card-like-btn ${liked ? 'liked' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            handleLike(e)
-          }}
-          disabled={checkingLike}
-          aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
-        >
-          <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
-        </button>
-        {getPaymentDisplay() && (
+        {!isRemoved && (
+          <button
+            type="button"
+            className={`post-card-like-btn ${liked ? 'liked' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleLike(e)
+            }}
+            disabled={checkingLike}
+            aria-label={liked ? 'Retirer le like' : 'Ajouter un like'}
+          >
+            <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
+          </button>
+        )}
+        {isRemoved && (
+          <div className="post-card-removed-badge">{removedLabel}</div>
+        )}
+        {!isRemoved && getPaymentDisplay() && (
           <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
         )}
-        {!hideCategoryBadge && categoryLabel && (
+        {!isRemoved && !hideCategoryBadge && categoryLabel && (
           <div className="post-card-category-badge">{categoryLabel}</div>
         )}
-        {post.is_urgent && (
+        {!isRemoved && post.is_urgent && (
           <div className="post-card-urgent-badge">URGENT</div>
         )}
-        {post.delivery_available && (
+        {!isRemoved && post.delivery_available && (
           <span className="post-card-badge">Livraison possible</span>
         )}
       </div>
       <div className="post-card-content">
-        <h3 className="post-card-title">{truncateTitleToTwoSentences(post.title)}</h3>
-        <div className="post-card-info">
-          {(post.location || post.number_of_people || post.needed_date) && (
-            <div className="post-card-info-row">
-          {post.location && (
-            <span className="post-card-location">
-                  <MapPin size={12} /> {post.location}
-            </span>
-          )}
-          {post.number_of_people && (
-            <span className="post-card-people">
-                  <Users size={12} /> {post.number_of_people}
-                </span>
-              )}
+        <h3 className="post-card-title">{isRemoved ? removedLabel : truncateTitleToTwoSentences(post.title)}</h3>
+        {!isRemoved && (
+          <div className="post-card-info">
+            {(locationForCard || post.number_of_people || post.needed_date) && (
+              <div className="post-card-info-row">
+                {locationForCard && (
+                  <span className="post-card-location" title={post.location || undefined}>
+                    <MapPin size={12} /> {locationForCard}
+                  </span>
+                )}
+                {post.number_of_people != null && post.number_of_people > 0 && (
+                  <span className="post-card-people">
+                    <Users size={12} /> {post.number_of_people}
+                  </span>
+                )}
                 {post.needed_date && (
                   <span className="post-card-date">
                     <Calendar size={10} /> {new Date(post.needed_date).toLocaleDateString('fr-FR')}
-            </span>
-                )}
-            </div>
-          )}
-          {post.user && (
-            <div className="post-card-profile" onClick={handleProfileClick}>
-              <div className="post-card-avatar">
-                {post.user.avatar_url ? (
-                  <img 
-                    src={post.user.avatar_url} 
-                    alt={displayName}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
-                    }}
-                  />
-                ) : (
-                  <div className="post-card-avatar-placeholder">
-                    {(displayName[0] || 'U').toUpperCase()}
-                  </div>
+                  </span>
                 )}
               </div>
-              <div className="post-card-profile-name">{displayName}</div>
-            </div>
-          )}
-        </div>
+            )}
+            {post.user && (
+              <div className="post-card-profile" onClick={handleProfileClick}>
+                <div className="post-card-avatar">
+                  {post.user.avatar_url ? (
+                    <img 
+                      src={post.user.avatar_url} 
+                      alt={displayName}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
+                      }}
+                    />
+                  ) : (
+                    <div className="post-card-avatar-placeholder">
+                      {(displayName[0] || 'U').toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="post-card-profile-name">{displayName}</div>
+              </div>
+            )}
+          </div>
+        )}
+        {isRemoved && <p className="post-card-description">Cette annonce a été retirée.</p>}
       </div>
     </div>
   )

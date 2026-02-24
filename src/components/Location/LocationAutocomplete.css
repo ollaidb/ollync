@@ -240,3 +240,46 @@
 .location-suggestions::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Mode sombre */
+.dark .location-suggestions {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .location-suggestion-item {
+  border-bottom-color: var(--border);
+}
+
+.dark .location-suggestion-item:hover,
+.dark .location-suggestion-item.selected {
+  background-color: var(--muted);
+}
+
+.dark .location-suggestion-loading {
+  color: var(--muted-foreground);
+}
+
+.dark .location-suggestion-icon {
+  color: var(--primary);
+}
+
+.dark .location-suggestion-name {
+  color: var(--foreground);
+}
+
+.dark .location-suggestion-details {
+  color: var(--muted-foreground);
+}
+
+.dark .location-suggestions::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+.dark .location-suggestions::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+}
+
+.dark .location-suggestions::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}

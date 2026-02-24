@@ -100,6 +100,7 @@ interface MatchRequest {
   related_post?: {
     id: string
     title: string
+    status?: string
   } | null
   request_type?: 'sent' | 'received' // 'sent' si from_user_id = current_user, 'received' si to_user_id = current_user
 }
@@ -112,6 +113,8 @@ interface Appointment {
   title: string
   appointment_datetime: string
   status?: string | null
+  created_at?: string | null
+  updated_at?: string | null
   other_user?: {
     id: string
     username?: string | null
@@ -1293,14 +1296,14 @@ const Messages = () => {
         .select('id, username, full_name, avatar_url, email')
         .in('id', [...new Set(otherUserIds)]) : { data: [] }
 
-      // Charger les posts liés
+      // Charger les posts liés (tous statuts : pour afficher "Annonce supprimée" si retirée)
       const { data: posts } = postIds.length > 0 ? await supabase
         .from('posts')
-        .select('id, title')
+        .select('id, title, status')
         .in('id', [...new Set(postIds)]) : { data: [] }
 
       const usersMap = new Map((users || []).map((u: { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) => [u.id, u]))
-      const postsMap = new Map((posts || []).map((p: { id: string; title: string }) => [p.id, p]))
+      const postsMap = new Map((posts || []).map((p: { id: string; title: string; status?: string }) => [p.id, p]))
 
       // Formater les demandes avec les informations complémentaires
       const requestsWithData = requestsData.map((req: { 
@@ -1531,7 +1534,6 @@ const Messages = () => {
         .from('appointments')
         .select('*')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .not('status', 'in', '("declined","cancelled")')
         .order('appointment_datetime', { ascending: true })
 
       if (!error && appointmentsData && appointmentsData.length > 0) {
@@ -3103,7 +3105,7 @@ const Messages = () => {
                       onClick={async () => {
                         setShowLinkPostSheet(true)
                         setLinkPostLoading(true)
-                        const { data } = await supabase.from('posts').select('id, title').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(50)
+                        const { data } = await supabase.from('posts').select('id, title').eq('user_id', user?.id).eq('status', 'active').order('created_at', { ascending: false }).limit(50)
                         setSelectablePostsForLink((data || []) as Array<{ id: string; title: string }>)
                         setLinkPostLoading(false)
                       }}
@@ -4501,6 +4503,8 @@ const Messages = () => {
 
                     if (msg.message_type === 'match_accepted' && acceptedMatchForMessage?.related_post_id) {
                       const isLastMessage = msg.id === lastDisplayMessageId
+                      const postRemoved = !acceptedMatchForMessage.related_post || acceptedMatchForMessage.related_post.status !== 'active'
+                      const linkLabel = postRemoved ? 'Annonce supprimée' : (acceptedMatchForMessage.related_post?.title || 'Voir l\'annonce')
 
                       return (
                         <div key={msg.id} ref={isLastMessage ? lastMessageRef : null}>
@@ -4512,8 +4516,11 @@ const Messages = () => {
                                 className="conversation-match-link-inline"
                                 onClick={() => navigate(`/post/${acceptedMatchForMessage.related_post_id}`)}
                               >
-                                {acceptedMatchForMessage.related_post?.title || 'Voir l\'annonce'}
+                                {linkLabel}
                               </button>
+                              {postRemoved && (
+                                <div className="conversation-match-removed-hint">Cette annonce a été supprimée.</div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -4614,6 +4621,12 @@ const Messages = () => {
                               }
                             }}
                             groupParticipants={isGroupConversation ? infoParticipants : undefined}
+                            isGroupConversation={isGroupConversation}
+                            currentUserGroupRole={
+                              isGroupConversation && user
+                                ? (infoParticipants.find((p) => p.user_id === user.id)?.role ?? null)
+                                : null
+                            }
                             onMentionClick={
                               isGroupConversation
                                 ? (participant) => {
@@ -4945,17 +4958,24 @@ const Messages = () => {
                         {formatTime(request.created_at)}
                       </span>
                     </div>
-                    {request.related_post && (
-                      <p className="conversation-post-title">
-                        {request.related_post.title}
-                      </p>
+                    {(request.related_post_id || request.related_post) && (
+                      <>
+                        <p className="conversation-post-title">
+                          {request.related_post && request.related_post.status === 'active'
+                            ? request.related_post.title
+                            : 'Annonce supprimée'}
+                        </p>
+                        {(!request.related_post || request.related_post.status !== 'active') && (
+                          <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
+                        )}
+                      </>
                     )}
                     {request.request_role && (
                       <p className="conversation-post-role">
                         Poste : {request.request_role}
                       </p>
                     )}
-                    {!request.related_post && request.related_service_name && (
+                    {!request.related_post && !request.related_post_id && request.related_service_name && (
                       <p className="conversation-post-title">
                         Service : {request.related_service_name}
                       </p>
@@ -5061,12 +5081,19 @@ const Messages = () => {
                         {formatTime(request.accepted_at || request.created_at)}
                       </span>
                     </div>
-                    {request.related_post && (
-                      <p className="conversation-post-title">
-                        {request.related_post.title}
-                      </p>
+                    {(request.related_post_id || request.related_post) && (
+                      <>
+                        <p className="conversation-post-title">
+                          {request.related_post && request.related_post.status === 'active'
+                            ? request.related_post.title
+                            : 'Annonce supprimée'}
+                        </p>
+                        {(!request.related_post || request.related_post.status !== 'active') && (
+                          <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
+                        )}
+                      </>
                     )}
-                    {!request.related_post && request.related_service_name && (
+                    {!request.related_post && !request.related_post_id && request.related_service_name && (
                       <p className="conversation-post-title">
                         Service : {request.related_service_name}
                       </p>
@@ -5089,11 +5116,16 @@ const Messages = () => {
           ) : (
             <div className="conversations-list">
               {sortedAppointments.map((appointment) => {
+                const isCancelled = appointment.status === 'cancelled'
                 const isPastAppointment = new Date(appointment.appointment_datetime).getTime() < Date.now()
+                const statusKind = isCancelled ? 'cancelled' : isPastAppointment ? 'past' : 'upcoming'
+                const statusLabel = isCancelled ? 'Annulé' : isPastAppointment ? 'Passé' : 'À venir'
+                const isModified = !!appointment.updated_at && !!appointment.created_at &&
+                  (new Date(appointment.updated_at).getTime() - new Date(appointment.created_at).getTime() > 2000)
                 return (
                 <div
                   key={appointment.id}
-                  className={`conversation-item appointment-item ${isPastAppointment ? 'appointment-item--past' : 'appointment-item--upcoming'}`}
+                  className={`conversation-item appointment-item appointment-item--${statusKind}`}
                   onClick={() => setSelectedAppointmentPreview(appointment)}
                 >
                   <div className="conversation-avatar-wrapper">
@@ -5117,12 +5149,22 @@ const Messages = () => {
                       <p className="appointment-user-name">
                         {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
                       </p>
-                      <span
-                        className={`appointment-status-badge appointment-status-badge--${isPastAppointment ? 'past' : 'upcoming'}`}
-                        aria-label={isPastAppointment ? 'Rendez-vous passé' : 'Rendez-vous à venir'}
-                      >
-                        {isPastAppointment ? 'Passé' : 'À venir'}
-                      </span>
+                      <div className="appointment-badges">
+                        <span
+                          className={`appointment-status-badge appointment-status-badge--${statusKind}`}
+                          aria-label={isCancelled ? 'Rendez-vous annulé' : isPastAppointment ? 'Rendez-vous passé' : 'Rendez-vous à venir'}
+                        >
+                          {statusLabel}
+                        </span>
+                        {isModified && !isCancelled && (
+                          <span
+                            className="appointment-status-badge appointment-status-badge--modified"
+                            aria-label="Rendez-vous modifié"
+                          >
+                            Mise à jour
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5464,6 +5506,13 @@ const Messages = () => {
                   <Calendar size={18} />
                   <h3>{selectedAppointmentPreview.title || 'Rendez-vous'}</h3>
                 </div>
+                {selectedAppointmentPreview.status === 'cancelled' && (
+                  <p className="messages-appointment-preview-cancelled">Rendez-vous annulé</p>
+                )}
+                {selectedAppointmentPreview.updated_at && selectedAppointmentPreview.created_at &&
+                  (new Date(selectedAppointmentPreview.updated_at).getTime() - new Date(selectedAppointmentPreview.created_at).getTime() > 2000) && (
+                  <p className="messages-appointment-preview-modified">Mise à jour</p>
+                )}
                 <p className="messages-appointment-preview-date">
                   {formatAppointmentDate(selectedAppointmentPreview.appointment_datetime)}
                 </p>

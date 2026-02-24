@@ -109,4 +109,14 @@
   }
 }
 
+/* Mode sombre : shimmer plus clair sur fond sombre */
+.dark .post-card-skeleton-image,
+.dark .post-card-skeleton-title,
+.dark .post-card-skeleton-title-short,
+.dark .post-card-skeleton-badge,
+.dark .post-card-skeleton-avatar,
+.dark .post-card-skeleton-name {
+  background: linear-gradient(90deg, var(--muted) 25%, color-mix(in srgb, var(--foreground) 12%, transparent) 50%, var(--muted) 75%);
+}
+
 

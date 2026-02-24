@@ -952,3 +952,13 @@
     height: 132px;
   }
 }
+
+/* Mode sombre */
+.dark .search-location-clear {
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  color: var(--foreground);
+}
+
+.dark .search-location-clear:hover {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
