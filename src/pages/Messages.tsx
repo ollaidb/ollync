@@ -202,6 +202,7 @@ const Messages = () => {
   const [reportReason, setReportReason] = useState('')
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showLeaveGroupConfirm, setShowLeaveGroupConfirm] = useState(false)
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([])
   const [showScamPrevention, setShowScamPrevention] = useState(false)
   const [listActionConversation, setListActionConversation] = useState<Conversation | null>(null)
@@ -3245,44 +3246,7 @@ const Messages = () => {
                   <button
                     type="button"
                     className="conversation-action-item danger"
-                    onClick={async () => {
-                      if (!selectedConversation?.id || !user) return
-                      try {
-                        const { data: myProfile } = await supabase
-                          .from('profiles')
-                          .select('full_name, username')
-                          .eq('id', user.id)
-                          .single()
-                        const myName = (myProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
-                          || (myProfile as { full_name?: string | null; username?: string | null } | null)?.username
-                          || 'Un membre'
-                        const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
-                        // Message avant de quitter pour que l'utilisateur soit encore participant
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        await (supabase.from('messages') as any).insert({
-                          conversation_id: selectedConversation.id,
-                          sender_id: user.id,
-                          message_type: 'text',
-                          content: `${myName} a quitté le groupe`,
-                          calendar_request_data: {
-                            kind: 'group_event',
-                            event_type: 'member_left',
-                            members: [{ user_id: user.id, name: myName }],
-                            group_name: groupNameForMsg
-                          }
-                        })
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const { error } = await (supabase.from('conversation_participants') as any)
-                          .update({ is_active: false })
-                          .eq('conversation_id', selectedConversation.id)
-                          .eq('user_id', user.id)
-                        if (error) throw error
-                        navigate('/messages')
-                      } catch (error) {
-                        console.error('Error leaving group:', error)
-                        alert('Impossible de quitter le groupe')
-                      }
-                    }}
+                    onClick={() => setShowLeaveGroupConfirm(true)}
                   >
                     Quitter ce groupe
                   </button>
@@ -3361,6 +3325,57 @@ const Messages = () => {
                 setShowBlockConfirm(false)
               }}
               confirmLabel="Bloquer"
+              cancelLabel="Annuler"
+              isDestructive={true}
+            />
+          )}
+          {showLeaveGroupConfirm && (
+            <ConfirmationModal
+              visible={showLeaveGroupConfirm}
+              title="Quitter le groupe"
+              message="Voulez-vous vraiment quitter ce groupe ? Vous ne recevrez plus les messages de cette conversation."
+              onCancel={() => setShowLeaveGroupConfirm(false)}
+              onConfirm={async () => {
+                if (!selectedConversation?.id || !user) return
+                try {
+                  const { data: myProfile } = await supabase
+                    .from('profiles')
+                    .select('full_name, username')
+                    .eq('id', user.id)
+                    .single()
+                  const myName = (myProfile as { full_name?: string | null; username?: string | null } | null)?.full_name
+                    || (myProfile as { full_name?: string | null; username?: string | null } | null)?.username
+                    || 'Un membre'
+                  const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                  // Message avant de quitter pour que l'utilisateur soit encore participant
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('messages') as any).insert({
+                    conversation_id: selectedConversation.id,
+                    sender_id: user.id,
+                    message_type: 'text',
+                    content: `${myName} a quitté le groupe`,
+                    calendar_request_data: {
+                      kind: 'group_event',
+                      event_type: 'member_left',
+                      members: [{ user_id: user.id, name: myName }],
+                      group_name: groupNameForMsg
+                    }
+                  })
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error } = await (supabase.from('conversation_participants') as any)
+                    .update({ is_active: false })
+                    .eq('conversation_id', selectedConversation.id)
+                    .eq('user_id', user.id)
+                  if (error) throw error
+                  setShowLeaveGroupConfirm(false)
+                  setListActionConversation(null)
+                  navigate('/messages')
+                } catch (error) {
+                  console.error('Error leaving group:', error)
+                  alert('Impossible de quitter le groupe')
+                }
+              }}
+              confirmLabel="Quitter le groupe"
               cancelLabel="Annuler"
               isDestructive={true}
             />
@@ -4445,7 +4460,11 @@ const Messages = () => {
               {groupedMessages.map((group, groupIndex) => (
                 <div key={groupIndex} className="conversation-messages-group">
                   <div className="conversation-date-separator">
-                    {formatDateSeparator(group.messages[0].created_at)}
+                    <span className="conversation-date-separator-line" aria-hidden="true" />
+                    <span className="conversation-date-separator-text">
+                      {formatDateSeparator(group.messages[0].created_at)}
+                    </span>
+                    <span className="conversation-date-separator-line" aria-hidden="true" />
                   </div>
                   {group.messages.map((msg, msgIndex) => {
                     const acceptedMatchId =
@@ -4473,7 +4492,9 @@ const Messages = () => {
                         : '')
                       return (
                         <div key={msg.id} ref={isLastMessage ? lastMessageRef : null} className="conversation-date-separator">
-                          {eventText}
+                          <span className="conversation-date-separator-line" aria-hidden="true" />
+                          <span className="conversation-date-separator-text">{eventText}</span>
+                          <span className="conversation-date-separator-line" aria-hidden="true" />
                         </div>
                       )
                     }
@@ -5092,9 +5113,17 @@ const Messages = () => {
                         {formatAppointmentDate(appointment.appointment_datetime)}
                       </span>
                     </div>
-                    <p className="appointment-user-name">
-                      {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
-                    </p>
+                    <div className="appointment-user-row">
+                      <p className="appointment-user-name">
+                        {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
+                      </p>
+                      <span
+                        className={`appointment-status-badge appointment-status-badge--${isPastAppointment ? 'past' : 'upcoming'}`}
+                        aria-label={isPastAppointment ? 'Rendez-vous passé' : 'Rendez-vous à venir'}
+                      >
+                        {isPastAppointment ? 'Passé' : 'À venir'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )})}

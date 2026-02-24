@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient'
 import { evaluateTextModeration } from './textModeration'
+import { checkPostTextModeration, logSuspiciousActivity } from './moderation'
 
 interface FormData {
   listingType?: 'offer' | 'request' | ''
@@ -711,6 +712,22 @@ export const handlePublish = async (
   const moderationResult = status === 'active'
     ? evaluateTextModeration(moderationText)
     : { score: 0, reasons: [], shouldBlock: false }
+  const dbModerationResult = status === 'active'
+    ? await checkPostTextModeration({
+        title: formData.title,
+        description: descriptionValue,
+        responsibilities: formData.responsibilities,
+        benefits: formData.benefits,
+        required_skills: formData.required_skills,
+        externalLink: formData.externalLink
+      })
+    : { score: 0, reasons: [], flagged: false }
+  const isFlagged = moderationResult.shouldBlock || dbModerationResult.flagged
+  const combinedScore = moderationResult.score + dbModerationResult.score
+  const combinedReasons = [
+    ...moderationResult.reasons,
+    ...dbModerationResult.reasons
+  ].filter(Boolean)
   const finalStatus = moderationResult.shouldBlock ? 'pending' : status
   const isEvenementCategory = (normalizedCategorySlug || '').toLowerCase() === 'evenements'
   const eventMode = (String(formData.event_mode ?? '').trim() || '') as 'in_person' | 'remote' | ''
@@ -809,10 +826,10 @@ export const handlePublish = async (
         ? null
         : buildDocumentUrlWithName(formData.documentUrl, formData.documentName),
     tagged_post_id: normalizedCategorySlug === 'vente' ? null : (formData.taggedPostId || null),
-    moderation_status: moderationResult.shouldBlock ? 'flagged' : 'clean',
-    moderation_reason: moderationResult.reasons.length > 0 ? moderationResult.reasons.join(',') : null,
-    moderation_score: moderationResult.score || 0,
-    moderated_at: moderationResult.shouldBlock ? new Date().toISOString() : null,
+    moderation_status: isFlagged ? 'flagged' : 'clean',
+    moderation_reason: combinedReasons.length > 0 ? combinedReasons.join(',') : null,
+    moderation_score: combinedScore || 0,
+    moderated_at: isFlagged ? new Date().toISOString() : null,
     ugc_actor_type:
       normalizedSubcategorySlug === 'ugc'
         ? (typeof formData.ugc_actor_type === 'string' ? formData.ugc_actor_type : '').trim() || null
@@ -883,6 +900,17 @@ export const handlePublish = async (
     }
 
     if (data) {
+      const postId = (data as { id: string }).id
+      if (isFlagged) {
+        logSuspiciousActivity({
+          userId: user.id,
+          activityType: 'content_flagged',
+          sourceTable: 'posts',
+          sourceId: postId,
+          score: combinedScore,
+          details: { reasons: combinedReasons }
+        }).catch(() => {})
+      }
       const message = status === 'draft'
         ? 'Enregistré'
         : (finalStatus === 'pending' ? 'Annonce en cours de vérification' : 'Annonce publiée')
@@ -897,7 +925,12 @@ export const handlePublish = async (
               : 'Annonce publiée avec succès !')
         )
       }
-      navigate(`/post/${(data as { id: string }).id}`)
+      // Brouillon : rediriger vers l'édition pour que "Continuer" ramène au dernier écran avec tout rempli
+      if (status === 'draft') {
+        navigate(`/publish?edit=${postId}`)
+      } else {
+        navigate(`/post/${postId}`)
+      }
     }
   } catch (error: unknown) {
     console.error('Error publishing post:', error)

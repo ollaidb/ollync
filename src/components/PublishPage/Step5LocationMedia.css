@@ -579,14 +579,15 @@
   cursor: pointer;
 }
 
+/* La barre de recherche du lieu défile avec le contenu (pas de z-index pour rester au même plan) */
 .step5-location-autocomplete {
   margin-bottom: 8px;
   position: relative;
-  z-index: 200;
+  z-index: auto;
 }
 
 .step5-location-autocomplete:focus-within {
-  z-index: 300;
+  z-index: 10;
 }
 
 .location-coordinates-info {

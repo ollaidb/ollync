@@ -21,8 +21,6 @@ import { supabase } from '../lib/supabaseClient'
 import './Publish.css'
 
 export default function Publish() {
-  const defaultToday = new Date().toISOString().slice(0, 10)
-
   type DraftPost = {
     id: string
     category_id?: string | null
@@ -118,12 +116,12 @@ export default function Publish() {
     video: null as string | null,
     dateFrom: '',
     dateTo: '',
-    deadline: defaultToday,
-    neededTime: '01:00',
+    deadline: '',
+    neededTime: '',
     maxParticipants: '1',
     profileLevel: '',
     profileRoles: [] as string[],
-    duration_minutes: '60',
+    duration_minutes: '',
     visibility: 'public',
     externalLink: '',
     documentUrl: '',
@@ -288,7 +286,14 @@ export default function Publish() {
       try {
         const cachedDraft = JSON.parse(cachedDraftRaw)
         if (cachedDraft && typeof cachedDraft === 'object') {
-          setFormData({ ...initialFormData, ...cachedDraft })
+          const merged = { ...initialFormData, ...cachedDraft }
+          const cat = (merged.category || '').toString().toLowerCase()
+          if (cat !== 'creation-contenu') {
+            merged.deadline = ''
+            merged.neededTime = ''
+            merged.duration_minutes = ''
+          }
+          setFormData(merged)
         }
       } catch {
         sessionStorage.removeItem(NEW_DRAFT_DATA_KEY)
@@ -308,13 +313,25 @@ export default function Publish() {
 
     const loadDraft = async () => {
       setIsLoadingEdit(true)
-      const storedStepRaw = editPostId ? Number(localStorage.getItem(`publishDraftStep:${editPostId}`)) : null
-      const validStoredStep =
-        storedStepRaw !== null && [0, 1, 2, 3, 3.5, 4, 5].includes(storedStepRaw) ? (storedStepRaw as number) : null
-      if (validStoredStep !== null) {
-        setStep(validStoredStep)
+      let cachedDraftRaw = editPostId ? localStorage.getItem(`publishDraftData:${editPostId}`) : null
+      // Si pas de cache pour ce brouillon (ex. premier "Continuer" après enregistrement), utiliser le cache "new" de la session en cours
+      if (!cachedDraftRaw && editPostId) {
+        const newDraftRaw = sessionStorage.getItem(NEW_DRAFT_DATA_KEY)
+        if (newDraftRaw) {
+          try {
+            const parsed = JSON.parse(newDraftRaw)
+            if (parsed && typeof parsed === 'object') {
+              cachedDraftRaw = newDraftRaw
+              localStorage.setItem(`publishDraftData:${editPostId}`, newDraftRaw)
+            }
+          } catch {
+            /* ignore */
+          }
+        }
       }
-      const cachedDraftRaw = editPostId ? localStorage.getItem(`publishDraftData:${editPostId}`) : null
+
+      // Continuer un brouillon = aller directement à la dernière étape (étape 5), tout déjà rempli
+      setStep(5)
       if (cachedDraftRaw) {
         try {
           const cachedDraft = JSON.parse(cachedDraftRaw)
@@ -322,12 +339,12 @@ export default function Publish() {
             setFormData({ ...initialFormData, ...cachedDraft })
           }
         } catch {
-          localStorage.removeItem(`publishDraftData:${editPostId}`)
+          if (editPostId) localStorage.removeItem(`publishDraftData:${editPostId}`)
         }
       }
+
       try {
-        const { data: authUser } = await supabase.auth.getUser()
-        if (!authUser?.user) {
+        if (!user?.id) {
           return
         }
 
@@ -335,14 +352,16 @@ export default function Publish() {
           .from('posts')
           .select('*')
           .eq('id', editPostId)
-          .eq('user_id', authUser.user.id)
+          .eq('user_id', user.id)
           .maybeSingle()
 
-        if (postError || !isMounted) {
+        if (!isMounted) return
+        if (postError) {
           console.error('Error loading post for edit:', postError)
           return
         }
         if (!postDataRaw) {
+          // Post introuvable (ex. RLS ou supprimé) : on garde le cache local déjà appliqué pour ramener l'utilisateur au bon endroit
           return
         }
 
@@ -409,7 +428,7 @@ export default function Publish() {
           dateFrom: postData.dateFrom || '',
           dateTo: postData.dateTo || '',
           deadline: postData.needed_date || '',
-          neededTime: postData.needed_time || '01:00',
+          neededTime: postData.needed_time || '',
           maxParticipants: postData.number_of_people ? String(postData.number_of_people) : '1',
           profileLevel: postData.profile_level || '',
           profileRoles: postData.profile_roles || [],
@@ -427,8 +446,8 @@ export default function Publish() {
 
         if (!isMounted) return
         setFormData(nextFormData)
-
-        setStep(validStoredStep ?? getStepFromForm(nextFormData))
+        // Toujours afficher la dernière étape (5) pour continuer un brouillon : on saute les autres, tout est déjà rempli
+        setStep(5)
       } catch (error) {
         console.error('Error loading edit data:', error)
       } finally {

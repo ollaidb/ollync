@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
+import { checkModerationTextFromDb } from '../../utils/moderation'
 import ConsentModal from '../ConsentModal'
 import CalendarPicker from './CalendarPicker'
 import PostSelector from './PostSelector'
@@ -174,6 +175,11 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
       if (type === 'text') {
         messageData.content = message.trim()
+        const modResult = await checkModerationTextFromDb(message.trim())
+        if (modResult.flagged) {
+          messageData.moderation_status = 'flagged'
+          messageData.moderation_reason = modResult.reasons.length ? modResult.reasons.join(',') : null
+        }
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -106,6 +106,7 @@ function AppContent() {
       <Route path="/profile/security/two-factor" element={<Profile />} />
       <Route path="/profile/security/devices" element={<Profile />} />
       <Route path="/profile/security/blocked-profiles" element={<Profile />} />
+      <Route path="/profile/security/moderation" element={<Profile />} />
       <Route path="/profile/help" element={<Profile />} />
       <Route path="/profile/contact" element={<Profile />} />
       <Route path="/profile/resources" element={<Profile />} />

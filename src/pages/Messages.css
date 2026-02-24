@@ -1637,30 +1637,31 @@
   align-items: center;
   justify-content: center;
   z-index: 300;
-  padding: 16px;
+  padding: 24px;
 }
 
 .conversation-modal-content {
   background: var(--card);
-  border-radius: 16px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
+  max-width: 560px;
+  max-height: 85vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
+  margin: auto;
 }
 
 .conversation-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  padding: 22px 24px;
   border-bottom: 1px solid var(--border);
 }
 
 .conversation-modal-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--foreground);
 }
@@ -1686,7 +1687,7 @@
 }
 
 .conversation-modal-body {
-  padding: 20px;
+  padding: 24px;
 }
 
 .conversation-modal-question {
@@ -1757,28 +1758,28 @@
     color-mix(in srgb, var(--primary) 8%, var(--card)) 100%
   );
   border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border));
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 20px;
 }
 
 .messages-appointment-preview-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 14px;
   color: var(--foreground);
 }
 
 .messages-appointment-preview-title-row h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .messages-appointment-preview-date {
-  margin: 0 0 8px 0;
-  font-size: 14px;
+  margin: 0 0 10px 0;
+  font-size: 16px;
   font-weight: 600;
   color: var(--foreground);
   overflow-wrap: anywhere;
@@ -1786,23 +1787,24 @@
 
 .messages-appointment-preview-user {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
 
 .messages-appointment-preview-actions {
-  gap: 10px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .messages-appointment-preview-actions .messages-appointment-preview-btn {
   flex: 1;
   width: auto;
   min-width: 0;
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 14px 18px;
+  font-size: 15px;
   line-height: 1.2;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .conversation-cancel-btn,
@@ -2239,32 +2241,29 @@
   gap: 8px;
 }
 
-/* Séparateur de date */
+/* Séparateur de date et événements de groupe : deux traits à gauche et à droite, la phrase au centre sans être barrée */
 .conversation-date-separator {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 12px;
   color: var(--muted-foreground);
   margin: 16px 0;
   padding: 8px 0;
-  position: relative;
+  width: 100%;
 }
 
-.conversation-date-separator::before,
-.conversation-date-separator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 30%;
+.conversation-date-separator-line {
+  flex: 1;
+  min-width: 0;
   height: 1px;
   background-color: var(--border);
 }
 
-.conversation-date-separator::before {
-  left: 0;
-}
-
-.conversation-date-separator::after {
-  right: 0;
+.conversation-date-separator-text {
+  flex-shrink: 0;
+  padding: 0 8px;
+  text-align: center;
 }
 
 /* Container de l'input */
@@ -2363,6 +2362,57 @@
 
 .conversation-item.appointment-item.appointment-item--past .conversation-time {
   color: var(--muted-foreground);
+}
+
+/* Ligne nom + badge de statut (À venir / Passé) */
+.appointment-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+  min-height: 20px;
+}
+
+.appointment-user-row .appointment-user-name {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.appointment-status-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: none;
+}
+
+.appointment-status-badge--upcoming {
+  background: color-mix(in srgb, var(--primary) 22%, var(--card));
+  color: color-mix(in srgb, var(--primary) 95%, var(--primary-foreground));
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.appointment-status-badge--past {
+  background: color-mix(in srgb, var(--muted-foreground) 18%, var(--card));
+  color: var(--muted-foreground);
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+}
+
+.dark .appointment-status-badge--upcoming {
+  background: color-mix(in srgb, var(--primary) 32%, var(--card));
+  color: color-mix(in srgb, var(--primary) 92%, var(--primary-foreground));
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+}
+
+.dark .appointment-status-badge--past {
+  background: color-mix(in srgb, var(--muted-foreground) 22%, var(--card));
+  color: var(--muted-foreground);
+  border-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
 }
 
 .conversation-item:hover {
@@ -3232,26 +3282,26 @@
   }
 
   .messages-appointment-preview-card {
-    padding: 12px;
+    padding: 16px;
   }
 
   .messages-appointment-preview-title-row h3 {
-    font-size: 15px;
+    font-size: 17px;
   }
 
   .messages-appointment-preview-date {
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .messages-appointment-preview-actions {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .messages-appointment-preview-actions .messages-appointment-preview-btn {
     width: 100%;
-    padding: 10px 12px;
-    font-size: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
   }
 
   .conversation-messages-list {

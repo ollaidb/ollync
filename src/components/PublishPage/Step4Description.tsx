@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
@@ -96,6 +96,7 @@ export const Step4Description = ({
   )
   const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
   const isVenteCategory = (selectedCategory?.slug ?? formData.category) === 'vente'
+  const isCreationContenuCategory = categorySlugValue === 'creation-contenu'
   const isProjetsEquipeCategory =
     (selectedCategory?.slug ?? formData.category) === 'projets-equipe' ||
     isCreationContenuProjectSubcategory
@@ -114,6 +115,12 @@ export const Step4Description = ({
   const isVisibiliteContreService = !isJobRequest && formData.exchange_type === 'visibilite-contre-service'
   const requiresVisibiliteServiceDetails =
     isVisibiliteContreService && formData.visibilite_offer_type === 'service'
+  /* Bloc "Temps" uniquement pour visibilité contre service + choix "Service", pas pour rémunération ni autres moyens de paiement. */
+  const showStudioBillingBlock =
+    isStudioLieuCategory &&
+    formData.exchange_type === 'visibilite-contre-service' &&
+    formData.visibilite_offer_type === 'service'
+  const requireStudioBillingHours = false
   const showCoCreationDetails = !isJobRequest && formData.exchange_type === 'co-creation'
   const showPaymentSection = !isJobRequest && !isVenteCategory && !isJobCategory
   const isUgSubcategory = categorySlugValue === 'creation-contenu' && subcategorySlugValue === 'ugc'
@@ -258,31 +265,10 @@ export const Step4Description = ({
   const openingDays = formData.businessOpeningHours || []
   const selectedOpeningDays = openingDays.filter((slot) => slot.enabled)
 
-  useEffect(() => {
-    if (isCastingFigurantRequest) return
-    if (!formData.deadline || !formData.deadline.trim()) {
-      onUpdateFormData({ deadline: todayKey })
-    }
-  }, [isCastingFigurantRequest, formData.deadline, onUpdateFormData, todayKey])
-
-  useEffect(() => {
-    if (isCastingFigurantRequest) return
-    if (!formData.neededTime || !formData.neededTime.trim()) {
-      onUpdateFormData({ neededTime: '01:00' })
-    }
-  }, [isCastingFigurantRequest, formData.neededTime, onUpdateFormData])
-
-  useEffect(() => {
-    if (isCastingFigurantRequest) return
-    if (!formData.duration_minutes || !formData.duration_minutes.trim()) {
-      onUpdateFormData({ duration_minutes: '60' })
-    }
-  }, [isCastingFigurantRequest, formData.duration_minutes, onUpdateFormData])
-
   const formatDeadlineLabel = (value?: string) => {
-    if (!value) return 'Choisir une date'
+    if (!value || !value.trim()) return isCreationContenuCategory ? 'Choisir une date' : 'Noter la date (optionnel)'
     const parsed = new Date(`${value}T12:00:00`)
-    if (Number.isNaN(parsed.getTime())) return 'Choisir une date'
+    if (Number.isNaN(parsed.getTime())) return isCreationContenuCategory ? 'Choisir une date' : 'Noter la date (optionnel)'
     return parsed.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'long',
@@ -957,22 +943,21 @@ export const Step4Description = ({
     }
   }, [hasSheetOpen])
 
+  /* Pour les catégories où date/heure/durée sont optionnels : vider une fois au montage pour n'afficher que "Noter la date/heure/durée (optionnel)". */
+  const hasClearedOptionalDateTimeRef = useRef(false)
   useEffect(() => {
-    if (!isCastingFigurantRequest) return
-    const updates: Partial<FormData> = {}
-    if (formData.deadline) updates.deadline = ''
-    if (formData.neededTime) updates.neededTime = ''
-    if (formData.duration_minutes) updates.duration_minutes = ''
-    if (Object.keys(updates).length > 0) {
-      onUpdateFormData(updates)
-    }
-  }, [
-    isCastingFigurantRequest,
-    formData.deadline,
-    formData.neededTime,
-    formData.duration_minutes,
-    onUpdateFormData
-  ])
+    if (isCreationContenuCategory || hasClearedOptionalDateTimeRef.current) return
+    const hasAny = !!(formData.deadline && formData.deadline.trim()) ||
+      !!(formData.neededTime && formData.neededTime.trim()) ||
+      !!(formData.duration_minutes && formData.duration_minutes.trim())
+    if (!hasAny) return
+    hasClearedOptionalDateTimeRef.current = true
+    onUpdateFormData({
+      deadline: '',
+      neededTime: '',
+      duration_minutes: ''
+    })
+  }, [isCreationContenuCategory, formData.deadline, formData.neededTime, formData.duration_minutes, onUpdateFormData])
 
   useEffect(() => {
     if (!isVenteCategory) return
@@ -1044,11 +1029,12 @@ export const Step4Description = ({
     )) &&
     (!isMaterialSale || (formData.materialCondition && formData.materialCondition.trim().length > 0)) &&
     (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0)) &&
-    (!isStudioLieuCategory || (
-      hasValidStudioBillingHours &&
-      hasValidOpeningHours
-    )) &&
-    (!showUgActorTypeSection || (formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0))
+    (!requireStudioBillingHours || hasValidStudioBillingHours) &&
+    (!isStudioLieuCategory || hasValidOpeningHours) &&
+    (!showUgActorTypeSection || (formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0)) &&
+    (!isCreationContenuCategory || (formData.deadline && formData.deadline.trim().length > 0)) &&
+    (!isCreationContenuCategory || (formData.neededTime && formData.neededTime.trim().length > 0)) &&
+    (!isCreationContenuCategory || (formData.duration_minutes && formData.duration_minutes.trim().length > 0 && parseInt(formData.duration_minutes, 10) > 0))
 
   const titleInvalid = titleLength < MIN_TITLE_CHARS
   const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS
@@ -1071,14 +1057,14 @@ export const Step4Description = ({
       parseFloat(formData.revenue_share_percentage) > 0 &&
       parseFloat(formData.revenue_share_percentage) <= 100
     )
-  const studioBillingInvalid = isStudioLieuCategory && !hasValidStudioBillingHours
+  const studioBillingInvalid = requireStudioBillingHours && !hasValidStudioBillingHours
   const openingHoursInvalid = isStudioLieuCategory && !hasValidOpeningHours
   const deadlineInvalid =
-    !isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest &&
-    !(formData.deadline && formData.deadline.trim().length > 0)
+    isCreationContenuCategory && !(formData.deadline && formData.deadline.trim().length > 0)
   const neededTimeInvalid =
-    !isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest &&
-    !(formData.neededTime && formData.neededTime.trim().length > 0)
+    isCreationContenuCategory && !(formData.neededTime && formData.neededTime.trim().length > 0)
+  const durationInvalid =
+    isCreationContenuCategory && !(formData.duration_minutes && formData.duration_minutes.trim().length > 0 && parseInt(formData.duration_minutes, 10) > 0)
   const workScheduleInvalid = isJobCategory && !isJobRequest && workScheduleLength < MIN_WORK_SCHEDULE_CHARS
   const responsibilitiesInvalid = isJobCategory && !isJobRequest && responsibilitiesLength < MIN_RESPONSIBILITIES_CHARS
   const requiredSkillsInvalid = isJobCategory && !isJobRequest && requiredSkillsLength < MIN_REQUIRED_SKILLS_CHARS
@@ -1374,12 +1360,12 @@ export const Step4Description = ({
         </div>
       )}
 
-      {/* Champs liés au moyen de paiement: affichés juste après la sélection */}
-      {isStudioLieuCategory && (
+      {/* Champs liés au moyen de paiement: affichés juste après la sélection. Pour lieu + visibilité contre service, le bloc "temps" n'apparaît qu'après le choix "service" (pas pour "visibilité") et est optionnel. */}
+      {showStudioBillingBlock && (
         <div className={`form-group ${showError(studioBillingInvalid) ? 'has-error' : ''}`}>
           <label className="form-label">
             {formData.exchange_type === 'visibilite-contre-service'
-              ? "Temps (heures/minutes) pour service contre visibilité *"
+              ? "Temps (heures/minutes) pour le service (optionnel)"
               : "Temps (heures/minutes) *"}
           </label>
           <div className={`time-input-row ${showError(studioBillingInvalid) ? 'field-error-wrap' : ''}`}>
@@ -1633,7 +1619,7 @@ export const Step4Description = ({
 
       {!isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
       <div className={`form-group ${showError(deadlineInvalid) ? 'has-error' : ''}`}>
-        <label className="form-label">Date *</label>
+        <label className="form-label">{isCreationContenuCategory ? 'Date *' : 'Date (optionnel)'}</label>
         <button
           type="button"
           className={`date-picker-trigger ${formData.deadline ? 'has-value' : ''} ${showError(deadlineInvalid) ? 'field-error' : ''}`}
@@ -1713,15 +1699,15 @@ export const Step4Description = ({
 
       {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest && (
       <div className={`form-group ${showError(neededTimeInvalid) ? 'has-error' : ''}`}>
-        <label className="form-label">Heure *</label>
+        <label className="form-label">{isCreationContenuCategory ? 'Heure *' : 'Heure (optionnel)'}</label>
         <div className={`time-input-row ${showError(neededTimeInvalid) ? 'field-error-wrap' : ''}`}>
           <input
             type="text"
             className={`form-input time-input ${showError(neededTimeInvalid) ? 'field-error' : ''}`}
-            value={formData.neededTime || '01:00'}
+            value={formData.neededTime ?? ''}
             onChange={(e) => onUpdateFormData({ neededTime: normalizeTime(e.target.value) })}
-            onBlur={() => onUpdateFormData({ neededTime: formatTime(formData.neededTime || '01:00') })}
-            placeholder="HH:MM"
+            onBlur={() => onUpdateFormData({ neededTime: formData.neededTime ? formatTime(formData.neededTime) : '' })}
+            placeholder={isCreationContenuCategory ? 'HH:MM' : 'Noter l\'heure (optionnel)'}
             inputMode="numeric"
             aria-label="Heure"
           />
@@ -1738,18 +1724,18 @@ export const Step4Description = ({
       )}
 
       {!isStudioLieuCategory && !isVenteCategory && !isJobCategory && !isProjetsEquipeCategory && !isCastingFigurantRequest && (
-      <div className="form-group">
-        <label className="form-label">Durée estimée (optionnel)</label>
-        <div className="time-input-row">
+      <div className={`form-group ${showError(durationInvalid) ? 'has-error' : ''}`}>
+        <label className="form-label">{isCreationContenuCategory ? 'Durée *' : 'Durée estimée (optionnel)'}</label>
+        <div className={`time-input-row ${showError(durationInvalid) ? 'field-error-wrap' : ''}`}>
           <input
             type="text"
-            className="form-input time-input"
+            className={`form-input time-input ${showError(durationInvalid) ? 'field-error' : ''}`}
             value={formatDurationValue(formData.duration_minutes)}
             onChange={(e) => {
               const numeric = e.target.value.replace(/[^\d]/g, '')
               onUpdateFormData({ duration_minutes: numeric })
             }}
-            placeholder="Durée (en minutes)"
+            placeholder={isCreationContenuCategory ? 'Durée (en minutes)' : 'Noter la durée (optionnel)'}
             inputMode="numeric"
             aria-label="Durée estimée"
           />

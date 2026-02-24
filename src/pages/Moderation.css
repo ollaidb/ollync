@@ -311,3 +311,192 @@
 .moderation-empty {
   padding: 40px 20px;
 }
+
+/* Menu principal (onglets) */
+.moderation-main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+.moderation-main-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.moderation-main-nav-btn:hover {
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+
+.moderation-main-nav-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.moderation-content {
+  flex: 1;
+  padding: 16px 20px 40px;
+}
+
+/* Vue d'ensemble (tableau de bord) */
+.moderation-overview {
+  margin-bottom: 16px;
+}
+
+.moderation-overview-users {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.moderation-overview-users-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted-foreground);
+}
+
+.moderation-overview-users-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* Bloc règles (tableau de bord) */
+.moderation-rules-block {
+  margin-top: 24px;
+  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.moderation-rules-block-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.moderation-rules-list {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.moderation-rules-list li {
+  margin-bottom: 6px;
+}
+
+.moderation-rules-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+/* Statistiques */
+.moderation-stats-section {
+  padding: 8px 0;
+}
+
+.moderation-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.moderation-stats-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.moderation-stats-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted-foreground);
+}
+
+.moderation-stats-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.moderation-score {
+  font-size: 14px !important;
+  font-weight: 600;
+}
+
+/* Activité suspecte */
+.moderation-suspicious-section {
+  padding: 0;
+}
+
+.moderation-card-suspicious .moderation-links {
+  margin-top: 12px;
+}
+
+/* Page Règles */
+.moderation-rules-page {
+  max-width: 640px;
+}
+
+.moderation-rules-page h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.moderation-rules-page section {
+  margin-bottom: 20px;
+}
+
+.moderation-rules-page h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.moderation-rules-page p,
+.moderation-rules-page ul {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.moderation-rules-page ul {
+  padding-left: 20px;
+}
+
+/* Export CSV */
+.moderation-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}

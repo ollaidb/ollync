@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Heart, Tag } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import BackButton from '../components/BackButton'
+import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import InlineVideoPreview from '../components/InlineVideoPreview'
 import { useAuth } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabaseClient'
@@ -265,9 +266,10 @@ const PostRecommendations = () => {
                         <img src={mainMedia} alt={post.title} className="swipe-card-image" loading="lazy" />
                       )
                     ) : (
-                      <div className="swipe-card-image-placeholder">
-                        <Tag size={32} />
-                      </div>
+                      <CategoryPlaceholderMedia
+                        className="swipe-card-image-placeholder"
+                        categorySlug={post.category?.slug}
+                      />
                     )}
 
                     {post.category && <div className="swipe-card-category">{post.category.name}</div>}

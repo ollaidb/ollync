@@ -1871,9 +1871,11 @@ const PostDetails = () => {
               categorySlug={post.category?.slug}
             />
           )}
-          {/* Badge catégorie en haut à gauche */}
-          {mediaItems.length > 0 && post.category && (
-            <div className="post-hero-category-badge">{post.category.name}</div>
+          {/* Badge catégorie et sous-catégorie en haut à gauche (avec ou sans image) */}
+          {(post.category || post.sub_category) && (
+            <div className="post-hero-category-badge">
+              {[post.category?.name, post.sub_category?.name].filter(Boolean).join(' – ')}
+            </div>
           )}
           {/* Badge URGENT en bas à gauche */}
           {post.is_urgent && (
@@ -1991,7 +1993,7 @@ const PostDetails = () => {
                   <MapPin size={16} /> {post.location}
                 </span>
               )}
-              {post.needed_date && !isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && (
+              {post.needed_date && (
                 <span className="post-title-meta-item">
                   Pour le {new Date(post.needed_date).toLocaleDateString('fr-FR', {
                     day: '2-digit',
@@ -2162,16 +2164,16 @@ const PostDetails = () => {
                 </div>
               )}
 
-              {(!isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && (isEmploiRequestPost ? !!post.needed_date : (post.needed_date || post.needed_time || post.duration_minutes))) && (
+              {(post.needed_date || post.needed_time || post.duration_minutes) && (
                 <div className="post-info-item">
                   <span className="post-info-label">{isEmploiRequestPost ? 'Date' : 'Date et heure'}</span>
                   <span className="post-info-value post-info-value-nowrap">
                     {post.needed_date
                       ? new Date(post.needed_date).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                      })
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        })
                       : ''}
                     {!isEmploiRequestPost && post.needed_time ? ` à ${post.needed_time}` : ''}
                     {!isEmploiRequestPost && post.duration_minutes ? ` pour ${formatDuration(post.duration_minutes)}` : ''}
@@ -2220,8 +2222,8 @@ const PostDetails = () => {
               )}
             </div>
 
-            {/* Localisation */}
-            {(isEvenementRemote ? !!post.event_platform : (post.location || hasAddress)) && (
+            {/* Localisation : affichée seulement si remplie (optionnel pour toutes les catégories) */}
+            {(isEvenementRemote ? !!post.event_platform : (!!(post.location && post.location.trim()) || !!hasAddress)) && (
               <div className="post-location-details-section">
                 <h3 className="post-additional-title">Localisation</h3>
                 {isEvenementRemote ? (
@@ -2245,10 +2247,10 @@ const PostDetails = () => {
                               rel="noopener noreferrer"
                               className="post-address-link"
                             >
-                              {post.location || post.location_address || 'Non renseigné'}
+                              {post.location || post.location_address || ''}
                             </a>
                           ) : (
-                            <span>{post.location || post.location_address || 'Non renseigné'}</span>
+                            <span>{post.location || post.location_address || ''}</span>
                           )}
                         </div>
                       </div>

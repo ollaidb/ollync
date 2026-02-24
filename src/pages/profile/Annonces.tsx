@@ -169,22 +169,29 @@ const Annonces = () => {
         if (!user?.id) return
 
         try {
-          const { error } = await supabase
-            .from('posts')
-            .delete()
-            .eq('id', postId)
-            .eq('user_id', user.id)
+          // Toujours passer par la RPC : elle désactive les triggers côté base,
+          // ce qui permet de supprimer aussi les anciennes annonces (sinon post_id_locked).
+          const { data: rpcData, error: rpcError } = await supabase.rpc('delete_own_post', {
+            p_post_id: postId
+          })
 
-          if (error) {
-            console.error('Error deleting post:', error)
-            alert('Erreur lors de la suppression de l\'annonce')
-          } else {
+          if (rpcError) {
+            console.error('Error deleting post:', rpcError)
+            showError(rpcError.message || 'Erreur lors de la suppression de l\'annonce.')
+            return
+          }
+
+          if (rpcData?.ok) {
             setPosts(posts.filter(p => p.id !== postId))
             setActionMenuOpen(null)
+            showSuccess('Annonce supprimée')
+          } else {
+            const errMsg = (rpcData?.error as string) || 'Erreur lors de la suppression.'
+            showError(errMsg === 'post_introuvable_ou_interdit' ? 'Annonce introuvable ou vous n\'êtes pas le propriétaire.' : errMsg)
           }
-        } catch (error) {
-          console.error('Error in handleDelete:', error)
-          alert('Erreur lors de la suppression de l\'annonce')
+        } catch (err) {
+          console.error('Error in handleDelete:', err)
+          showError('Erreur lors de la suppression de l\'annonce.')
         }
       }
     )

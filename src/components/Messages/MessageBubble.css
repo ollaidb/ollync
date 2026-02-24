@@ -399,7 +399,7 @@
   opacity: 1;
 }
 
-/* Modal pour afficher les détails du rendez-vous */
+/* Modal pour afficher les détails du rendez-vous – centré dans la conversation */
 .appointment-overlay {
   position: fixed;
   top: 0;
@@ -419,8 +419,8 @@
 
 .appointment-overlay .appointment-inline-panel {
   position: relative;
-  margin: 0;
-  max-width: 226px;
+  margin: auto;
+  max-width: 480px;
   width: 100%;
 }
 
@@ -428,13 +428,13 @@
   background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 12px;
-  padding: 7px;
-  margin: 0 auto 8px auto;
+  border-radius: 20px;
+  padding: 16px 20px 20px;
+  margin: 0 auto;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   transition: all 0.3s ease;
   box-shadow: var(--shadow-lg);
-  max-width: 202px;
+  max-width: 480px;
   width: 100%;
 }
 
@@ -618,19 +618,21 @@
 
 @media (max-width: 768px) {
   .appointment-overlay {
-    align-items: flex-end;
-    padding: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
   }
 
   .appointment-overlay .appointment-inline-panel {
-    max-width: min(100%, 300px);
+    max-width: min(100%, 420px);
+    margin: auto;
   }
 
   .appointment-inline-panel {
     max-width: 100%;
-    border-radius: 12px;
-    padding: 8px;
-    margin: 0;
+    border-radius: 18px;
+    padding: 14px 16px 18px;
+    margin: 0 auto;
   }
 
   .appointment-inline-panel:focus-within,
