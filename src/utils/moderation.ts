@@ -26,9 +26,8 @@ export async function checkModerationTextFromDb(text: string): Promise<Moderatio
   }
 
   try {
-    const { data, error } = await supabase.rpc('check_moderation_text', {
-      input_text: String(text).trim()
-    })
+    // RPC args not in generated types; cast for runtime call
+    const { data, error } = (await (supabase as any).rpc('check_moderation_text', { input_text: String(text).trim() })) as { data: { score?: number; reasons?: string[] }[] | { score?: number; reasons?: string[] } | null; error: { message?: string } | null }
 
     if (error) {
       console.warn('[moderation] RPC check_moderation_text failed:', error.message)
@@ -39,7 +38,7 @@ export async function checkModerationTextFromDb(text: string): Promise<Moderatio
     if (!row) return { score: 0, reasons: [], flagged: false }
 
     const score = Number(row?.score) || 0
-    const reasons: string[] = Array.isArray(row?.reasons) ? row.reasons : []
+    const reasons: string[] = Array.isArray(row?.reasons) ? (row.reasons as string[]) : []
     const flagged = score >= FLAG_THRESHOLD
 
     return { score, reasons, flagged }

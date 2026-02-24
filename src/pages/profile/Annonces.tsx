@@ -171,9 +171,8 @@ const Annonces = () => {
         try {
           // Toujours passer par la RPC : elle désactive les triggers côté base,
           // ce qui permet de supprimer aussi les anciennes annonces (sinon post_id_locked).
-          const { data: rpcData, error: rpcError } = await supabase.rpc('delete_own_post', {
-            p_post_id: postId
-          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: rpcData, error: rpcError } = (await (supabase as any).rpc('delete_own_post', { p_post_id: postId })) as { data: { ok?: boolean; error?: string } | null; error: { message?: string } | null }
 
           if (rpcError) {
             console.error('Error deleting post:', rpcError)

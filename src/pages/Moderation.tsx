@@ -865,7 +865,7 @@ const Moderation = () => {
                           {new Date(row.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      {row.details?.reasons && (
+                      {row.details?.reasons != null && (
                         <p className="moderation-description">
                           Raisons : {Array.isArray(row.details.reasons) ? (row.details.reasons as string[]).join(', ') : String(row.details.reasons)}
                         </p>
