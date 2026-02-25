@@ -166,7 +166,7 @@ export const getPaymentOptionConfig = (
  */
 export const validatePublishForm = (
   formData: FormData,
-  requireSocialNetwork: boolean = false
+  _requireSocialNetwork: boolean = false
 ): ValidationResult => {
   const MIN_TITLE_CHARS = 5
   const MIN_DESCRIPTION_CHARS = 20
@@ -174,44 +174,13 @@ export const validatePublishForm = (
   const MAX_DESCRIPTION_CHARS_OTHER = 1000
   const MIN_WORK_SCHEDULE_CHARS = 5
 
-  const CASTING_SLUGS = new Set(['casting-role', 'casting'])
-  const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
-    'interview-emission',
-    'podcast',
-    'ugc',
-    'court-metrage',
-    'media',
-    'newsletter',
-    'chaine-youtube',
-    // Compatibilité anciens slugs
-    'projet-emission',
-    'projet-interview',
-    'projet-podcast',
-    'projet-ugc',
-    'projet-court-metrage',
-    'projet-magazine',
-    'projet-blog',
-    'projet-media'
-  ])
   const errors: string[] = []
   const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const isJobCategory = EMPLOI_SLUGS.has(formData.category || '')
   const isJobRequest = isJobCategory && formData.listingType === 'request'
   const isJobOffer = isJobCategory && !isJobRequest
-  const isCastingFigurantRequest =
-    formData.listingType === 'request' &&
-    CASTING_SLUGS.has(formData.category || '') &&
-    (formData.subcategory || '').trim().toLowerCase() === 'figurant'
   const isStudioLieuCategory = formData.category === 'studio-lieu'
-  const isVenteCategory = formData.category === 'vente'
-  const isCreationContenuProjectSubcategory =
-    formData.category === 'creation-contenu' &&
-    CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has((formData.subcategory || '').trim().toLowerCase())
-  const isProjetsEquipeCategory = formData.category === 'projets-equipe' || isCreationContenuProjectSubcategory
   const isEvenementsCategory = formData.category === 'evenements'
-  const isProjetsEquipeRequest =
-    formData.listingType === 'request' &&
-    (formData.category === 'projets-equipe' || formData.category === 'projet' || isCreationContenuProjectSubcategory)
   const isCreationContenuCategory = formData.category === 'creation-contenu'
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return NaN
@@ -599,7 +568,6 @@ export const handlePublish = async (
   const normalizedCategorySlug = categorySlug ?? formData.category
   const normalizedSubcategorySlug = subcategorySlug ?? formData.subcategory
   const isJobCategory = EMPLOI_SLUGS.has(normalizedCategorySlug || '')
-  const isJobRequest = isJobCategory && formData.listingType === 'request'
   const isCastingFigurantRequest =
     formData.listingType === 'request' &&
     CASTING_SLUGS.has((normalizedCategorySlug || '').toLowerCase()) &&

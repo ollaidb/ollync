@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
@@ -1019,7 +1019,6 @@ export const Step4Description = ({
   const titleInvalid = titleLength < MIN_TITLE_CHARS
   const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS || descriptionLength > MAX_DESCRIPTION_CHARS
   const contractTypeInvalid = isJobCategory && !(formData.contract_type && formData.contract_type.trim().length > 0)
-  const socialNetworkInvalid = false
   const paymentInvalid = showPaymentSection && !isJobRequest && !(formData.exchange_type && formData.exchange_type.trim().length > 0)
   const ugcActorTypeInvalid = showUgActorTypeSection && !(formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0)
   const materialConditionInvalid = isMaterialSale && !(formData.materialCondition && formData.materialCondition.trim().length > 0)
