@@ -4,7 +4,7 @@ import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
 import { usePublishNavigation } from '../hooks/usePublishNavigation'
 import { useExamplePosts } from '../hooks/useExamplePosts'
-import { handlePublish, validatePublishForm, shouldShowSocialNetwork, getPaymentOptionConfig } from '../utils/publishHelpers'
+import { handlePublish, validatePublishForm, getPaymentOptionConfig } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { AuthBackground } from '../components/Auth/AuthBackground'
@@ -94,6 +94,7 @@ export default function Publish() {
     title: '',
     description: '',
     socialNetwork: undefined as string | undefined,
+    socialNetworks: [] as string[],
     price: '',
     contract_type: '',
     work_schedule: '',
@@ -232,7 +233,6 @@ export default function Publish() {
       return 3.5
     }
 
-    const showSocialNetwork = shouldShowSocialNetwork(category?.slug, subcategory?.slug)
     const paymentConfig = getPaymentOptionConfig(data.exchange_type)
     const isJobRequest = category?.slug === 'emploi' && data.listingType === 'request'
     const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
@@ -255,7 +255,6 @@ export default function Publish() {
           parseFloat(data.revenue_share_percentage) > 0 &&
           parseFloat(data.revenue_share_percentage) <= 100)) &&
       (!requiresMaterialCondition || (data.materialCondition && data.materialCondition.trim().length > 0)) &&
-      (!showSocialNetwork || (data.socialNetwork && data.socialNetwork.trim().length > 0)) &&
       (!isUgSubcategory || (data.ugc_actor_type && data.ugc_actor_type.trim().length > 0))
 
     if (!hasStep3Required) return 4
@@ -292,12 +291,7 @@ export default function Publish() {
         const cachedDraft = JSON.parse(cachedDraftRaw)
         if (cachedDraft && typeof cachedDraft === 'object') {
           const merged = { ...initialFormData, ...cachedDraft }
-          const cat = (merged.category || '').toString().toLowerCase()
-          if (cat !== 'creation-contenu') {
-            merged.deadline = ''
-            merged.neededTime = ''
-            merged.duration_minutes = ''
-          }
+          // Ne pas vider date/heure/durée au chargement : conserver les valeurs du brouillon pour toutes les catégories
           setFormData(merged)
         }
       } catch {
@@ -384,20 +378,23 @@ export default function Publish() {
         const categorySlugValue = (categoryData as { slug?: string } | null)?.slug || null
         const subcategorySlugValue = (subCategoryData as { slug?: string } | null)?.slug || (categorySlugValue ? 'tout' : null)
 
-        const shouldUseSocialNetwork = shouldShowSocialNetwork(categorySlugValue, subcategorySlugValue)
         const mediaTypeValue = postData.media_type || ''
+        const socialNetworksFromMedia = mediaTypeValue
+          ? mediaTypeValue.split(',').map((s) => s.trim()).filter(Boolean)
+          : []
 
         const nextFormData: typeof initialFormData = {
           listingType: ((postData.listing_type as OfferDemandType | null) || 'offer') as OfferDemandType,
           category: categorySlugValue,
           subcategory: subcategorySlugValue,
-          subSubCategory: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
+          subSubCategory: socialNetworksFromMedia.length > 0 ? null : (mediaTypeValue || null),
           subSubSubCategory: null,
-          option: shouldUseSocialNetwork ? null : (mediaTypeValue || null),
+          option: socialNetworksFromMedia.length > 0 ? null : (mediaTypeValue || null),
           platform: null,
           title: postData.title || '',
           description: postData.description || '',
-          socialNetwork: shouldUseSocialNetwork ? (mediaTypeValue || '') : undefined,
+          socialNetwork: socialNetworksFromMedia[0] ?? (mediaTypeValue || undefined),
+          socialNetworks: socialNetworksFromMedia.length > 0 ? socialNetworksFromMedia : [],
           price: postData.price ? String(postData.price) : '',
           contract_type: postData.contract_type || '',
           work_schedule: postData.work_schedule || '',
@@ -486,10 +483,9 @@ export default function Publish() {
   }, [editPostId, formData, hasRestoredNewDraft, NEW_DRAFT_DATA_KEY])
 
   // Validation des champs obligatoires
-  const requireSocialNetwork = shouldShowSocialNetwork(categorySlug, subcategorySlug)
   const validation = useMemo(() => {
-    return validatePublishForm(formData, requireSocialNetwork)
-  }, [formData, requireSocialNetwork])
+    return validatePublishForm(formData, false)
+  }, [formData])
 
   const updateFormData = useCallback((updates: Partial<typeof formData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))

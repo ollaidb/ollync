@@ -56,7 +56,9 @@ const Home = () => {
   }
   const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
-  
+  const [heroIndex, setHeroIndex] = useState(0)
+  const heroSwipeStart = useRef<number | null>(null)
+
   // Sections d'annonces
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [urgentPosts, setUrgentPosts] = useState<Post[]>([])
@@ -96,28 +98,82 @@ const Home = () => {
   // Nombre d'annonces par section : mobile 5, web 4
   const maxPostsPerSection = isMobile ? 5 : 4
 
-  /* Slide hero désactivé : on affiche uniquement le premier panneau, sans défilement */
+  // Défilement automatique des 3 slides du hero
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % 3)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const HERO_SWIPE_THRESHOLD = 50
+  const handleHeroSwipeStart = (clientX: number) => {
+    heroSwipeStart.current = clientX
+  }
+  const handleHeroSwipeEnd = (clientX: number) => {
+    if (heroSwipeStart.current === null) return
+    const delta = clientX - heroSwipeStart.current
+    heroSwipeStart.current = null
+    if (Math.abs(delta) < HERO_SWIPE_THRESHOLD) return
+    if (delta < 0) setHeroIndex((i) => (i + 1) % 3)
+    else setHeroIndex((i) => (i - 1 + 3) % 3)
+  }
+
   const renderHeroPanels = () => (
     <div className="home-hero-section">
-      <div className="home-hero-single">
-        {heroPanels.slice(0, 1).map((panel) => (
-          <article
-            key={panel.id}
-            className={`home-hero-card ${panel.styleClass} active`}
+      <div
+        className="home-hero-single"
+        role="region"
+        aria-label="Carousel hero"
+        onTouchStart={(e) => handleHeroSwipeStart(e.touches[0].clientX)}
+        onTouchEnd={(e) => e.changedTouches[0] && handleHeroSwipeEnd(e.changedTouches[0].clientX)}
+        onMouseDown={(e) => handleHeroSwipeStart(e.clientX)}
+        onMouseUp={(e) => handleHeroSwipeEnd(e.clientX)}
+        onMouseLeave={() => { heroSwipeStart.current = null }}
+      >
+        <div className="home-hero-viewport">
+          <div
+            className="home-hero-track"
+            style={{ transform: `translate3d(-${heroIndex * (100 / 3)}%, 0, 0)` }}
           >
-            <div className="home-hero-text">
-              <span className="home-hero-title">{panel.title}</span>
-              <span className="home-hero-subtitle">{panel.description}</span>
-            </div>
-            <button
-              className="home-hero-cta"
-              type="button"
-              onClick={() => navigate(panel.route)}
-            >
-              {panel.button}
-              <ArrowRight size={14} />
-            </button>
-          </article>
+            {heroPanels.map((panel, index) => (
+              <article
+                key={panel.id}
+                role="button"
+                tabIndex={index === heroIndex ? 0 : -1}
+                aria-label={`${panel.title}, cliquer pour slide suivant`}
+                className={`home-hero-card ${panel.styleClass}`}
+                onClick={() => setHeroIndex((i) => (i + 1) % 3)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setHeroIndex((i) => (i + 1) % 3); } }}
+              >
+                <div className="home-hero-text">
+                  <span className="home-hero-title">{panel.title}</span>
+                  <span className="home-hero-subtitle">{panel.description}</span>
+                </div>
+                <button
+                  className="home-hero-cta"
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); navigate(panel.route); }}
+                >
+                  {panel.button}
+                  <ArrowRight size={14} />
+                </button>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="home-hero-dots" role="tablist" aria-label="Slides du hero">
+        {heroPanels.map((_, index) => (
+          <button
+            key={heroPanels[index].id}
+            type="button"
+            role="tab"
+            aria-selected={index === heroIndex}
+            aria-label={`Slide ${index + 1}`}
+            className={`home-hero-dot ${index === heroIndex ? 'active' : ''}`}
+            onClick={() => setHeroIndex(index)}
+          />
         ))}
       </div>
     </div>
@@ -684,7 +740,7 @@ const Home = () => {
         <div className="home-page">
           {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
           <div className="home-header-fixed">
-            {/* Logo + Icônes swipe et notification */}
+            {/* Nom app + Barre de recherche + Icônes swipe et notification (une seule ligne) */}
             <div className="home-header-top">
               <BackButton hideOnHome={true} className="home-back-button" />
               <h1 
@@ -693,6 +749,17 @@ const Home = () => {
               >
                 ollync
               </h1>
+              <div 
+                className="home-search-container"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/search')}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/search'); } }}
+                aria-label={t('home:searchPlaceholder')}
+              >
+                <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
+                <Search size={18} />
+              </div>
               <div className="home-header-actions">
                 <button
                   className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
@@ -714,17 +781,6 @@ const Home = () => {
                     <span className="home-notification-badge">{formattedUnreadNotificationsCount}</span>
                   )}
                 </button>
-              </div>
-            </div>
-
-            {/* Barre de recherche au milieu */}
-            <div className="home-search-container">
-              <div 
-                className="home-search-bar"
-                onClick={() => navigate('/search')}
-              >
-                <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
-                <Search size={20} />
               </div>
             </div>
           </div>
@@ -774,7 +830,7 @@ const Home = () => {
       <div className="home-page">
         {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
         <div className="home-header-fixed">
-          {/* Logo + Icônes swipe et notification */}
+          {/* Nom app + Barre de recherche + Icônes (une seule ligne) */}
           <div className="home-header-top">
             <BackButton hideOnHome={true} className="home-back-button" />
             <h1 
@@ -783,6 +839,17 @@ const Home = () => {
             >
               ollync
             </h1>
+            <div 
+              className="home-search-container"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/search')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/search'); } }}
+              aria-label={t('home:searchPlaceholder')}
+            >
+              <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
+              <Search size={18} />
+            </div>
             <div className="home-header-actions">
               <button
                 className="home-publish-btn"
@@ -811,17 +878,6 @@ const Home = () => {
                   <span className="home-notification-badge">{formattedUnreadNotificationsCount}</span>
                 )}
               </button>
-            </div>
-          </div>
-
-          {/* Barre de recherche au milieu */}
-          <div className="home-search-container">
-            <div 
-              className="home-search-bar"
-              onClick={() => navigate('/search')}
-            >
-              <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
-              <Search size={20} />
             </div>
           </div>
         </div>

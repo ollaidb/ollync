@@ -12,6 +12,7 @@ interface FormData {
   description: string
   shortDescription?: string
   socialNetwork?: string
+  socialNetworks?: string[]
   price: string
   contract_type?: string
   work_schedule?: string
@@ -169,10 +170,9 @@ export const validatePublishForm = (
 ): ValidationResult => {
   const MIN_TITLE_CHARS = 5
   const MIN_DESCRIPTION_CHARS = 20
+  const MAX_DESCRIPTION_CHARS_EMPLOI = 2000
+  const MAX_DESCRIPTION_CHARS_OTHER = 1000
   const MIN_WORK_SCHEDULE_CHARS = 5
-  const MIN_RESPONSIBILITIES_CHARS = 60
-  const MIN_REQUIRED_SKILLS_CHARS = 40
-  const MIN_BENEFITS_CHARS = 30
 
   const CASTING_SLUGS = new Set(['casting-role', 'casting'])
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
@@ -212,6 +212,7 @@ export const validatePublishForm = (
   const isProjetsEquipeRequest =
     formData.listingType === 'request' &&
     (formData.category === 'projets-equipe' || formData.category === 'projet' || isCreationContenuProjectSubcategory)
+  const isCreationContenuCategory = formData.category === 'creation-contenu'
   const parseTimeToMinutes = (value?: string) => {
     if (!value) return NaN
     const trimmed = value.trim()
@@ -246,9 +247,6 @@ export const validatePublishForm = (
   const titleLength = (formData.title || '').trim().length
   const descriptionLength = (formData.description || '').trim().length
   const workScheduleLength = (formData.work_schedule || '').trim().length
-  const responsibilitiesLength = (formData.responsibilities || '').trim().length
-  const requiredSkillsLength = (formData.required_skills || '').trim().length
-  const benefitsLength = (formData.benefits || '').trim().length
 
   if (!formData.title || titleLength === 0) {
     errors.push('Le titre est obligatoire')
@@ -257,10 +255,13 @@ export const validatePublishForm = (
   }
 
   // Description
+  const maxDescriptionChars = isJobCategory ? MAX_DESCRIPTION_CHARS_EMPLOI : MAX_DESCRIPTION_CHARS_OTHER
   if (!formData.description || descriptionLength === 0) {
     errors.push('La description est obligatoire')
   } else if (descriptionLength < MIN_DESCRIPTION_CHARS) {
     errors.push(`La description doit contenir au moins ${MIN_DESCRIPTION_CHARS} caractères`)
+  } else if (descriptionLength > maxDescriptionChars) {
+    errors.push(`La description ne doit pas dépasser ${maxDescriptionChars} caractères`)
   }
 
   if (isJobCategory && (!formData.contract_type || formData.contract_type.trim().length === 0)) {
@@ -271,24 +272,6 @@ export const validatePublishForm = (
     errors.push('Les horaires / temps de travail sont obligatoires pour un emploi')
   } else if (isJobOffer && workScheduleLength < MIN_WORK_SCHEDULE_CHARS) {
     errors.push(`Les horaires / temps de travail doivent contenir au moins ${MIN_WORK_SCHEDULE_CHARS} caractères`)
-  }
-
-  if (isJobOffer && (!formData.responsibilities || responsibilitiesLength === 0)) {
-    errors.push('Les missions / responsabilités sont obligatoires pour un emploi')
-  } else if (isJobOffer && responsibilitiesLength < MIN_RESPONSIBILITIES_CHARS) {
-    errors.push(`Les missions / responsabilités doivent contenir au moins ${MIN_RESPONSIBILITIES_CHARS} caractères`)
-  }
-
-  if (isJobOffer && (!formData.required_skills || requiredSkillsLength === 0)) {
-    errors.push('Les compétences requises sont obligatoires pour un emploi')
-  } else if (isJobOffer && requiredSkillsLength < MIN_REQUIRED_SKILLS_CHARS) {
-    errors.push(`Les compétences requises doivent contenir au moins ${MIN_REQUIRED_SKILLS_CHARS} caractères`)
-  }
-
-  if (isJobOffer && (!formData.benefits || benefitsLength === 0)) {
-    errors.push('Les avantages sont obligatoires pour un emploi')
-  } else if (isJobOffer && benefitsLength < MIN_BENEFITS_CHARS) {
-    errors.push(`Les avantages doivent contenir au moins ${MIN_BENEFITS_CHARS} caractères`)
   }
 
   const eventMode = (formData.event_mode || '').trim()
@@ -315,18 +298,17 @@ export const validatePublishForm = (
     errors.push('Le lieu est obligatoire')
   }
 
-  // Date/heure de besoin (non requis pour lieu et vente)
-  if (!isStudioLieuCategory && !isVenteCategory && !isCastingFigurantRequest && !isProjetsEquipeRequest) {
+  // Date/heure de besoin : obligatoires uniquement pour création de contenu (sinon optionnels)
+  if (isCreationContenuCategory) {
     if (!formData.deadline || formData.deadline.trim().length === 0) {
       errors.push('La date de besoin est obligatoire')
     }
-    if (
-      !isJobCategory &&
-      !isProjetsEquipeCategory &&
-      !isCastingFigurantRequest &&
-      (!formData.neededTime || formData.neededTime.trim().length === 0)
-    ) {
+    if (!formData.neededTime || formData.neededTime.trim().length === 0) {
       errors.push("L'heure de besoin est obligatoire")
+    }
+    const durationNum = formData.duration_minutes ? parseInt(formData.duration_minutes, 10) : NaN
+    if (!formData.duration_minutes || formData.duration_minutes.trim().length === 0 || Number.isNaN(durationNum) || durationNum <= 0) {
+      errors.push('La durée est obligatoire')
     }
   }
 
@@ -397,10 +379,7 @@ export const validatePublishForm = (
     }
   }
 
-  // Réseau social (seulement si requis)
-  if (requireSocialNetwork && (!formData.socialNetwork || formData.socialNetwork.trim().length === 0)) {
-    errors.push('Le réseau social est obligatoire')
-  }
+  // Réseau(x) social(aux) : optionnel pour toutes les catégories (plus de validation obligatoire)
 
   // UGC : marque ou créateur (obligatoire pour sous-catégorie UGC)
   const isUgSubcategory =
@@ -619,7 +598,8 @@ export const handlePublish = async (
 
   const normalizedCategorySlug = categorySlug ?? formData.category
   const normalizedSubcategorySlug = subcategorySlug ?? formData.subcategory
-  const isJobRequest = EMPLOI_SLUGS.has(normalizedCategorySlug || '') && formData.listingType === 'request'
+  const isJobCategory = EMPLOI_SLUGS.has(normalizedCategorySlug || '')
+  const isJobRequest = isJobCategory && formData.listingType === 'request'
   const isCastingFigurantRequest =
     formData.listingType === 'request' &&
     CASTING_SLUGS.has((normalizedCategorySlug || '').toLowerCase()) &&
@@ -761,12 +741,12 @@ export const handlePublish = async (
     is_urgent: formData.urgent || false,
     status: finalStatus,
     payment_type: formData.exchange_type || null,
-    // Stocker le réseau social dans media_type si disponible, sinon utiliser N3/N4
-    // Priorité : socialNetwork > subSubCategory/option
-    // Ne pas inclure si toutes les valeurs sont vides/null
-    media_type: (formData.socialNetwork && String(formData.socialNetwork).trim()) 
-      || (formData.subSubCategory && String(formData.subSubCategory).trim()) 
-      || (formData.option && String(formData.option).trim()) 
+    // Stocker les réseaux sociaux (multi) dans media_type (séparés par des virgules), sinon N3/N4
+    media_type: (formData.socialNetworks && formData.socialNetworks.length > 0)
+      ? formData.socialNetworks.filter(Boolean).map((s) => String(s).trim()).join(',')
+      : (formData.socialNetwork && String(formData.socialNetwork).trim())
+      || (formData.subSubCategory && String(formData.subSubCategory).trim())
+      || (formData.option && String(formData.option).trim())
       || null,
     needed_date:
       normalizedCategorySlug === 'studio-lieu' || normalizedCategorySlug === 'vente' || isCastingFigurantRequest || isProjetsEquipeRequest
@@ -777,7 +757,7 @@ export const handlePublish = async (
         ? null
         : (formData.neededTime?.trim() || null),
     number_of_people:
-      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'services' || isJobRequest || isCastingFigurantRequest || isProjetsEquipeRequest
+      normalizedCategorySlug === 'vente' || normalizedCategorySlug === 'services' || isJobCategory || isCastingFigurantRequest || isProjetsEquipeRequest
         ? null
         : (formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : null),
     duration_minutes:
@@ -791,7 +771,7 @@ export const handlePublish = async (
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
       normalizedCategorySlug === 'suivi' ||
-      isJobRequest ||
+      isJobCategory ||
       isProjetsEquipeRequest
         ? null
         : (formData.profileLevel?.trim() || null),
@@ -803,7 +783,7 @@ export const handlePublish = async (
       normalizedCategorySlug === 'services' ||
       normalizedCategorySlug === 'evenements' ||
       normalizedCategorySlug === 'suivi' ||
-      isJobRequest ||
+      isJobCategory ||
       isProjetsEquipeRequest
         ? null
         : (formData.profileRoles && formData.profileRoles.length > 0 ? formData.profileRoles : null),

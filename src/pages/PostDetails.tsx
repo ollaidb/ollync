@@ -100,7 +100,7 @@ interface EventTicketParticipant {
 
 type ContactIntent = 'request' | 'apply' | 'buy' | 'reserve' | 'ticket'
 
-const EMPLOI_CATEGORY_SLUGS = new Set(['emploi'])
+const EMPLOI_CATEGORY_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
 const LIEU_CATEGORY_SLUGS = new Set(['studio-lieu', 'lieu'])
 const VENTE_CATEGORY_SLUGS = new Set(['vente'])
 const EVENEMENT_CATEGORY_SLUGS = new Set(['evenements', 'evenement'])
@@ -1700,7 +1700,8 @@ const PostDetails = () => {
   const isStudioLieuPost = categorySlug === 'studio-lieu'
   const isEvenementPost = categorySlug === 'evenements' || categorySlug === 'evenement'
   const isEvenementRemote = isEvenementPost && post?.event_mode === 'remote'
-  const isEmploiRequestPost = EMPLOI_CATEGORY_SLUGS.has(categorySlug) && post?.listing_type === 'request'
+  const isEmploiPost = EMPLOI_CATEGORY_SLUGS.has(categorySlug)
+  const isEmploiRequestPost = isEmploiPost && post?.listing_type === 'request'
   const isCastingFigurantRequestPost =
     (categorySlug === 'casting-role' || categorySlug === 'casting') &&
     post?.listing_type === 'request' &&
@@ -2131,9 +2132,12 @@ const PostDetails = () => {
               )}
             </div>
 
-            {/* Prix en grand */}
+            {/* Prix / Rémunération en grand */}
             {!isEmploiRequestPost && post.price && (
-              <div className="post-price-main">{post.price} €</div>
+              <div>
+                {isEmploiPost && <div className="post-price-label">Rémunération</div>}
+                <div className="post-price-main">{post.price} €</div>
+              </div>
             )}
 
             {/* Informations secondaires */}
@@ -2277,7 +2281,7 @@ const PostDetails = () => {
               )}
 
               {/* Nombre de personnes */}
-              {!isEmploiRequestPost && !isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && post.number_of_people && (
+              {!isEmploiPost && !isCastingFigurantRequestPost && !isProjetsEquipeRequestPost && post.number_of_people && (
                 <div className="post-info-item">
                   <span className="post-info-label">Nombre de personnes</span>
                   <span className="post-info-value post-info-value-right">{post.number_of_people}</span>
@@ -2317,14 +2321,14 @@ const PostDetails = () => {
                 </div>
               )}
 
-              {!isEmploiRequestPost && !isProjetsEquipeRequestPost && post.profile_level && (
+              {!isEmploiPost && !isProjetsEquipeRequestPost && post.profile_level && (
                 <div className="post-info-item">
                   <span className="post-info-label">Niveau recherché</span>
                   <span className="post-info-value">{post.profile_level}</span>
                 </div>
               )}
 
-              {!isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post.profile_roles).length > 0 && (
+              {!isEmploiPost && !isProjetsEquipeRequestPost && getProfileRolesList(post.profile_roles).length > 0 && (
                 <div className="post-info-item">
                   <span className="post-info-label">Rôle recherché</span>
                   <span className="post-info-value">
@@ -2356,7 +2360,7 @@ const PostDetails = () => {
                 ) : (
                   <>
                     <div className="post-info-item">
-                      <span className="post-info-label">Lieu</span>
+                      <span className="post-info-label">{isEmploiPost ? 'Localisation' : 'Lieu'}</span>
                       <div className="post-info-value">
                         <div className="post-address-text">
                           <MapPin size={16} />
@@ -2645,7 +2649,7 @@ const PostDetails = () => {
             }
             cancelLabel="Annuler"
           >
-            {(!isRequestListingPost || isCastingFigurantRequestPost) && !isEmploiRequestPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
+            {(!isRequestListingPost || isCastingFigurantRequestPost) && !isEmploiPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
               <div className="confirmation-modal-field">
                 <label className="confirmation-modal-label">
                   Poste recherché

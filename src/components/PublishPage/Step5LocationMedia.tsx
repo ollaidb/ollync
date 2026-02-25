@@ -603,7 +603,6 @@ export const Step5LocationMedia = ({
 
   return (
     <div className="step5-location-media">
-      <h2 className="step-title">Localisation et médias</h2>
 
       {isEvenementsCategory ? (
         <>
@@ -688,7 +687,7 @@ export const Step5LocationMedia = ({
         </>
       ) : (
         <div className="form-group">
-          <label className="form-label">Lieu *</label>
+          <label className="form-label">{isEmploiCategory ? 'Localisation *' : 'Lieu *'}</label>
                 <LocationFieldComponent
                   value={formData.location_address || formData.location || ''}
             onChange={(value) => {
@@ -745,7 +744,7 @@ export const Step5LocationMedia = ({
         </div>
       </div>
 
-      {!isVenteCategory && !isServicesCategory && !isEmploiRequest && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
+      {!isVenteCategory && !isServicesCategory && !isEmploiCategory && !isEmploiRequest && !isCastingFigurantRequest && !isProjetsEquipeRequest && (
         <div className="form-group">
           <label className="form-label">Nombre maximum de participants</label>
           <input
@@ -759,7 +758,7 @@ export const Step5LocationMedia = ({
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuStandardCategory && !isCastingCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
+      {!isStudioLieuCategory && !isVenteCategory && !isCreationContenuStandardCategory && !isCastingCategory && !isEmploiCategory && !isPosteServiceCategory && !isServicesCategory && !isEvenementsCategory && !isSuiviCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
       <div className="form-group dropdown-field">
         <label className="form-label">Niveau recherché (optionnel)</label>
         <button
@@ -869,7 +868,7 @@ export const Step5LocationMedia = ({
         </div>
       )}
 
-      {!isStudioLieuCategory && !isVenteCategory && !isEmploiRequest && !isProjetsEquipeRequest && (
+      {!isStudioLieuCategory && !isVenteCategory && !isEmploiRequest && !isProjetsEquipeRequest && (loadingUserPosts || userPosts.length > 0) && (
       <div className="form-group dropdown-field">
         <label className="form-label">Taguer une annonce (optionnel)</label>
         <p className="form-helper-text">
@@ -877,8 +876,6 @@ export const Step5LocationMedia = ({
         </p>
         {loadingUserPosts ? (
           <div className="form-helper-text">Chargement des annonces...</div>
-        ) : userPosts.length === 0 ? (
-          <div className="form-helper-text">Aucune annonce publiée pour le moment.</div>
         ) : (
           <>
             <button

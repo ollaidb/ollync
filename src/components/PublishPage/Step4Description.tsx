@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { shouldShowSocialNetwork, getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
+import { getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
 import { CustomList } from '../CustomList/CustomList'
 import './Step4Description.css'
@@ -12,6 +12,7 @@ interface FormData {
   description: string
   shortDescription?: string
   socialNetwork?: string
+  socialNetworks?: string[]
   price: string
   exchange_type: string
   deadline?: string
@@ -90,10 +91,8 @@ export const Step4Description = ({
   const isCreationContenuProjectSubcategory =
     categorySlugValue === 'creation-contenu' &&
     CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS.has(subcategorySlugValue)
-  const showSocialNetwork = !isCastingCategory && !isJobRequest && shouldShowSocialNetwork(
-    selectedCategory?.slug,
-    selectedSubcategory?.slug
-  )
+  // Réseau(x) social(aux) : affiché pour toutes les catégories (sauf demande emploi), optionnel
+  const showSocialNetwork = !isJobRequest
   const isStudioLieuCategory = (selectedCategory?.slug ?? formData.category) === 'studio-lieu'
   const isVenteCategory = (selectedCategory?.slug ?? formData.category) === 'vente'
   const isCreationContenuCategory = categorySlugValue === 'creation-contenu'
@@ -194,9 +193,13 @@ export const Step4Description = ({
     { id: 'bon-etat', name: 'Bon état' },
     { id: 'etat-moyen', name: 'État moyen' }
   ]
-  const selectedSocialNetworkName =
-    SOCIAL_NETWORKS_CONFIG.find((network) => network.id === formData.socialNetwork)?.name ??
-    'Choisir un réseau'
+  const socialNetworksList = Array.isArray(formData.socialNetworks) ? formData.socialNetworks : (formData.socialNetwork ? [formData.socialNetwork] : [])
+  const selectedSocialNetworksLabel =
+    socialNetworksList.length > 0
+      ? socialNetworksList
+          .map((id) => SOCIAL_NETWORKS_CONFIG.find((n) => n.id === id)?.name ?? id)
+          .join(', ')
+      : 'Choisir des réseaux'
   const selectedPaymentName =
     paymentOptions.find((option) => option.id === formData.exchange_type)?.name ??
     'Choisir un moyen de paiement'
@@ -823,7 +826,7 @@ export const Step4Description = ({
   const descriptionPlaceholder = isJobCategory
     ? (isJobRequest
       ? 'Présente ton profil, tes compétences et le type de poste que tu recherches.'
-      : 'Décris le poste, les missions, les compétences requises, le profil recherché et les avantages.')
+      : 'Décris le poste et le profil recherché.')
     : activeExample?.description ?? 'Décrivez en détail votre annonce...'
   
   // Synchroniser le moyen de paiement avec la catégorie sélectionnée
@@ -869,6 +872,7 @@ export const Step4Description = ({
     if (!isJobRequest) return
     const updates: Partial<FormData> = {}
     if (formData.socialNetwork) updates.socialNetwork = ''
+    if (formData.socialNetworks && formData.socialNetworks.length > 0) updates.socialNetworks = []
     if (formData.exchange_type) updates.exchange_type = ''
     if (formData.price) updates.price = ''
     if (formData.exchange_service) updates.exchange_service = ''
@@ -885,6 +889,7 @@ export const Step4Description = ({
   }, [
     isJobRequest,
     formData.socialNetwork,
+    formData.socialNetworks,
     formData.exchange_type,
     formData.price,
     formData.exchange_service,
@@ -943,22 +948,6 @@ export const Step4Description = ({
     }
   }, [hasSheetOpen])
 
-  /* Pour les catégories où date/heure/durée sont optionnels : vider une fois au montage pour n'afficher que "Noter la date/heure/durée (optionnel)". */
-  const hasClearedOptionalDateTimeRef = useRef(false)
-  useEffect(() => {
-    if (isCreationContenuCategory || hasClearedOptionalDateTimeRef.current) return
-    const hasAny = !!(formData.deadline && formData.deadline.trim()) ||
-      !!(formData.neededTime && formData.neededTime.trim()) ||
-      !!(formData.duration_minutes && formData.duration_minutes.trim())
-    if (!hasAny) return
-    hasClearedOptionalDateTimeRef.current = true
-    onUpdateFormData({
-      deadline: '',
-      neededTime: '',
-      duration_minutes: ''
-    })
-  }, [isCreationContenuCategory, formData.deadline, formData.neededTime, formData.duration_minutes, onUpdateFormData])
-
   useEffect(() => {
     if (!isVenteCategory) return
     const updates: Partial<FormData> = {}
@@ -985,18 +974,12 @@ export const Step4Description = ({
   const MIN_TITLE_CHARS = 5
   const MAX_TITLE_CHARS = 50
   const MIN_DESCRIPTION_CHARS = 20
-  const MAX_DESCRIPTION_CHARS = 500
+  const MAX_DESCRIPTION_CHARS = isJobCategory ? 2000 : 1000
   const MIN_WORK_SCHEDULE_CHARS = 5
-  const MIN_RESPONSIBILITIES_CHARS = 60
-  const MIN_REQUIRED_SKILLS_CHARS = 40
-  const MIN_BENEFITS_CHARS = 30
 
   const titleLength = formData.title.trim().length
   const descriptionLength = formData.description.trim().length
   const workScheduleLength = (formData.work_schedule || '').trim().length
-  const responsibilitiesLength = (formData.responsibilities || '').trim().length
-  const requiredSkillsLength = (formData.required_skills || '').trim().length
-  const benefitsLength = (formData.benefits || '').trim().length
   
   const hasValidStudioBillingHours =
     !!formData.billingHours &&
@@ -1008,14 +991,12 @@ export const Step4Description = ({
     formData.businessOpeningHours.some((slot) => slot.enabled && slot.start && slot.end && slot.start < slot.end)
 
   // Validation complète des champs obligatoires de cette étape
-  const canContinue = 
+  const canContinue =
     titleLength >= MIN_TITLE_CHARS &&
     descriptionLength >= MIN_DESCRIPTION_CHARS &&
+    descriptionLength <= MAX_DESCRIPTION_CHARS &&
     (!isJobCategory || (formData.contract_type && formData.contract_type.trim().length > 0)) &&
     (!isJobCategory || isJobRequest || workScheduleLength >= MIN_WORK_SCHEDULE_CHARS) &&
-    (!isJobCategory || isJobRequest || responsibilitiesLength >= MIN_RESPONSIBILITIES_CHARS) &&
-    (!isJobCategory || isJobRequest || requiredSkillsLength >= MIN_REQUIRED_SKILLS_CHARS) &&
-    (!isJobCategory || isJobRequest || benefitsLength >= MIN_BENEFITS_CHARS) &&
     (isJobRequest || formData.exchange_type.trim().length > 0) &&
     (!requiresPrice || (formData.price && parseFloat(formData.price) > 0)) &&
     (!requiresExchangeService || (formData.exchange_service && formData.exchange_service.trim().length > 0)) &&
@@ -1028,7 +1009,6 @@ export const Step4Description = ({
       parseFloat(formData.revenue_share_percentage) <= 100
     )) &&
     (!isMaterialSale || (formData.materialCondition && formData.materialCondition.trim().length > 0)) &&
-    (!showSocialNetwork || (formData.socialNetwork && formData.socialNetwork.trim().length > 0)) &&
     (!requireStudioBillingHours || hasValidStudioBillingHours) &&
     (!isStudioLieuCategory || hasValidOpeningHours) &&
     (!showUgActorTypeSection || (formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0)) &&
@@ -1037,9 +1017,9 @@ export const Step4Description = ({
     (!isCreationContenuCategory || (formData.duration_minutes && formData.duration_minutes.trim().length > 0 && parseInt(formData.duration_minutes, 10) > 0))
 
   const titleInvalid = titleLength < MIN_TITLE_CHARS
-  const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS
+  const descriptionInvalid = descriptionLength < MIN_DESCRIPTION_CHARS || descriptionLength > MAX_DESCRIPTION_CHARS
   const contractTypeInvalid = isJobCategory && !(formData.contract_type && formData.contract_type.trim().length > 0)
-  const socialNetworkInvalid = showSocialNetwork && !(formData.socialNetwork && formData.socialNetwork.trim().length > 0)
+  const socialNetworkInvalid = false
   const paymentInvalid = showPaymentSection && !isJobRequest && !(formData.exchange_type && formData.exchange_type.trim().length > 0)
   const ugcActorTypeInvalid = showUgActorTypeSection && !(formData.ugc_actor_type && formData.ugc_actor_type.trim().length > 0)
   const materialConditionInvalid = isMaterialSale && !(formData.materialCondition && formData.materialCondition.trim().length > 0)
@@ -1066,9 +1046,6 @@ export const Step4Description = ({
   const durationInvalid =
     isCreationContenuCategory && !(formData.duration_minutes && formData.duration_minutes.trim().length > 0 && parseInt(formData.duration_minutes, 10) > 0)
   const workScheduleInvalid = isJobCategory && !isJobRequest && workScheduleLength < MIN_WORK_SCHEDULE_CHARS
-  const responsibilitiesInvalid = isJobCategory && !isJobRequest && responsibilitiesLength < MIN_RESPONSIBILITIES_CHARS
-  const requiredSkillsInvalid = isJobCategory && !isJobRequest && requiredSkillsLength < MIN_REQUIRED_SKILLS_CHARS
-  const benefitsInvalid = isJobCategory && !isJobRequest && benefitsLength < MIN_BENEFITS_CHARS
 
   const showError = (invalid: boolean) => showValidationErrors && invalid
 
@@ -1172,30 +1149,42 @@ export const Step4Description = ({
       )}
 
       {showSocialNetwork && (
-        <div className={`form-group dropdown-field ${showError(socialNetworkInvalid) ? 'has-error' : ''}`}>
-          <label className="form-label">Réseau social concerné *</label>
+        <div className="form-group dropdown-field">
+          <label className="form-label">Réseaux sociaux (optionnel)</label>
           <button
             type="button"
-            className={`dropdown-trigger ${isSocialNetworkOpen ? 'open' : ''} ${showError(socialNetworkInvalid) ? 'field-error' : ''}`}
+            className={`dropdown-trigger ${isSocialNetworkOpen ? 'open' : ''}`}
             onClick={() => setIsSocialNetworkOpen((prev) => !prev)}
           >
-            <span>{selectedSocialNetworkName}</span>
+            <span>{selectedSocialNetworksLabel}</span>
             <span className="dropdown-caret" aria-hidden="true" />
           </button>
           {renderBottomSheet(
             isSocialNetworkOpen,
             () => setIsSocialNetworkOpen(false),
-            'Choisissez un réseau social',
-            <CustomList
-              items={SOCIAL_NETWORKS_CONFIG}
-              selectedId={formData.socialNetwork}
-              onSelectItem={(networkId) => {
-                onUpdateFormData({ socialNetwork: networkId })
-                setIsSocialNetworkOpen(false)
-              }}
-              className="social-networks-list publish-list"
-              showCheckbox={false}
-            />
+            'Choisissez un ou plusieurs réseaux',
+            <div className="social-networks-multi-list publish-list">
+              {SOCIAL_NETWORKS_CONFIG.map((network) => {
+                const isSelected = socialNetworksList.includes(network.id)
+                return (
+                  <button
+                    key={network.id}
+                    type="button"
+                    className={`tagged-post-option ${isSelected ? 'selected' : ''}`}
+                    onClick={() => {
+                      const next = isSelected
+                        ? socialNetworksList.filter((id) => id !== network.id)
+                        : [...socialNetworksList, network.id]
+                      onUpdateFormData({ socialNetworks: next, socialNetwork: next[0] ?? '' })
+                    }}
+                  >
+                    <span className="tagged-post-title">{network.name}</span>
+                    {isSelected && <span className="social-network-check" aria-hidden>✓</span>}
+                  </button>
+                )
+              })}
+            </div>,
+            'social-networks-panel'
           )}
         </div>
       )}
@@ -1402,7 +1391,7 @@ export const Step4Description = ({
 
       {requiresPrice && (
         <div className={`form-group ${showError(priceInvalid) ? 'has-error' : ''}`}>
-          <label className="form-label">{isJobCategory ? 'Prix par heure *' : 'Prix *'}</label>
+          <label className="form-label">{isJobCategory ? 'Rémunération *' : 'Prix *'}</label>
           <input
             type="number"
             className={`form-input ${showError(priceInvalid) ? 'field-error' : ''}`}
@@ -1784,47 +1773,6 @@ export const Step4Description = ({
             </div>
           </div>
 
-          <div className={`form-group ${showError(responsibilitiesInvalid) ? 'has-error' : ''}`}>
-            <label className="form-label">Missions / responsabilités *</label>
-            <textarea
-              className={`form-textarea ${showError(responsibilitiesInvalid) ? 'field-error' : ''}`}
-              placeholder="Décrivez les missions principales du poste."
-              value={formData.responsibilities || ''}
-              onChange={(e) => onUpdateFormData({ responsibilities: e.target.value })}
-              rows={4}
-            />
-            <div className="form-field-meta">
-              Minimum {MIN_RESPONSIBILITIES_CHARS} caractères ({responsibilitiesLength}/{MIN_RESPONSIBILITIES_CHARS})
-            </div>
-          </div>
-
-          <div className={`form-group ${showError(requiredSkillsInvalid) ? 'has-error' : ''}`}>
-            <label className="form-label">Compétences requises *</label>
-            <textarea
-              className={`form-textarea ${showError(requiredSkillsInvalid) ? 'field-error' : ''}`}
-              placeholder="Listez les compétences attendues (ex: montage, rédaction, outils...)."
-              value={formData.required_skills || ''}
-              onChange={(e) => onUpdateFormData({ required_skills: e.target.value })}
-              rows={4}
-            />
-            <div className="form-field-meta">
-              Minimum {MIN_REQUIRED_SKILLS_CHARS} caractères ({requiredSkillsLength}/{MIN_REQUIRED_SKILLS_CHARS})
-            </div>
-          </div>
-
-          <div className={`form-group ${showError(benefitsInvalid) ? 'has-error' : ''}`}>
-            <label className="form-label">Avantages *</label>
-            <textarea
-              className={`form-textarea ${showError(benefitsInvalid) ? 'field-error' : ''}`}
-              placeholder="Ex: télétravail, horaires flexibles, tickets resto..."
-              value={formData.benefits || ''}
-              onChange={(e) => onUpdateFormData({ benefits: e.target.value })}
-              rows={3}
-            />
-            <div className="form-field-meta">
-              Minimum {MIN_BENEFITS_CHARS} caractères ({benefitsLength}/{MIN_BENEFITS_CHARS})
-            </div>
-          </div>
         </>
       )}
 
