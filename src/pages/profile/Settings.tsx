@@ -73,12 +73,12 @@ const Settings = () => {
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isDestructive = item.id === 'delete-account'
-                const isActive = location.pathname === item.path
+                const isActive = item.path != null && location.pathname === item.path
                 return (
                   <button
                     key={item.id}
                     className={`settings-menu-item ${isActive ? 'active' : ''} ${isDestructive ? 'settings-menu-item-destructive' : ''}`}
-                    onClick={() => navigate(item.path)}
+                    onClick={() => item.path && navigate(item.path)}
                     aria-label={item.label}
                     aria-current={isActive ? 'page' : undefined}
                   >

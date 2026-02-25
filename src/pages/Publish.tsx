@@ -7,6 +7,7 @@ import { useExamplePosts } from '../hooks/useExamplePosts'
 import { handlePublish, validatePublishForm, shouldShowSocialNetwork, getPaymentOptionConfig } from '../utils/publishHelpers'
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { PublishGuideModal } from '../components/PublishPage/PublishGuideModal'
 import { Step0OfferDemand, type OfferDemandType } from '../components/PublishPage/Step0OfferDemand'
@@ -17,10 +18,14 @@ import { Step3Platform } from '../components/PublishPage/Step3Platform'
 import { Step4Description } from '../components/PublishPage/Step4Description'
 import { Step5LocationMedia } from '../components/PublishPage/Step5LocationMedia'
 import { PublishActions } from '../components/PublishPage/PublishActions'
+import { PageMeta } from '../components/PageMeta'
 import { supabase } from '../lib/supabaseClient'
+import { useTranslation } from 'react-i18next'
+import './Auth.css'
 import './Publish.css'
 
 export default function Publish() {
+  const { t } = useTranslation(['common'])
   type DraftPost = {
     id: string
     category_id?: string | null
@@ -512,48 +517,61 @@ export default function Publish() {
 
   if (!user) {
     return (
-      <div className="publish-page-container">
-        <div className="publish-header-not-connected">
-          <h1 className="publish-title-centered">Publier</h1>
-        </div>
-        <div className="publish-content-not-connected">
-          <PlusCircle className="publish-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="publish-not-connected-title">Vous n'êtes pas connecté</h2>
-          <p className="publish-not-connected-text">Connectez-vous pour publier une annonce</p>
-          <button 
-            className="publish-not-connected-button" 
-            onClick={() => navigate('/auth/register')}
-          >
-            S'inscrire
-          </button>
-          <p className="publish-not-connected-login-link">
-            Déjà un compte ?{' '}
-            <button 
-              className="publish-not-connected-link" 
-              onClick={() => navigate('/auth/login')}
-            >
-              Se connecter
-            </button>
-          </p>
+      <>
+        <PageMeta title={t('common:meta.publish.title')} description={t('common:meta.publish.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="publish-page-container">
+            <div className="publish-header-not-connected">
+              <h1 className="publish-title-centered">Publier</h1>
+            </div>
+            <div className="publish-content-not-connected">
+              <PlusCircle className="publish-not-connected-icon" strokeWidth={1.5} />
+              <h2 className="publish-not-connected-title">Vous n'êtes pas connecté</h2>
+              <p className="publish-not-connected-text">Connectez-vous pour publier une annonce</p>
+              <button 
+                className="publish-not-connected-button" 
+                onClick={() => navigate('/auth/register')}
+              >
+                S'inscrire
+              </button>
+              <p className="publish-not-connected-login-link">
+                Déjà un compte ?{' '}
+                <button 
+                  className="publish-not-connected-link" 
+                  onClick={() => navigate('/auth/login')}
+                >
+                  Se connecter
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
+    </>
     )
   }
 
   if (isLoadingEdit) {
     return (
-      <div className="publish-page-container">
+      <>
+        <PageMeta title={t('common:meta.publish.title')} description={t('common:meta.publish.description')} />
+        <div className="publish-page-container">
         <div className="publish-content-wrapper">
           <div className="publish-content">
             <p>Chargement...</p>
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   return (
-    <div className="publish-page-container">
+    <>
+      <PageMeta title={t('common:meta.publish.title')} description={t('common:meta.publish.description')} />
+      <div className="publish-page-container">
       {/* Header */}
       <div className="publish-header-wrapper">
         <PublishHeader
@@ -697,5 +715,6 @@ export default function Publish() {
         onClose={() => setIsGuideOpen(false)}
       />
     </div>
+    </>
   )
 }

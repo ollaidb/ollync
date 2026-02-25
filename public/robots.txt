@@ -1,0 +1,38 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+# Pages utiles (accueil, recherche, catégories, annonces, profils publics)
+Allow: /
+Allow: /home
+Allow: /feed
+Allow: /search
+Allow: /favorites
+Allow: /creation-contenu
+Allow: /creation-contenu/
+Allow: /emploi
+Allow: /emploi/
+Allow: /casting-role
+Allow: /casting-role/
+Allow: /studio-lieu
+Allow: /studio-lieu/
+Allow: /services
+Allow: /services/
+Allow: /evenements
+Allow: /evenements/
+Allow: /vente
+Allow: /vente/
+Allow: /urgent
+Allow: /recent
+Allow: /post/
+Allow: /profile/public/
+
+# Routes privées ou sans intérêt SEO
+Disallow: /auth/
+Disallow: /messages
+Disallow: /messages/
+Disallow: /notifications
+Disallow: /publish
+Disallow: /publier-annonce
+Disallow: /profile
+Disallow: /moderation
+
+Sitemap: https://ollync.fr/sitemap.xml

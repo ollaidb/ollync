@@ -192,6 +192,55 @@
   color: var(--foreground);
 }
 
+/* Bloc export / portabilité des données (RGPD) */
+.data-export-block {
+  margin-top: 8px;
+}
+
+.data-export-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.data-export-text {
+  flex: 1;
+}
+
+.data-export-error {
+  font-size: 14px;
+  color: var(--destructive, #dc2626);
+  margin: 0 0 12px 0;
+}
+
+.data-export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.data-export-button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.data-export-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.data-export-button-text {
+  white-space: nowrap;
+}
+
 .loading-state {
   text-align: center;
   padding: 48px 24px;

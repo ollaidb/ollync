@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe, CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -13,6 +13,9 @@ import { useToastContext } from '../../contexts/ToastContext'
 import ServiceDetailModal from '../../components/ServiceDetailModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { getPaymentOptionConfig } from '../../utils/publishHelpers'
+import { getLinkPlatform } from '../../utils/linkPlatform'
+import { PageMeta } from '../../components/PageMeta'
+import { useTranslation } from 'react-i18next'
 import './PublicProfile.css'
 
 interface Service {
@@ -96,11 +99,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const { showSuccess } = useToastContext()
+  const { t } = useTranslation(['common'])
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'avis'>('a-propos')
-  const [aboutSectionTab, setAboutSectionTab] = useState<'services' | 'reservations'>('services')
+  const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'services' | 'ouverture' | 'avis'>('a-propos')
   const [posts, setPosts] = useState<Post[]>([])
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -215,18 +218,25 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const venueWeekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
   const normalizeTab = (value?: string | null) => {
-    if (value === 'annonces' || value === 'avis' || value === 'a-propos') {
+    if (value === 'annonces' || value === 'avis' || value === 'a-propos' || value === 'services' || value === 'ouverture') {
       return value
     }
     return null
   }
 
-  const handleTabChange = (tab: 'a-propos' | 'annonces' | 'avis') => {
+  const contentScrollRef = useRef<HTMLDivElement>(null)
+
+  const handleTabChange = (tab: 'a-propos' | 'annonces' | 'services' | 'ouverture' | 'avis') => {
     setActiveTab(tab)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', tab)
     setSearchParams(nextParams)
   }
+
+  // Remettre le contenu en haut à chaque changement d'onglet (après rendu) pour éviter le mouvement vertical
+  useEffect(() => {
+    contentScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+  }, [activeTab])
 
   // Log pour déboguer l'affichage du bouton
   useEffect(() => {
@@ -1076,15 +1086,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, postsLoaded])
 
+  // Précharger annonces et avis dès l'affichage du profil pour affichage immédiat au clic (sans "Chargement..." ni rotation)
   useEffect(() => {
-    if (profileId && activeTab === 'annonces' && !postsLoaded) {
-      fetchPosts()
-    } else if (profileId && activeTab === 'avis') {
-      fetchReviews()
-    }
-    // Pour "à propos", pas besoin de fetch, les données sont déjà dans profile
+    if (!profileId || !profile) return
+    if (!postsLoaded) fetchPosts()
+    fetchReviews()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, activeTab, postsLoaded])
+  }, [profileId, profile])
 
   useEffect(() => {
     if (!isVenueDatePickerOpen) return
@@ -1094,19 +1102,30 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   if (loading) {
     return (
-      <div className="public-profile-loading">
-        <div className="loading-spinner"></div>
+      <>
+        <PageMeta title={t('common:meta.profilePublic.title')} description={t('common:meta.profilePublic.description')} />
+        <div className="public-profile-loading public-profile-loading-static">
+        <span className="public-profile-loading-text">Chargement...</span>
       </div>
+      </>
     )
   }
 
   if (!profile) {
     return (
-      <div className="public-profile-empty">
+      <>
+        <PageMeta title={t('common:meta.profilePublic.title')} description={t('common:meta.profilePublic.description')} />
+        <div className="public-profile-empty">
         <p>Profil introuvable</p>
       </div>
+      </>
     )
   }
+
+  const profileMetaTitle = profile.full_name?.trim() || profile.username?.trim() || t('common:meta.profilePublic.title')
+  const profileMetaDescription = profile.bio?.replace(/\s+/g, ' ').trim().slice(0, 160)
+    + (profile.bio && profile.bio.length > 160 ? '…' : '') || t('common:meta.profilePublic.description')
+  const profileMetaImage = profile.avatar_url ?? null
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
   const normalizedDisplayCategories = (profile.display_categories || []).map((slug) => String(slug))
@@ -1150,6 +1169,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const profileCompletionChecks = [
     { key: 'avatar', label: 'Photo de profil', done: Boolean(profile.avatar_url) },
     { key: 'location', label: 'Ville', done: Boolean(profile.location?.trim()) },
+    { key: 'bio', label: 'Bio', done: Boolean(profile.bio?.trim()) },
     { key: 'categories', label: "Catégories d'affichage", done: normalizedDisplayCategories.length > 0 },
     { key: 'status', label: 'Statut / type de profil', done: normalizedProfileTypes.length > 0 },
     { key: 'link', label: 'Lien (réseau social ou site)', done: socialLinksValues.length > 0 },
@@ -1308,10 +1328,11 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   })()
   const hasServicesSection = !isVenueOnlyProfile && services.length > 0
   const hasReservationsSection = isVenueProfile
-  const effectiveAboutSectionTab = isVenueOnlyProfile ? 'reservations' : aboutSectionTab
 
   return (
-    <div className="public-profile-page">
+    <>
+      <PageMeta title={profileMetaTitle} description={profileMetaDescription} image={profileMetaImage} />
+      <div className="public-profile-page">
       {/* 1. HEADER - Retour + Menu actions */}
       <div className="profile-page-header">
         <BackButton className="profile-back-button" />
@@ -1460,30 +1481,44 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         </button>
       )}
 
-      {/* 3. MENU SECONDAIRE : À propos / Annonce / Avis / Bouton édition */}
+      {/* 3. MENU PRINCIPAL : à propos, annonce, service, ouverture, avis (scroll horizontal) */}
       <div className="profile-secondary-menu">
-        <button
-          className={`profile-menu-btn ${activeTab === 'a-propos' ? 'active' : ''}`}
-          onClick={() => handleTabChange('a-propos')}
-        >
-          à propos
-        </button>
-        <button
-          className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
-          onClick={() => handleTabChange('annonces')}
-        >
-          annonce
-        </button>
-        <button
-          className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
-          onClick={() => handleTabChange('avis')}
-        >
-          avis
-        </button>
+        <div className="profile-menu-scroll">
+          <button
+            className={`profile-menu-btn ${activeTab === 'a-propos' ? 'active' : ''}`}
+            onClick={() => handleTabChange('a-propos')}
+          >
+            à propos
+          </button>
+          <button
+            className={`profile-menu-btn ${activeTab === 'annonces' ? 'active' : ''}`}
+            onClick={() => handleTabChange('annonces')}
+          >
+            annonce
+          </button>
+          <button
+            className={`profile-menu-btn ${activeTab === 'services' ? 'active' : ''}`}
+            onClick={() => handleTabChange('services')}
+          >
+            service
+          </button>
+          <button
+            className={`profile-menu-btn ${activeTab === 'ouverture' ? 'active' : ''}`}
+            onClick={() => handleTabChange('ouverture')}
+          >
+            ouverture
+          </button>
+          <button
+            className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
+            onClick={() => handleTabChange('avis')}
+          >
+            avis
+          </button>
+        </div>
       </div>
 
-      {/* 4. BLOC CONTENU (scrollable) */}
-      <div className="profile-content-scrollable">
+      {/* 4. BLOC CONTENU (scrollable) - ref pour remise à zéro du scroll au changement d'onglet */}
+      <div ref={contentScrollRef} className="profile-content-scrollable">
         {/* Mode À propos */}
         {activeTab === 'a-propos' && (
           <div className="profile-content-a-propos">
@@ -1494,164 +1529,123 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               </div>
             )}
 
-            {/* RÉSEAUX SOCIAUX - Icônes indépendantes */}
-            {profile.social_links && (
-              (profile.social_links.instagram || profile.social_links.tiktok || profile.social_links.linkedin || profile.social_links.twitter || profile.social_links.facebook || profile.social_links.website) && (
+            {/* RÉSEAUX SOCIAUX - Icône adaptée à chaque lien (Instagram, TikTok, LinkedIn, etc.) */}
+            {profile.social_links && (() => {
+              const linksList = Object.values(profile.social_links).filter((v): v is string => typeof v === 'string' && (v || '').trim().length > 0)
+              if (linksList.length === 0) return null
+              const normalizeHref = (url: string) => {
+                const u = (url || '').trim()
+                return u.startsWith('http') ? u : `https://${u}`
+              }
+              const platformLabels: Record<string, string> = {
+                instagram: 'Instagram',
+                tiktok: 'TikTok',
+                linkedin: 'LinkedIn',
+                facebook: 'Facebook',
+                twitter: 'Twitter / X',
+                website: 'Site web'
+              }
+              return (
                 <div className="profile-social-icons">
-                  {profile.social_links.instagram && (
-                    <a
-                      href={profile.social_links.instagram.startsWith('http') ? profile.social_links.instagram : `https://instagram.com/${profile.social_links.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="Instagram"
-                    >
-                      <Instagram size={24} />
-                    </a>
-                  )}
-                  {profile.social_links.tiktok && (
-                    <a
-                      href={profile.social_links.tiktok.startsWith('http') ? profile.social_links.tiktok : `https://tiktok.com/@${profile.social_links.tiktok.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="TikTok"
-                    >
-                      <div className="tiktok-icon-small">TT</div>
-                    </a>
-                  )}
-                  {profile.social_links.linkedin && (
-                    <a
-                      href={profile.social_links.linkedin.startsWith('http') ? profile.social_links.linkedin : `https://linkedin.com/in/${profile.social_links.linkedin.replace('@', '').replace(/^\/+/, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="LinkedIn"
-                    >
-                      <Linkedin size={24} />
-                    </a>
-                  )}
-                  {profile.social_links.twitter && (
-                    <a
-                      href={profile.social_links.twitter.startsWith('http') ? profile.social_links.twitter : `https://twitter.com/${profile.social_links.twitter.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="Twitter/X"
-                    >
+                  {linksList.map((url, i) => {
+                    const platform = getLinkPlatform(url)
+                    const href = normalizeHref(url)
+                    const label = platformLabels[platform] || 'Lien'
+                    const icon =
+                      platform === 'instagram' ? <Instagram size={24} /> :
+                      platform === 'tiktok' ? <div className="tiktok-icon-small">TT</div> :
+                      platform === 'linkedin' ? <Linkedin size={24} /> :
+                      platform === 'facebook' ? <Facebook size={24} /> :
                       <Globe size={24} />
-                    </a>
-                  )}
-                  {profile.social_links.facebook && (
-                    <a
-                      href={profile.social_links.facebook.startsWith('http') ? profile.social_links.facebook : `https://facebook.com/${profile.social_links.facebook.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="Facebook"
-                    >
-                      <Facebook size={24} />
-                    </a>
-                  )}
-                  {profile.social_links.website && (
-                    <a
-                      href={profile.social_links.website.startsWith('http') ? profile.social_links.website : `https://${profile.social_links.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-icon-independent"
-                      aria-label="Site web"
-                    >
-                      <Globe size={24} />
-                    </a>
-                  )}
+                    return (
+                      <a
+                        key={i}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-icon-independent"
+                        aria-label={label}
+                      >
+                        {icon}
+                      </a>
+                    )
+                  })}
                 </div>
               )
-            )}
+            })()}
+          </div>
+        )}
 
-            {(hasServicesSection || hasReservationsSection) && (
-              <div className="profile-secondary-menu profile-a-propos-menu">
-                {hasServicesSection && (
-                  <button
-                    className={`profile-menu-btn ${effectiveAboutSectionTab === 'services' ? 'active' : ''}`}
-                    onClick={() => setAboutSectionTab('services')}
-                  >
-                    services
-                  </button>
-                )}
-                {hasReservationsSection && (
-                  <button
-                    className={`profile-menu-btn ${effectiveAboutSectionTab === 'reservations' ? 'active' : ''}`}
-                    onClick={() => setAboutSectionTab('reservations')}
-                  >
-                    ouverture
-                  </button>
-                )}
+        {/* Mode Annonce - Liste avec photo à gauche (affichage direct, pas de spinner ni "Chargement...") */}
+        {activeTab === 'annonces' && (
+          <div className="profile-content-annonces">
+            {posts.length === 0 && !postsLoading ? (
+              <EmptyState type="posts" />
+            ) : (
+              <div className="profile-posts-list">
+                {posts.map((post) => (
+                  <PostCard key={post.id} post={post} viewMode="list" hideProfile={true} />
+                ))}
               </div>
             )}
+          </div>
+        )}
 
-            {/* SERVICES */}
-            {hasServicesSection && effectiveAboutSectionTab === 'services' && (
+        {/* Mode Service - même affichage qu'avant */}
+        {activeTab === 'services' && (
+          <div className="profile-content-a-propos">
+            {hasServicesSection ? (
               <div className="profile-services-section">
                 <h3 className="services-title">services</h3>
                 <div className="services-list-container">
                   {services.map((service, index) => {
-                    // S'assurer que les valeurs sont bien des strings propres
                     const serviceName = String(service.name || '').trim()
                     const serviceDescription = service.description ? String(service.description).trim() : ''
                     const serviceValue = service.value ? String(service.value).trim() : ''
-                    
-                    // Utiliser un index unique basé sur le nom du service pour éviter les conflits
                     const serviceKey = `${serviceName}-${index}`
-                    
                     return (
-                      <div 
-                        key={serviceKey} 
+                      <div
+                        key={serviceKey}
                         className="service-block"
                         onClick={() => setSelectedService(service)}
                       >
                         <div className="service-block-header">
                           <h4 className="service-block-title">{serviceName || `Service ${index + 1}`}</h4>
-                        <div className="service-block-payment">
-                          {(() => {
-                            const paymentConfig = getPaymentOptionConfig(service.payment_type)
-                            const paymentLabel = paymentConfig?.name || 'Paiement'
-                            const requiresPrice = paymentConfig?.requiresPrice || service.payment_type === 'price'
-                            const requiresExchangeService = paymentConfig?.requiresExchangeService || service.payment_type === 'exchange'
-                            const requiresPercentage = !!paymentConfig?.requiresPercentage
-
-                            if ((requiresPrice || requiresPercentage) && serviceValue) {
+                          <div className="service-block-payment">
+                            {(() => {
+                              const paymentConfig = getPaymentOptionConfig(service.payment_type)
+                              const paymentLabel = paymentConfig?.name || 'Paiement'
+                              const requiresPrice = paymentConfig?.requiresPrice || service.payment_type === 'price'
+                              const requiresExchangeService = paymentConfig?.requiresExchangeService || service.payment_type === 'exchange'
+                              const requiresPercentage = !!paymentConfig?.requiresPercentage
+                              if ((requiresPrice || requiresPercentage) && serviceValue) {
+                                return (
+                                  <div className="service-block-price">
+                                    <DollarSign size={16} />
+                                    <span>{serviceValue}</span>
+                                  </div>
+                                )
+                              }
+                              if (requiresExchangeService) {
+                                return (
+                                  <div className="service-block-exchange-badge">
+                                    <RefreshCw size={16} />
+                                    <span>{paymentLabel}</span>
+                                  </div>
+                                )
+                              }
                               return (
-                                <div className="service-block-price">
-                                  <DollarSign size={16} />
-                                  <span>{serviceValue}</span>
-                                </div>
-                              )
-                            }
-
-                            if (requiresExchangeService) {
-                              return (
-                                <div className="service-block-exchange-badge">
-                                  <RefreshCw size={16} />
+                                <div className="service-block-payment-badge">
                                   <span>{paymentLabel}</span>
                                 </div>
                               )
-                            }
-
-                            return (
-                              <div className="service-block-payment-badge">
-                                <span>{paymentLabel}</span>
-                              </div>
-                            )
-                          })()}
+                            })()}
+                          </div>
                         </div>
-                        </div>
-                        
                         {serviceDescription && (
                           <div className="service-block-description-section">
                             <p className="service-block-description-text">
-                              {serviceDescription.length > 150 
-                                ? serviceDescription.substring(0, 150) + '...' 
-                                : serviceDescription}
+                              {serviceDescription.length > 150 ? serviceDescription.substring(0, 150) + '...' : serviceDescription}
                             </p>
                           </div>
                         )}
@@ -1660,9 +1654,16 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   })}
                 </div>
               </div>
+            ) : (
+              <EmptyState type="category" customTitle="Aucun service" customSubtext="Les services apparaîtront ici lorsqu’ils seront renseignés." />
             )}
+          </div>
+        )}
 
-            {hasReservationsSection && effectiveAboutSectionTab === 'reservations' && (
+        {/* Mode Ouverture - jours ouvrables (même affichage qu'avant) */}
+        {activeTab === 'ouverture' && (
+          <div className="profile-content-a-propos">
+            {hasReservationsSection ? (
               <div className="profile-venue-section">
                 <h3 className="services-title">jours ouvrables</h3>
                 <div className="profile-venue-card">
@@ -1678,7 +1679,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   ) : (
                     <p className="profile-venue-empty">Horaires non renseignés</p>
                   )}
-
                   <div className="profile-venue-meta">
                     {venuePaymentEntries.map(({ id, value }) => (
                       <div key={`${id}-${value}`} className="profile-venue-chip">
@@ -1688,7 +1688,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                       </div>
                     ))}
                   </div>
-
                   {!isOwnProfile && user && profileId !== user.id && (
                     <button
                       type="button"
@@ -1700,33 +1699,16 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                   )}
                 </div>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Mode Annonce - Liste avec photo à gauche */}
-        {activeTab === 'annonces' && (
-          <div className="profile-content-annonces">
-            {postsLoading ? (
-              <div className="loading-state">Chargement...</div>
-            ) : posts.length === 0 ? (
-              <EmptyState type="posts" />
             ) : (
-              <div className="profile-posts-list">
-                {posts.map((post) => (
-                  <PostCard key={post.id} post={post} viewMode="list" hideProfile={true} />
-                ))}
-              </div>
+              <EmptyState type="category" customTitle="Horaires non renseignés" customSubtext="Les jours et horaires d’ouverture apparaîtront ici pour les profils lieu." />
             )}
           </div>
         )}
 
-        {/* Mode Avis - Liste des avis */}
+        {/* Mode Avis - Liste des avis (affichage direct, pas de spinner ni "Chargement...") */}
         {activeTab === 'avis' && (
           <div className="profile-content-avis">
-            {reviewsLoading ? (
-              <div className="loading-state">Chargement...</div>
-            ) : reviews.length === 0 ? (
+            {reviews.length === 0 && !reviewsLoading ? (
               <EmptyState type="category" customTitle="Aucun avis" customSubtext="Les avis sur ce profil apparaîtront ici." />
             ) : (
               <div className="reviews-list">
@@ -2188,6 +2170,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         </div>
       )}
     </div>
+    </>
   )
 }
 

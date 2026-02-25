@@ -1,0 +1,133 @@
+/* Carousel au premier plan : couvre tout (sidebar, pied de page, contenu). */
+.onboarding-carousel {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+  background: #0a0a0a;
+  isolation: isolate;
+}
+
+/* Flèches retour / suivant : icône seule, sans fond */
+.onboarding-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.onboarding-carousel__arrow:hover {
+  opacity: 0.9;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.onboarding-carousel__arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.onboarding-carousel__arrow--prev {
+  left: 16px;
+}
+
+.onboarding-carousel__arrow--next {
+  right: 16px;
+}
+
+.onboarding-carousel__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.onboarding-carousel__slide-wrap {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+}
+
+/* Masquer le bouton Passer du slide (on l’affiche dans le carousel) */
+.onboarding-carousel .onboarding-slide__skip {
+  display: none;
+}
+
+/* Bloc pied de page : points au-dessus du bouton (style référence) */
+.onboarding-carousel__footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+}
+
+/* Points de progression au-dessus du bouton */
+.onboarding-carousel__dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.onboarding-carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+}
+
+.onboarding-carousel__dot--active {
+  background: #fff;
+  border-color: #fff;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+/* Bouton pill « Next » / « À continuer » en bas */
+.onboarding-carousel__next-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 18px 32px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.onboarding-carousel__next-btn:hover {
+  background: #f8f8f8;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.onboarding-carousel__next-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+

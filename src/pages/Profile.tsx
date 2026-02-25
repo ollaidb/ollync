@@ -18,6 +18,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import BackButton from '../components/BackButton'
 import PublicProfile from './profile/PublicProfile'
 import EditPublicProfile from './profile/EditPublicProfile'
@@ -58,6 +59,8 @@ import Transactions from './profile/Transactions.tsx'
 import Tickets from './profile/Tickets.tsx'
 import Candidature from './profile/Candidature.tsx'
 import ConfirmationModal from '../components/ConfirmationModal'
+import { PageMeta } from '../components/PageMeta'
+import './Auth.css'
 import './Profile.css'
 
 interface ProfileData {
@@ -83,7 +86,7 @@ const Profile = () => {
   const location = useLocation()
   const { id } = useParams<{ id?: string }>()
   const { user, signOut, loading: authLoading } = useAuth()
-  const { t } = useTranslation(['profile', 'settings'])
+  const { t } = useTranslation(['profile', 'settings', 'common'])
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showSignOutModal, setShowSignOutModal] = useState(false)
@@ -421,7 +424,9 @@ const Profile = () => {
     // Si l'utilisateur n'est pas connecté, afficher l'écran de connexion
     if (!user) {
       return (
-        <div className="profile-content-not-connected">
+        <>
+          <PageMeta title={t('common:meta.profile.title')} description={t('common:meta.profile.description')} />
+          <div className="profile-content-not-connected">
           <User className="profile-not-connected-icon" strokeWidth={1.5} />
           <h2 className="profile-not-connected-title">{t('profile:notConnectedTitle')}</h2>
           <p className="profile-not-connected-text">{t('profile:notConnectedText')}</p>
@@ -441,6 +446,7 @@ const Profile = () => {
             </button>
           </p>
         </div>
+    </>
       )
     }
 
@@ -525,7 +531,9 @@ const Profile = () => {
     ]
 
     return (
-      <div className="profile-menu-page">
+      <>
+        <PageMeta title={t('common:meta.profile.title')} description={t('common:meta.profile.description')} />
+        <div className="profile-menu-page">
         {/* Carte de profil */}
         <div 
           className="profile-card" 
@@ -602,6 +610,51 @@ const Profile = () => {
           <span className="profile-app-version-value">{appVersion}</span>
         </div>
         <div className="profile-menu-end-spacer" />
+      </div>
+    </>
+    )
+  }
+
+  /* Slide / carousel profil public désactivé */
+  if (!user) {
+    return (
+      <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="app">
+            <div className="profile-page">
+              <div className="profile-header-fixed">
+                <div className="profile-header-content">
+                  <BackButton />
+                  <h1 className="profile-title">{getPageTitle()}</h1>
+                  <div className="profile-header-spacer"></div>
+                </div>
+              </div>
+              <div className="profile-scrollable">
+                <div className="profile-content-not-connected">
+                  <User className="profile-not-connected-icon" strokeWidth={1.5} />
+                  <h2 className="profile-not-connected-title">{t('profile:notConnectedTitle')}</h2>
+                  <p className="profile-not-connected-text">{t('profile:notConnectedText')}</p>
+                  <button
+                    className="profile-not-connected-button"
+                    onClick={() => navigate('/auth/register')}
+                  >
+                    {t('profile:registerButton')}
+                  </button>
+                  <p className="profile-not-connected-login-link">
+                    {t('profile:alreadyAccount')}{' '}
+                    <button
+                      className="profile-not-connected-link"
+                      onClick={() => navigate('/auth/login')}
+                    >
+                      {t('profile:signInLink')}
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

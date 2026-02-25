@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck, Star, Calendar, Inbox, FileSignature } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
 import { EmptyState } from '../components/EmptyState'
+import { PageMeta } from '../components/PageMeta'
+import './Auth.css'
 import './Notifications.css'
 
 type FilterType = 'all' | 'like' | 'message' | 'request' | 'match' | 'appointment' | 'review' | 'news'
@@ -41,7 +44,7 @@ interface Notification {
 const Notifications = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { t, i18n } = useTranslation(['notifications'])
+  const { t, i18n } = useTranslation(['notifications', 'common'])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
@@ -352,37 +355,47 @@ const Notifications = () => {
 
   if (!user) {
     return (
-      <div className="notifications-page-container">
-        <div className="notifications-header-not-connected">
-          <h1 className="notifications-title-centered">{t('notifications:title')}</h1>
+      <>
+        <PageMeta title={t('common:meta.notifications.title')} description={t('common:meta.notifications.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="notifications-page-container">
+            <div className="notifications-header-not-connected">
+              <h1 className="notifications-title-centered">{t('notifications:title')}</h1>
+            </div>
+            <div className="notifications-content-not-connected">
+              <Bell className="notifications-not-connected-icon" strokeWidth={1.5} />
+              <h2 className="notifications-not-connected-title">{t('notifications:notConnectedTitle')}</h2>
+              <p className="notifications-not-connected-text">{t('notifications:notConnectedText')}</p>
+              <button
+                className="notifications-not-connected-button"
+                onClick={() => navigate('/auth/register')}
+              >
+                {t('notifications:register')}
+              </button>
+              <p className="notifications-not-connected-login-link">
+                {t('notifications:alreadyAccount')}{' '}
+                <button
+                  className="notifications-not-connected-link"
+                  onClick={() => navigate('/auth/login')}
+                >
+                  {t('notifications:signIn')}
+                </button>
+              </p>
+            </div>
+            <Footer />
+          </div>
         </div>
-        <div className="notifications-content-not-connected">
-          <Bell className="notifications-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="notifications-not-connected-title">{t('notifications:notConnectedTitle')}</h2>
-          <p className="notifications-not-connected-text">{t('notifications:notConnectedText')}</p>
-          <button 
-            className="notifications-not-connected-button" 
-            onClick={() => navigate('/auth/register')}
-          >
-            {t('notifications:register')}
-          </button>
-          <p className="notifications-not-connected-login-link">
-            {t('notifications:alreadyAccount')}{' '}
-            <button 
-              className="notifications-not-connected-link" 
-              onClick={() => navigate('/auth/login')}
-            >
-              {t('notifications:signIn')}
-            </button>
-          </p>
-        </div>
-        <Footer />
       </div>
+    </>
     )
   }
 
   return (
-    <div className="app">
+    <>
+      <PageMeta title={t('common:meta.notifications.title')} description={t('common:meta.notifications.description')} />
+      <div className="app">
       <div className="notifications-page">
         {/* Header fixe */}
         <div className="notifications-header-fixed">
@@ -526,6 +539,7 @@ const Notifications = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

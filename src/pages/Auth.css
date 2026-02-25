@@ -1,3 +1,15 @@
+.auth-page-wrap {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+.auth-page-wrap .auth-page {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -5,15 +17,83 @@
   justify-content: center;
   background: var(--primary);
   padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.auth-container {
+/* Wrapper 3D pour le bloc de connexion / choix */
+.auth-container-wrap {
+  position: relative;
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+/* Bloc 3D (formulaire + choix) : illusion de carte en relief */
+.auth-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  max-height: min(90vh, 720px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   background: var(--card);
   border-radius: 16px;
   padding: 40px 32px;
-  box-shadow: var(--shadow-xl);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--foreground) 8%, transparent) inset,
+    0 2px 4px color-mix(in srgb, var(--foreground) 6%, transparent),
+    0 8px 16px color-mix(in srgb, var(--foreground) 10%, transparent),
+    0 20px 40px color-mix(in srgb, var(--foreground) 12%, transparent),
+    0 40px 80px color-mix(in srgb, var(--foreground) 8%, transparent);
+  transform: rotateX(2deg) translateZ(32px);
+  animation: auth-container-in 0.6s ease-out forwards;
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.auth-container::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -6px;
+  height: 6px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--foreground) 18%, var(--card)) 0%,
+    color-mix(in srgb, var(--foreground) 8%, var(--card)) 100%
+  );
+  transform: rotateX(90deg) translateZ(-3px);
+  transform-origin: top center;
+  pointer-events: none;
+}
+
+.auth-container-wrap:hover .auth-container {
+  transform: rotateX(1deg) translateZ(40px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--foreground) 10%, transparent) inset,
+    0 4px 8px color-mix(in srgb, var(--foreground) 8%, transparent),
+    0 12px 24px color-mix(in srgb, var(--foreground) 12%, transparent),
+    0 28px 56px color-mix(in srgb, var(--foreground) 14%, transparent),
+    0 56px 100px color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+@keyframes auth-container-in {
+  from {
+    opacity: 0;
+    transform: rotateX(4deg) translateY(24px) translateZ(20px);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(2deg) translateY(0) translateZ(32px);
+  }
 }
 
 .auth-header {
@@ -703,5 +783,38 @@
   .condition-modal-footer {
     padding: 20px;
   }
+}
+
+/* Pages non connectées : fond transparent pour laisser voir AuthBackground (bulles) */
+.auth-page-wrap .favorites-page-container,
+.auth-page-wrap .messages-page-container,
+.auth-page-wrap .publish-page-container,
+.auth-page-wrap .notifications-page-container {
+  background: transparent;
+}
+
+.auth-page-wrap .favorites-header-not-connected,
+.auth-page-wrap .favorites-content-not-connected,
+.auth-page-wrap .messages-header-not-connected,
+.auth-page-wrap .messages-content-not-connected,
+.auth-page-wrap .publish-header-not-connected,
+.auth-page-wrap .publish-content-not-connected,
+.auth-page-wrap .notifications-header-not-connected,
+.auth-page-wrap .notifications-content-not-connected {
+  background-color: transparent;
+}
+
+.auth-page-wrap .favorites-header-not-connected,
+.auth-page-wrap .messages-header-not-connected,
+.auth-page-wrap .publish-header-not-connected,
+.auth-page-wrap .notifications-header-not-connected {
+  border-bottom-color: transparent;
+}
+
+.auth-page-wrap .profile-page,
+.auth-page-wrap .profile-header-fixed,
+.auth-page-wrap .profile-scrollable,
+.auth-page-wrap .profile-content-not-connected {
+  background: transparent;
 }
 

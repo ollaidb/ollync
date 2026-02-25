@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties, 
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Save, X, Camera, Plus, ChevronUp, ChevronDown, Check } from 'lucide-react'
+import { Save, X, Camera, Plus, ChevronUp, ChevronDown, Check, Instagram, Linkedin, Facebook, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
@@ -17,6 +17,7 @@ import { LocationAutocomplete } from '../../components/Location/LocationAutocomp
 import { CustomList } from '../../components/CustomList/CustomList'
 import { publicationTypes } from '../../constants/publishData'
 import { getAllPaymentOptions, getPaymentOptionConfig, getPaymentOptionsForCategory } from '../../utils/publishHelpers'
+import { getLinkPlatform } from '../../utils/linkPlatform'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -88,6 +89,8 @@ const EditPublicProfile = () => {
   const [isVenuePaymentOpen, setIsVenuePaymentOpen] = useState(false)
   const [isVenueOpeningDaysOpen, setIsVenueOpeningDaysOpen] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
+  const [showLinkInput, setShowLinkInput] = useState(false)
+  const [linkInputValue, setLinkInputValue] = useState('')
   const fromProfileProgress = searchParams.get('from') === 'profile-progress'
 
   const VENUE_CATEGORY_SLUGS = useMemo(() => (['studio-lieu', 'lieu']), [])
@@ -202,14 +205,12 @@ const EditPublicProfile = () => {
       return [] as string[]
     }
     
-    // Convertir l'objet social_links en tableau de chaînes
-    const socialLinksArray: string[] = []
-    if (socialLinksObj.instagram) socialLinksArray.push(socialLinksObj.instagram)
-    if (socialLinksObj.tiktok) socialLinksArray.push(socialLinksObj.tiktok)
-    if (socialLinksObj.linkedin) socialLinksArray.push(socialLinksObj.linkedin)
-    if (socialLinksObj.twitter) socialLinksArray.push(socialLinksObj.twitter)
-    if (socialLinksObj.facebook) socialLinksArray.push(socialLinksObj.facebook)
-    if (socialLinksObj.website) socialLinksArray.push(socialLinksObj.website)
+    // Trois emplacements de liens : website, instagram, linkedin (ordre affiché dans le formulaire)
+    const socialLinksArray: string[] = [
+      (socialLinksObj.website || '').trim(),
+      (socialLinksObj.instagram || '').trim(),
+      (socialLinksObj.linkedin || '').trim()
+    ]
     
     const parseProfileTypes = (value: unknown) => {
       if (!value) return []
@@ -1079,8 +1080,53 @@ const EditPublicProfile = () => {
 
   // Convertir le tableau de liens sociaux en objet pour la base de données
   const convertSocialLinksToObject = (links: string[]): Record<string, string> => {
-    const firstLink = links[0]?.trim()
-    return firstLink ? { website: firstLink } : {}
+    const obj: Record<string, string> = {}
+    const keys = ['website', 'instagram', 'linkedin'] as const
+    keys.forEach((key, i) => {
+      const value = (links[i] || '').trim()
+      if (value) obj[key] = value
+    })
+    return obj
+  }
+
+  const ensureSocialLinksLength = (arr: string[]) => {
+    const next = [...arr]
+    while (next.length < 3) next.push('')
+    return next.slice(0, 3)
+  }
+
+  const filledLinkCount = useMemo(() => {
+    const links = ensureSocialLinksLength(profile.socialLinks)
+    return links.filter((l) => (l || '').trim()).length
+  }, [profile.socialLinks])
+
+  const handleConfirmAddLink = () => {
+    const url = (linkInputValue || '').trim()
+    if (!url) return
+    const links = ensureSocialLinksLength(profile.socialLinks)
+    const emptyIndex = links.findIndex((l) => !(l || '').trim())
+    if (emptyIndex < 0) return
+    links[emptyIndex] = url
+    setProfile((prev) => ({ ...prev, socialLinks: links }))
+    setLinkInputValue('')
+    setShowLinkInput(false)
+  }
+
+  const handleRemoveLink = (index: number) => {
+    confirmation.confirm(
+      {
+        title: 'Supprimer le lien',
+        message: 'Voulez-vous vraiment supprimer ce lien ?',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Annuler',
+        isDestructive: true
+      },
+      () => {
+        const links = ensureSocialLinksLength(profile.socialLinks)
+        links[index] = ''
+        setProfile((prev) => ({ ...prev, socialLinks: links }))
+      }
+    )
   }
 
   const handleSave = () => {
@@ -1103,6 +1149,11 @@ const EditPublicProfile = () => {
 
   const performSave = async () => {
     if (!user) return
+
+    if (!profile.bio.trim()) {
+      showError('La bio est obligatoire')
+      return
+    }
 
     setSaving(true)
     
@@ -1257,9 +1308,10 @@ const EditPublicProfile = () => {
   const missingCompletionSections = {
     avatar: !profile.avatar_url,
     location: !profile.location.trim(),
+    bio: !profile.bio.trim(),
     categories: profile.display_categories.length === 0,
     status: profile.profile_types.length === 0,
-    link: !((profile.socialLinks[0] || '').trim()),
+    link: !profile.socialLinks.some((l) => (l || '').trim()),
     venue_opening_hours: isVenueDisplayCategory && !profile.venue_opening_hours.some((slot) => slot.enabled),
     services_required: isServicesDisplayCategory && profile.services.length === 0
   }
@@ -1346,8 +1398,8 @@ const EditPublicProfile = () => {
             </div>
 
             {/* Bio & Description */}
-            <div className="form-group">
-              <label htmlFor="bio">Bio</label>
+            <div className={`form-group ${fromProfileProgress && missingCompletionSections.bio ? 'profile-progress-missing' : ''}`}>
+              <label htmlFor="bio">Bio *</label>
               <textarea
                 id="bio"
                 value={profile.bio}
@@ -2120,21 +2172,103 @@ const EditPublicProfile = () => {
               </div>
             )}
 
-            {/* Lien */}
-            <div className={`form-group ${fromProfileProgress && missingCompletionSections.link ? 'profile-progress-missing' : ''}`}>
-              <label>Lien</label>
-              <input
-                type="text"
-                value={profile.socialLinks[0] || ''}
-                onChange={(e) => {
-                  const value = e.target.value.trim()
-                  setProfile(prev => ({
-                    ...prev,
-                    socialLinks: value ? [value] : []
-                  }))
-                }}
-                placeholder="https://..."
-              />
+            {/* Liens (max 3) : icônes + barre d’ajout */}
+            <div className={`form-group edit-profile-links-group ${fromProfileProgress && missingCompletionSections.link ? 'profile-progress-missing' : ''}`}>
+              <label>3 liens maximum</label>
+              <div className="edit-profile-links-list">
+                {[0, 1, 2].map((index) => {
+                  const links = ensureSocialLinksLength(profile.socialLinks)
+                  const value = (links[index] || '').trim()
+                  if (!value) return null
+                  const platform = getLinkPlatform(value)
+                  const href = value.startsWith('http') ? value : `https://${value}`
+                  const iconByPlatform = {
+                    instagram: <Instagram size={20} />,
+                    tiktok: <div className="tiktok-icon-small">TT</div>,
+                    linkedin: <Linkedin size={20} />,
+                    facebook: <Facebook size={20} />,
+                    twitter: <Globe size={20} />,
+                    website: <Globe size={20} />
+                  }
+                  const platformLabels: Record<typeof platform, string> = {
+                    instagram: 'Instagram',
+                    tiktok: 'TikTok',
+                    linkedin: 'LinkedIn',
+                    facebook: 'Facebook',
+                    twitter: 'Twitter / X',
+                    website: 'Site web'
+                  }
+                  return (
+                    <div key={index} className="edit-profile-link-item">
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="edit-profile-link-icon-wrap"
+                        aria-label={platformLabels[platform]}
+                      >
+                        {iconByPlatform[platform]}
+                      </a>
+                      <button
+                        type="button"
+                        className="edit-profile-link-remove"
+                        onClick={() => handleRemoveLink(index)}
+                        aria-label="Supprimer le lien"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )
+                })}
+                {filledLinkCount < 3 && !showLinkInput && (
+                  <button
+                    type="button"
+                    className="edit-profile-link-add-bar"
+                    onClick={() => setShowLinkInput(true)}
+                    aria-label="Ajouter un lien"
+                  >
+                    <Plus size={20} />
+                    <span>Ajouter un lien</span>
+                  </button>
+                )}
+                {showLinkInput && (
+                  <div className="edit-profile-link-input-row">
+                    <input
+                      type="text"
+                      inputMode="url"
+                      value={linkInputValue}
+                      onChange={(e) => setLinkInputValue(e.target.value)}
+                      placeholder="https://..."
+                      className="edit-profile-link-input"
+                      autoFocus
+                    />
+                    <div className="edit-profile-link-input-actions">
+                      <button
+                        type="button"
+                        className="edit-profile-link-btn edit-profile-link-btn-cancel"
+                        onClick={() => {
+                          setShowLinkInput(false)
+                          setLinkInputValue('')
+                        }}
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        className="edit-profile-link-btn edit-profile-link-btn-confirm"
+                        onClick={handleConfirmAddLink}
+                        disabled={!(linkInputValue || '').trim()}
+                      >
+                        <Check size={16} />
+                        Valider
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {filledLinkCount >= 3 && (
+                <p className="form-hint compact edit-profile-links-max">3 liens maximum.</p>
+              )}
             </div>
 
             <div className="form-group">

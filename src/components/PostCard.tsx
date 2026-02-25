@@ -25,6 +25,7 @@ interface PostCardProps {
     number_of_people?: number | null
     delivery_available: boolean
     is_urgent?: boolean
+    listing_type?: 'offer' | 'request' | string | null
     user_id?: string
     user?: {
       id?: string
@@ -410,6 +411,9 @@ const PostCard = ({
           )}
           {!isRemoved && !hideCategoryBadge && categoryLabel && (
             <div className="post-card-category-badge">{categoryLabel}</div>
+          )}
+          {!isRemoved && post.is_urgent && (
+            <div className="post-card-urgent-badge">URGENT</div>
           )}
           {isRemoved && (
             <div className="post-card-removed-badge">{removedLabel}</div>

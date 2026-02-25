@@ -4,11 +4,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, Loader, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import Footer from '../components/Footer'
 import { EmptyState } from '../components/EmptyState'
+import { PageMeta } from '../components/PageMeta'
 import { mapPosts } from '../utils/postMapper'
+import './Auth.css'
 import './Favorites.css'
 
 interface Post {
@@ -46,7 +49,7 @@ interface FollowedProfile {
 }
 
 const Favorites = () => {
-  const { t } = useTranslation(['favorites'])
+  const { t } = useTranslation(['favorites', 'common'])
   const navigate = useNavigate()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -344,37 +347,47 @@ const Favorites = () => {
 
   if (!user) {
     return (
-      <div className="favorites-page-container">
-        <div className="favorites-header-not-connected">
-          <h1 className="favorites-title-centered">{t('favorites:title')}</h1>
+      <>
+        <PageMeta title={t('common:meta.favorites.title')} description={t('common:meta.favorites.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="favorites-page-container">
+            <div className="favorites-header-not-connected">
+              <h1 className="favorites-title-centered">{t('favorites:title')}</h1>
+            </div>
+            <div className="favorites-content-not-connected">
+              <Heart className="favorites-not-connected-icon" strokeWidth={1.5} />
+              <h2 className="favorites-not-connected-title">{t('favorites:notConnectedTitle')}</h2>
+              <p className="favorites-not-connected-text">{t('favorites:notConnectedText')}</p>
+              <button
+                className="favorites-not-connected-button"
+                onClick={() => navigate('/auth/register')}
+              >
+                {t('favorites:register')}
+              </button>
+              <p className="favorites-not-connected-login-link">
+                {t('favorites:alreadyAccount')}{' '}
+                <button
+                  className="favorites-not-connected-link"
+                  onClick={() => navigate('/auth/login')}
+                >
+                  {t('favorites:signIn')}
+                </button>
+              </p>
+            </div>
+            <Footer />
+          </div>
         </div>
-        <div className="favorites-content-not-connected">
-          <Heart className="favorites-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="favorites-not-connected-title">{t('favorites:notConnectedTitle')}</h2>
-          <p className="favorites-not-connected-text">{t('favorites:notConnectedText')}</p>
-          <button 
-            className="favorites-not-connected-button" 
-            onClick={() => navigate('/auth/register')}
-          >
-            {t('favorites:register')}
-          </button>
-          <p className="favorites-not-connected-login-link">
-            {t('favorites:alreadyAccount')}{' '}
-            <button 
-              className="favorites-not-connected-link" 
-              onClick={() => navigate('/auth/login')}
-            >
-              {t('favorites:signIn')}
-            </button>
-          </p>
-        </div>
-        <Footer />
       </div>
+    </>
     )
   }
 
   return (
-    <div className="favorites-page" ref={containerRef}>
+    <>
+      <PageMeta title={t('common:meta.favorites.title')} description={t('common:meta.favorites.description')} />
+      <div className="favorites-page" ref={containerRef}>
       {/* Header */}
       <div className="favorites-header-container">
         <div className="favorites-header" ref={headerRef}>
@@ -533,6 +546,7 @@ const Favorites = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

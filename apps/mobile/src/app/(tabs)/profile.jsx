@@ -1,11 +1,13 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Settings, Shield, HelpCircle, FileText, LogOut, ChevronRight } from "lucide-react-native";
+import { Settings, Shield, HelpCircle, FileText, LogOut, ChevronRight, RotateCcw } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../hooks/useAuth";
+import { ONBOARDING_STORAGE_KEY } from "../../constants/onboardingContent";
 import Button from "../../components/Button";
 
 export default function ProfilePage() {
@@ -114,6 +116,19 @@ export default function ProfilePage() {
           icon: FileText,
           label: 'Pages légales',
           onPress: () => router.push('/profile/legal'),
+        },
+        {
+          id: 'reset-onboarding',
+          icon: RotateCcw,
+          label: "Réafficher l'onboarding",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem(ONBOARDING_STORAGE_KEY);
+              router.replace('/onboarding');
+            } catch (e) {
+              console.warn(e);
+            }
+          },
         },
       ]
     : [

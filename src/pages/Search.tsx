@@ -7,6 +7,7 @@ import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
 import { EmptyState } from '../components/EmptyState'
+import { PageMeta } from '../components/PageMeta'
 import { publicationTypes } from '../constants/publishData'
 import { filterPaymentOptionsByCategory } from '../utils/paymentOptions'
 import {
@@ -90,7 +91,7 @@ const Search = () => {
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false)
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
   const searchDropdownRef = useRef<HTMLDivElement>(null)
-  const { t } = useTranslation(['categories', 'search'])
+  const { t } = useTranslation(['categories', 'search', 'common'])
 
   const categoryOrder = useMemo(() => [
     'creation-contenu',
@@ -671,7 +672,9 @@ const Search = () => {
   }
 
   return (
-    <div className="search-page-container">
+    <>
+      <PageMeta title={t('common:meta.search.title')} description={t('common:meta.search.description')} />
+      <div className="search-page-container">
       {/* Header */}
       <div className="search-header">
         <div className="search-header-content">
@@ -1273,6 +1276,7 @@ const Search = () => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

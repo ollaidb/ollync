@@ -1,0 +1,88 @@
+/* Page 404 - intégrée au layout de l'application */
+.not-found-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--background);
+}
+
+.not-found-content {
+  text-align: center;
+  max-width: 420px;
+}
+
+.not-found-code {
+  display: block;
+  font-size: clamp(4rem, 15vw, 6rem);
+  font-weight: 800;
+  color: var(--muted);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.not-found-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.not-found-message {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.not-found-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.not-found-link--primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.not-found-link--primary:hover {
+  filter: brightness(1.05);
+}
+
+.not-found-link--secondary {
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.not-found-link--secondary:hover {
+  background-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .not-found-actions {
+    flex-direction: column;
+  }
+
+  .not-found-link {
+    width: 100%;
+    justify-content: center;
+  }
+}

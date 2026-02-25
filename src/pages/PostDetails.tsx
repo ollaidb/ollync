@@ -13,6 +13,8 @@ import { mapPost, type MappedPost } from '../utils/postMapper'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
 import { useNavigationHistory } from '../hooks/useNavigationHistory'
+import { useTranslation } from 'react-i18next'
+import { PageMeta } from '../components/PageMeta'
 import './PostDetails.css'
 
 interface Post {
@@ -120,6 +122,7 @@ const PostDetails = () => {
   const { getPreviousPath, markNavigatingBack, canGoBack, history } = useNavigationHistory()
   const isMobile = useIsMobile()
   const { showSuccess } = useToastContext()
+  const { t } = useTranslation(['common', 'publish'])
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRestricted, setIsRestricted] = useState(false)
@@ -267,6 +270,27 @@ const PostDetails = () => {
       month: 'long',
       year: 'numeric'
     })
+  }
+
+  /** Date de publication en relatif : "il y a un jour", "il y a X mois", "il y a un an", etc. (visible uniquement sur le détail) */
+  const formatPublishedAt = (createdAt: string) => {
+    const then = new Date(createdAt).getTime()
+    const now = Date.now()
+    const diffMs = now - then
+    const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000))
+
+    if (diffDays < 1) {
+      const timeStr = new Date(createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.todayAt', { time: timeStr }) })
+    }
+    if (diffDays === 1) return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.oneDay') })
+    if (diffDays < 30) return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.days', { count: diffDays }) })
+    const diffMonths = Math.floor(diffDays / 30)
+    if (diffMonths === 1) return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.oneMonth') })
+    if (diffMonths < 12) return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.months', { count: diffMonths }) })
+    const diffYears = Math.floor(diffDays / 365)
+    if (diffYears === 1) return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.oneYear') })
+    return t('common:timeAgo.publishedAt', { text: t('common:timeAgo.years', { count: diffYears }) })
   }
 
   useEffect(() => {
@@ -1795,7 +1819,9 @@ const PostDetails = () => {
 
   if (loading) {
     return (
-      <div className="app">
+      <>
+        <PageMeta title={t('common:meta.post.title')} description={t('common:meta.post.description')} />
+        <div className="app">
         <div className="post-details-page">
           <div className="post-details-scrollable">
             <div className="loading-container">
@@ -1804,12 +1830,15 @@ const PostDetails = () => {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   if (!post) {
     return (
-      <div className="app">
+      <>
+        <PageMeta title={t('common:meta.post.title')} description={t('common:meta.post.description')} />
+        <div className="app">
         <div className="post-details-page">
           <div className="post-details-scrollable">
             <div className="empty-state">
@@ -1818,14 +1847,21 @@ const PostDetails = () => {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   const isPostRemoved = post.status !== 'active'
 
+  const postMetaDescription = post.description?.replace(/\s+/g, ' ').trim().slice(0, 160)
+    + (post.description && post.description.length > 160 ? '…' : '')
+  const postMetaImage = post.images?.[0] ?? null
+
   if (isPostRemoved) {
     return (
-      <div className="app">
+      <>
+        <PageMeta title={post.title} description={postMetaDescription || undefined} image={postMetaImage} />
+        <div className="app">
         <div className="post-details-page has-hero-image">
           <div className="post-details-header-fixed">
             <div className="post-details-header-content">
@@ -1849,11 +1885,14 @@ const PostDetails = () => {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
   return (
-    <div className="app">
+    <>
+      <PageMeta title={post.title} description={postMetaDescription || undefined} image={postMetaImage} />
+      <div className="app">
       <div className="post-details-page has-hero-image">
         {/* Header fixe */}
         <div className="post-details-header-fixed">
@@ -1951,10 +1990,22 @@ const PostDetails = () => {
               {[post.category?.name, post.sub_category?.name].filter(Boolean).join(' – ')}
             </div>
           )}
-          {/* Badge URGENT en bas à gauche */}
-          {post.is_urgent && (
-            <div className="post-urgent-badge">URGENT</div>
-          )}
+          {/* Barre bas : gauche = type de besoin (URGENT), droite = Offre ou Demande */}
+          <div className="post-hero-bottom-badges">
+            <div className="post-hero-bottom-badges-left">
+              {post.is_urgent && (
+                <div className="post-urgent-badge">URGENT</div>
+              )}
+            </div>
+            <div className="post-hero-bottom-badges-right">
+              {post.listing_type === 'offer' && (
+                <div className="post-listing-type-badge">{t('publish:offerTitle')}</div>
+              )}
+              {post.listing_type === 'request' && (
+                <div className="post-listing-type-badge">{t('publish:requestTitle')}</div>
+              )}
+            </div>
+          </div>
         </div>
 
           {isMediaViewerOpen && mediaItems.length > 0 && createPortal(
@@ -2088,12 +2139,7 @@ const PostDetails = () => {
             {/* Informations secondaires */}
             <div className="post-meta-info">
               <span className="post-meta-item post-meta-item-date">
-                Publié le {new Date(post.created_at).toLocaleDateString('fr-FR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                })}{' '}
-                à {new Date(post.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                {formatPublishedAt(post.created_at)}
               </span>
             </div>
 
@@ -2994,6 +3040,7 @@ const PostDetails = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

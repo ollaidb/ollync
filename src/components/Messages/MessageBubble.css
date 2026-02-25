@@ -446,7 +446,7 @@
 .appointment-overlay .appointment-inline-panel {
   position: relative;
   margin: auto;
-  max-width: 280px;
+  max-width: 320px;
   width: 100%;
   pointer-events: auto;
 }
@@ -532,7 +532,7 @@
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   transition: all 0.3s ease;
   box-shadow: var(--shadow-lg);
-  max-width: 280px;
+  max-width: 320px;
   width: 100%;
 }
 
@@ -834,12 +834,15 @@
   }
 
   .appointment-overlay .appointment-inline-panel {
-    max-width: min(100%, 260px);
+    max-width: min(100%, 300px);
     margin: auto;
   }
 
   .contract-inline-panel,
-  .contract-status-notice-panel,
+  .contract-status-notice-panel {
+    max-width: min(100%, 420px);
+  }
+
   .appointment-cancel-confirm-panel {
     max-width: min(100%, 260px);
   }
@@ -969,8 +972,8 @@
   gap: 8px;
   padding: 8px 10px;
   min-height: 72px;
-  max-width: 280px;
-  width: min(280px, calc(100vw - 132px));
+  max-width: 460px;
+  width: min(460px, calc(100vw - 132px));
   background-color: rgba(255, 255, 255, 0.6);
   border: none;
   border-radius: 8px;
@@ -1057,8 +1060,8 @@
   gap: 8px;
   padding: 8px 10px;
   min-height: 72px;
-  max-width: 280px;
-  width: min(280px, calc(100vw - 132px));
+  max-width: 460px;
+  width: min(460px, calc(100vw - 132px));
   background-color: rgba(255, 255, 255, 0.62);
   border: none;
   border-radius: 8px;
@@ -1139,7 +1142,7 @@
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   box-shadow: var(--shadow-xl);
-  max-width: 280px;
+  max-width: 460px;
   width: 100%;
   padding: 12px;
 }
@@ -1213,7 +1216,7 @@
 }
 
 .contract-status-notice-panel {
-  max-width: 280px;
+  max-width: 460px;
   width: 100%;
   background: color-mix(in srgb, var(--card) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);

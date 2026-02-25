@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Loader, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { AuthBackground } from '../components/Auth/AuthBackground'
+import { PageMeta } from '../components/PageMeta'
 import './Auth.css'
 
 const Register = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation(['common'])
   const [authMethod, setAuthMethod] = useState<'choice' | 'email'>('choice')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -257,12 +261,17 @@ const Register = () => {
 
   if (authMethod === 'choice') {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-header">
-            <h1 className="auth-logo">Ollync</h1>
-            <p className="auth-subtitle">Créez votre compte</p>
-          </div>
+      <>
+        <PageMeta title={t('common:meta.register.title')} description={t('common:meta.register.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="auth-container-wrap">
+            <div className="auth-container">
+              <div className="auth-header">
+                <h1 className="auth-logo">Ollync</h1>
+                <p className="auth-subtitle">Créez votre compte</p>
+              </div>
 
           <div className="auth-method-choice">
             <button
@@ -318,29 +327,37 @@ const Register = () => {
               </Link>
             </p>
           </div>
+            </div>
+          </div>
         </div>
       </div>
+    </>
     )
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <button
-            type="button"
-            className="auth-back-button"
-            onClick={() => {
-              setAuthMethod('choice')
-              setError('')
-            }}
-            disabled={loading}
-          >
-            ← Retour
-          </button>
-          <h1 className="auth-logo">Ollync</h1>
-          <p className="auth-subtitle">Créez votre compte avec email</p>
-        </div>
+    <>
+      <PageMeta title={t('common:meta.register.title')} description={t('common:meta.register.description')} />
+      <div className="auth-page-wrap">
+      <AuthBackground />
+      <div className="auth-page">
+        <div className="auth-container-wrap">
+          <div className="auth-container">
+            <div className="auth-header">
+            <button
+              type="button"
+              className="auth-back-button"
+              onClick={() => {
+                setAuthMethod('choice')
+                setError('')
+              }}
+              disabled={loading}
+            >
+              ← Retour
+            </button>
+            <h1 className="auth-logo">Ollync</h1>
+            <p className="auth-subtitle">Créez votre compte avec email</p>
+          </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {error && (
@@ -528,8 +545,11 @@ const Register = () => {
             </Link>
           </p>
         </div>
+          </div>
+        </div>
       </div>
     </div>
+    </>
   )
 }
 

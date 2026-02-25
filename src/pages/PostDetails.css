@@ -167,11 +167,34 @@
   z-index: 10;
 }
 
-/* Badge URGENT sur la galerie */
-.post-urgent-badge {
+/* Barre en bas de l'image hero : gauche = URGENT, droite = Offre/Demande */
+.post-hero-bottom-badges {
   position: absolute;
-  bottom: 60px;
-  left: 16px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.post-hero-bottom-badges-left,
+.post-hero-bottom-badges-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Badge URGENT sur la galerie (dans la barre bas, à gauche) */
+.post-hero-bottom-badges .post-urgent-badge {
+  position: static;
+  margin: 0;
+}
+
+.post-urgent-badge {
   background: var(--destructive);
   color: var(--destructive-foreground);
   padding: 6px 12px;
@@ -181,7 +204,20 @@
   letter-spacing: 0.5px;
   text-transform: uppercase;
   box-shadow: var(--shadow-md);
-  z-index: 11;
+}
+
+/* Badge Offre/Demande à droite sur l'image hero */
+.post-listing-type-badge {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .post-urgent-badge-inline {

@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useSupabase'
 import { useConsent } from '../hooks/useConsent'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabaseClient'
+import { PageMeta } from '../components/PageMeta'
 import './Home.css'
 
 interface Post {
@@ -66,7 +67,6 @@ const Home = () => {
   const [emploiPosts, setEmploiPosts] = useState<Post[]>([])
   const [studioLieuPosts, setStudioLieuPosts] = useState<Post[]>([])
   const unavailableBehaviorTablesRef = useRef<Set<string>>(new Set())
-  const heroTouchStartXRef = useRef<number | null>(null)
   const heroPanels = [
     {
       id: 'hero-1',
@@ -93,49 +93,17 @@ const Home = () => {
       styleClass: 'home-hero-card--three'
     }
   ]
-  const [activeHeroPanel, setActiveHeroPanel] = useState(0)
-
-
   // Nombre d'annonces par section : mobile 5, web 4
   const maxPostsPerSection = isMobile ? 5 : 4
 
-  const goToNextHeroPanel = () => {
-    setActiveHeroPanel((prev) => (prev + 1) % heroPanels.length)
-  }
-
-  const goToPrevHeroPanel = () => {
-    setActiveHeroPanel((prev) => (prev - 1 + heroPanels.length) % heroPanels.length)
-  }
-
+  /* Slide hero désactivé : on affiche uniquement le premier panneau, sans défilement */
   const renderHeroPanels = () => (
     <div className="home-hero-section">
       <div className="home-hero-single">
-        {heroPanels.map((panel, index) => (
+        {heroPanels.slice(0, 1).map((panel) => (
           <article
             key={panel.id}
-            className={`home-hero-card ${panel.styleClass} ${activeHeroPanel === index ? 'active' : 'hidden'}`}
-            onClick={goToNextHeroPanel}
-            role="button"
-            tabIndex={0}
-            onTouchStart={(event) => {
-              heroTouchStartXRef.current = event.touches[0]?.clientX ?? null
-            }}
-            onTouchEnd={(event) => {
-              const startX = heroTouchStartXRef.current
-              const endX = event.changedTouches[0]?.clientX ?? null
-              heroTouchStartXRef.current = null
-              if (startX == null || endX == null) return
-              const diff = endX - startX
-              if (Math.abs(diff) < 30) return
-              if (diff < 0) goToNextHeroPanel()
-              else goToPrevHeroPanel()
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault()
-                goToNextHeroPanel()
-              }
-            }}
+            className={`home-hero-card ${panel.styleClass} active`}
           >
             <div className="home-hero-text">
               <span className="home-hero-title">{panel.title}</span>
@@ -144,26 +112,12 @@ const Home = () => {
             <button
               className="home-hero-cta"
               type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                navigate(panel.route)
-              }}
+              onClick={() => navigate(panel.route)}
             >
               {panel.button}
               <ArrowRight size={14} />
             </button>
           </article>
-        ))}
-      </div>
-      <div className="home-hero-dots">
-        {heroPanels.map((panel, index) => (
-          <button
-            key={`dot-${panel.id}`}
-            type="button"
-            className={`home-hero-dot ${activeHeroPanel === index ? 'active' : ''}`}
-            onClick={() => setActiveHeroPanel(index)}
-            aria-label={`Afficher le panneau ${index + 1}`}
-          />
         ))}
       </div>
     </div>
@@ -814,7 +768,9 @@ const Home = () => {
   }
 
   return (
-    <div className="app">
+    <>
+      <PageMeta title={t('common:meta.home.title')} description={t('common:meta.home.description')} />
+      <div className="app">
       <div className="home-page">
         {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
         <div className="home-header-fixed">
@@ -1055,6 +1011,7 @@ const Home = () => {
       </div>
       <Footer />
     </div>
+    </>
   )
 }
 

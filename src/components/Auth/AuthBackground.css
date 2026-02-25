@@ -1,0 +1,124 @@
+/* Fond connexion/inscription : couleurs de l’app (mode clair / sombre) + bulles + boule */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--background);
+  overflow: hidden;
+}
+
+.auth-bg__blob {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 45%, var(--background));
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.auth-bg__blob--1 {
+  width: min(85vw, 420px);
+  height: min(85vw, 420px);
+  top: -18%;
+  left: -25%;
+  animation: auth-bg-blob-1 1.7s ease-in-out forwards;
+  animation-delay: 0s;
+}
+
+.auth-bg__blob--2 {
+  width: min(70vw, 320px);
+  height: min(70vw, 320px);
+  bottom: -15%;
+  right: -20%;
+  animation: auth-bg-blob-2 1.7s ease-in-out forwards;
+  animation-delay: 0.55s;
+}
+
+.auth-bg__blob--3 {
+  width: min(35vw, 160px);
+  height: min(35vw, 160px);
+  top: 8%;
+  right: -5%;
+  animation: auth-bg-blob-3 1.7s ease-in-out forwards;
+  animation-delay: 1.1s;
+}
+
+@keyframes auth-bg-blob-1 {
+  0% {
+    opacity: 0;
+    transform: translate(28%, 28%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(28%, 28%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes auth-bg-blob-2 {
+  0% {
+    opacity: 0;
+    transform: translate(-28%, -28%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-28%, -28%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes auth-bg-blob-3 {
+  0% {
+    opacity: 0;
+    transform: translate(-22%, 18%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-22%, 18%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.auth-bg__screensaver-ball {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--foreground) 38%, transparent);
+  pointer-events: none;
+  z-index: 0;
+  animation: auth-bg-ball 14s linear infinite;
+}
+
+@keyframes auth-bg-ball {
+  0% {
+    left: -4%;
+    top: 22%;
+  }
+  24% {
+    left: 35%;
+    top: 55%;
+  }
+  50% {
+    left: 104%;
+    top: 78%;
+  }
+  74% {
+    left: 60%;
+    top: 42%;
+  }
+  100% {
+    left: -4%;
+    top: 22%;
+  }
+}

@@ -103,10 +103,25 @@
 
 /* ============================================
    2. BLOC D'IDENTITÉ (structure compacte horizontale)
+   Mélange type dégradés radiaux : couleur forte + teinte douce qui se fondent au centre.
+   Mode light : fond blanc. Couleur forte bien marquée.
    ============================================ */
 
 .profile-identity-block {
-  background-color: var(--ui-block-bg);
+  /* Deux dégradés radiaux qui se superposent = mélange au centre, base card (dark) */
+  background:
+    radial-gradient(
+      ellipse 95% 130% at 18% 50%,
+      color-mix(in srgb, var(--primary) 42%, var(--card)) 0%,
+      color-mix(in srgb, var(--primary) 18%, var(--card)) 45%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 85% 120% at 82% 50%,
+      color-mix(in srgb, var(--primary) 16%, var(--card)) 0%,
+      transparent 58%
+    ),
+    var(--card);
   margin: 0 10px 2px;
   padding: var(--ui-block-padding);
   border: var(--ui-block-border);
@@ -116,6 +131,30 @@
   gap: var(--ui-block-gap);
   box-shadow: var(--ui-block-shadow);
   position: relative;
+  overflow: hidden;
+}
+
+/* Mode light : fond blanc, même mélange avec blanc comme base */
+html:not(.dark) .profile-identity-block {
+  background:
+    radial-gradient(
+      ellipse 95% 130% at 18% 50%,
+      color-mix(in srgb, var(--primary) 42%, oklch(1 0 0)) 0%,
+      color-mix(in srgb, var(--primary) 18%, oklch(1 0 0)) 45%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 85% 120% at 82% 50%,
+      color-mix(in srgb, var(--primary) 16%, oklch(1 0 0)) 0%,
+      transparent 58%
+    ),
+    oklch(1 0 0);
+}
+
+/* Contenu au-dessus du fond pour rester lisible */
+.profile-identity-block > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Section gauche : Photo + Bouton Suivre */
@@ -763,12 +802,26 @@
    6. MENU SECONDAIRE : Annonce / Match / Avis
    ============================================ */
 
+/* Menu défilable horizontalement (comme les catégories) */
 .profile-secondary-menu {
-  display: flex;
-  gap: 8px;
-  padding: 12px 20px;
   background-color: var(--background);
   margin-top: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.profile-secondary-menu::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-menu-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  min-width: max-content;
 }
 
 @media (max-width: 768px) {
@@ -785,17 +838,19 @@
 }
 
 .profile-menu-btn {
-  flex: 1;
-  padding: 12px 16px;
-  border-radius: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: 20px;
   border: none;
   background-color: var(--muted);
   color: var(--muted-foreground);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease; /* pas de transition sur transform = pas de mouvement au clic */
   text-transform: lowercase;
+  transform: translateZ(0); /* stabilise le rendu */
 }
 
 .profile-menu-btn:hover {
@@ -819,6 +874,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background-color: var(--background);
+  scroll-behavior: auto; /* pas de défilement animé = pas de mouvement monter/descente */
+  overflow-anchor: none; /* évite que le navigateur réajuste le scroll quand le contenu change */
 }
 
 .profile-content-scrollable::-webkit-scrollbar {
@@ -1057,6 +1114,16 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
+  color: var(--muted-foreground);
+}
+
+/* Chargement initial sans rotation (évite l’effet "page qui tourne") */
+.public-profile-loading-static {
+  animation: none;
+}
+
+.public-profile-loading-text {
+  font-size: 15px;
   color: var(--muted-foreground);
 }
 
@@ -1325,16 +1392,15 @@
     font-size: 9px;
   }
 
-  .profile-secondary-menu {
-    padding: 10px 5px;
+  .profile-menu-scroll {
+    padding: 8px 12px;
     gap: 6px;
-    margin-top: 4px;
   }
 
   .profile-menu-btn {
-    padding: 10px 12px;
-    font-size: 13px;
-    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 18px;
   }
 
   .profile-content-scrollable {
@@ -1485,9 +1551,8 @@
     margin: 12px 0 0;
   }
 
-  .app--web .profile-secondary-menu {
-    padding: 10px 0;
-    margin-top: 4px;
+  .app--web .profile-menu-scroll {
+    padding: 10px 16px;
   }
 
   .app--web .profile-content-scrollable {

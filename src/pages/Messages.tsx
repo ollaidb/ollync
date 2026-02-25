@@ -6,6 +6,7 @@ import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, 
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import Logo from '../components/Logo'
@@ -17,6 +18,8 @@ import MessageBubble from '../components/Messages/MessageBubble'
 import { EmptyState } from '../components/EmptyState'
 import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
 import ConfirmationModal from '../components/ConfirmationModal'
+import { PageMeta } from '../components/PageMeta'
+import './Auth.css'
 import './Messages.css'
 
 type FilterType = 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'appointments' | 'archived'
@@ -174,7 +177,7 @@ interface Message {
 }
 
 const Messages = () => {
-  const { t } = useTranslation(['messages'])
+  const { t } = useTranslation(['messages', 'common'])
   const navigate = useNavigate()
   const location = useLocation()
   const { id: conversationId } = useParams<{ id?: string }>()
@@ -2402,32 +2405,40 @@ const Messages = () => {
 
   if (!user) {
     return (
-      <div className="messages-page-container">
-        <div className="messages-header-not-connected">
-          <h1 className="messages-title-centered">Messages</h1>
+      <>
+        <PageMeta title={t('common:meta.messages.title')} description={t('common:meta.messages.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="messages-page-container">
+            <div className="messages-header-not-connected">
+              <h1 className="messages-title-centered">Messages</h1>
+            </div>
+            <div className="messages-content-not-connected">
+              <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
+              <h2 className="messages-not-connected-title">Vous n'êtes pas connecté</h2>
+              <p className="messages-not-connected-text">Connectez-vous pour accéder à vos messages</p>
+              <button 
+                className="messages-not-connected-button" 
+                onClick={() => navigate('/auth/register')}
+              >
+                S'inscrire
+              </button>
+              <p className="messages-not-connected-login-link">
+                Déjà un compte ?{' '}
+                <button 
+                  className="messages-not-connected-link" 
+                  onClick={() => navigate('/auth/login')}
+                >
+                  Se connecter
+                </button>
+              </p>
+            </div>
+            <Footer />
+          </div>
         </div>
-        <div className="messages-content-not-connected">
-          <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
-          <h2 className="messages-not-connected-title">Vous n'êtes pas connecté</h2>
-          <p className="messages-not-connected-text">Connectez-vous pour accéder à vos messages</p>
-          <button 
-            className="messages-not-connected-button" 
-            onClick={() => navigate('/auth/register')}
-          >
-            S'inscrire
-          </button>
-          <p className="messages-not-connected-login-link">
-            Déjà un compte ?{' '}
-            <button 
-              className="messages-not-connected-link" 
-              onClick={() => navigate('/auth/login')}
-            >
-              Se connecter
-            </button>
-          </p>
-        </div>
-        <Footer />
       </div>
+    </>
     )
   }
 
@@ -4804,7 +4815,9 @@ const Messages = () => {
 
   // Vue liste des conversations
   return (
-    <div className="messages-page-container" ref={containerRef}>
+    <>
+      <PageMeta title={t('common:meta.messages.title')} description={t('common:meta.messages.description')} />
+      <div className="messages-page-container" ref={containerRef}>
       {/* Header */}
       <div className="messages-header" ref={headerRef}>
         <div className="messages-header-title-row">
@@ -5549,6 +5562,7 @@ const Messages = () => {
       )}
       <Footer />
     </div>
+    </>
   )
 }
 

@@ -1,0 +1,357 @@
+/* Slide plein écran : couvre toute la hauteur (dégradé ou couleur). */
+.onboarding-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 24px 150px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.onboarding-slide__content {
+  position: relative;
+  z-index: 1;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Icône : léger flottement */
+.onboarding-slide__icon-wrap {
+  margin-bottom: 24px;
+}
+
+.onboarding-slide__icon {
+  display: inline-block;
+  color: #fff;
+  opacity: 0.95;
+  animation: onboarding-icon-float 3s ease-in-out infinite;
+}
+
+@keyframes onboarding-icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Titre : grand et lisible */
+.onboarding-slide__title {
+  font-size: clamp(1.65rem, 5.5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.02em;
+  opacity: 0;
+  animation: onboarding-title-in 0.5s ease-out forwards;
+}
+
+@keyframes onboarding-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Phrases animées : une après l’autre, pas en même temps */
+.onboarding-slide__animated-phrases {
+  font-size: clamp(1.15rem, 4vw, 1.4rem);
+  font-weight: 700;
+  line-height: 1.45;
+  min-height: 2.8em;
+  margin-bottom: 12px;
+}
+
+.onboarding-slide__phrase {
+  display: inline;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+}
+
+.onboarding-slide__phrase--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.onboarding-slide__body {
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  line-height: 1.5;
+  margin: 0;
+  font-weight: 500;
+  opacity: 0;
+  animation: onboarding-body-in 0.5s ease-out 0.15s forwards;
+}
+
+@keyframes onboarding-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onboarding-slide__cta-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  opacity: 0;
+  animation: onboarding-body-in 0.5s ease-out 0.2s forwards;
+}
+
+.onboarding-slide__cta {
+  padding: 16px 28px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.onboarding-slide__cta:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.onboarding-slide__cta--secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+}
+
+.onboarding-slide__cta--secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Passer : toujours visible sur la couleur */
+.onboarding-slide__skip {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.onboarding-slide__skip:hover {
+  background: rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%) scale(1.02);
+}
+
+.onboarding-slide__skip:active {
+  transform: translateX(-50%) scale(0.98);
+}
+
+/* ---------- Layout Canva : Bienvenue (corail + formes violettes) ---------- */
+.onboarding-slide--welcome .onboarding-slide__content {
+  max-width: 420px;
+}
+
+/* Formes violettes type Canva : état final par défaut (retour sur le slide = pas de rejouer) */
+.onboarding-slide__blob {
+  position: absolute;
+  border-radius: 50%;
+  background: #800040;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+}
+
+.onboarding-slide__blob--1 {
+  width: min(85vw, 420px);
+  height: min(85vw, 420px);
+  top: -18%;
+  left: -25%;
+}
+
+.onboarding-slide__blob--2 {
+  width: min(70vw, 320px);
+  height: min(70vw, 320px);
+  bottom: -15%;
+  right: -20%;
+}
+
+.onboarding-slide__blob--3 {
+  width: min(35vw, 160px);
+  height: min(35vw, 160px);
+  top: 8%;
+  right: -5%;
+}
+
+/* Animation uniquement au premier passage (quand .onboarding-slide--blobs-run est ajouté) */
+.onboarding-slide--blobs-run .onboarding-slide__blob {
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.onboarding-slide--blobs-run .onboarding-slide__blob--1 {
+  animation: onboarding-blob-in-1 1.7s ease-in-out forwards;
+  animation-delay: 0s;
+}
+
+.onboarding-slide--blobs-run .onboarding-slide__blob--2 {
+  animation: onboarding-blob-in-2 1.7s ease-in-out forwards;
+  animation-delay: 0.55s;
+}
+
+.onboarding-slide--blobs-run .onboarding-slide__blob--3 {
+  animation: onboarding-blob-in-3 1.7s ease-in-out forwards;
+  animation-delay: 1.1s;
+}
+
+/* Chaque boule : part du centre (croisement), s’affiche, puis repart à sa place */
+@keyframes onboarding-blob-in-1 {
+  0% {
+    opacity: 0;
+    transform: translate(28%, 28%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(28%, 28%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes onboarding-blob-in-2 {
+  0% {
+    opacity: 0;
+    transform: translate(-28%, -28%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-28%, -28%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes onboarding-blob-in-3 {
+  0% {
+    opacity: 0;
+    transform: translate(-22%, 18%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-22%, 18%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+/* Boule type économiseur d’écran : allers-retours continus sur le slide */
+.onboarding-slide__screensaver-ball {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 0;
+  animation: onboarding-screensaver-ball 14s linear infinite;
+}
+
+@keyframes onboarding-screensaver-ball {
+  0% {
+    left: -4%;
+    top: 22%;
+  }
+  24% {
+    left: 35%;
+    top: 55%;
+  }
+  50% {
+    left: 104%;
+    top: 78%;
+  }
+  74% {
+    left: 60%;
+    top: 42%;
+  }
+  100% {
+    left: -4%;
+    top: 22%;
+  }
+}
+
+/* Bloc texte Bienvenue / Ollync */
+.onboarding-slide__welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.onboarding-slide__welcome-line {
+  font-size: clamp(1.25rem, 4.5vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #E0BBE4;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  opacity: 0;
+  animation: onboarding-title-in 0.5s ease-out forwards;
+}
+
+.onboarding-slide__welcome-arrow {
+  width: 56px;
+  height: 40px;
+  margin: 2px 0 4px;
+  opacity: 0;
+  animation: onboarding-title-in 0.5s ease-out 0.2s forwards;
+}
+
+.onboarding-slide__welcome-brand {
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  animation: onboarding-title-in 0.5s ease-out 0.35s forwards;
+}
+
+.onboarding-slide__animated-phrases--welcome {
+  margin-top: 28px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: clamp(1.1rem, 3.5vw, 1.35rem);
+}

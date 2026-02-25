@@ -282,6 +282,155 @@
   text-align: right;
 }
 
+/* Section Liens : icônes + barre d’ajout */
+.edit-profile-links-group .edit-profile-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.edit-profile-link-item {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.edit-profile-link-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--foreground);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.edit-profile-link-icon-wrap:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.edit-profile-link-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--destructive, #ef4444);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.edit-profile-link-remove:hover {
+  background: #dc2626;
+  transform: scale(1.08);
+}
+
+.edit-profile-link-add-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 100%;
+  min-width: 200px;
+  padding: 10px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  box-sizing: border-box;
+}
+
+.edit-profile-link-add-bar:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.edit-profile-link-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.edit-profile-link-input-row .edit-profile-link-input {
+  margin-top: 0;
+}
+
+.edit-profile-link-input-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-profile-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.edit-profile-link-btn-cancel {
+  background: var(--input);
+  color: var(--foreground);
+}
+
+.edit-profile-link-btn-cancel:hover {
+  background: var(--border);
+}
+
+.edit-profile-link-btn-confirm {
+  background: var(--primary);
+  color: var(--primary-foreground, white);
+}
+
+.edit-profile-link-btn-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.edit-profile-link-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edit-profile-links-max {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.tiktok-icon-small {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--foreground);
+  color: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+}
+
 /* Avatar Upload */
 .avatar-upload-section {
   display: flex;

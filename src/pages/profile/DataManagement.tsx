@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Shield } from 'lucide-react'
+import { ChevronDown, ChevronUp, Shield, Download } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import { exportUserData } from '../../utils/exportUserData'
+import { downloadExportedDataAsPdf } from '../../utils/exportUserDataPdf'
 import './DataManagement.css'
 
 const DataManagement = () => {
   const { user } = useAuth()
+  const { t } = useTranslation(['settings'])
   const [dataConsent, setDataConsent] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [exportLoading, setExportLoading] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -65,6 +71,21 @@ const DataManagement = () => {
       console.error('Error in toggleConsent:', error)
       setDataConsent(!newConsent)
       alert('Erreur lors de la mise à jour du consentement')
+    }
+  }
+
+  const handleDownloadMyData = async () => {
+    if (!user) return
+    setExportError(null)
+    setExportLoading(true)
+    try {
+      const data = await exportUserData(user.id)
+      downloadExportedDataAsPdf(data)
+    } catch (err) {
+      console.error('Export user data error:', err)
+      setExportError(t('settings:downloadMyDataError'))
+    } finally {
+      setExportLoading(false)
     }
   }
 
@@ -158,6 +179,37 @@ const DataManagement = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Export / Portabilité des données (RGPD) */}
+          <div className="data-consent-block data-export-block">
+            <div className="data-export-header">
+              <Download size={24} className="data-consent-icon" aria-hidden />
+              <div className="data-export-text">
+                <h3 className="data-consent-title">{t('settings:downloadMyData')}</h3>
+                <p className="data-consent-subtitle">
+                  {t('settings:downloadMyDataDescription')}
+                </p>
+              </div>
+            </div>
+            {exportError && (
+              <p className="data-export-error" role="alert">{exportError}</p>
+            )}
+            <button
+              type="button"
+              className="data-export-button"
+              onClick={handleDownloadMyData}
+              disabled={exportLoading}
+            >
+              {exportLoading ? (
+                <span className="data-export-button-text">{t('settings:exportPreparing')}</span>
+              ) : (
+                <>
+                  <Download size={20} aria-hidden />
+                  <span className="data-export-button-text">{t('settings:downloadMyData')}</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

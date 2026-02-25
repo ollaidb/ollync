@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'
 import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import './i18n'
@@ -55,9 +56,11 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AccessibilityProvider>
-      <App />
-    </AccessibilityProvider>
+    <HelmetProvider>
+      <AccessibilityProvider>
+        <App />
+      </AccessibilityProvider>
+    </HelmetProvider>
   </React.StrictMode>,
 )
 

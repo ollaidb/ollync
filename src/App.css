@@ -59,7 +59,9 @@
 .route-transition-shell > .notifications-page,
 .route-transition-shell > .swipe-page,
 .route-transition-shell > .users-page,
-.route-transition-shell > .category-page-new {
+.route-transition-shell > .category-page-new,
+.route-transition-shell > .not-found-page,
+.route-transition-shell > .error-boundary-page {
   flex: 1;
   min-height: 0;
   height: auto;

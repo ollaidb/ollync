@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Loader } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { AuthBackground } from '../components/Auth/AuthBackground'
+import { PageMeta } from '../components/PageMeta'
+import { isSafeReturnTo } from '../utils/safeReturnTo'
 import './Auth.css'
 
 const Login = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo') ?? ''
+  const { t } = useTranslation(['common'])
   const [authMethod, setAuthMethod] = useState<'choice' | 'email'>('choice')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -43,7 +50,8 @@ const Login = () => {
           })
         }
 
-        navigate('/home')
+        const target = isSafeReturnTo(returnTo) ? returnTo : '/home'
+        navigate(target, { replace: true })
       }
     } catch (err: unknown) {
       let errorMessage = 'Erreur de connexion'
@@ -78,10 +86,11 @@ const Login = () => {
     setLoading(true)
 
     try {
+      const redirectPath = isSafeReturnTo(returnTo) ? returnTo : '/home'
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/home`
+          redirectTo: `${window.location.origin}${redirectPath}`
         }
       })
 
@@ -108,10 +117,11 @@ const Login = () => {
     setLoading(true)
 
     try {
+      const redirectPath = isSafeReturnTo(returnTo) ? returnTo : '/home'
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}/home`
+          redirectTo: `${window.location.origin}${redirectPath}`
         }
       })
 
@@ -135,12 +145,17 @@ const Login = () => {
 
   if (authMethod === 'choice') {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-header">
-            <h1 className="auth-logo">Ollync</h1>
-            <p className="auth-subtitle">Connectez-vous à votre compte</p>
-          </div>
+      <>
+        <PageMeta title={t('common:meta.login.title')} description={t('common:meta.login.description')} />
+        <div className="auth-page-wrap">
+        <AuthBackground />
+        <div className="auth-page">
+          <div className="auth-container-wrap">
+            <div className="auth-container">
+              <div className="auth-header">
+                <h1 className="auth-logo">Ollync</h1>
+                <p className="auth-subtitle">Connectez-vous à votre compte</p>
+              </div>
 
           <div className="auth-method-choice">
             <button
@@ -195,16 +210,24 @@ const Login = () => {
                 Créer un compte
               </Link>
             </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </>
     )
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
+    <>
+      <PageMeta title={t('common:meta.login.title')} description={t('common:meta.login.description')} />
+      <div className="auth-page-wrap">
+      <AuthBackground />
+      <div className="auth-page">
+        <div className="auth-container-wrap">
+          <div className="auth-container">
+            <div className="auth-header">
           <button
             type="button"
             className="auth-back-button"
@@ -218,9 +241,9 @@ const Login = () => {
           </button>
           <h1 className="auth-logo">Ollync</h1>
           <p className="auth-subtitle">Connectez-vous avec votre email</p>
-        </div>
+          </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+          <form className="auth-form" onSubmit={handleSubmit}>
           {error && (
             <div className="auth-error">
               {error}
@@ -291,8 +314,11 @@ const Login = () => {
             </Link>
           </p>
         </div>
+          </div>
+        </div>
       </div>
     </div>
+    </>
   )
 }
 

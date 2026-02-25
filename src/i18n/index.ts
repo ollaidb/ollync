@@ -227,6 +227,46 @@ i18n.use(initReactI18next).init({
           publishListing: 'Publier une annonce',
           swipeMode: 'Mode Swipe',
           scan: 'Scanner'
+        },
+        timeAgo: {
+          publishedAt: 'Publié {{text}}',
+          todayAt: "Aujourd'hui à {{time}}",
+          oneDay: 'il y a un jour',
+          days: 'il y a {{count}} jours',
+          oneMonth: 'il y a un mois',
+          months: 'il y a {{count}} mois',
+          oneYear: 'il y a un an',
+          years: 'il y a {{count}} ans'
+        },
+        notFound: {
+          title: 'Page introuvable',
+          message: 'Cette page n’existe pas ou a été déplacée. Vous pouvez retourner à l’accueil ou faire une recherche.',
+          goHome: 'Retour à l’accueil',
+          goSearch: 'Rechercher',
+          navLabel: 'Navigation page introuvable'
+        },
+        errorBoundary: {
+          title: 'Une erreur s’est produite',
+          message: 'Le chargement de cette page a échoué. Vous pouvez réessayer ou retourner à l’accueil.',
+          retry: 'Réessayer',
+          goHome: 'Retour à l’accueil',
+          navLabel: 'Actions en cas d’erreur'
+        },
+        meta: {
+          defaultTitle: 'Ollync - Mise en relation pour créateurs',
+          defaultDescription: 'Plateforme de mise en relation pour créateurs de contenu. Publiez des annonces, trouvez des profils et collaborez sur des projets créatifs.',
+          home: { title: 'Accueil', description: 'Découvrez les annonces et trouvez des créateurs de contenu sur Ollync.' },
+          search: { title: 'Recherche', description: 'Recherchez des annonces par catégorie, lieu et critères.' },
+          profile: { title: 'Mon profil', description: 'Gérez votre profil Ollync.' },
+          profilePublic: { title: 'Profil', description: 'Profil créateur sur Ollync.' },
+          post: { title: 'Annonce', description: 'Détail de l\'annonce sur Ollync.' },
+          publish: { title: 'Publier une annonce', description: 'Publiez votre annonce en quelques étapes.' },
+          favorites: { title: 'Favoris', description: 'Vos annonces et profils favoris.' },
+          messages: { title: 'Messages', description: 'Vos conversations sur Ollync.' },
+          notifications: { title: 'Notifications', description: 'Vos notifications.' },
+          login: { title: 'Connexion', description: 'Connectez-vous à votre compte Ollync.' },
+          register: { title: 'Inscription', description: 'Créez votre compte Ollync.' },
+          notFound: { title: 'Page introuvable', description: 'Cette page n’existe pas.' }
         }
       },
       home: {
@@ -291,7 +331,12 @@ i18n.use(initReactI18next).init({
         language: 'Langue',
         dataManagement: 'Gestion de mes données',
         deleteAccount: 'Suppression de compte',
-        moderation: 'Modération'
+        moderation: 'Modération',
+        downloadMyData: 'Télécharger mes données',
+        downloadMyDataDescription: 'Export de vos données personnelles (profil, annonces, messages envoyés, notifications, etc.) en PDF lisible, conformément au droit à la portabilité (RGPD).',
+        downloadMyDataSuccess: 'Téléchargement lancé.',
+        downloadMyDataError: 'Impossible de préparer l’export. Réessayez plus tard.',
+        exportPreparing: 'Préparation…'
       },
       profile: {
         accountTitle: 'Mon compte',
@@ -555,6 +600,46 @@ i18n.use(initReactI18next).init({
           publishListing: 'Post a listing',
           swipeMode: 'Swipe mode',
           scan: 'Scan'
+        },
+        timeAgo: {
+          publishedAt: 'Published {{text}}',
+          todayAt: 'Today at {{time}}',
+          oneDay: '1 day ago',
+          days: '{{count}} days ago',
+          oneMonth: '1 month ago',
+          months: '{{count}} months ago',
+          oneYear: '1 year ago',
+          years: '{{count}} years ago'
+        },
+        notFound: {
+          title: 'Page not found',
+          message: 'This page does not exist or has been moved. You can go back to the home page or search.',
+          goHome: 'Back to home',
+          goSearch: 'Search',
+          navLabel: 'Page not found navigation'
+        },
+        errorBoundary: {
+          title: 'Something went wrong',
+          message: 'This page failed to load. You can try again or go back to the home page.',
+          retry: 'Try again',
+          goHome: 'Back to home',
+          navLabel: 'Error recovery actions'
+        },
+        meta: {
+          defaultTitle: 'Ollync - Connecting creators',
+          defaultDescription: 'Platform connecting content creators. Post listings, find profiles and collaborate on creative projects.',
+          home: { title: 'Home', description: 'Discover listings and find content creators on Ollync.' },
+          search: { title: 'Search', description: 'Search listings by category, location and filters.' },
+          profile: { title: 'My profile', description: 'Manage your Ollync profile.' },
+          profilePublic: { title: 'Profile', description: 'Creator profile on Ollync.' },
+          post: { title: 'Listing', description: 'Listing details on Ollync.' },
+          publish: { title: 'Post a listing', description: 'Post your listing in a few steps.' },
+          favorites: { title: 'Favorites', description: 'Your favorite listings and profiles.' },
+          messages: { title: 'Messages', description: 'Your conversations on Ollync.' },
+          notifications: { title: 'Notifications', description: 'Your notifications.' },
+          login: { title: 'Sign in', description: 'Sign in to your Ollync account.' },
+          register: { title: 'Sign up', description: 'Create your Ollync account.' },
+          notFound: { title: 'Page not found', description: 'This page does not exist.' }
         }
       },
       home: {
@@ -619,7 +704,12 @@ i18n.use(initReactI18next).init({
         language: 'Language',
         dataManagement: 'Data management',
         deleteAccount: 'Delete account',
-        moderation: 'Moderation'
+        moderation: 'Moderation',
+        downloadMyData: 'Download my data',
+        downloadMyDataDescription: 'Export your personal data (profile, listings, messages you sent, notifications, etc.) as a readable PDF, in line with the right to data portability (GDPR).',
+        downloadMyDataSuccess: 'Download started.',
+        downloadMyDataError: 'Could not prepare export. Please try again later.',
+        exportPreparing: 'Preparing…'
       },
       profile: {
         accountTitle: 'My account',

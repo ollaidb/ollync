@@ -26,6 +26,7 @@ const Register = lazy(() => import('./pages/Register'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const UrgentPosts = lazy(() => import('./pages/UrgentPosts'))
 const RecentPosts = lazy(() => import('./pages/RecentPosts'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 import { ToastProvider } from './contexts/ToastContext'
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import { useIsMobile } from './hooks/useIsMobile'
@@ -34,6 +35,8 @@ import WebLayout from './layouts/WebLayout'
 import ConsentModal from './components/ConsentModal'
 import ReminderBlock from './components/ReminderBlock'
 import { useReminder } from './hooks/useReminder'
+import ErrorBoundary from './components/ErrorBoundary'
+import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 import './App.css'
 
 function isReminderRoute(pathname: string): boolean {
@@ -48,7 +51,9 @@ function isReminderRoute(pathname: string): boolean {
 
 function AppContent() {
   const location = useLocation()
-  const routeTransitionKey = `${location.pathname}${location.search}`
+  // Clé sur le pathname uniquement : éviter le remontage des Routes au changement de query (?tab=…)
+  // sinon on voit un flash "Mon compte" en haut quand on change d’onglet sur un profil public
+  const routeTransitionKey = location.pathname
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
   const { reminder, dismiss } = useReminder()
@@ -76,15 +81,16 @@ function AppContent() {
   ])
 
   const routes = (
-    <Suspense
-      fallback={
-        <div className="route-loading">
-          <div className="route-loading-spinner" />
-          <div className="route-loading-text">Chargement...</div>
-        </div>
-      }
-    >
-      <Routes key={routeTransitionKey}>
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="route-loading">
+            <div className="route-loading-spinner" />
+            <div className="route-loading-text">Chargement...</div>
+          </div>
+        }
+      >
+        <Routes key={routeTransitionKey}>
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/home" element={<Home />} />
       <Route path="/feed" element={<Feed />} />
@@ -183,13 +189,16 @@ function AppContent() {
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/register" element={<Register />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
-      </Routes>
-    </Suspense>
+      <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   )
 
   return (
     <NavigationHistoryProvider>
       <ToastProvider>
+        <SessionExpiredHandler />
         <ConsentModal
           visible={cookiesConsent.showModal && !isConsentInfoPage}
           title={cookiesConsent.messages.title}

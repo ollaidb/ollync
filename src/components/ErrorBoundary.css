@@ -1,0 +1,89 @@
+/* Page de secours Error Boundary - même charte que NotFound */
+.error-boundary-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--background);
+}
+
+.error-boundary-content {
+  text-align: center;
+  max-width: 420px;
+}
+
+.error-boundary-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--destructive, var(--muted));
+}
+
+.error-boundary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.error-boundary-message {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.error-boundary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.error-boundary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, filter 0.2s ease;
+  font-family: inherit;
+}
+
+.error-boundary-btn--primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.error-boundary-btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.error-boundary-btn--secondary {
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.error-boundary-btn--secondary:hover {
+  background-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .error-boundary-actions {
+    flex-direction: column;
+  }
+
+  .error-boundary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
