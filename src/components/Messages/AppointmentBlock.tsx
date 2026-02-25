@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Calendar, X, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Calendar, X, ChevronUp, ChevronDown } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import CalendarPicker from './CalendarPicker'
@@ -303,7 +303,7 @@ export function AppointmentBlock({
               onClick={() => !updating && setShowCancelConfirm(false)}
               disabled={updating}
             >
-              Non, garder
+              Garder
             </button>
             <button
               type="button"
@@ -311,7 +311,7 @@ export function AppointmentBlock({
               onClick={handleCancel}
               disabled={updating}
             >
-              {updating ? 'Annulation...' : 'Oui, annuler'}
+              {updating ? 'Annulation...' : 'Annuler'}
             </button>
           </div>
         </div>
@@ -339,66 +339,46 @@ export function AppointmentBlock({
               <>
                 {!editing ? (
                   <>
-                    {calendarData?.previous_appointment_datetime ? (
-                      <>
-                        <div className="appointment-inline-old-date">
-                          <span className="appointment-inline-old-date-label">Ancienne date</span>
-                          <span className="appointment-inline-old-date-value">
-                            {new Date(calendarData.previous_appointment_datetime).toLocaleString('fr-FR', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                            {calendarData.previous_duration_minutes != null && ` • ${formatDurationMinutes(calendarData.previous_duration_minutes)}`}
-                          </span>
-                        </div>
-                        <div className="appointment-inline-selected-date">
-                          <span className="appointment-inline-date-label">Date et heure :</span>
-                          <span className="appointment-inline-date-value">
-                            {new Date(appointmentDateTime).toLocaleString('fr-FR', {
-                              weekday: 'long',
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                            {durationLabel ? ` • Durée : ${durationLabel}` : ''}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="appointment-inline-selected-date">
-                          <span className="appointment-inline-date-label">Date :</span>
-                          <span className="appointment-inline-date-value">
-                            {new Date(appointmentDateTime).toLocaleDateString('fr-FR', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="appointment-inline-selected-date">
-                          <span className="appointment-inline-date-label">Heure :</span>
-                          <span className="appointment-inline-date-value">
-                            {new Date(appointmentDateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        {durationLabel && (
-                          <div className="appointment-inline-selected-date">
-                            <span className="appointment-inline-date-label">Durée :</span>
-                            <span className="appointment-inline-date-value">{durationLabel}</span>
-                          </div>
-                        )}
-                      </>
+                    {calendarData?.previous_appointment_datetime && (
+                      <div className="appointment-inline-old-date">
+                        <span className="appointment-inline-old-date-label">Ancienne date</span>
+                        <span className="appointment-inline-old-date-value">
+                          {(() => {
+                            const d = new Date(calendarData.previous_appointment_datetime)
+                            const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                            const h = d.getHours()
+                            const m = d.getMinutes()
+                            const timeStr = m === 0 ? `à ${h}h` : `à ${h}h${String(m).padStart(2, '0')}`
+                            const dur = calendarData.previous_duration_minutes != null ? formatDurationMinutes(calendarData.previous_duration_minutes) : ''
+                            const durationStr = dur ? ` pour ${dur}` : ''
+                            return `${dateStr} ${timeStr}${durationStr}`
+                          })()}
+                        </span>
+                      </div>
                     )}
+                    <div className="appointment-inline-info-block">
+                      <span className="appointment-inline-info-datetime">
+                        {(() => {
+                          const d = new Date(appointmentDateTime)
+                          const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                          const h = d.getHours()
+                          const m = d.getMinutes()
+                          const timeStr = m === 0 ? `à ${h}h` : `à ${h}h${String(m).padStart(2, '0')}`
+                          const durationStr = durationLabel ? ` pour ${durationLabel}` : ''
+                          return `${dateStr} ${timeStr}${durationStr}`
+                        })()}
+                      </span>
+                    </div>
                     {!isCancelled && canModify && (
-                      <div className="appointment-inline-actions">
+                      <div className="appointment-inline-actions appointment-inline-actions--row">
+                        <button
+                          type="button"
+                          className="appointment-inline-cancel-btn"
+                          onClick={() => setShowCancelConfirm(true)}
+                          disabled={updating}
+                        >
+                          Annuler
+                        </button>
                         <button
                           type="button"
                           className="appointment-inline-edit-btn"
@@ -410,15 +390,6 @@ export function AppointmentBlock({
                           }}
                         >
                           Modifier
-                        </button>
-                        <button
-                          type="button"
-                          className="appointment-inline-cancel-btn"
-                          onClick={() => setShowCancelConfirm(true)}
-                          disabled={updating}
-                        >
-                          <Trash2 size={16} />
-                          Annuler le rendez-vous
                         </button>
                       </div>
                     )}
@@ -481,7 +452,7 @@ export function AppointmentBlock({
                         </div>
                       </div>
                     </div>
-                    <div className="appointment-inline-actions">
+                    <div className="appointment-inline-actions appointment-inline-actions--row">
                       <button
                         type="button"
                         className="appointment-inline-back-btn"

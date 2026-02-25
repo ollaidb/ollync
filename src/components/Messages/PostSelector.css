@@ -15,7 +15,7 @@
   background: color-mix(in srgb, var(--card) 95%, transparent);
   border-radius: 18px;
   width: 100%;
-  max-width: 472px;
+  max-width: 280px;
   max-height: min(66vh, 560px);
   display: flex;
   flex-direction: column;
@@ -230,7 +230,7 @@
   }
 
   .post-selector-content {
-    max-width: 100%;
+    max-width: min(100%, 260px);
     max-height: min(70vh, 580px);
     border-radius: 16px;
     margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);

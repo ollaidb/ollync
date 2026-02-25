@@ -40,6 +40,9 @@ function isReminderRoute(pathname: string): boolean {
   if (pathname === '/' || pathname === '/home') return true
   if (pathname === '/feed' || pathname === '/favorites' || pathname === '/likes') return true
   if (pathname === '/search') return true
+  if (pathname === '/messages' || pathname === '/notifications') return true
+  if (pathname === '/profile') return true
+  if (pathname.startsWith('/profile/') && !pathname.includes('/legal/')) return true
   return false
 }
 

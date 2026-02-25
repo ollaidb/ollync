@@ -94,10 +94,11 @@ export function useReminder() {
   }, [user?.id])
 
   const reminder: ReminderItem | null = (() => {
-    if (!user || loading) return null
+    if (!user) return null
     if (isInGlobalCooldown()) return null
 
-    if (draftCount > 0 && !isInCooldown('draft')) {
+    // Brouillons : afficher seulement une fois le compteur chargé
+    if (!loading && draftCount > 0 && !isInCooldown('draft')) {
       return {
         type: 'draft',
         title: 'Terminer ton brouillon',
@@ -109,6 +110,7 @@ export function useReminder() {
       }
     }
 
+    // Messages non lus : afficher dès l’entrée dans l’app (sans attendre le chargement des brouillons)
     if (unreadTotal > 0 && !isInCooldown('messages')) {
       return {
         type: 'messages',
@@ -121,6 +123,7 @@ export function useReminder() {
       }
     }
 
+    // Publier une annonce : afficher dès l’entrée si pas de brouillon ni messages en attente
     if (!isInCooldown('publish')) {
       return {
         type: 'publish',

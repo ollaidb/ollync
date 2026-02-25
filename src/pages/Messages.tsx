@@ -3329,6 +3329,7 @@ const Messages = () => {
               confirmLabel="Bloquer"
               cancelLabel="Annuler"
               isDestructive={true}
+              compact
             />
           )}
           {showLeaveGroupConfirm && (
@@ -3336,6 +3337,7 @@ const Messages = () => {
               visible={showLeaveGroupConfirm}
               title="Quitter le groupe"
               message="Voulez-vous vraiment quitter ce groupe ? Vous ne recevrez plus les messages de cette conversation."
+              compact
               onCancel={() => setShowLeaveGroupConfirm(false)}
               onConfirm={async () => {
                 if (!selectedConversation?.id || !user) return
@@ -3387,6 +3389,7 @@ const Messages = () => {
               visible={showRemoveMemberConfirm}
               title="Retirer du groupe"
               message={`Voulez-vous vraiment retirer ${participantToRemove.profile?.full_name || participantToRemove.profile?.username || 'cet utilisateur'} du groupe ?`}
+              compact
               onCancel={() => {
                 setShowRemoveMemberConfirm(false)
                 setParticipantToRemove(null)
@@ -3436,6 +3439,7 @@ const Messages = () => {
               visible={showDissociateConfirm}
               title="Dissocier l'annonce"
               message="Voulez-vous vraiment dissocier cette annonce du groupe ?"
+              compact
               onCancel={() => setShowDissociateConfirm(false)}
               onConfirm={async () => {
                 if (!selectedConversation?.id) return
@@ -3461,6 +3465,7 @@ const Messages = () => {
               visible={showDeleteConfirm}
               title="Supprimer la conversation"
               message="Voulez-vous vraiment supprimer cette conversation ?"
+              compact
               onCancel={() => setShowDeleteConfirm(false)}
               onConfirm={async () => {
                 const currentId = selectedConversation?.id || conversationId
@@ -4249,6 +4254,7 @@ const Messages = () => {
             visible={showBlockConfirm}
             title="Bloquer cet utilisateur"
             message="Voulez-vous vraiment bloquer cet utilisateur ?"
+            compact
             onCancel={() => setShowBlockConfirm(false)}
             onConfirm={async () => {
               if (!user || !otherUserId) return
@@ -4284,6 +4290,7 @@ const Messages = () => {
             visible={showDeleteConfirm}
             title="Supprimer la conversation"
             message="Voulez-vous vraiment supprimer cette conversation ?"
+            compact
             onCancel={() => setShowDeleteConfirm(false)}
             onConfirm={async () => {
               const currentId = selectedConversation?.id || conversationId
@@ -4735,6 +4742,7 @@ const Messages = () => {
             visible={showDeleteMessageConfirm}
             title="Supprimer le message"
             message="Supprimer pour vous uniquement ?"
+            compact
             onConfirm={() => handleDeleteMessage(activeMessage, false)}
             onCancel={() => setShowDeleteMessageConfirm(false)}
             confirmLabel="Supprimer"
@@ -5376,6 +5384,7 @@ const Messages = () => {
           visible={showDeleteConfirm}
           title="Supprimer la conversation"
           message="Voulez-vous vraiment supprimer cette conversation ?"
+          compact
           onCancel={() => setShowDeleteConfirm(false)}
           onConfirm={async () => {
             await handleDeleteConversationForUser(listActionConversation.id)

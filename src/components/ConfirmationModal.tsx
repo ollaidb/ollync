@@ -14,6 +14,7 @@ export interface ConfirmationModalProps {
   children?: ReactNode
   contentClassName?: string
   presentation?: 'center' | 'bottom-sheet'
+  compact?: boolean
 }
 
 const ConfirmationModal = ({
@@ -28,7 +29,8 @@ const ConfirmationModal = ({
   isDestructive = false,
   children,
   contentClassName,
-  presentation = 'center'
+  presentation = 'center',
+  compact = false
 }: ConfirmationModalProps) => {
   const titleId = useId()
   const messageId = useId()
@@ -98,7 +100,7 @@ const ConfirmationModal = ({
       <div
         className={`confirmation-modal-content ${
           presentation === 'bottom-sheet' ? 'confirmation-modal-content--bottom-sheet' : ''
-        }${contentClassName ? ` ${contentClassName}` : ''}`.trim()}
+        }${compact ? ' confirmation-modal-content--compact' : ''}${contentClassName ? ` ${contentClassName}` : ''}`.trim()}
         style={contentStyle}
         onClick={(event) => event.stopPropagation()}
         role="dialog"

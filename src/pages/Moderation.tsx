@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, BarChart3, CheckCircle2, FileDown, Flag, LayoutDashboard, ShieldAlert, Trash2, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
-import BackButton from '../components/BackButton'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { EmptyState } from '../components/EmptyState'
 import './Moderation.css'
@@ -234,132 +233,6 @@ const Moderation = () => {
     setActionLoading(null)
   }
 
-  const findOrCreateConversation = useCallback(async (otherUserId: string, postId?: string | null) => {
-    if (!user) return null
-
-    try {
-      const { data: existingConvs, error: searchError } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-        .is('deleted_at', null)
-
-      if (searchError) {
-        console.error('Error searching for conversation:', searchError)
-      }
-
-      const existingConv = existingConvs?.find((conv) => {
-        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
-        return !convData.is_group && !convData.deleted_at
-      })
-
-      if (existingConv && (existingConv as { id: string }).id) {
-        return existingConv
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newConv, error: insertError } = await (supabase.from('conversations') as any)
-        .insert({
-          user1_id: user.id,
-          user2_id: otherUserId,
-          post_id: postId || null,
-          type: 'direct',
-          is_group: false
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error('Error creating conversation:', insertError)
-        if (insertError.code === '23505') {
-          const { data: retryConvs } = await supabase
-            .from('conversations')
-            .select('*')
-            .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-            .is('deleted_at', null)
-            .limit(1)
-
-          if (retryConvs && retryConvs.length > 0) {
-            return retryConvs[0]
-          }
-        }
-        return null
-      }
-
-      return newConv
-    } catch (error) {
-      console.error('Error in findOrCreateConversation:', error)
-      return null
-    }
-  }, [user])
-
-  const handleOpenConversation = async (
-    report: ModerationReport,
-    targetUserId: string | null | undefined,
-    postId?: string | null
-  ) => {
-    if (!targetUserId || !user) return
-    setActionLoading(report.id)
-
-    try {
-      const conversation = await findOrCreateConversation(targetUserId, postId)
-      if (conversation && (conversation as { id: string }).id) {
-        navigate(`/messages/${(conversation as { id: string }).id}`)
-      } else {
-        alert('Erreur lors de la création de la conversation')
-      }
-    } catch (error) {
-      console.error('Error opening conversation:', error)
-      alert('Erreur lors de l\'ouverture de la conversation')
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
-  const findConversationBetweenUsers = useCallback(async (userA: string, userB: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`and(user1_id.eq.${userA},user2_id.eq.${userB}),and(user1_id.eq.${userB},user2_id.eq.${userA})`)
-        .is('deleted_at', null)
-
-      if (error) {
-        console.error('Error finding conversation between users:', error)
-        return null
-      }
-
-      const existingConv = (data || []).find((conv) => {
-        const convData = conv as { is_group?: boolean; deleted_at?: string | null }
-        return !convData.is_group && !convData.deleted_at
-      })
-
-      return existingConv || null
-    } catch (error) {
-      console.error('Error in findConversationBetweenUsers:', error)
-      return null
-    }
-  }, [])
-
-  const handleOpenExistingConversation = async (report: ModerationReport, userA?: string | null, userB?: string | null) => {
-    if (!userA || !userB) return
-    setActionLoading(report.id)
-
-    try {
-      const conversation = await findConversationBetweenUsers(userA, userB)
-      if (conversation && (conversation as { id: string }).id) {
-        navigate(`/messages/${(conversation as { id: string }).id}`)
-      } else {
-        alert('Aucune conversation entre ces deux utilisateurs.')
-      }
-    } catch (error) {
-      console.error('Error opening existing conversation:', error)
-      alert('Erreur lors de l\'ouverture de la conversation')
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const handleDeletePost = async (report: ModerationReport) => {
     if (!report.reported_post) return
     setActionLoading(report.id)
@@ -582,67 +455,28 @@ const Moderation = () => {
                   </div>
 
                   <div className="moderation-links">
-                    {report.reported_user && (
+                    {report.report_type === 'profile' && report.reported_user && (
                       <button
                         className="moderation-link"
                         onClick={() => navigate(`/profile/public/${report.reported_user?.id}`)}
                       >
-                        Voir profil signalé
+                        Voir le profil signalé
                       </button>
                     )}
-                    {report.reporter && (
+                    {report.report_type === 'profile' && report.reporter && (
                       <button
                         className="moderation-link"
                         onClick={() => navigate(`/profile/public/${report.reporter?.id}`)}
                       >
-                        Voir profil auteur
+                        Voir le profil de l&apos;auteur
                       </button>
                     )}
-                    {report.reported_post && (
+                    {report.report_type === 'post' && report.reported_post && (
                       <button
                         className="moderation-link"
                         onClick={() => navigate(`/post/${report.reported_post?.id}`)}
                       >
-                        Voir annonce
-                      </button>
-                    )}
-                    {report.reported_user && (
-                      <button
-                        className="moderation-link"
-                        onClick={() =>
-                          handleOpenConversation(
-                            report,
-                            report.reported_user?.id,
-                            report.reported_post?.id ?? null
-                          )
-                        }
-                        disabled={isLoadingAction}
-                      >
-                        Voir messages avec signalé
-                      </button>
-                    )}
-                    {report.reporter && (
-                      <button
-                        className="moderation-link"
-                        onClick={() => handleOpenConversation(report, report.reporter?.id)}
-                        disabled={isLoadingAction}
-                      >
-                        Voir messages avec auteur
-                      </button>
-                    )}
-                    {report.reporter && report.reported_user && (
-                      <button
-                        className="moderation-link"
-                        onClick={() =>
-                          handleOpenExistingConversation(
-                            report,
-                            report.reporter?.id,
-                            report.reported_user?.id
-                          )
-                        }
-                        disabled={isLoadingAction}
-                      >
-                        Voir conversation entre eux
+                        Voir l&apos;annonce signalée
                       </button>
                     )}
                   </div>
@@ -703,13 +537,15 @@ const Moderation = () => {
 
   return (
     <div className="moderation-page">
-      <div className="moderation-header">
-        <BackButton />
-        <h1>Modération</h1>
-        <div className="moderation-header-spacer" />
-      </div>
-
       <nav className="moderation-main-nav">
+        <button
+          type="button"
+          className={`moderation-main-nav-btn ${mainTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setMainTab('stats')}
+        >
+          <BarChart3 size={18} />
+          Statistiques
+        </button>
         <button
           type="button"
           className={`moderation-main-nav-btn ${mainTab === 'dashboard' ? 'active' : ''}`}
@@ -725,14 +561,6 @@ const Moderation = () => {
         >
           <Flag size={18} />
           Signalements
-        </button>
-        <button
-          type="button"
-          className={`moderation-main-nav-btn ${mainTab === 'stats' ? 'active' : ''}`}
-          onClick={() => setMainTab('stats')}
-        >
-          <BarChart3 size={18} />
-          Statistiques
         </button>
         <button
           type="button"

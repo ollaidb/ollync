@@ -405,6 +405,13 @@ const Profile = () => {
     if (location.pathname === '/profile/resources/creation-entreprise') return t('profile:resourcesBusinessTitle')
     if (location.pathname === '/profile/resources/declaration-revenus') return t('profile:resourcesIncomeTitle')
     if (location.pathname.startsWith('/profile/settings')) return t('settings:title')
+    if (location.pathname === '/profile/security/moderation') return t('settings:moderation')
+    if (location.pathname === '/profile/security/account-security') return 'Sécurité du compte'
+    if (location.pathname === '/profile/security/password') return 'Mot de passe'
+    if (location.pathname === '/profile/security/phone') return 'Numéro de téléphone'
+    if (location.pathname === '/profile/security/two-factor') return 'Connexion à deux étapes'
+    if (location.pathname === '/profile/security/devices') return 'Appareils connectés'
+    if (location.pathname === '/profile/security/blocked-profiles') return 'Profils bloqués'
     if (location.pathname.startsWith('/profile/security')) return t('profile:security')
     if (location.pathname === '/profile/legal' || location.pathname.startsWith('/profile/legal/')) return t('profile:legalTitle')
     return t('profile:accountTitle')
