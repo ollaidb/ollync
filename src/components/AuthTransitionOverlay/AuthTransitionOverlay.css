@@ -1,0 +1,52 @@
+/* Transition connexion/déconnexion : même fond que le splash, sans nom, bulles plus grandes, disparition plus lente */
+.auth-transition-overlay {
+  --background: oklch(0.9940 0 0);
+  --foreground: oklch(0 0 0);
+  --primary: oklch(0.5393 0.2713 286.7462);
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translateZ(0);
+  contain: layout style paint;
+  background: var(--background);
+  /* Affichage plus long (1.4s) puis fondu plus lent (1s) = 2.4s total */
+  animation: auth-transition-fade-out 1s ease-out 1.4s forwards;
+}
+
+@keyframes auth-transition-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+}
+
+/* Bulles plus grandes dans l’overlay de transition */
+.auth-transition-overlay .auth-bg__blob--1 {
+  width: min(95vw, 580px);
+  height: min(95vw, 580px);
+  top: -22%;
+  left: -28%;
+}
+
+.auth-transition-overlay .auth-bg__blob--2 {
+  width: min(85vw, 480px);
+  height: min(85vw, 480px);
+  bottom: -20%;
+  right: -25%;
+}
+
+.auth-transition-overlay .auth-bg__blob--3 {
+  width: min(50vw, 260px);
+  height: min(50vw, 260px);
+  top: 5%;
+  right: -8%;
+}

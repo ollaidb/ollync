@@ -4,11 +4,12 @@ import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { isPrivatePath } from '../utils/privatePaths'
 
-const SESSION_EXPIRED_MESSAGE = 'Votre session a expiré, veuillez vous reconnecter.'
+const DISCONNECTED_MESSAGE = 'Déconnexion validée.'
 
 /**
- * Détecte la perte de session sur une page privée (user passe de connecté à null)
- * et redirige vers /auth/login avec returnTo.
+ * Détecte la perte de session sur une page privée (user passe de connecté à null).
+ * Affiche "Déconnexion validée." et redirige vers login sauf si la déconnexion
+ * a été initiée par l'utilisateur (le composant appelant gère alors la navigation).
  */
 export function SessionExpiredHandler() {
   const { user, loading } = useAuth()
@@ -19,7 +20,6 @@ export function SessionExpiredHandler() {
 
   useEffect(() => {
     if (loading) return
-    // Ne rien faire si on est déjà sur une page auth
     if (location.pathname.startsWith('/auth/')) {
       previousUserRef.current = user
       return
@@ -27,9 +27,17 @@ export function SessionExpiredHandler() {
     const hadUser = previousUserRef.current != null
     const lostSession = hadUser && user === null
     if (lostSession && isPrivatePath(location.pathname)) {
-      showInfo(SESSION_EXPIRED_MESSAGE, 4000)
-      const returnTo = encodeURIComponent(location.pathname + location.search)
-      navigate(`/auth/login?returnTo=${returnTo}`, { replace: true })
+      const userInitiatedLogout =
+        typeof window !== 'undefined' &&
+        sessionStorage.getItem('ollync-logout-initiated') === '1'
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('ollync-logout-initiated')
+      }
+      showInfo(DISCONNECTED_MESSAGE, 4000)
+      if (!userInitiatedLogout) {
+        const returnTo = encodeURIComponent(location.pathname + location.search)
+        navigate(`/auth/login?returnTo=${returnTo}`, { replace: true })
+      }
     }
     previousUserRef.current = user
   }, [loading, user, location.pathname, location.search, navigate, showInfo])

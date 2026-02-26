@@ -205,23 +205,17 @@ const Profile = () => {
 
   const handleSignOut = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('ollync-logout-initiated', '1')
+      }
       await signOut()
-      // Marquer pour éviter l'écran de lancement au rechargement
-      sessionStorage.setItem('ollync-skip-splash-logout', '1')
-      // Rediriger vers la page d'accueil après déconnexion réussie
-      navigate('/home')
-      // Recharger la page pour s'assurer que tous les états sont réinitialisés
-      setTimeout(() => {
-        window.location.reload()
-      }, 100)
+      navigate('/home', { replace: true, state: { authTransition: true } })
     } catch (error) {
       console.error('Error during sign out:', error)
-      // Même en cas d'erreur, rediriger et recharger
-      sessionStorage.setItem('ollync-skip-splash-logout', '1')
-      navigate('/home')
-      setTimeout(() => {
-        window.location.reload()
-      }, 100)
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('ollync-logout-initiated')
+      }
+      navigate('/home', { replace: true, state: { authTransition: true } })
     }
   }
 

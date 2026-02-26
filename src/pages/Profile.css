@@ -726,9 +726,10 @@
   text-align: center;
 }
 
+/* Même style que la page Favoris (bouton S'inscrire visible) */
 .profile-not-connected-button {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   padding: 10px 24px;
   border-radius: var(--radius);
   border: none;
@@ -742,7 +743,7 @@
 }
 
 .profile-not-connected-button:hover {
-  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--primary) 32%, transparent);
 }
 
 .profile-not-connected-button:active {

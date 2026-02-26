@@ -311,17 +311,19 @@
 
 .auth-footer p {
   font-size: 14px;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   margin: 0;
 }
 
 .auth-link {
   color: var(--primary);
-  font-weight: 600;
-  text-decoration: none;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .auth-link:hover {
+  color: color-mix(in srgb, var(--primary) 85%, var(--foreground));
   text-decoration: underline;
 }
 
@@ -817,5 +819,32 @@
 .auth-page-wrap .profile-scrollable,
 .auth-page-wrap .profile-content-not-connected {
   background: transparent;
+}
+
+/* Bouton S'inscrire sur la page Profil : même style que la page Favoris (bouton visible) */
+.auth-page-wrap .profile-not-connected-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: auto;
+  max-width: 200px;
+  margin-bottom: 20px;
+}
+
+.auth-page-wrap .profile-not-connected-button:hover {
+  background-color: color-mix(in srgb, var(--primary) 32%, transparent);
+}
+
+.auth-page-wrap .profile-not-connected-button:active {
+  opacity: 0.9;
 }
 

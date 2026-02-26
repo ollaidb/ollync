@@ -6,10 +6,12 @@ import { supabase } from '../lib/supabaseClient'
 import { AuthBackground } from '../components/Auth/AuthBackground'
 import { PageMeta } from '../components/PageMeta'
 import { isSafeReturnTo } from '../utils/safeReturnTo'
+import { useToastContext } from '../contexts/ToastContext'
 import './Auth.css'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { showSuccess } = useToastContext()
   const [searchParams] = useSearchParams()
   const returnTo = searchParams.get('returnTo') ?? ''
   const { t } = useTranslation(['common'])
@@ -51,7 +53,12 @@ const Login = () => {
         }
 
         const target = isSafeReturnTo(returnTo) ? returnTo : '/home'
-        navigate(target, { replace: true })
+        const useTransition = target === '/home'
+        showSuccess('Connexion validée.', 3500)
+        navigate(target, {
+          replace: true,
+          ...(useTransition ? { state: { authTransition: true } } : {})
+        })
       }
     } catch (err: unknown) {
       let errorMessage = 'Erreur de connexion'

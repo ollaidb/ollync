@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Footer from './components/Footer'
@@ -40,6 +40,7 @@ import { useReminder } from './hooks/useReminder'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 import { SplashScreen } from './components/SplashScreen/SplashScreen'
+import { AuthTransitionOverlay } from './components/AuthTransitionOverlay/AuthTransitionOverlay'
 import './App.css'
 
 function isReminderRoute(pathname: string): boolean {
@@ -52,8 +53,17 @@ function isReminderRoute(pathname: string): boolean {
   return false
 }
 
+interface LocationState {
+  authTransition?: boolean
+}
+
 function AppContent() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const showAuthTransition =
+    location.pathname === '/home' &&
+    (location.state as LocationState | null)?.authTransition === true
+
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
       const skip = sessionStorage.getItem('ollync-skip-splash-logout')
@@ -221,6 +231,11 @@ function AppContent() {
       <ToastProvider>
         <SessionExpiredHandler />
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+        {showAuthTransition && (
+          <AuthTransitionOverlay
+            onComplete={() => navigate('/home', { replace: true })}
+          />
+        )}
         <ConsentModal
           visible={cookiesConsent.showModal && !isConsentInfoPage}
           title={cookiesConsent.messages.title}
@@ -243,9 +258,9 @@ function AppContent() {
                 <motion.div
                   key={routeTransitionKey}
                   className="route-transition-shell"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.26, ease: [0.25, 0.1, 0.25, 1] as const }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
                 >
                   {routes}
                 </motion.div>
@@ -258,9 +273,9 @@ function AppContent() {
                 <motion.div
                   key={routeTransitionKey}
                   className="route-transition-shell"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.26, ease: [0.25, 0.1, 0.25, 1] as const }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
                 >
                   {routes}
                 </motion.div>

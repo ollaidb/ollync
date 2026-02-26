@@ -40,14 +40,11 @@ const DeleteAccount = () => {
       }
 
       // La suppression a réussi, déconnecter l'utilisateur
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('ollync-logout-initiated', '1')
+      }
       await signOut()
-
-      sessionStorage.setItem('ollync-skip-splash-logout', '1')
-      navigate('/home')
-
-      setTimeout(() => {
-        window.location.reload()
-      }, 100)
+      navigate('/home', { replace: true, state: { authTransition: true } })
     } catch (err) {
       console.error('Error deleting account:', err)
       const errorMessage = err instanceof Error 
