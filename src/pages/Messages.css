@@ -3067,7 +3067,90 @@
   cursor: not-allowed;
 }
 
-/* Loading & Empty States */
+/* Skeletons liste conversations (page visible tout de suite, comme les autres) */
+.conversation-item-skeleton {
+  display: flex;
+  align-items: center;
+  padding: var(--ui-block-padding);
+  background-color: var(--ui-block-bg);
+  border: var(--ui-block-border);
+  border-radius: var(--ui-block-radius);
+  gap: var(--ui-block-gap);
+}
+
+.conversation-item-skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: linear-gradient(90deg, var(--muted) 25%, color-mix(in srgb, var(--muted) 70%, transparent) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: messages-skeleton-shine 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.conversation-item-skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conversation-item-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--muted) 25%, color-mix(in srgb, var(--muted) 70%, transparent) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: messages-skeleton-shine 1.2s ease-in-out infinite;
+  width: 75%;
+}
+
+.conversation-item-skeleton-line.short {
+  width: 45%;
+}
+
+@keyframes messages-skeleton-shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Skeletons bulles de conversation */
+.conversation-messages-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  align-items: stretch;
+}
+
+.conversation-message-skeleton {
+  display: flex;
+  width: 100%;
+}
+
+.conversation-message-skeleton.left {
+  justify-content: flex-start;
+}
+
+.conversation-message-skeleton.right {
+  justify-content: flex-end;
+}
+
+.conversation-message-skeleton-bubble {
+  max-width: 70%;
+  min-width: 80px;
+  height: 44px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, var(--muted) 25%, color-mix(in srgb, var(--muted) 70%, transparent) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: messages-skeleton-shine 1.2s ease-in-out infinite;
+}
+
+.conversation-message-skeleton.right .conversation-message-skeleton-bubble {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 25%, var(--muted)) 25%, color-mix(in srgb, var(--primary) 15%, var(--muted)) 50%, color-mix(in srgb, var(--primary) 25%, var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: messages-skeleton-shine 1.2s ease-in-out infinite;
+}
+
 .loading-container {
   display: flex;
   flex-direction: column;

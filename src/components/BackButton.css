@@ -12,7 +12,7 @@
   color: var(--foreground);
   opacity: 0.85;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.18s ease-out;
   flex-shrink: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;

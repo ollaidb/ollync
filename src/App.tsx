@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import Footer from './components/Footer'
+import { prefetchRoute, mainNavPaths } from './utils/routePrefetch'
 const Home = lazy(() => import('./pages/Home'))
 const Feed = lazy(() => import('./pages/Feed'))
 const Favorites = lazy(() => import('./pages/Favorites'))
@@ -90,6 +92,14 @@ function AppContent() {
     cookiesConsent.requireConsent,
     isConsentInfoPage
   ])
+
+  // Précharger les pages principales au démarrage pour affichage immédiat au clic
+  useEffect(() => {
+    const t = setTimeout(() => {
+      mainNavPaths.forEach((path) => prefetchRoute(path))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [])
 
   const routes = (
     <ErrorBoundary>
@@ -230,18 +240,30 @@ function AppContent() {
           {isMobile ? (
             <>
               <main id="main-content" className="main-content without-header" tabIndex={-1}>
-                <div key={routeTransitionKey} className="route-transition-shell">
+                <motion.div
+                  key={routeTransitionKey}
+                  className="route-transition-shell"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.26, ease: [0.25, 0.1, 0.25, 1] }}
+                >
                   {routes}
-                </div>
+                </motion.div>
               </main>
               {showFooter && <Footer />}
             </>
           ) : (
             <WebLayout>
               <main id="main-content" className="main-content without-header" tabIndex={-1}>
-                <div key={routeTransitionKey} className="route-transition-shell">
+                <motion.div
+                  key={routeTransitionKey}
+                  className="route-transition-shell"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.26, ease: [0.25, 0.1, 0.25, 1] }}
+                >
                   {routes}
-                </div>
+                </motion.div>
               </main>
               {showFooter && <Footer />}
             </WebLayout>

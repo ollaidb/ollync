@@ -4,6 +4,7 @@ import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConsent } from '../../hooks/useConsent'
+import { compressImageForPost, isCompressibleImageType } from '../../utils/imageCompression'
 import { LocationAutocomplete } from '../Location/LocationAutocomplete'
 import ConsentModal from '../ConsentModal'
 import './Step5LocationMedia.css'
@@ -396,13 +397,25 @@ export const Step5LocationMedia = ({
             continue
           }
 
-          const fileExt = file.name.split('.').pop()
-          const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+          const suffix = Math.random().toString(36).substring(7)
+          let payload: Blob | File = file
+          let fileExt = file.name.split('.').pop() || 'jpg'
+          if (isCompressibleImageType(file.type)) {
+            try {
+              const compressed = await compressImageForPost(file)
+              const ext = compressed.type === 'image/webp' ? 'webp' : 'jpg'
+              payload = new File([compressed], `image.${ext}`, { type: compressed.type })
+              fileExt = ext
+            } catch (err) {
+              console.warn('Compression image échouée, upload original:', err)
+            }
+          }
+          const fileName = `${user.id}/${Date.now()}_${suffix}.${fileExt}`
           const filePath = fileName
 
           const { error: uploadError } = await supabase.storage
             .from('posts')
-            .upload(filePath, file, {
+            .upload(filePath, payload, {
               cacheControl: '3600',
               upsert: false
             })

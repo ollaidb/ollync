@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Grid, List, Filter, Loader, RefreshCw } from 'lucide-react'
 import Footer from '../components/Footer'
 import PostCard from '../components/PostCard'
@@ -46,17 +46,17 @@ const Feed = () => {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null)
 
-  const POSTS_PER_PAGE = 15 // Réduit de 20 à 15 pour un chargement initial plus rapide
+  const POSTS_PER_PAGE = 15 // Chargement progressif : première page légère pour affichage rapide
 
-  const fetchPosts = async (pageNum: number, isInitial = false) => {
+  const fetchPosts = useCallback(async (pageNum: number, isInitial = false) => {
     if (isInitial) {
       setLoading(true)
       setError(null)
     } else {
       setLoadingMore(true)
     }
-    
     try {
       const fetchedPosts = await fetchPostsWithRelations({
         status: 'active',
@@ -64,11 +64,10 @@ const Feed = () => {
         offset: pageNum * POSTS_PER_PAGE,
         orderBy: 'created_at',
         orderDirection: 'desc',
-        useCache: pageNum === 0, // Utiliser le cache seulement pour la première page
+        useCache: pageNum === 0,
         excludeUserId: user?.id
       })
       const visiblePosts = user ? fetchedPosts.filter((post) => post.user_id !== user.id) : fetchedPosts
-
       if (pageNum === 0) {
         setPosts(visiblePosts)
       } else {
@@ -79,14 +78,12 @@ const Feed = () => {
     } catch (err) {
       console.error('Error fetching posts:', err)
       setError('Erreur lors du chargement des annonces')
-      if (pageNum === 0) {
-        setPosts([])
-      }
+      if (pageNum === 0) setPosts([])
     } finally {
       setLoading(false)
       setLoadingMore(false)
     }
-  }
+  }, [user])
 
   const handleRetry = () => {
     fetchPosts(0, true)
@@ -94,15 +91,31 @@ const Feed = () => {
 
   useEffect(() => {
     fetchPosts(0, true)
-  }, [user?.id])
+  }, [fetchPosts])
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loadingMore && !loading && hasMore) {
       const nextPage = page + 1
       setPage(nextPage)
       fetchPosts(nextPage, false)
     }
-  }
+  }, [loadingMore, loading, hasMore, page, fetchPosts])
+
+  // Chargement progressif : charger plus quand l'utilisateur scroll vers le bas
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current
+    if (!sentinel || !hasMore || loading || loadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry?.isIntersecting) loadMore()
+      },
+      { rootMargin: '200px', threshold: 0.1 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadingMore, loadMore])
 
   return (
     <div className="app">
@@ -177,22 +190,25 @@ const Feed = () => {
               )}
 
               {hasMore && (
-                <div className="load-more-container">
-                  <button 
-                    className="load-more-btn" 
-                    onClick={loadMore} 
-                    disabled={loadingMore || loading}
-                  >
-                    {loadingMore ? (
-                      <>
-                        <Loader className="spinner" size={20} />
-                        Chargement...
-                      </>
-                    ) : (
-                      'Charger plus'
-                    )}
-                  </button>
-                </div>
+                <>
+                  <div ref={loadMoreSentinelRef} className="load-more-sentinel" aria-hidden />
+                  <div className="load-more-container">
+                    <button 
+                      className="load-more-btn" 
+                      onClick={loadMore} 
+                      disabled={loadingMore || loading}
+                    >
+                      {loadingMore ? (
+                        <>
+                          <Loader className="spinner" size={20} />
+                          Chargement...
+                        </>
+                      ) : (
+                        'Charger plus'
+                      )}
+                    </button>
+                  </div>
+                </>
               )}
             </>
           )}

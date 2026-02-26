@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Heart, Loader, WifiOff } from 'lucide-react'
+import { Heart, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { AuthBackground } from '../components/Auth/AuthBackground'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import PostCard from '../components/PostCard'
+import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import BackButton from '../components/BackButton'
 import Footer from '../components/Footer'
 import { EmptyState } from '../components/EmptyState'
@@ -441,10 +442,23 @@ const Favorites = () => {
         enabled={isMobile}
       >
         {loading ? (
-          <div className="loading-container">
-            <Loader className="spinner-large" size={48} />
-            <p>Chargement...</p>
-          </div>
+          activeTab === 'posts' ? (
+            <div className="posts-list" aria-busy="true">
+              <PostCardSkeleton viewMode="list" count={4} />
+            </div>
+          ) : (
+            <div className="profiles-list favorites-profiles-skeleton" aria-busy="true">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="favorites-profile-skeleton">
+                  <div className="favorites-profile-skeleton-avatar" />
+                  <div className="favorites-profile-skeleton-info">
+                    <div className="favorites-profile-skeleton-line" />
+                    <div className="favorites-profile-skeleton-line short" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
          ) : networkError ? (
            <div className="empty-state">
              <div className="empty-state-icon empty-state-icon-network">

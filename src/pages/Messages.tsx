@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, use
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
-import { MailOpen, Loader, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check, MessageCircle } from 'lucide-react'
+import { MailOpen, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
@@ -2562,9 +2562,12 @@ const Messages = () => {
           </div>
         </div>
         <div className="conversation-messages-container">
-          <div className="loading-container">
-            <Loader className="spinner-large" size={48} />
-            <p>Chargement...</p>
+          <div className="conversation-messages-skeleton" aria-busy="true">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={`conversation-message-skeleton ${i % 2 === 0 ? 'right' : 'left'}`}>
+                <div className="conversation-message-skeleton-bubble" />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -4381,9 +4384,12 @@ const Messages = () => {
           className={`conversation-messages-container ${isSystemConversation ? 'system-conversation' : ''}`}
         >
           {loading || messagesLoading ? (
-            <div className="loading-container">
-              <Loader className="spinner-large" size={48} />
-              <p>Chargement...</p>
+            <div className="conversation-messages-skeleton" aria-busy="true">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className={`conversation-message-skeleton ${i % 2 === 0 ? 'right' : 'left'}`}>
+                  <div className="conversation-message-skeleton-bubble" />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="conversation-messages-list" ref={messagesListRef}>
@@ -4980,9 +4986,16 @@ const Messages = () => {
           </div>
         )}
         {loading ? (
-          <div className="loading-container">
-            <Loader className="spinner-large" size={48} />
-            <p>Chargement...</p>
+          <div className="conversations-list" aria-busy="true">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="conversation-item-skeleton">
+                <div className="conversation-item-skeleton-avatar" />
+                <div className="conversation-item-skeleton-content">
+                  <div className="conversation-item-skeleton-line" />
+                  <div className="conversation-item-skeleton-line short" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : activeFilter === 'match_requests' ? (
           // Afficher les match_requests pour l'onglet "Demandes"

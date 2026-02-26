@@ -20,6 +20,13 @@
   box-shadow: var(--shadow-lg);
 }
 
+.post-card:active {
+  transform: scale(0.98);
+}
+.post-card-list:active {
+  transform: scale(0.98);
+}
+
 .post-card-list {
   display: flex;
   flex-direction: row;

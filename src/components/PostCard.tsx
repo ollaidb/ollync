@@ -438,6 +438,8 @@ const PostCard = ({
                     <img 
                       src={post.user.avatar_url} 
                       alt={displayName}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
                       }}
@@ -551,6 +553,8 @@ const PostCard = ({
                     <img 
                       src={post.user.avatar_url} 
                       alt={displayName}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName)
                       }}

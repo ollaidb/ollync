@@ -183,6 +183,13 @@
   grid-template-columns: 1fr;
 }
 
+/* Sentinel pour chargement progressif (IntersectionObserver) */
+.load-more-sentinel {
+  height: 1px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .load-more-container {
   display: flex;
   justify-content: center;

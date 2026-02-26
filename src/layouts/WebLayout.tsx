@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { prefetchRoute } from '../utils/routePrefetch'
 import './WebLayout.css'
 
 type WebLayoutProps = {
@@ -18,13 +19,13 @@ const WebLayout = ({ children }: WebLayoutProps) => {
     <div className="web-layout">
       <aside className="web-sidebar">
         <div className="web-sidebar-header">
-          <NavLink to="/home" className="web-logo">
+          <NavLink to="/home" className="web-logo" onMouseEnter={() => prefetchRoute('/home')} onFocus={() => prefetchRoute('/home')}>
             ollync
           </NavLink>
         </div>
         <nav className="web-nav">
           {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} className="web-nav-link">
+            <NavLink key={item.to} to={item.to} className="web-nav-link" onMouseEnter={() => prefetchRoute(item.to)} onFocus={() => prefetchRoute(item.to)}>
               {item.label}
             </NavLink>
           ))}

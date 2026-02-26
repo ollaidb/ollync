@@ -257,6 +257,26 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Effet au clic : feedback visuel léger pour rendre l’app vivante */
+.tap-effect {
+  transition: transform 0.18s ease-out, opacity 0.15s ease-out;
+}
+.tap-effect:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) {
+  .tap-effect:hover {
+    transition: transform 0.2s ease-out, opacity 0.15s ease-out;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tap-effect,
+  .tap-effect:active {
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Pas de contour de focus (évite la barre noire au clic / au focus) */
 :focus {
   outline: none;

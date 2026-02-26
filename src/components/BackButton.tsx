@@ -179,7 +179,7 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
 
   return (
     <button 
-      className={`back-button ${className}`}
+      className={`back-button tap-effect ${className}`}
       onClick={handleClick}
       aria-label={t('back')}
     >

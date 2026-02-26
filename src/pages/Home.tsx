@@ -797,9 +797,9 @@ const Home = () => {
             </div>
             {renderHeroPanels()}
 
-            {/* Skeletons pour les sections de posts */}
+            {/* Skeletons pour les sections de posts (pas de second "Chargement" : le Suspense gère déjà) */}
             <div className="home-posts-section">
-              <h2 className="home-section-title">{labels.loading}</h2>
+              <h2 className="home-section-title">{labels.recommendations}</h2>
               <div className="home-posts-grid">
                 <PostCardSkeleton viewMode="grid" count={6} />
               </div>

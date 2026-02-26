@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { motion } from 'framer-motion'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
+import { prefetchRoute } from '../utils/routePrefetch'
 import { useAuth } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabaseClient'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
@@ -192,11 +194,15 @@ const Footer = () => {
         const active = isActive(item.path)
         const isCenter = index === 2 // L'icône PlusCircle est au centre
         return (
-          <button
+          <motion.button
             key={item.path}
             className={`footer-item ${active ? 'active' : ''} ${isCenter ? 'footer-center' : ''}`}
             onClick={() => navigate(item.path)}
+            onMouseEnter={() => prefetchRoute(item.path)}
+            onFocus={() => prefetchRoute(item.path)}
             aria-label={item.label}
+            whileTap={{ scale: isCenter ? 0.92 : 0.96 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
           >
             {isCenter ? (
               <div className="footer-center-icon-wrapper">
@@ -212,7 +218,7 @@ const Footer = () => {
                 )}
               </div>
             )}
-          </button>
+          </motion.button>
         )
       })}
     </footer>

@@ -18,6 +18,7 @@ import { CustomList } from '../../components/CustomList/CustomList'
 import { publicationTypes } from '../../constants/publishData'
 import { getAllPaymentOptions, getPaymentOptionConfig, getPaymentOptionsForCategory } from '../../utils/publishHelpers'
 import { getLinkPlatform } from '../../utils/linkPlatform'
+import { compressImageForAvatar, isCompressibleImageType } from '../../utils/imageCompression'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
@@ -661,9 +662,19 @@ const EditPublicProfile = () => {
     setUploadingAvatar(true)
 
     try {
-      const fileExt = file.name.split('.').pop()
+      let payload: File | Blob = file
+      let fileExt = file.name.split('.').pop() || 'jpg'
+      if (isCompressibleImageType(file.type)) {
+        try {
+          const compressed = await compressImageForAvatar(file)
+          fileExt = compressed.type === 'image/webp' ? 'webp' : 'jpg'
+          payload = new File([compressed], `avatar.${fileExt}`, { type: compressed.type })
+        } catch (err) {
+          console.warn('Compression avatar échouée, upload original:', err)
+        }
+      }
       const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`
-      
+
       // Supprimer l'ancienne photo si elle existe
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/').slice(-2).join('/')
@@ -672,7 +683,7 @@ const EditPublicProfile = () => {
 
       const { error: uploadError } = await supabase.storage
         .from('posts')
-        .upload(fileName, file, {
+        .upload(fileName, payload, {
           cacheControl: '3600',
           upsert: true
         })
