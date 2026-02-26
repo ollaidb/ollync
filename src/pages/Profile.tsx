@@ -206,6 +206,8 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       await signOut()
+      // Marquer pour éviter l'écran de lancement au rechargement
+      sessionStorage.setItem('ollync-skip-splash-logout', '1')
       // Rediriger vers la page d'accueil après déconnexion réussie
       navigate('/home')
       // Recharger la page pour s'assurer que tous les états sont réinitialisés
@@ -215,6 +217,7 @@ const Profile = () => {
     } catch (error) {
       console.error('Error during sign out:', error)
       // Même en cas d'erreur, rediriger et recharger
+      sessionStorage.setItem('ollync-skip-splash-logout', '1')
       navigate('/home')
       setTimeout(() => {
         window.location.reload()
@@ -615,8 +618,9 @@ const Profile = () => {
     )
   }
 
-  /* Slide / carousel profil public désactivé */
-  if (!user) {
+  /* Afficher l'écran "pas connecté" seulement pour les routes qui nécessitent un compte.
+   * Les profils publics (/profile/public/:id) restent accessibles sans connexion. */
+  if (!user && !isPublicProfile) {
     return (
       <div className="auth-page-wrap">
         <AuthBackground />

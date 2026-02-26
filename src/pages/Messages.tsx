@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
@@ -376,10 +376,20 @@ const Messages = () => {
   }, [conversationId])
 
   useEffect(() => {
-    if (selectedConversation?.id) {
-      shouldScrollToBottomRef.current = true
+    if (!selectedConversation?.id) return
+    // Ne pas forcer le scroll en bas si on revient d'une annonce (restauration de position)
+    try {
+      const raw = sessionStorage.getItem('messages_scroll_restore')
+      if (raw) {
+        const stored = JSON.parse(raw) as { conversationId: string | null }
+        const convId = selectedConversation.id || conversationId
+        if (stored.conversationId === convId) return
+      }
+    } catch {
+      /* ignore */
     }
-  }, [selectedConversation?.id])
+    shouldScrollToBottomRef.current = true
+  }, [selectedConversation?.id, conversationId])
 
 
   const scrollToBottom = (align: ScrollLogicalPosition = 'end') => {
@@ -398,6 +408,47 @@ const Messages = () => {
     window.setTimeout(() => scrollToBottom(align), 160)
     window.setTimeout(() => scrollToBottom(align), 360)
   }
+
+  /** Navigate vers une annonce en sauvegardant la position du scroll pour la restaurer au retour */
+  const navigateToPost = useCallback((postId: string) => {
+    const convId = selectedConversation?.id || conversationId
+    const scrollTop = messagesListRef.current?.scrollTop ?? 0
+    try {
+      sessionStorage.setItem('messages_scroll_restore', JSON.stringify({
+        conversationId: convId || null,
+        scrollTop
+      }))
+    } catch {
+      // sessionStorage indisponible
+    }
+    navigate(`/post/${postId}`)
+  }, [selectedConversation?.id, conversationId, navigate])
+
+  /** Restaurer la position du scroll au retour depuis une annonce — useLayoutEffect = avant le peinture, affichage fluide */
+  useLayoutEffect(() => {
+    if (!selectedConversation?.id && !conversationId) return
+    if (messagesLoading || loading) return
+    if (messages.length === 0) return
+
+    let stored: { conversationId: string | null; scrollTop: number } | null = null
+    try {
+      const raw = sessionStorage.getItem('messages_scroll_restore')
+      if (!raw) return
+      stored = JSON.parse(raw) as { conversationId: string | null; scrollTop: number }
+      const convId = selectedConversation?.id || conversationId || null
+      if (stored.conversationId !== convId) return
+    } catch {
+      return
+    }
+
+    shouldScrollToBottomRef.current = false
+    const scrollTop = stored?.scrollTop ?? 0
+    sessionStorage.removeItem('messages_scroll_restore')
+
+    if (messagesListRef.current) {
+      messagesListRef.current.scrollTop = scrollTop
+    }
+  }, [selectedConversation?.id, conversationId, messagesLoading, loading, messages.length])
 
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return
@@ -1119,7 +1170,18 @@ const Messages = () => {
         }))
 
         if (requestId !== loadMessagesRequestIdRef.current) return
-        shouldScrollToBottomRef.current = true
+        // Ne pas forcer le scroll en bas si on revient d'une annonce (restauration de position)
+        let hasRestorePending = false
+        try {
+          const raw = sessionStorage.getItem('messages_scroll_restore')
+          if (raw) {
+            const stored = JSON.parse(raw) as { conversationId: string | null; scrollTop: number }
+            if (stored.conversationId === convId) hasRestorePending = true
+          }
+        } catch {
+          /* ignore */
+        }
+        shouldScrollToBottomRef.current = !hasRestorePending
         setMessages(formattedMessages)
 
         // Marquer les messages non lus comme lus
@@ -3095,7 +3157,7 @@ const Messages = () => {
                       <button
                         type="button"
                         className="conversation-info-linked-post-link"
-                        onClick={() => navigate(`/post/${selectedConversation.post_id}`)}
+                        onClick={() => navigateToPost(selectedConversation.post_id!)}
                       >
                         {selectedConversation.postTitle || 'Voir l\'annonce'}
                       </button>
@@ -4102,7 +4164,7 @@ const Messages = () => {
                     className="conversation-record-row conversation-record-row--post"
                     onClick={() => {
                       if (msg.shared_post_id) {
-                        navigate(`/post/${msg.shared_post_id}`)
+                        navigateToPost(msg.shared_post_id)
                       }
                     }}
                     disabled={!msg.shared_post_id}
@@ -4532,7 +4594,7 @@ const Messages = () => {
                               <button
                                 type="button"
                                 className="conversation-match-link-inline"
-                                onClick={() => navigate(`/post/${acceptedMatchForMessage.related_post_id}`)}
+                                onClick={() => acceptedMatchForMessage.related_post_id && navigateToPost(acceptedMatchForMessage.related_post_id)}
                               >
                                 {linkLabel}
                               </button>
@@ -4638,6 +4700,7 @@ const Messages = () => {
                                 }
                               }
                             }}
+                            onPostClick={navigateToPost}
                             groupParticipants={isGroupConversation ? infoParticipants : undefined}
                             isGroupConversation={isGroupConversation}
                             currentUserGroupRole={

@@ -142,6 +142,8 @@ i18n.use(initReactI18next).init({
           contract_signature_required: 'Signature requise',
           contract_signed: 'Contrat signé',
           appointment: 'Rendez-vous',
+          appointment_cancelled: 'Rendez-vous annulé',
+          post_expiring: 'Annonce qui expire',
           group_added: 'Ajouté à un groupe',
           welcome: 'Bienvenue sur Ollync'
         }
@@ -267,6 +269,9 @@ i18n.use(initReactI18next).init({
           login: { title: 'Connexion', description: 'Connectez-vous à votre compte Ollync.' },
           register: { title: 'Inscription', description: 'Créez votre compte Ollync.' },
           notFound: { title: 'Page introuvable', description: 'Cette page n’existe pas.' }
+        },
+        auth: {
+          invalidCredentials: "L'email ou le mot de passe est incorrect."
         }
       },
       home: {
@@ -274,7 +279,8 @@ i18n.use(initReactI18next).init({
         urgent: 'Urgent',
         recommendations: 'Recommandations',
         recent: 'Annonce récente',
-        searchPlaceholder: 'Rechercher une annonce...',
+        searchPlaceholder: 'Rechercher sur ollync',
+        searchPlaceholderShort: 'Rechercher sur ollync',
         welcome: 'BIENVENUE',
         heroTitle: 'Bienvenue sur Ollync',
         heroSubtitle: 'La plateforme de mise en relation pour créateurs de contenu',
@@ -515,6 +521,8 @@ i18n.use(initReactI18next).init({
           contract_signature_required: 'Signature required',
           contract_signed: 'Contract signed',
           appointment: 'Appointment',
+          appointment_cancelled: 'Appointment cancelled',
+          post_expiring: 'Post expiring',
           group_added: 'Added to a group',
           welcome: 'Welcome to Ollync'
         }
@@ -640,6 +648,9 @@ i18n.use(initReactI18next).init({
           login: { title: 'Sign in', description: 'Sign in to your Ollync account.' },
           register: { title: 'Sign up', description: 'Create your Ollync account.' },
           notFound: { title: 'Page not found', description: 'This page does not exist.' }
+        },
+        auth: {
+          invalidCredentials: 'Invalid email or password.'
         }
       },
       home: {
@@ -647,7 +658,8 @@ i18n.use(initReactI18next).init({
         urgent: 'Urgent',
         recommendations: 'Recommendations',
         recent: 'Recent listings',
-        searchPlaceholder: 'Search for a listing...',
+        searchPlaceholder: 'Search on Ollync',
+        searchPlaceholderShort: 'Search on Ollync',
         welcome: 'WELCOME',
         heroTitle: 'Welcome to Ollync',
         heroSubtitle: 'The platform connecting content creators',

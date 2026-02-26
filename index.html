@@ -7,14 +7,62 @@
     <meta name="theme-color" content="#0f172a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="Ollync : plateforme de mise en relation pour créateurs de contenu. Publiez des annonces, trouvez des profils et collaborez sur des projets créatifs." />
-    <!-- Open Graph (partage social) -->
+    <meta name="keywords" content="créateurs contenu, mise en relation, annonces créatives, casting, emploi création, studio tournage, collaboration créative, UGC, influenceur" />
+    <!-- Canonical URL (sera écrasé par PageMeta pour les sous-pages) -->
+    <link rel="canonical" href="https://ollync.fr/" />
+    <!-- Open Graph (partage social et référencement Google) -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ollync.fr/" />
     <meta property="og:site_name" content="Ollync" />
-    <meta property="og:title" content="Ollync - Mise en relation pour créateurs" />
+    <meta property="og:title" content="Ollync - Mise en relation pour créateurs de contenu" />
     <meta property="og:description" content="Plateforme de mise en relation pour créateurs de contenu. Publiez des annonces, trouvez des profils et collaborez sur des projets créatifs." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="https://ollync.fr/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="fr_FR" />
-    <title>Ollync - Mise en relation ✓</title>
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ollync - Mise en relation pour créateurs de contenu" />
+    <meta name="twitter:description" content="Plateforme de mise en relation pour créateurs de contenu. Publiez des annonces, trouvez des profils et collaborez." />
+    <meta name="twitter:image" content="https://ollync.fr/og-image.png" />
+    <meta name="robots" content="index, follow" />
+    <title>Ollync - Mise en relation pour créateurs de contenu ✓</title>
+    <!-- Données structurées JSON-LD pour Google (Organisation + Site Web) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://ollync.fr/#organization",
+          "name": "Ollync",
+          "url": "https://ollync.fr",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://ollync.fr/og-image.png"
+          },
+          "description": "Plateforme de mise en relation pour créateurs de contenu. Publiez des annonces, trouvez des profils et collaborez sur des projets créatifs."
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://ollync.fr/#website",
+          "url": "https://ollync.fr",
+          "name": "Ollync",
+          "description": "Plateforme de mise en relation pour créateurs de contenu",
+          "publisher": { "@id": "https://ollync.fr/#organization" },
+          "inLanguage": "fr-FR",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://ollync.fr/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

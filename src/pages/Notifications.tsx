@@ -58,7 +58,7 @@ const Notifications = () => {
     if (filter === 'message') return notification.type === 'message'
     if (filter === 'review') return notification.type === 'review' || notification.type === 'comment'
     if (filter === 'match') return notification.type === 'match_request_accepted'
-    if (filter === 'appointment') return notification.type === 'appointment'
+    if (filter === 'appointment') return notification.type === 'appointment' || notification.type === 'appointment_cancelled'
     if (filter === 'request') {
       return (
         notification.type === 'match_request_received' ||
@@ -77,7 +77,8 @@ const Notifications = () => {
       return (
         notification.type === 'new_post' ||
         notification.type === 'post_updated' ||
-        notification.type === 'post_closed'
+        notification.type === 'post_closed' ||
+        notification.type === 'post_expiring'
       )
     }
     return true
@@ -154,6 +155,7 @@ const Notifications = () => {
       case 'new_post':
       case 'post_updated':
       case 'post_closed':
+      case 'post_expiring':
         if (notification.related_id) {
           navigate(`/post/${notification.related_id}`)
         }
@@ -208,6 +210,7 @@ const Notifications = () => {
         navigate('/profile/contracts')
         break
       case 'appointment':
+      case 'appointment_cancelled':
         if (notification.metadata?.conversation_id) {
           navigate(`/messages/${notification.metadata.conversation_id}?filter=appointments`)
         } else {
@@ -266,6 +269,7 @@ const Notifications = () => {
       case 'contract_signed':
         return <FileSignature size={18} />
       case 'appointment':
+      case 'appointment_cancelled':
         return <Calendar size={18} />
       case 'group_added':
         return <UserPlus size={18} />
@@ -273,6 +277,8 @@ const Notifications = () => {
         return <FileText size={18} />
       case 'post_closed':
         return <XCircle size={18} />
+      case 'post_expiring':
+        return <FileText size={18} />
       case 'welcome':
         return <Bell size={18} />
       default:

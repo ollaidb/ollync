@@ -85,12 +85,14 @@ interface MessageBubbleProps {
   isGroupConversation?: boolean
   /** Rôle de l'utilisateur dans la conversation (groupe) : 'moderator' = admin, 'member' = membre. */
   currentUserGroupRole?: string | null
+  /** Si fourni, appelé au clic sur une annonce partagée (permet de préserver le scroll de la conversation) */
+  onPostClick?: (postId: string) => void
 }
 
 const getMemberDisplayName = (m: MentionableMember) =>
   (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
 
-const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null }: MessageBubbleProps) => {
+const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick }: MessageBubbleProps) => {
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
@@ -563,7 +565,12 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
         return (
           <div
             className={`message-post-share ${isSharedPostRemoved ? 'message-post-share--removed' : ''}`}
-            onClick={() => !isSharedPostRemoved && message.shared_post_id && navigate(`/post/${message.shared_post_id}`)}
+            onClick={() => {
+              if (!isSharedPostRemoved && message.shared_post_id) {
+                if (onPostClick) onPostClick(message.shared_post_id)
+                else navigate(`/post/${message.shared_post_id}`)
+              }
+            }}
             role={isSharedPostRemoved ? undefined : 'button'}
           >
             <div className="message-post-share-icon" aria-hidden="true">

@@ -79,9 +79,9 @@
 }
 
 .notifications-filter-btn.active {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--primary);
 }
 
 .notifications-filter-btn svg {
@@ -129,8 +129,8 @@
 
 .mark-all-read-btn {
   padding: 6px 16px;
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -140,7 +140,7 @@
 }
 
 .mark-all-read-btn:hover {
-  background: var(--accent);
+  background: color-mix(in srgb, var(--primary) 32%, transparent);
 }
 
 .notifications-title {
@@ -438,8 +438,8 @@
 }
 
 .notifications-not-connected-button {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   padding: 10px 24px;
   border-radius: var(--radius);
   border: none;
@@ -453,7 +453,7 @@
 }
 
 .notifications-not-connected-button:hover {
-  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--primary) 32%, transparent);
 }
 
 .notifications-not-connected-button:active {

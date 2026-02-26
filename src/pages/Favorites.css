@@ -131,8 +131,8 @@
 }
 
 .favorites-tab.active {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
 }
 
 /* Content */
@@ -347,8 +347,8 @@
 }
 
 .btn-primary {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   padding: 12px 24px;
   border-radius: 8px;
   border: none;
@@ -360,7 +360,7 @@
 }
 
 .btn-primary:hover {
-  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--primary) 32%, transparent);
 }
 
 /* Header pour utilisateur non connecté */
@@ -431,8 +431,8 @@
 }
 
 .favorites-not-connected-button {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   padding: 10px 24px;
   border-radius: var(--radius);
   border: none;
@@ -446,7 +446,7 @@
 }
 
 .favorites-not-connected-button:hover {
-  background-color: var(--accent);
+  background-color: color-mix(in srgb, var(--primary) 32%, transparent);
 }
 
 .favorites-not-connected-button:active {

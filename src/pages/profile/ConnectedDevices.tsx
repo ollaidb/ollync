@@ -176,7 +176,7 @@ const ConnectedDevices = () => {
             console.error('Error disconnecting all devices:', error)
             alert('Erreur lors de la déconnexion')
           } else {
-            // Rediriger vers la page de connexion
+            sessionStorage.setItem('ollync-skip-splash-logout', '1')
             window.location.href = '/auth/login'
           }
         } catch (error) {

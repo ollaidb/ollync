@@ -42,10 +42,9 @@ const DeleteAccount = () => {
       // La suppression a réussi, déconnecter l'utilisateur
       await signOut()
 
-      // Rediriger vers la page d'accueil
+      sessionStorage.setItem('ollync-skip-splash-logout', '1')
       navigate('/home')
-      
-      // Recharger la page pour s'assurer que tous les états sont réinitialisés
+
       setTimeout(() => {
         window.location.reload()
       }, 100)

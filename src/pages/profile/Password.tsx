@@ -97,6 +97,7 @@ const Password = () => {
       setPasswords({ current: '', new: '', confirm: '' })
       if (signOutEverywhere) {
         await supabase.auth.signOut({ scope: 'global' })
+        sessionStorage.setItem('ollync-skip-splash-logout', '1')
         window.location.href = '/auth/login'
         return
       }

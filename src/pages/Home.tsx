@@ -744,7 +744,7 @@ const Home = () => {
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/search'); } }}
                 aria-label={t('home:searchPlaceholder')}
               >
-                <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
+                <span className="home-search-placeholder">{isMobile ? t('home:searchPlaceholderShort') : t('home:searchPlaceholder')}</span>
                 <Search size={20} />
               </div>
               <div className="home-header-actions">
@@ -835,7 +835,7 @@ const Home = () => {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/search'); } }}
               aria-label={t('home:searchPlaceholder')}
             >
-              <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
+              <span className="home-search-placeholder">{isMobile ? t('home:searchPlaceholderShort') : t('home:searchPlaceholder')}</span>
               <Search size={16} />
             </div>
             <div className="home-header-actions">

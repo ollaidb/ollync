@@ -59,17 +59,16 @@ const Login = () => {
       
       if (err instanceof Error) {
         // Vérifier les erreurs réseau spécifiques
+        const lowerMessage = err.message.toLowerCase()
         if (err.message.includes('Failed to fetch') || err.message.includes('ERR_NAME_NOT_RESOLVED')) {
           errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet et que l\'URL Supabase est correcte.'
         } else if (err.message.includes('NetworkError') || err.message.includes('network')) {
           errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.'
+        } else if (lowerMessage.includes('invalid login credentials')) {
+          errorMessage = t('common:auth.invalidCredentials')
+          shouldShowForgot = true
         } else {
           errorMessage = err.message
-        }
-
-        const lowerMessage = err.message.toLowerCase()
-        if (lowerMessage.includes('invalid login credentials')) {
-          shouldShowForgot = true
         }
       }
       

@@ -52,7 +52,16 @@ function isReminderRoute(pathname: string): boolean {
 
 function AppContent() {
   const location = useLocation()
-  const [showSplash, setShowSplash] = useState(true)
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const skip = sessionStorage.getItem('ollync-skip-splash-logout')
+      if (skip) {
+        sessionStorage.removeItem('ollync-skip-splash-logout')
+        return false
+      }
+    }
+    return true
+  })
   // Clé sur le pathname uniquement : éviter le remontage des Routes au changement de query (?tab=…)
   // sinon on voit un flash "Mon compte" en haut quand on change d’onglet sur un profil public
   const routeTransitionKey = location.pathname
