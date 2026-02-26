@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { RefreshCw, Home } from 'lucide-react'
 import i18n from 'i18next'
 import './ErrorBoundary.css'
@@ -11,24 +10,57 @@ interface Props {
 interface State {
   hasError: boolean
   error: Error | null
+  retryKey: number
+}
+
+/**
+ * Boutons utilisant window.location pour garantir que les actions fonctionnent
+ * même en cas d'erreur de chargement de module ou de contexte React dégradé.
+ */
+function ErrorBoundaryActions() {
+  const handleRetry = () => {
+    window.location.reload()
+  }
+  const handleGoHome = () => {
+    window.location.replace('/home')
+  }
+  return (
+    <nav
+      className="error-boundary-actions"
+      aria-label={i18n.t('common:errorBoundary.navLabel')}
+    >
+      <button
+        type="button"
+        className="error-boundary-btn error-boundary-btn--primary"
+        onClick={handleRetry}
+      >
+        <RefreshCw size={20} aria-hidden="true" />
+        {i18n.t('common:errorBoundary.retry')}
+      </button>
+      <button
+        type="button"
+        className="error-boundary-btn error-boundary-btn--secondary"
+        onClick={handleGoHome}
+      >
+        <Home size={20} aria-hidden="true" />
+        {i18n.t('common:errorBoundary.goHome')}
+      </button>
+    </nav>
+  )
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, retryKey: 0 }
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
-  }
-
-  reset = (): void => {
-    this.setState({ hasError: false, error: null })
   }
 
   render(): ReactNode {
@@ -45,32 +77,16 @@ export default class ErrorBoundary extends Component<Props, State> {
             <p className="error-boundary-message">
               {i18n.t('common:errorBoundary.message')}
             </p>
-            <nav
-              className="error-boundary-actions"
-              aria-label={i18n.t('common:errorBoundary.navLabel')}
-            >
-              <button
-                type="button"
-                className="error-boundary-btn error-boundary-btn--primary"
-                onClick={this.reset}
-              >
-                <RefreshCw size={20} aria-hidden="true" />
-                {i18n.t('common:errorBoundary.retry')}
-              </button>
-              <Link
-                to="/home"
-                className="error-boundary-btn error-boundary-btn--secondary"
-                onClick={() => this.setState({ hasError: false, error: null })}
-              >
-                <Home size={20} aria-hidden="true" />
-                {i18n.t('common:errorBoundary.goHome')}
-              </Link>
-            </nav>
+            <ErrorBoundaryActions />
           </div>
         </div>
       )
     }
 
-    return this.props.children
+    return (
+      <div key={this.state.retryKey} style={{ display: 'contents' }}>
+        {this.props.children}
+      </div>
+    )
   }
 }

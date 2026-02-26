@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell, Search, Camera, Users, Wrench, ShoppingBag, Scissors, Building2, Calendar, LucideIcon, ChevronRight } from 'lucide-react'
+import { Bell, Search, Camera, Users, Target, ShoppingBag, Briefcase, Building2, Calendar, LucideIcon, ChevronRight } from 'lucide-react'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import Logo from './Logo'
 import './Header.css'
@@ -40,7 +40,7 @@ const Header = () => {
     },
     { 
       id: 'emploi', 
-      icon: Scissors, 
+      icon: Briefcase, 
       label: translateCategoryLabel('emploi', 'Emploi'), 
       path: '/emploi',
       subMenus: []
@@ -54,7 +54,7 @@ const Header = () => {
     },
     { 
       id: 'services', 
-      icon: Wrench, 
+      icon: Target, 
       label: translateCategoryLabel('services', 'Services'), 
       path: '/services',
       subMenus: []
@@ -81,9 +81,9 @@ const Header = () => {
       const categoriesConfig = [
         { id: 'creation-contenu', icon: Camera, label: translateCategoryLabel('creation-contenu', 'Création de contenu'), path: '/creation-contenu' },
         { id: 'casting-role', icon: Users, label: translateCategoryLabel('casting-role', 'Casting'), path: '/casting-role' },
-        { id: 'emploi', icon: Scissors, label: translateCategoryLabel('emploi', 'Emploi'), path: '/emploi' },
+        { id: 'emploi', icon: Briefcase, label: translateCategoryLabel('emploi', 'Emploi'), path: '/emploi' },
       { id: 'studio-lieu', icon: Building2, label: translateCategoryLabel('studio-lieu', 'Studio & lieu'), path: '/studio-lieu' },
-        { id: 'services', icon: Wrench, label: translateCategoryLabel('services', 'Services'), path: '/services' },
+        { id: 'services', icon: Target, label: translateCategoryLabel('services', 'Services'), path: '/services' },
         { id: 'evenements', icon: Calendar, label: translateCategoryLabel('evenements', 'Événement'), path: '/evenements' },
         { id: 'vente', icon: ShoppingBag, label: translateCategoryLabel('vente', 'Vente'), path: '/vente' }
       ]

@@ -5,23 +5,23 @@
   overflow: hidden;
   border-radius: inherit;
   background:
-    radial-gradient(130% 110% at 88% -10%, color-mix(in srgb, var(--category-accent) 42%, transparent) 0%, transparent 52%),
+    radial-gradient(130% 110% at 88% -10%, color-mix(in srgb, var(--category-accent) 24%, transparent) 0%, transparent 52%),
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--category-accent) 26%, var(--card)) 0%,
-      color-mix(in srgb, var(--category-accent) 14%, var(--background)) 55%,
-      color-mix(in srgb, var(--category-accent) 28%, var(--card)) 100%
+      color-mix(in srgb, var(--category-accent) 14%, var(--card)) 0%,
+      color-mix(in srgb, var(--category-accent) 8%, var(--background)) 55%,
+      color-mix(in srgb, var(--category-accent) 14%, var(--card)) 100%
     );
 }
 
 .dark .category-placeholder-media {
   background:
-    radial-gradient(130% 110% at 88% -10%, color-mix(in srgb, var(--category-accent) 58%, transparent) 0%, transparent 52%),
+    radial-gradient(130% 110% at 88% -10%, color-mix(in srgb, var(--category-accent) 32%, transparent) 0%, transparent 52%),
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--category-accent) 38%, var(--card)) 0%,
-      color-mix(in srgb, var(--category-accent) 20%, var(--background)) 55%,
-      color-mix(in srgb, var(--category-accent) 44%, var(--card)) 100%
+      color-mix(in srgb, var(--category-accent) 22%, var(--card)) 0%,
+      color-mix(in srgb, var(--category-accent) 12%, var(--background)) 55%,
+      color-mix(in srgb, var(--category-accent) 22%, var(--card)) 100%
     );
 }
 
@@ -36,7 +36,7 @@
   height: 55%;
   left: -12%;
   bottom: -20%;
-  background: color-mix(in srgb, var(--category-accent) 24%, transparent);
+  background: color-mix(in srgb, var(--category-accent) 14%, transparent);
   filter: blur(2px);
 }
 
@@ -45,7 +45,7 @@
   height: 38%;
   right: -8%;
   top: -12%;
-  background: color-mix(in srgb, var(--category-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--category-accent) 18%, transparent);
 }
 
 .category-placeholder-icon-wrap {

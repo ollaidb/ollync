@@ -68,26 +68,26 @@
   color: var(--primary);
 }
 
-/* Icône centrale plus grande avec fond violet */
+/* Icône centrale adaptée au style des catégories */
 .footer-center {
   position: relative;
 }
 
 .footer-center-icon-wrapper {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background-color: var(--primary);
+  background-color: color-mix(in srgb, var(--primary) 18%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-foreground);
+  color: var(--primary);
   transition: all 0.2s ease;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .footer-center:hover .footer-center-icon-wrapper {
-  box-shadow: var(--shadow-xl);
+  background-color: color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
 .footer-label {
@@ -122,6 +122,11 @@
   .footer-item {
     padding: 6px 8px;
     min-width: 50px;
+  }
+
+  .footer-center-icon-wrapper {
+    width: 44px;
+    height: 44px;
   }
 
   .footer-label {

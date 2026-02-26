@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, Loader, WifiOff } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { AuthBackground } from '../components/Auth/AuthBackground'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import Footer from '../components/Footer'
@@ -52,6 +54,7 @@ const Favorites = () => {
   const { t } = useTranslation(['favorites', 'common'])
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [searchParams, setSearchParams] = useSearchParams()
   const getTabFromParams = () =>
     searchParams.get('tab') === 'profiles' ? 'profiles' : 'posts'
@@ -432,7 +435,11 @@ const Favorites = () => {
       </div>
 
       {/* Content */}
-      <div className="favorites-content">
+      <PullToRefresh
+        onRefresh={() => activeTab === 'posts' ? fetchLikedPosts() : fetchFollowedProfiles()}
+        className="favorites-content"
+        enabled={isMobile}
+      >
         {loading ? (
           <div className="loading-container">
             <Loader className="spinner-large" size={48} />
@@ -544,7 +551,7 @@ const Favorites = () => {
             )}
           </>
         )}
-      </div>
+      </PullToRefresh>
     </div>
     </>
   )

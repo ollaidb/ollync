@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Search as SearchIcon, X, CheckCircle2, Circle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import PostCard from '../components/PostCard'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import BackButton from '../components/BackButton'
 import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
 import { EmptyState } from '../components/EmptyState'
@@ -62,6 +64,7 @@ interface SubCategory {
 
 const Search = () => {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { recentSearches, addRecentSearch, removeRecentSearchesByIds } = useRecentSearches()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState('all')
@@ -819,7 +822,11 @@ const Search = () => {
       </div>
 
       {/* Results */}
-      <div className="search-content">
+      <PullToRefresh
+        onRefresh={() => searchPosts(searchQuery)}
+        className="search-content"
+        enabled={isMobile}
+      >
         {loading ? (
           <div className="search-loading">
             <p>{t('search:searching')}</p>
@@ -882,7 +889,7 @@ const Search = () => {
             <p className="search-empty-text">{t('search:emptyTitle')}</p>
           </div>
         )}
-      </div>
+      </PullToRefresh>
 
       {isFilterOpen && (
         <div

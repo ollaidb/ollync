@@ -200,7 +200,7 @@ const Footer = () => {
           >
             {isCenter ? (
               <div className="footer-center-icon-wrapper">
-                <Icon size={28} strokeWidth={2} />
+                <Icon size={24} strokeWidth={1.5} />
               </div>
             ) : (
               <div className="footer-icon-wrapper">

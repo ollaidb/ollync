@@ -4,7 +4,9 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, Users } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import BackButton from '../components/BackButton'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import InlineVideoPreview from '../components/InlineVideoPreview'
 import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
 import { EmptyState } from '../components/EmptyState'
@@ -54,6 +56,7 @@ const SwipePage = () => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const categoryId = searchParams.get('category')
@@ -492,7 +495,7 @@ const SwipePage = () => {
       </div>
 
       {/* Zone scrollable */}
-      <div className="swipe-scrollable">
+      <PullToRefresh onRefresh={() => fetchPosts(0)} className="swipe-scrollable" enabled={isMobile}>
         {loading && posts.length === 0 ? (
           <div className="swipe-loading">
             <p>Chargement des annonces...</p>
@@ -599,7 +602,7 @@ const SwipePage = () => {
             {loadingMore && <div className="swipe-loading-more">Chargement...</div>}
           </div>
         )}
-      </div>
+      </PullToRefresh>
     </div>
   )
 }

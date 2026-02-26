@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bell, Search, Sparkles, Plus, ArrowRight } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -13,6 +13,7 @@ import { useConsent } from '../hooks/useConsent'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabaseClient'
 import { PageMeta } from '../components/PageMeta'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import './Home.css'
 
 interface Post {
@@ -42,7 +43,6 @@ interface Post {
 
 const Home = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { user } = useAuth()
   const behavioralConsent = useConsent('behavioral_data')
   const { t } = useTranslation(['categories', 'home', 'common'])
@@ -54,7 +54,6 @@ const Home = () => {
     recommendations: t('home:recommendations'),
     recent: t('home:recent')
   }
-  const [swipeModeActive, setSwipeModeActive] = useState(location.pathname === '/swipe')
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [heroIndex, setHeroIndex] = useState(0)
   const heroSwipeStart = useRef<number | null>(null)
@@ -629,56 +628,44 @@ const Home = () => {
     handleOAuthCallback()
   }, [])
 
-  useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true)
-      try {
-        // Charger les posts récents et urgents en parallèle
-        const [recent, urgent] = await Promise.all([
-          fetchRecentPosts(),
-          fetchUrgentPosts()
-        ])
-        
-        // Charger les posts par catégorie en parallèle
-        const [creationContenu, casting, emploi, studioLieu] = await Promise.all([
-          fetchCategoryPosts('creation-contenu'),
-          fetchCategoryPosts('casting-role'),
-          fetchCategoryPosts('emploi'), // Emploi utilise le slug 'emploi'
-          fetchCategoryPosts('studio-lieu')
-        ])
-        
-        setCreationContenuPosts(creationContenu)
-        setCastingPosts(casting)
-        setEmploiPosts(emploi)
-        setStudioLieuPosts(studioLieu)
-        
-        // Une fois les posts récents et urgents chargés, charger les recommandations
-        // en excluant les IDs déjà affichés
-        const recentIds = recent.map(p => p.id)
-        const urgentIds = urgent.map(p => p.id)
-        const categoryIds = [...creationContenu, ...casting, ...emploi, ...studioLieu].map(p => p.id)
-        const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
-        
-      // Charger les recommandations de manière asynchrone sans bloquer
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [recent, urgent] = await Promise.all([
+        fetchRecentPosts(),
+        fetchUrgentPosts()
+      ])
+      const [creationContenu, casting, emploi, studioLieu] = await Promise.all([
+        fetchCategoryPosts('creation-contenu'),
+        fetchCategoryPosts('casting-role'),
+        fetchCategoryPosts('emploi'),
+        fetchCategoryPosts('studio-lieu')
+      ])
+      setCreationContenuPosts(creationContenu)
+      setCastingPosts(casting)
+      setEmploiPosts(emploi)
+      setStudioLieuPosts(studioLieu)
+      const recentIds = recent.map(p => p.id)
+      const urgentIds = urgent.map(p => p.id)
+      const categoryIds = [...creationContenu, ...casting, ...emploi, ...studioLieu].map(p => p.id)
+      const excludeIds = [...recentIds, ...urgentIds, ...categoryIds]
       if (user) {
         setRecommendedLoading(true)
         fetchRecommendedPosts(excludeIds)
-          .catch(err => {
-            console.error('Error fetching recommended posts:', err)
-          })
-          .finally(() => {
-            setRecommendedLoading(false)
-          })
+          .catch(err => console.error('Error fetching recommended posts:', err))
+          .finally(() => setRecommendedLoading(false))
       }
-      } catch (error) {
-        console.error('Error loading posts:', error)
-      } finally {
-        setLoading(false)
-      }
+    } catch (error) {
+      console.error('Error loading posts:', error)
+    } finally {
+      setLoading(false)
     }
-    loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  useEffect(() => {
+    loadAll()
+  }, [loadAll])
 
   useEffect(() => {
     if (!user) {
@@ -740,7 +727,7 @@ const Home = () => {
         <div className="home-page">
           {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
           <div className="home-header-fixed">
-            {/* Nom app + Barre de recherche + Icônes swipe et notification (une seule ligne) */}
+            {/* Nom app + Barre de recherche + Notifications (une seule ligne) */}
             <div className="home-header-top">
               <BackButton hideOnHome={true} className="home-back-button" />
               <h1 
@@ -758,19 +745,9 @@ const Home = () => {
                 aria-label={t('home:searchPlaceholder')}
               >
                 <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
-                <Search size={18} />
+                <Search size={20} />
               </div>
               <div className="home-header-actions">
-                <button
-                  className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
-                  onClick={() => {
-                    setSwipeModeActive(!swipeModeActive)
-                    navigate('/swipe')
-                  }}
-                  aria-label={t('common:actions.swipeMode')}
-                >
-                  <Sparkles size={20} />
-                </button>
                 <button
                   className="home-notification-btn"
                   onClick={() => navigate('/notifications')}
@@ -785,10 +762,21 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="home-scrollable">
+          <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile}>
 
-            {/* Catégories scrollables - Directement sur la page */}
+            {/* Catégories : Explorer en premier, puis les catégories */}
             <div className="home-categories-scroll">
+              <div
+                className="home-category-card"
+                onClick={() => navigate('/swipe')}
+              >
+                <div className="home-category-icon">
+                  <Sparkles size={22} />
+                </div>
+                <span className="home-category-name">
+                  {t('home:explorer', { defaultValue: 'Explorer' })}
+                </span>
+              </div>
               {publicationTypes.map((category) => {
                 const Icon = category.icon
                 return (
@@ -816,7 +804,7 @@ const Home = () => {
                 <PostCardSkeleton viewMode="grid" count={6} />
               </div>
             </div>
-          </div>
+          </PullToRefresh>
         </div>
         <Footer />
       </div>
@@ -830,7 +818,7 @@ const Home = () => {
       <div className="home-page">
         {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
         <div className="home-header-fixed">
-          {/* Nom app + Barre de recherche + Icônes (une seule ligne) */}
+          {/* Nom app + Barre de recherche + Actions (une seule ligne) */}
           <div className="home-header-top">
             <BackButton hideOnHome={true} className="home-back-button" />
             <h1 
@@ -848,7 +836,7 @@ const Home = () => {
               aria-label={t('home:searchPlaceholder')}
             >
               <span className="home-search-placeholder">{t('home:searchPlaceholder')}</span>
-              <Search size={18} />
+              <Search size={16} />
             </div>
             <div className="home-header-actions">
               <button
@@ -857,16 +845,6 @@ const Home = () => {
               >
                 <Plus size={16} />
                 {t('common:actions.publishListing')}
-              </button>
-              <button
-                className={`home-swipe-btn ${swipeModeActive ? 'active' : ''}`}
-                onClick={() => {
-                  setSwipeModeActive(!swipeModeActive)
-                  navigate('/swipe')
-                }}
-                aria-label={t('common:actions.swipeMode')}
-              >
-                <Sparkles size={20} />
               </button>
               <button
                 className="home-notification-btn"
@@ -883,10 +861,21 @@ const Home = () => {
         </div>
 
         {/* CONTENU SCROLLABLE */}
-        <div className="home-scrollable">
+        <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile}>
 
-          {/* Catégories scrollables - Directement sur la page */}
+          {/* Catégories : Explorer en premier, puis les catégories */}
           <div className="home-categories-scroll">
+            <div
+              className="home-category-card"
+              onClick={() => navigate('/swipe')}
+            >
+              <div className="home-category-icon">
+                <Sparkles size={22} />
+              </div>
+              <span className="home-category-name">
+                {t('home:explorer', { defaultValue: 'Explorer' })}
+              </span>
+            </div>
             {publicationTypes.map((category) => {
               const Icon = category.icon
               return (
@@ -1063,7 +1052,7 @@ const Home = () => {
               })}
             </div>
           )}
-        </div>
+        </PullToRefresh>
       </div>
       <Footer />
     </div>

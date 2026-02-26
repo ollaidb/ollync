@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import Footer from './components/Footer'
 const Home = lazy(() => import('./pages/Home'))
 const Feed = lazy(() => import('./pages/Feed'))
@@ -37,6 +37,7 @@ import ReminderBlock from './components/ReminderBlock'
 import { useReminder } from './hooks/useReminder'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SessionExpiredHandler } from './components/SessionExpiredHandler'
+import { SplashScreen } from './components/SplashScreen/SplashScreen'
 import './App.css'
 
 function isReminderRoute(pathname: string): boolean {
@@ -51,6 +52,7 @@ function isReminderRoute(pathname: string): boolean {
 
 function AppContent() {
   const location = useLocation()
+  const [showSplash, setShowSplash] = useState(true)
   // Clé sur le pathname uniquement : éviter le remontage des Routes au changement de query (?tab=…)
   // sinon on voit un flash "Mon compte" en haut quand on change d’onglet sur un profil public
   const routeTransitionKey = location.pathname
@@ -199,6 +201,7 @@ function AppContent() {
     <NavigationHistoryProvider>
       <ToastProvider>
         <SessionExpiredHandler />
+        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
         <ConsentModal
           visible={cookiesConsent.showModal && !isConsentInfoPage}
           title={cookiesConsent.messages.title}

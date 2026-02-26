@@ -1,4 +1,4 @@
-import { Camera, Scissors, Users, Wrench, ShoppingBag, Building2, Calendar } from 'lucide-react'
+import { Briefcase, Camera, Target, Users, ShoppingBag, Building2, Calendar } from 'lucide-react'
 
 export interface Platform {
   id: string
@@ -187,7 +187,7 @@ export const publicationTypes: PublicationType[] = [
     id: 'emploi',
     name: 'Emploi',
     slug: 'emploi',
-    icon: Scissors,
+    icon: Briefcase,
     color: '#9c27b0',
     description: 'Métiers liés à la création de contenu (vidéo, photo, montage, community, etc.).',
     subcategories: [
@@ -289,7 +289,7 @@ export const publicationTypes: PublicationType[] = [
     id: 'services',
     name: 'Service/Mission',
     slug: 'services',
-    icon: Wrench,
+    icon: Target,
     color: '#43e97b',
     description:
       'Proposer ou chercher des services dans la création de contenu (coaching contenu, branding, développement business, animation de compte).',

@@ -5,7 +5,9 @@ import { Plus, Check, SlidersHorizontal, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import BackButton from '../components/BackButton'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import { EmptyState } from '../components/EmptyState'
 import { publicationTypes } from '../constants/publishData'
 import './UsersPage.css'
@@ -62,6 +64,7 @@ const UsersPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { t } = useTranslation(['categories'])
   const categoryId = searchParams.get('category')
 
@@ -595,7 +598,7 @@ const UsersPage = () => {
       </div>
 
       {/* Zone scrollable */}
-      <div className="users-scrollable">
+      <PullToRefresh onRefresh={() => fetchUsers(0)} className="users-scrollable" enabled={isMobile}>
         {loading && users.length === 0 ? (
           <div className="users-loading">
             <p>Chargement des utilisateurs...</p>
@@ -684,7 +687,7 @@ const UsersPage = () => {
             {loadingMore && <div className="users-loading-more">Chargement...</div>}
           </div>
         )}
-      </div>
+      </PullToRefresh>
 
       {showAdvancedFilters && typeof document !== 'undefined' && createPortal(
         <div className="users-filter-modal-overlay" onClick={() => setShowAdvancedFilters(false)}>

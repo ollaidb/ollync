@@ -4,8 +4,8 @@ import {
   Calendar,
   Camera,
   ShoppingBag,
-  Users,
-  Wrench
+  Target,
+  Users
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { CSSProperties } from 'react'
@@ -22,7 +22,7 @@ const CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   'casting-role': { color: '#2196f3', label: 'Casting', icon: Users },
   emploi: { color: '#9c27b0', label: 'Emploi', icon: Briefcase },
   'studio-lieu': { color: '#f59e0b', label: 'Lieu', icon: Building2 },
-  services: { color: '#43e97b', label: 'Service', icon: Wrench },
+  services: { color: '#43e97b', label: 'Service', icon: Target },
   evenements: { color: '#06b6d4', label: 'Evenement', icon: Calendar },
   vente: { color: '#f093fb', label: 'Vente', icon: ShoppingBag }
 }

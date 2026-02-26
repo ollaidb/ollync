@@ -7,7 +7,9 @@ import { AuthBackground } from '../components/Auth/AuthBackground'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
 import { useAuth } from '../hooks/useSupabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { EmptyState } from '../components/EmptyState'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import { PageMeta } from '../components/PageMeta'
 import './Auth.css'
 import './Notifications.css'
@@ -44,6 +46,7 @@ interface Notification {
 const Notifications = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { t, i18n } = useTranslation(['notifications', 'common'])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
@@ -84,26 +87,28 @@ const Notifications = () => {
     return count > 99 ? '+99' : String(count)
   }, [])
 
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*, sender:profiles!notifications_sender_id_fkey(avatar_url, full_name, username, email)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Error fetching notifications:', error)
+    } else {
+      setNotifications(data || [])
+    }
+    setLoading(false)
+  }, [user])
+
   useEffect(() => {
     if (!user) {
       setLoading(false)
       return
-    }
-
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*, sender:profiles!notifications_sender_id_fkey(avatar_url, full_name, username, email)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) {
-        console.error('Error fetching notifications:', error)
-      } else {
-        setNotifications(data || [])
-      }
-      setLoading(false)
     }
 
     const channel = supabase
@@ -490,7 +495,7 @@ const Notifications = () => {
         </div>
 
         {/* Zone scrollable */}
-        <div className="notifications-scrollable">
+        <PullToRefresh onRefresh={fetchNotifications} className="notifications-scrollable" enabled={isMobile}>
 
           {loading ? (
             <div className="loading-container">
@@ -536,7 +541,7 @@ const Notifications = () => {
               ))}
             </div>
           )}
-        </div>
+        </PullToRefresh>
       </div>
     </div>
     </>

@@ -30,7 +30,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background-color: var(--card);
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
   cursor: pointer;
   transition: all 0.2s;
   gap: 12px;
@@ -40,12 +40,12 @@
 
 .category-card:hover {
   border-color: var(--category-color, #6366F1);
-  background-color: var(--muted);
+  background-color: color-mix(in srgb, var(--muted) 70%, var(--background));
 }
 
 .category-card:active {
   border-color: var(--category-color, #6366F1);
-  background-color: var(--muted);
+  background-color: color-mix(in srgb, var(--muted) 70%, var(--background));
 }
 
 @media (hover: none) {
@@ -59,7 +59,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
+  background-color: color-mix(in srgb, var(--foreground) 4%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
