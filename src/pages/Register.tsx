@@ -288,6 +288,7 @@ const Register = () => {
                 disabled={loading}
                 className={`password-input ${password && !passwordStrength.isValid ? 'input-error' : ''}`}
               />
+              {password.length > 0 && (
               <button
                 type="button"
                 className="password-toggle-btn"
@@ -297,6 +298,7 @@ const Register = () => {
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+              )}
             </div>
             <p className="password-requirements-note">
               Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (@, !, #, etc.)
@@ -337,6 +339,7 @@ const Register = () => {
                 disabled={loading}
                 className="password-input"
               />
+              {confirmPassword.length > 0 && (
               <button
                 type="button"
                 className="password-toggle-btn"
@@ -346,6 +349,7 @@ const Register = () => {
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+              )}
             </div>
           </div>
 

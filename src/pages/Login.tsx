@@ -283,6 +283,7 @@ const Login = () => {
                 disabled={loading}
                 className="password-input"
               />
+              {password.length > 0 && (
               <button
                 type="button"
                 className="password-toggle-btn"
@@ -293,6 +294,7 @@ const Login = () => {
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+              )}
             </div>
           </div>
 

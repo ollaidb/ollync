@@ -262,6 +262,8 @@ const Messages = () => {
   const MESSAGES_PAGE_SIZE = 50
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number; deltaX?: number; deltaY?: number } | null>(null)
+  /** Offset du swipe « répondre » en px (le message suit le doigt) */
+  const [messageReplySwipeOffset, setMessageReplySwipeOffset] = useState<{ id: string; x: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
@@ -4765,6 +4767,12 @@ const Messages = () => {
                         >
                         <div
                           className="message-swipe-content"
+                          style={{
+                            transform: messageReplySwipeOffset?.id === msg.id
+                              ? `translateX(${messageReplySwipeOffset.x}px)`
+                              : undefined,
+                            transition: messageReplySwipeOffset?.id === msg.id ? 'none' : 'transform 0.2s ease-out'
+                          }}
                           onContextMenu={(event) => {
                             event.preventDefault()
                             setActiveMessage(msg)
@@ -4773,6 +4781,7 @@ const Messages = () => {
                           onTouchStart={(event) => {
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
+                            setMessageReplySwipeOffset((prev) => (prev != null && prev.id !== msg.id ? null : prev))
                             longPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowMessageActions(true)
@@ -4792,6 +4801,10 @@ const Messages = () => {
                                 longPressTimerRef.current = null
                               }
                             }
+                            if (isMobile && start.id === msg.id && deltaX < 0) {
+                              const capped = Math.max(deltaX, -120)
+                              setMessageReplySwipeOffset({ id: msg.id, x: capped })
+                            }
                           }}
                           onTouchEnd={() => {
                             if (longPressTimerRef.current) {
@@ -4800,7 +4813,8 @@ const Messages = () => {
                             }
                             if (isMobile && messageTouchRef.current?.id === msg.id) {
                               const { deltaX = 0, deltaY = 0 } = messageTouchRef.current
-                              if (deltaX > 40 && deltaX > 2 * Math.abs(deltaY)) {
+                              setMessageReplySwipeOffset(null)
+                              if (deltaX < -40 && Math.abs(deltaX) > 2 * Math.abs(deltaY)) {
                                 hapticLight()
                                 setReplyingToMessage(msg)
                               }
