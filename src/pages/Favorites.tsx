@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Heart, WifiOff } from 'lucide-react'
+import { Heart, WifiOff, Trash2, UserMinus } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -9,6 +9,8 @@ import { AuthBackground } from '../components/Auth/AuthBackground'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import PostCard from '../components/PostCard'
 import { PostCardSkeleton } from '../components/PostCardSkeleton'
+import { SwipeableListItem } from '../components/SwipeableListItem'
+import { hapticWarning, hapticSuccess } from '../utils/haptic'
 import BackButton from '../components/BackButton'
 import Footer from '../components/Footer'
 import { EmptyState } from '../components/EmptyState'
@@ -327,7 +329,7 @@ const Favorites = () => {
 
   const handleUnfollow = async (profileId: string) => {
     if (!user) return
-
+    hapticWarning()
     try {
       const { error } = await supabase
         .from('follows')
@@ -339,6 +341,7 @@ const Favorites = () => {
         console.error('Error unfollowing profile:', error)
         alert('Erreur lors de la suppression du suivi')
       } else {
+        hapticSuccess()
         setFollowedProfiles(followedProfiles.filter((profile) => profile.id !== profileId))
       }
     } catch (error) {
@@ -346,6 +349,27 @@ const Favorites = () => {
       alert('Erreur lors de la suppression du suivi')
     }
   }
+
+  const removeFromFavorites = useCallback(async (postId: string) => {
+    if (!user) return
+    hapticWarning()
+    try {
+      const { error } = await supabase
+        .from('likes')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+      if (error) {
+        console.error('Error removing like:', error)
+        return
+      }
+      hapticSuccess()
+      setFavoritePosts((prev) => prev.filter((p) => p.id !== postId))
+      window.dispatchEvent(new CustomEvent('likeChanged', { detail: { postId, liked: false } }))
+    } catch (err) {
+      console.error('Error removing from favorites:', err)
+    }
+  }, [user])
 
   const loading = activeTab === 'posts' ? loadingPosts : loadingProfiles
 
@@ -493,14 +517,27 @@ const Favorites = () => {
                 {favoritePosts.length > 0 ? (
                   <div className="posts-list">
                     {favoritePosts.map((post) => (
-                      <PostCard 
-                        key={post.id} 
-                        post={post} 
-                        viewMode="list" 
-                        isLiked={true} 
-                        onLike={fetchLikedPosts}
-                        isRemoved={(post as { status?: string }).status !== 'active'}
-                      />
+                      <SwipeableListItem
+                        key={post.id}
+                        enabled={isMobile}
+                        actions={[
+                          {
+                            id: 'delete',
+                            label: 'Supprimer',
+                            icon: <Trash2 size={20} />,
+                            destructive: true,
+                            onClick: () => removeFromFavorites(post.id)
+                          }
+                        ]}
+                      >
+                        <PostCard 
+                          post={post} 
+                          viewMode="list" 
+                          isLiked={true} 
+                          onLike={fetchLikedPosts}
+                          isRemoved={(post as { status?: string }).status !== 'active'}
+                        />
+                      </SwipeableListItem>
                     ))}
                   </div>
                 ) : (
@@ -523,34 +560,47 @@ const Favorites = () => {
                 {followedProfiles.length > 0 ? (
                   <div className="profiles-list">
                     {followedProfiles.map((profile) => (
-                      <div
+                      <SwipeableListItem
                         key={profile.id}
-                        className="profile-card"
-                        onClick={() => navigate(`/profile/${profile.id}`)}
+                        enabled={isMobile}
+                        actions={[
+                          {
+                            id: 'delete',
+                            label: 'Supprimer',
+                            icon: <UserMinus size={20} />,
+                            destructive: true,
+                            onClick: () => handleUnfollow(profile.id)
+                          }
+                        ]}
                       >
-                        <img
-                          src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name || profile.username || 'User')}`}
-                          alt={profile.full_name || profile.username || 'User'}
-                          className="profile-avatar"
-                        />
-                        <div className="profile-info">
-                          <h3 className="profile-name">
-                            {profile.full_name || profile.username || 'Utilisateur'}
-                          </h3>
-                          {profile.bio && (
-                            <p className="profile-bio">{profile.bio}</p>
-                          )}
-                        </div>
-                        <button
-                          className="unfollow-button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleUnfollow(profile.id)
-                          }}
+                        <div
+                          className="profile-card"
+                          onClick={() => navigate(`/profile/${profile.id}`)}
                         >
-                          Suivi
-                        </button>
-                      </div>
+                          <img
+                            src={profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name || profile.username || 'User')}`}
+                            alt={profile.full_name || profile.username || 'User'}
+                            className="profile-avatar"
+                          />
+                          <div className="profile-info">
+                            <h3 className="profile-name">
+                              {profile.full_name || profile.username || 'Utilisateur'}
+                            </h3>
+                            {profile.bio && (
+                              <p className="profile-bio">{profile.bio}</p>
+                            )}
+                          </div>
+                          <button
+                            className="unfollow-button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleUnfollow(profile.id)
+                            }}
+                          >
+                            Suivi
+                          </button>
+                        </div>
+                      </SwipeableListItem>
                     ))}
                   </div>
                 ) : (

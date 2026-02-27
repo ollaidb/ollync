@@ -18,6 +18,9 @@ import MessageBubble from '../components/Messages/MessageBubble'
 import { EmptyState } from '../components/EmptyState'
 import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
 import ConfirmationModal from '../components/ConfirmationModal'
+import { SwipeableListItem } from '../components/SwipeableListItem'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { hapticSuccess, hapticWarning } from '../utils/haptic'
 import { PageMeta } from '../components/PageMeta'
 import './Auth.css'
 import './Messages.css'
@@ -186,6 +189,7 @@ const Messages = () => {
   const postId = searchParams.get('post')
   const openAppointment = searchParams.get('openAppointment') === '1'
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { counts: unreadCommunicationCounts, markTypesAsRead, pendingRequestsCount } = useUnreadCommunicationCounts()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [matchRequests, setMatchRequests] = useState<MatchRequest[]>([])
@@ -417,8 +421,8 @@ const Messages = () => {
     window.setTimeout(() => scrollToBottom(align), 360)
   }
 
-  /** Navigate vers une annonce en sauvegardant la position du scroll pour la restaurer au retour */
-  const navigateToPost = useCallback((postId: string) => {
+  /** Sauvegarder la position du scroll de la conversation pour la restaurer au retour (annonce, contrat, etc.) */
+  const saveConversationScroll = useCallback(() => {
     const convId = selectedConversation?.id || conversationId
     const scrollTop = messagesListRef.current?.scrollTop ?? 0
     try {
@@ -429,8 +433,13 @@ const Messages = () => {
     } catch {
       // sessionStorage indisponible
     }
+  }, [selectedConversation?.id, conversationId])
+
+  /** Navigate vers une annonce en sauvegardant la position du scroll pour la restaurer au retour */
+  const navigateToPost = useCallback((postId: string) => {
+    saveConversationScroll()
     navigate(`/post/${postId}`)
-  }, [selectedConversation?.id, conversationId, navigate])
+  }, [saveConversationScroll, navigate])
 
   /** Restaurer la position du scroll au retour depuis une annonce — useLayoutEffect = avant le peinture, affichage fluide */
   useLayoutEffect(() => {
@@ -656,6 +665,7 @@ const Messages = () => {
   }
 
   const openContractDetails = (message: Message) => {
+    saveConversationScroll()
     const params = new URLSearchParams()
     if (message.shared_contract_id) params.set('contract', String(message.shared_contract_id))
     if (!selectedConversation?.is_group && selectedConversation?.other_user?.id) {
@@ -2173,6 +2183,7 @@ const Messages = () => {
       archived_at: shouldArchive ? new Date().toISOString() : null,
       ...(shouldArchive ? { is_pinned: false, pinned_at: null } : {})
     })
+    hapticSuccess()
     loadConversations()
   }
 
@@ -2181,6 +2192,7 @@ const Messages = () => {
 
     if (conv.is_pinned) {
       await upsertConversationState(conv.id, { is_pinned: false, pinned_at: null })
+      hapticSuccess()
       loadConversations()
       return
     }
@@ -2193,12 +2205,14 @@ const Messages = () => {
       .eq('is_pinned', true)
 
     await upsertConversationState(conv.id, { is_pinned: true, pinned_at: new Date().toISOString() })
+    hapticSuccess()
     loadConversations()
   }
 
   const handleDeleteConversationForUser = async (conversationIdToDelete: string) => {
     if (!conversationIdToDelete) return
     await upsertConversationState(conversationIdToDelete, { deleted_at: new Date().toISOString() })
+    hapticSuccess()
     setSelectedConversation(null)
     navigate('/messages')
     loadConversations()
@@ -2510,7 +2524,9 @@ const Messages = () => {
         <div className="auth-page">
           <div className="messages-page-container">
             <div className="messages-header-not-connected">
+              <BackButton />
               <h1 className="messages-title-centered">Messages</h1>
+              <div className="messages-header-spacer" aria-hidden="true" />
             </div>
             <div className="messages-content-not-connected">
               <MailOpen className="messages-not-connected-icon" strokeWidth={1.5} />
@@ -4771,6 +4787,7 @@ const Messages = () => {
                               }
                             }}
                             onPostClick={navigateToPost}
+                            onBeforeNavigateToContract={saveConversationScroll}
                             groupParticipants={isGroupConversation ? infoParticipants : undefined}
                             isGroupConversation={isGroupConversation}
                             currentUserGroupRole={
@@ -5582,49 +5599,8 @@ const Messages = () => {
                 ? (groupName || 'Groupe')
                 : (conv.other_user?.full_name || conv.other_user?.username || 'User')
               const preview = getConversationPreview(conv, matchRequests)
-              return (
-                <div key={conv.id}>
-                  <div
-                    className="conversation-item"
-                    onClick={() => {
-                      navigate(`/messages/${conv.id}`)
-                    }}
-                    onContextMenu={(event) => {
-                      event.preventDefault()
-                      if (isSystemConv) return
-                      setListActionConversation(conv)
-                      setShowListConversationActions(true)
-                    }}
-                    onTouchStart={(event) => {
-                      if (isSystemConv) return
-                      const touch = event.touches[0]
-                      conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
-                      longPressTimerRef.current = window.setTimeout(() => {
-                      setListActionConversation(conv)
-                      setShowListConversationActions(true)
-                      }, 500)
-                    }}
-                    onTouchMove={(event) => {
-                      if (isSystemConv) return
-                      const touch = event.touches[0]
-                      const start = conversationTouchRef.current
-                      if (!start) return
-                      const deltaX = touch.clientX - start.startX
-                      const deltaY = touch.clientY - start.startY
-                      if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                        if (longPressTimerRef.current) {
-                          window.clearTimeout(longPressTimerRef.current)
-                          longPressTimerRef.current = null
-                        }
-                      }
-                    }}
-                    onTouchEnd={() => {
-                      if (longPressTimerRef.current) {
-                        window.clearTimeout(longPressTimerRef.current)
-                        longPressTimerRef.current = null
-                      }
-                    }}
-                  >
+              const conversationContent = (
+                    <>
                     <div className="conversation-avatar-wrapper">
                       {isSystemConv ? (
                         <div className="conversation-avatar conversation-avatar-system">
@@ -5673,7 +5649,98 @@ const Messages = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </>
+              )
+              return (
+                <div key={conv.id}>
+                  {isSystemConv ? (
+                    <div
+                      className="conversation-item"
+                      onClick={() => navigate(`/messages/${conv.id}`)}
+                      onContextMenu={(event) => {
+                        event.preventDefault()
+                        setListActionConversation(conv)
+                        setShowListConversationActions(true)
+                      }}
+                      onTouchStart={(event) => {
+                        const touch = event.touches[0]
+                        conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
+                        longPressTimerRef.current = window.setTimeout(() => {
+                          setListActionConversation(conv)
+                          setShowListConversationActions(true)
+                        }, 500)
+                      }}
+                      onTouchMove={(event) => {
+                        const touch = event.touches[0]
+                        const start = conversationTouchRef.current
+                        if (!start) return
+                        const deltaX = touch.clientX - start.startX
+                        const deltaY = touch.clientY - start.startY
+                        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                          if (longPressTimerRef.current) {
+                            window.clearTimeout(longPressTimerRef.current)
+                            longPressTimerRef.current = null
+                          }
+                        }
+                      }}
+                      onTouchEnd={() => {
+                        if (longPressTimerRef.current) {
+                          window.clearTimeout(longPressTimerRef.current)
+                          longPressTimerRef.current = null
+                        }
+                      }}
+                    >
+                      {conversationContent}
+                    </div>
+                  ) : (
+                    <SwipeableListItem
+                      enabled={isMobile}
+                      onItemClick={() => navigate(`/messages/${conv.id}`)}
+                      actions={[
+                        { id: 'pin', label: conv.is_pinned ? 'Retirer le pin' : 'Épingler', icon: <Pin size={20} />, onClick: () => handlePinConversation(conv) },
+                        { id: 'archive', label: conv.is_archived ? 'Désarchiver' : 'Archiver', icon: <Archive size={20} />, onClick: () => handleArchiveConversation(conv, !conv.is_archived) },
+                        { id: 'delete', label: 'Supprimer', icon: <Trash2 size={20} />, destructive: true, onClick: () => { hapticWarning(); setListActionConversation(conv); setShowDeleteConfirm(true) } }
+                      ]}
+                    >
+                      <div
+                        className="conversation-item"
+                        onContextMenu={(event) => {
+                          event.preventDefault()
+                          setListActionConversation(conv)
+                          setShowListConversationActions(true)
+                        }}
+                        onTouchStart={(event) => {
+                          const touch = event.touches[0]
+                          conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
+                          longPressTimerRef.current = window.setTimeout(() => {
+                            setListActionConversation(conv)
+                            setShowListConversationActions(true)
+                          }, 500)
+                        }}
+                        onTouchMove={(event) => {
+                          const touch = event.touches[0]
+                          const start = conversationTouchRef.current
+                          if (!start) return
+                          const deltaX = touch.clientX - start.startX
+                          const deltaY = touch.clientY - start.startY
+                          if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }
+                        }}
+                        onTouchEnd={() => {
+                          if (longPressTimerRef.current) {
+                            window.clearTimeout(longPressTimerRef.current)
+                            longPressTimerRef.current = null
+                          }
+                        }}
+                      >
+                        {conversationContent}
+                      </div>
+                    </SwipeableListItem>
+                  )}
                 </div>
               )
             })}
@@ -5720,6 +5787,7 @@ const Messages = () => {
               className="conversation-action-item danger"
               type="button"
               onClick={() => {
+                hapticWarning()
                 setShowListConversationActions(false)
                 setShowDeleteConfirm(true)
               }}

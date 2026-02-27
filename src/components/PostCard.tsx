@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
 import { isPostViewed } from '../utils/viewedPosts'
+import { hapticLight } from '../utils/haptic'
 import InlineVideoPreview from './InlineVideoPreview'
 import CategoryPlaceholderMedia from './CategoryPlaceholderMedia'
 import './PostCard.css'
@@ -165,6 +166,7 @@ const PostCard = ({
           return
         }
 
+        hapticLight()
         setLiked(false)
         setLikesCount(prev => Math.max(0, prev - 1))
         
@@ -202,9 +204,10 @@ const PostCard = ({
         }
 
         if (data) {
+          hapticLight()
           setLiked(true)
           setLikesCount(prev => prev + 1)
-          
+
           // Mettre à jour le cache
           const cacheKey = `like_${user.id}_${post.id}`
           sessionStorage.setItem(cacheKey, 'true')

@@ -387,7 +387,8 @@
   color: var(--muted-foreground);
 }
 
-.message-bubble.calendar-message .message-post-share--removed .message-post-share-title {
+.message-bubble.calendar-message .message-post-share--removed .message-post-share-title,
+.message-bubble.calendar-message .message-contract-share--removed .message-contract-share-title {
   color: var(--muted-foreground);
 }
 
@@ -1191,6 +1192,28 @@
   line-height: 1.25;
 }
 
+.message-contract-share--removed {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.message-contract-share--removed:hover {
+  background-color: rgba(255, 255, 255, 0.62);
+}
+
+.message-contract-share-removed-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.message-contract-share--removed .message-contract-share-title {
+  color: var(--muted-foreground);
+}
+
 .contract-inline-panel {
   background: color-mix(in srgb, var(--card) 96%, transparent);
   backdrop-filter: blur(20px);
@@ -1318,6 +1341,10 @@
 
 .dark .message-contract-share:hover {
   background-color: color-mix(in srgb, var(--card) 95%, var(--background));
+}
+
+.dark .message-contract-share--removed:hover {
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
 }
 
 .dark .message-contract-share-icon {

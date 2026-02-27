@@ -2389,6 +2389,16 @@
   gap: 12px;
 }
 
+/* Swipe : garder l’apparence exacte de la liste, pas de trait ni bordure visible */
+.conversations-list .swipeable-list-item {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+.conversations-list .swipeable-list-item__content {
+  background: transparent;
+}
+
 .conversation-pin-indicator {
   display: inline-flex;
   align-items: center;
@@ -3263,10 +3273,26 @@
   background-color: var(--background);
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
   padding-bottom: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border);
+}
+
+.messages-header-not-connected .messages-title-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 120px);
+  pointer-events: none;
+}
+
+.messages-header-not-connected .messages-header-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .messages-title-centered {

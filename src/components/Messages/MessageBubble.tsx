@@ -30,6 +30,9 @@ type ContractEditorNotice = {
 
 const sharedContractCache = new Map<string, SharedContractDetails>()
 
+/** Statuts de contrat considérés comme terminaux (supprimé / annulé / archivé, etc.) */
+const TERMINAL_CONTRACT_STATUSES = new Set(['cancelled', 'canceled', 'completed', 'archived', 'deleted', 'rejected', 'expired'])
+
 const extractContractNameFromContent = (content?: string | null) => {
   const raw = String(content || '')
   const match = raw.match(/Nom du contrat\s*:\s*(.+)/i)
@@ -87,6 +90,8 @@ interface MessageBubbleProps {
   currentUserGroupRole?: string | null
   /** Si fourni, appelé au clic sur une annonce partagée (permet de préserver le scroll de la conversation) */
   onPostClick?: (postId: string) => void
+  /** Appelé avant de naviguer vers la page contrat (pour sauvegarder la position du scroll au retour) */
+  onBeforeNavigateToContract?: () => void
   /** Message auquel on répond (affiché au-dessus du contenu avec trait, cliquable pour scroll) */
   replyTo?: { id: string; content?: string | null; message_type?: string; sender_id?: string | null } | null
   /** Appelé au clic sur le bandeau "message répondu" pour scroller vers le message d'origine */
@@ -116,7 +121,7 @@ function getReplyPreviewLabel(
   return raw.length <= REPLY_PREVIEW_MAX_LEN ? raw : `${raw.slice(0, REPLY_PREVIEW_MAX_LEN)}…`
 }
 
-const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick, replyTo, onReplyClick, currentUserId }: MessageBubbleProps) => {
+const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick, onBeforeNavigateToContract, replyTo, onReplyClick, currentUserId }: MessageBubbleProps) => {
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
@@ -134,6 +139,8 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
     } | null
   } | null>(null)
   const [sharedContract, setSharedContract] = useState<SharedContractDetails | null>(null)
+  /** true = contrat supprimé ou terminé, false = contrat existant, null = pas encore chargé */
+  const [sharedContractRemoved, setSharedContractRemoved] = useState<boolean | null>(null)
   const navigate = useNavigate()
   useAuth()
   const contractSnapshot =
@@ -162,7 +169,7 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
   const fetchSharedContractDetails = async (contractId: string, options?: { force?: boolean }) => {
     const force = Boolean(options?.force)
     const cached = sharedContractCache.get(contractId)
-    if (cached && (!force || Boolean(cached.contract_content))) {
+    if (cached && !force) {
       setSharedContract(cached)
       return cached
     }
@@ -177,7 +184,10 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
 
       if (error) throw error
 
-      if (!data) return null
+      if (!data) {
+        sharedContractCache.delete(contractId)
+        return null
+      }
 
       const row = data as {
         id: string
@@ -258,7 +268,10 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
 
     const fetchContract = async () => {
       const contractId = String(message.shared_contract_id)
-      await fetchSharedContractDetails(contractId)
+      // Force refetch pour avoir le statut à jour (contrat supprimé ou non), évite le cache stale
+      const result = await fetchSharedContractDetails(contractId, { force: true })
+      const isRemoved = result === null || (result !== null && TERMINAL_CONTRACT_STATUSES.has(String(result.status || '')))
+      setSharedContractRemoved(isRemoved)
     }
 
     void fetchContract()
@@ -455,6 +468,7 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
     fallbackTitle: string
     acceptSharedContract: boolean
   }) => {
+    onBeforeNavigateToContract?.()
     const params = new URLSearchParams()
     if (contractId) params.set('contract', contractId)
     if (fallbackTitle) params.set('draftName', fallbackTitle)
@@ -625,29 +639,37 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
           </div>
         )
       }
-      case 'contract_share':
+      case 'contract_share': {
+        const isContractRemoved = sharedContractRemoved === true
+        const contractCardLabel = isContractRemoved
+          ? 'Ce contrat a été supprimé.'
+          : (contractCardName || contractDisplayLabel)
         return (
           <div
-            className="message-contract-share"
+            className={`message-contract-share ${isContractRemoved ? 'message-contract-share--removed' : ''}`}
             onClick={() => {
+              if (isContractRemoved) return
               setShowContractDocumentPreview(true)
               setShowContractModal(true)
               if (message.shared_contract_id && !sharedContract?.contract_content) {
                 void fetchSharedContractDetails(String(message.shared_contract_id))
               }
             }}
+            role={isContractRemoved ? undefined : 'button'}
           >
             <div className="message-contract-share-icon">
               <File size={18} />
             </div>
             <div className="message-contract-share-content">
-              <h4 className="message-contract-share-title">Contrat</h4>
-              <p className="message-contract-share-subtitle">
-                {contractCardName || contractDisplayLabel}
-              </p>
+              <h4 className="message-contract-share-title">{isContractRemoved ? 'Contrat supprimé' : 'Contrat'}</h4>
+              <p className="message-contract-share-subtitle">{contractCardLabel}</p>
+              {isContractRemoved && (
+                <span className="message-contract-share-removed-hint">Ce contrat a été supprimé.</span>
+              )}
             </div>
           </div>
         )
+      }
       case 'profile_share':
         return (
           <div className="message-share">

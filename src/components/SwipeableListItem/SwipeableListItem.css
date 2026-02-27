@@ -1,0 +1,71 @@
+.swipeable-list-item {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+  border: none;
+  outline: none;
+}
+
+/* Fond transparent pour ne pas modifier l’apparence de la liste (notification-item, conversation-item, etc.) */
+.swipeable-list-item__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  flex-shrink: 0;
+  background: transparent;
+  will-change: transform;
+}
+
+.swipeable-list-item__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 0;
+}
+
+.swipeable-list-item__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  padding: 8px;
+  border: none;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.swipeable-list-item__action:active {
+  background: var(--muted-foreground);
+  color: var(--background);
+}
+
+/* Même palette que l’app, pas de rouge */
+.swipeable-list-item__action.destructive {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.swipeable-list-item__action.destructive:active {
+  background: var(--muted-foreground);
+  color: var(--background);
+}
+
+.swipeable-list-item__action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipeable-list-item__action-label {
+  white-space: nowrap;
+}

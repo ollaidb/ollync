@@ -5,6 +5,7 @@ import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, 
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import { checkModerationTextFromDb } from '../../utils/moderation'
+import { hapticSuccess } from '../../utils/haptic'
 import ConsentModal from '../ConsentModal'
 import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import CalendarPicker from './CalendarPicker'
@@ -306,6 +307,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       setAppointmentTime('')
       setAppointmentDurationText('01:00')
       setAppointmentTitle('')
+      hapticSuccess()
       onMessageSent()
     } catch (error) {
       console.error('Error sending message:', error)

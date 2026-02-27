@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck, Star, Calendar, Inbox, FileSignature } from 'lucide-react'
+import { Heart, MessageCircle, UserPlus, Bell, Image, FileText, Loader, CheckCircle, XCircle, Send, UserCheck, Star, Calendar, Inbox, FileSignature, Trash2, Copy, Share2, Flag } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { AuthBackground } from '../components/Auth/AuthBackground'
@@ -10,6 +10,9 @@ import { useAuth } from '../hooks/useSupabase'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { EmptyState } from '../components/EmptyState'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
+import { SwipeableListItem } from '../components/SwipeableListItem'
+import ConfirmationModal from '../components/ConfirmationModal'
+import { hapticWarning, hapticSuccess } from '../utils/haptic'
 import { PageMeta } from '../components/PageMeta'
 import './Auth.css'
 import './Notifications.css'
@@ -51,6 +54,10 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [notificationToDelete, setNotificationToDelete] = useState<Notification | null>(null)
+  const [actionSheetNotification, setActionSheetNotification] = useState<Notification | null>(null)
+  const longPressTimerRef = useRef<number | null>(null)
+  const touchStartRef = useRef<{ id: string; x: number; y: number } | null>(null)
 
   const isInFilter = useCallback((notification: Notification, filter: FilterType) => {
     if (filter === 'all') return true
@@ -146,6 +153,53 @@ const Notifications = () => {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     )
   }
+
+  const deleteNotification = useCallback(async (n: Notification) => {
+    hapticWarning()
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', n.id)
+      .eq('user_id', user!.id)
+    if (error) {
+      console.error('Error deleting notification:', error)
+      return
+    }
+    hapticSuccess()
+    setNotifications((prev) => prev.filter((item) => item.id !== n.id))
+    setNotificationToDelete(null)
+    setActionSheetNotification(null)
+  }, [user])
+
+  const handleCopyNotification = useCallback((n: Notification) => {
+    const text = [n.title, n.content].filter(Boolean).join('\n')
+    if (text && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+      hapticSuccess()
+    }
+    setActionSheetNotification(null)
+  }, [])
+
+  const handleShareNotification = useCallback(async (n: Notification) => {
+    const url = n.related_id ? `${window.location.origin}/post/${n.related_id}` : window.location.origin
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: n.title, text: n.content ?? undefined, url })
+        hapticSuccess()
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') console.error(err)
+      }
+    } else {
+      await navigator.clipboard?.writeText?.(url)
+      hapticSuccess()
+    }
+    setActionSheetNotification(null)
+  }, [])
+
+  const handleReportNotification = useCallback((_n: Notification) => {
+    // Placeholder: ouvrir un flux de signalement si besoin
+    setActionSheetNotification(null)
+  }, [])
 
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id)
@@ -374,7 +428,9 @@ const Notifications = () => {
         <div className="auth-page">
           <div className="notifications-page-container">
             <div className="notifications-header-not-connected">
+              <BackButton />
               <h1 className="notifications-title-centered">{t('notifications:title')}</h1>
+              <div className="notifications-header-spacer" aria-hidden="true" />
             </div>
             <div className="notifications-content-not-connected">
               <Bell className="notifications-not-connected-icon" strokeWidth={1.5} />
@@ -525,30 +581,144 @@ const Notifications = () => {
                 <div key={dateHeader} className="notifications-date-group">
                   <div className="notifications-date-header">{dateHeader}</div>
                   {dateNotifications.map((notification) => (
-                    <div
+                    <SwipeableListItem
                       key={notification.id}
-                      className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
+                      enabled={isMobile}
+                      onItemClick={() => handleNotificationClick(notification)}
+                      actions={[
+                        {
+                          id: 'delete',
+                          label: 'Supprimer',
+                          icon: <Trash2 size={20} />,
+                          destructive: true,
+                          onClick: () => {
+                            setNotificationToDelete(notification)
+                          }
+                        }
+                      ]}
                     >
-                      <div className="notification-content">
-                        <div className="notification-title-row">
-                          <div className="notification-icon">
-                            {getNotificationIcon(notification.type)}
+                      <div
+                        className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          setActionSheetNotification(notification)
+                        }}
+                        onTouchStart={(e) => {
+                          touchStartRef.current = { id: notification.id, x: e.touches[0].clientX, y: e.touches[0].clientY }
+                          longPressTimerRef.current = window.setTimeout(() => {
+                            setActionSheetNotification(notification)
+                          }, 500)
+                        }}
+                        onTouchMove={(e) => {
+                          const start = touchStartRef.current
+                          if (!start) return
+                          const dx = Math.abs(e.touches[0].clientX - start.x)
+                          const dy = Math.abs(e.touches[0].clientY - start.y)
+                          if (dx > 12 || dy > 12) {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }
+                        }}
+                        onTouchEnd={() => {
+                          if (longPressTimerRef.current) {
+                            window.clearTimeout(longPressTimerRef.current)
+                            longPressTimerRef.current = null
+                          }
+                        }}
+                      >
+                        <div className="notification-content">
+                          <div className="notification-title-row">
+                            <div className="notification-icon">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="notification-title">{getNotificationTitle(notification)}</div>
                           </div>
-                          <div className="notification-title">{getNotificationTitle(notification)}</div>
+                          {notification.content && (
+                            <div className="notification-text">{notification.content}</div>
+                          )}
                         </div>
-                        {notification.content && (
-                          <div className="notification-text">{notification.content}</div>
-                        )}
+                        {!notification.read && <div className="notification-dot" />}
                       </div>
-                      {!notification.read && <div className="notification-dot" />}
-                    </div>
+                    </SwipeableListItem>
                   ))}
                 </div>
               ))}
             </div>
           )}
         </PullToRefresh>
+
+        {/* Action sheet (long press) */}
+        {actionSheetNotification && (
+          <div
+            className="notifications-actions-overlay"
+            onClick={() => setActionSheetNotification(null)}
+            role="presentation"
+          >
+            <div className="notifications-actions-sheet" onClick={(e) => e.stopPropagation()}>
+              <h3 className="notifications-actions-title">Options</h3>
+              {(actionSheetNotification.title || actionSheetNotification.content) && (
+                <button
+                  type="button"
+                  className="notifications-action-item"
+                  onClick={() => handleCopyNotification(actionSheetNotification)}
+                >
+                  <Copy size={18} />
+                  Copier
+                </button>
+              )}
+              <button
+                type="button"
+                className="notifications-action-item"
+                onClick={() => handleShareNotification(actionSheetNotification)}
+              >
+                <Share2 size={18} />
+                Partager
+              </button>
+              <button
+                type="button"
+                className="notifications-action-item"
+                onClick={() => handleReportNotification(actionSheetNotification)}
+              >
+                <Flag size={18} />
+                Signaler
+              </button>
+              <button
+                type="button"
+                className="notifications-action-item danger"
+                onClick={() => {
+                  setActionSheetNotification(null)
+                  setNotificationToDelete(actionSheetNotification)
+                }}
+              >
+                <Trash2 size={18} />
+                Supprimer
+              </button>
+              <button
+                type="button"
+                className="notifications-action-item cancel"
+                onClick={() => setActionSheetNotification(null)}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {notificationToDelete && (
+          <ConfirmationModal
+            visible={!!notificationToDelete}
+            title="Supprimer la notification"
+            message="Voulez-vous vraiment supprimer cette notification ?"
+            confirmLabel="Supprimer"
+            cancelLabel="Annuler"
+            isDestructive
+            compact
+            onConfirm={() => notificationToDelete && deleteNotification(notificationToDelete)}
+            onCancel={() => setNotificationToDelete(null)}
+          />
+        )}
       </div>
     </div>
     </>

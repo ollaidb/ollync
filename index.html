@@ -1,6 +1,28 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" style="background-color: #ffffff;">
   <head>
+    <!-- Fond immédiat = même couleur que l'écran de lancement pour éviter tout flash noir au démarrage -->
+    <script>
+      (function() {
+        var d = document.documentElement;
+        try {
+          var theme = localStorage.getItem('theme');
+          var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) {
+            d.classList.add('dark-splash');
+            d.style.backgroundColor = '#0a0a0a';
+          } else {
+            d.style.backgroundColor = '#ffffff';
+          }
+        } catch (e) {
+          d.style.backgroundColor = '#ffffff';
+        }
+      })();
+    </script>
+    <style>
+      html, body { background-color: #ffffff; }
+      html.dark-splash, html.dark-splash body { background-color: #0a0a0a; }
+    </style>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />

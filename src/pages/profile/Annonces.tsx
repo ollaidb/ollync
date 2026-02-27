@@ -4,9 +4,12 @@ import { Trash2, Archive, Edit, MoreHorizontal, CheckCircle, RotateCcw, Star, X 
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import { useConfirmation } from '../../hooks/useConfirmation'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { useToastContext } from '../../contexts/ToastContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import PostCard from '../../components/PostCard'
+import { SwipeableListItem } from '../../components/SwipeableListItem'
+import { PullToRefresh } from '../../components/PullToRefresh/PullToRefresh'
 import './Annonces.css'
 
 interface Post {
@@ -42,6 +45,7 @@ interface ParticipantProfile {
 const Annonces = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const { showSuccess, showError } = useToastContext()
   const [activeTab, setActiveTab] = useState<'online' | 'completed' | 'archived' | 'draft'>('online')
   const [posts, setPosts] = useState<Post[]>([])
@@ -564,48 +568,69 @@ const Annonces = () => {
 
       {/* Liste des annonces */}
       <div className="annonces-content">
-        {loading ? (
-          <div className="annonces-loading">Chargement...</div>
-        ) : filteredPosts.length === 0 ? (
-          <div className="annonces-empty">
-            <p>Un projet. Une annonce. Une rencontre.</p>
-            <span>Publie en quelques minutes et trouve les bons profils.</span>
-            <button type="button" className="annonces-empty-btn" onClick={() => navigate('/publish')}>
-              Publier une annonce
-            </button>
-          </div>
-        ) : (
-          <div className="annonces-list">
-            {filteredPosts.map((post) => {
-              const handleMenuClick = (e: React.MouseEvent) => {
-                e.stopPropagation()
-                setActionMenuOpen(actionMenuOpen === post.id ? null : post.id)
-              }
+        <PullToRefresh onRefresh={fetchUserPosts} className="annonces-scroll" enabled={isMobile} loading={loading}>
+          {loading ? (
+            <div className="annonces-loading">Chargement...</div>
+          ) : filteredPosts.length === 0 ? (
+            <div className="annonces-empty">
+              <p>Un projet. Une annonce. Une rencontre.</p>
+              <span>Publie en quelques minutes et trouve les bons profils.</span>
+              <button type="button" className="annonces-empty-btn" onClick={() => navigate('/publish')}>
+                Publier une annonce
+              </button>
+            </div>
+          ) : (
+            <div className="annonces-list">
+              {filteredPosts.map((post) => {
+                const handleMenuClick = (e: React.MouseEvent) => {
+                  e.stopPropagation()
+                  setActionMenuOpen(actionMenuOpen === post.id ? null : post.id)
+                }
 
-              const actionMenuContent = (
-                <div className="annonce-item-actions">
-                  <button
-                    className="annonce-item-menu-button"
-                    onClick={handleMenuClick}
-                  >
-                    <MoreHorizontal size={16} />
-                  </button>
-                </div>
-              )
+                const actionMenuContent = (
+                  <div className="annonce-item-actions">
+                    <button
+                      className="annonce-item-menu-button"
+                      onClick={handleMenuClick}
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
+                  </div>
+                )
 
-              return (
-                <PostCard 
-                  key={post.id}
-                  post={post} 
-                  viewMode="list" 
-                  hideProfile={true}
-                  actionMenu={actionMenuContent}
-                />
-              )
-            })}
-          </div>
-        )}
+                const swipeActions = [
+                  ...(post.status === 'active'
+                    ? [{
+                        id: 'archive' as const,
+                        label: 'Archiver',
+                        icon: <Archive size={20} />,
+                        destructive: false,
+                        onClick: () => handleArchive(post.id)
+                      }]
+                    : []),
+                  {
+                    id: 'delete' as const,
+                    label: 'Supprimer',
+                    icon: <Trash2 size={20} />,
+                    destructive: true,
+                    onClick: () => handleDelete(post.id)
+                  }
+                ]
 
+                return (
+                  <SwipeableListItem key={post.id} enabled={isMobile} actions={swipeActions}>
+                    <PostCard 
+                      post={post} 
+                      viewMode="list" 
+                      hideProfile={true}
+                      actionMenu={actionMenuContent}
+                    />
+                  </SwipeableListItem>
+                )
+              })}
+            </div>
+          )}
+        </PullToRefresh>
       </div>
 
       {/* Overlay pour fermer le menu */}

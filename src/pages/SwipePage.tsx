@@ -53,7 +53,7 @@ interface Category {
 }
 
 const SwipePage = () => {
-  const { t } = useTranslation(['categories'])
+  const { t } = useTranslation(['categories', 'home'])
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
@@ -456,14 +456,22 @@ const SwipePage = () => {
     }
   }
 
+  // Retour prévisible : utiliser l'historique du navigateur pour revenir à la page d'où l'utilisateur vient (Home, Messages, etc.)
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate('/home', { replace: true })
+  }
 
   return (
     <div className="swipe-page">
       {/* Header fixe */}
       <div className="swipe-header-fixed">
         <div className="swipe-header-content">
-          <BackButton className="swipe-back-button" />
-          <h1 className="swipe-title">Découverte</h1>
+          <BackButton className="swipe-back-button" onClick={handleBack} />
+          <h1 className="swipe-title">{t('home:explorer', { defaultValue: 'Explorer' })}</h1>
           <button
             type="button"
             onClick={() => navigate('/users')}

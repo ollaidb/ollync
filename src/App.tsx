@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Footer from './components/Footer'
 import { prefetchRoute, mainNavPaths } from './utils/routePrefetch'
@@ -83,6 +83,23 @@ function AppContent() {
   const routeTransitionKey = location.pathname
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
+  const prevAuthTransitionRef = useRef(showAuthTransition)
+
+  // Après connexion/inscription : forcer reflow + scroll top pour que le contenu ne reste pas sous le header (mobile)
+  useEffect(() => {
+    if (prevAuthTransitionRef.current && !showAuthTransition && location.pathname === '/home') {
+      requestAnimationFrame(() => {
+        void document.body.offsetHeight
+        window.dispatchEvent(new Event('resize'))
+        window.scrollTo(0, 0)
+        const main = document.getElementById('main-content')
+        if (main) main.scrollTop = 0
+        const homeScroll = document.querySelector('.home-scrollable')
+        if (homeScroll && 'scrollTop' in homeScroll) (homeScroll as HTMLElement).scrollTop = 0
+      })
+    }
+    prevAuthTransitionRef.current = showAuthTransition
+  }, [showAuthTransition, location.pathname])
   const cookiesConsent = useConsent('cookies')
   const { user } = useAuth()
   const { reminder, dismiss } = useReminder()
@@ -301,7 +318,10 @@ function AppContent() {
             userId={user.id}
           />
         )}
-        <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
+        <div
+          className={`app ${isMobile ? 'app--mobile' : 'app--web'}${isMobile && (location.pathname === '/home' || location.pathname === '/') ? ' app--home-mobile' : ''}`}
+          data-platform={isMobile ? 'mobile' : 'web'}
+        >
           <a href="#main-content" className="skip-link">Aller au contenu principal</a>
           {isMobile ? (
             <>

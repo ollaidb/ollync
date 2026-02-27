@@ -325,12 +325,23 @@
   padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
 }
 
+/* Après connexion : garantir le padding sous le header (éviter contenu caché sous la tête de page) */
+.app--home-mobile .home-scrollable,
+.app--home-mobile .pull-to-refresh__scroll.home-scrollable {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 72px) !important;
+}
+
 @media (max-width: 768px) {
   .home-scrollable {
     padding-top: calc(env(safe-area-inset-top, 0px) + 70px);
     padding-left: 11px;
     padding-right: 11px;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
+  }
+
+  .app--home-mobile .home-scrollable,
+  .app--home-mobile .pull-to-refresh__scroll.home-scrollable {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 70px) !important;
   }
 }
 
