@@ -1,7 +1,7 @@
 import { Heart, HeartOff, MapPin, Calendar, Users, Eye } from 'lucide-react'
 import { useState, useEffect, memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
 import { isPostViewed } from '../utils/viewedPosts'
@@ -64,6 +64,7 @@ const PostCard = ({
 }: PostCardProps) => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
+  const location = useLocation()
   const { showSuccess } = useToastContext()
   const [liked, setLiked] = useState(isLiked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
@@ -326,7 +327,9 @@ const PostCard = ({
         target.closest('.post-card-profile')) {
       return
     }
-    navigate(`/post/${post.id}`)
+    navigate(`/post/${post.id}`, {
+      state: { originPath: `${location.pathname}${location.search || ''}` }
+    })
   }
 
   const handleProfileClick = (e: React.MouseEvent) => {

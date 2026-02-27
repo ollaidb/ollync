@@ -430,20 +430,25 @@ const PostDetails = () => {
   }
 
   const handleBackFromPost = () => {
+    // Priorité à l'historique du navigateur : un clic = un retour (Explorer, catégorie, etc.)
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      markNavigatingBack()
+      navigate(-1)
+      return
+    }
+    // Fallback (lien direct, nouvel onglet) : utiliser originPath ou historique contexte
     const originPath = getOriginPath()
     if (originPath && originPath !== currentPath) {
       markNavigatingBack()
       navigate(originPath)
       return
     }
-
     const previousPath = getPreviousPath()
     if (canGoBack() && previousPath && previousPath !== currentPath) {
       markNavigatingBack()
       navigate(previousPath)
       return
     }
-
     markNavigatingBack()
     navigate('/home')
   }

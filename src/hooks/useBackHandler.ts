@@ -43,6 +43,24 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
     ]
     const isMainTabRoot = mainTabRoots.includes(path)
 
+    // Détails d'annonce : un clic = un retour (historique navigateur)
+    if (path.startsWith('/post/')) {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        markNavigatingBack()
+        navigate(-1)
+        return
+      }
+      const previousPath = getPreviousPath()
+      if (canGoBack() && previousPath && !previousPath.startsWith('/post/')) {
+        markNavigatingBack()
+        navigate(previousPath)
+        return
+      }
+      markNavigatingBack()
+      navigate('/home')
+      return
+    }
+
     if (path.startsWith('/profile/')) {
       const previousPath = getPreviousPath()
       const state = location.state as { fromConsentLearnMore?: boolean; returnTo?: string } | null
