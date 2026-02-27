@@ -105,7 +105,6 @@ const EMPLOI_CATEGORY_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
 const LIEU_CATEGORY_SLUGS = new Set(['studio-lieu', 'lieu'])
 const VENTE_CATEGORY_SLUGS = new Set(['vente'])
 const EVENEMENT_CATEGORY_SLUGS = new Set(['evenements', 'evenement'])
-
 const getContactIntent = (slug?: string | null): ContactIntent => {
   const normalized = (slug || '').trim().toLowerCase()
   if (EMPLOI_CATEGORY_SLUGS.has(normalized)) return 'apply'
@@ -113,6 +112,89 @@ const getContactIntent = (slug?: string | null): ContactIntent => {
   if (VENTE_CATEGORY_SLUGS.has(normalized)) return 'buy'
   if (EVENEMENT_CATEGORY_SLUGS.has(normalized)) return 'ticket'
   return 'request'
+}
+
+const MISSION_CATEGORY_SLUGS = new Set(['services', 'service', 'mission', 'poste-service'])
+const CREATION_CONTENU_SLUGS = new Set(['creation-contenu'])
+const CASTING_SLUGS = new Set(['casting-role', 'casting'])
+
+const formatReservationDateTime = (dateStr: string, timeStr: string): string => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + (timeStr ? `T${timeStr}` : ''))
+  if (Number.isNaN(d.getTime())) return dateStr
+  const day = d.getDate().toString().padStart(2, '0')
+  const month = (d.getMonth() + 1).toString().padStart(2, '0')
+  const year = d.getFullYear()
+  const timePart = timeStr ? ` à ${timeStr.slice(0, 5)}` : ''
+  return `le ${day}/${month}/${year}${timePart}`
+}
+
+/**
+ * Message par défaut pour la prise de contact selon catégorie et type d'annonce (demande/offre).
+ * - DEMANDE = l'annonceur cherche (carte "Demande") → messages pour celui qui répond et a ce qu'il faut.
+ * - OFFRE = l'annonceur propose (carte "Offre") → messages pour celui qui est intéressé.
+ * Pour Lieu (offre), reservationDate et reservationTime sont injectés dans la phrase.
+ *
+ * Récapitulatif :
+ * DEMANDE : Création contenu, Emploi, Figurant, Mission, Défaut.
+ * OFFRE : Création contenu, Emploi, Figurant, Mission, Vente, Lieu, Événement, Défaut.
+ */
+const getDefaultContactMessage = (
+  categorySlug: string,
+  listingType: 'offer' | 'request',
+  options: {
+    reviewerName?: string
+    subSlug?: string
+    reservationDate?: string
+    reservationTime?: string
+  }
+): string => {
+  const { reviewerName = '', reservationDate = '', reservationTime = '' } = options
+  const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
+  const cat = categorySlug.toLowerCase()
+  const isRequest = listingType === 'request'
+
+  // ——— DEMANDE (annonceur cherche, le répondant propose) ———
+  if (isRequest) {
+    if (CREATION_CONTENU_SLUGS.has(cat)) {
+      return `${greeting} votre annonce nous intéresse. Seriez-vous disponible pour échanger ?`
+    }
+    if (EMPLOI_CATEGORY_SLUGS.has(cat)) {
+      return `${greeting} votre profil nous intéresse. Nous avons des postes ouverts. Êtes-vous toujours en recherche ?`
+    }
+    if (CASTING_SLUGS.has(cat) && (options.subSlug === 'figurant' || options.subSlug?.includes('figurant'))) {
+      return `${greeting} votre profil de figurant nous intéresse. Seriez-vous disponible pour échanger sur un projet ?`
+    }
+    if (MISSION_CATEGORY_SLUGS.has(cat)) {
+      return `${greeting} votre mission m'intéresse. Je suis disponible.`
+    }
+    return `${greeting} votre annonce de demande m'intéresse. Êtes-vous disponible ?`
+  }
+
+  // ——— OFFRE (annonceur propose, le répondant est intéressé) ———
+  if (CREATION_CONTENU_SLUGS.has(cat)) {
+    return `${greeting} je suis intéressé par votre annonce et disponible pour échanger sur les détails.`
+  }
+  if (EMPLOI_CATEGORY_SLUGS.has(cat)) {
+    return `${greeting} je suis intéressé(e) par le poste. Est-il encore ouvert ? Je vous envoie ma candidature.`
+  }
+  if (CASTING_SLUGS.has(cat) && (options.subSlug === 'figurant' || options.subSlug?.includes('figurant'))) {
+    return `${greeting} je suis intéressé par votre casting et disponible aux dates indiquées.`
+  }
+  if (MISSION_CATEGORY_SLUGS.has(cat)) {
+    return `${greeting} votre mission m'intéresse. J'aimerais en discuter.`
+  }
+  if (VENTE_CATEGORY_SLUGS.has(cat)) {
+    return `${greeting} votre annonce m'intéresse. Est-elle encore disponible ?`
+  }
+  if (LIEU_CATEGORY_SLUGS.has(cat)) {
+    const dateTimeLabel = formatReservationDateTime(reservationDate, reservationTime) || 'le [date] à [heure]'
+    return `${greeting} je souhaite réserver pour ${dateTimeLabel}. Est-ce encore disponible ?`
+  }
+  if (EVENEMENT_CATEGORY_SLUGS.has(cat)) {
+    return `${greeting} je souhaite réserver des places pour votre événement. Est-ce encore disponible ?`
+  }
+  return `${greeting} votre annonce m'intéresse. Est-elle encore disponible ?`
 }
 
 const PostDetails = () => {
@@ -861,10 +943,11 @@ const PostDetails = () => {
       (catSlug === 'casting-role' || catSlug === 'casting') &&
       post?.listing_type === 'request' &&
       (subSlug === 'figurant' || subName.includes('figurant'))
+    const reviewerName = post?.user?.full_name || post?.user?.username || ''
+
     if (post?.listing_type === 'request' && !isFigurant) {
-      const reviewerName = post?.user?.full_name || post?.user?.username || ''
-      const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
-      setRequestMessage(`${greeting} votre annonce de demande m’intéresse. Êtes-vous disponible ?`)
+      const msg = getDefaultContactMessage(catSlug, 'offer', { reviewerName, subSlug })
+      setRequestMessage(msg)
       setRequestRole('')
       setRequestCvDocument(null)
       setRequestCvDocumentName('')
@@ -890,19 +973,26 @@ const PostDetails = () => {
       return
     }
 
-    // Sinon, afficher la modal d'envoi de demande
-    const reviewerName = post?.user?.full_name || post?.user?.username || ''
-    const greeting = reviewerName ? `Bonjour ${reviewerName},` : 'Bonjour,'
-    setRequestMessage(`${greeting} votre annonce m'intéresse ! Est-elle toujours disponible ?`)
+    // Sinon, afficher la modal d'envoi de demande (offre)
+    const reservationDateInit = post?.needed_date || new Date().toISOString().slice(0, 10)
+    const reservationTimeInit = post?.needed_time || '01:00'
+    const durationMin = post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60
+    const msg = getDefaultContactMessage(catSlug, 'request', {
+      reviewerName,
+      subSlug,
+      reservationDate: reservationDateInit,
+      reservationTime: reservationTimeInit
+    })
+    setRequestMessage(msg)
     setRequestRole('')
     setRequestCvDocument(null)
     setRequestCvDocumentName('')
     setRequestCoverLetterDocument(null)
     setRequestCoverLetterDocumentName('')
-    setReservationDate(post?.needed_date || new Date().toISOString().slice(0, 10))
-    setReservationTime(post?.needed_time || '01:00')
-    setReservationDurationMinutes(post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60)
-    setReservationDurationText(minutesToDurationText(post?.duration_minutes && post.duration_minutes > 0 ? post.duration_minutes : 60))
+    setReservationDate(reservationDateInit)
+    setReservationTime(reservationTimeInit)
+    setReservationDurationMinutes(durationMin)
+    setReservationDurationText(minutesToDurationText(durationMin))
     setIsReservationDatePickerOpen(false)
     setShowSendRequestModal(true)
   }
@@ -1225,7 +1315,7 @@ const PostDetails = () => {
         }
 
         const trimmedMessage = requestMessage.trim()
-        const fallbackMessage = 'Bonjour, votre annonce de demande m’intéresse. Êtes-vous disponible ?'
+        const fallbackMessage = getDefaultContactMessage(catSlug, 'offer', { reviewerName: '', subSlug })
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: messageError } = await (supabase.from('messages') as any).insert({
@@ -1272,7 +1362,7 @@ const PostDetails = () => {
       return
     }
 
-    if (contactIntent === 'apply' && !requestCvDocument && !savedCandidateCvUrl) {
+    if (contactIntent === 'apply' && isRequestListingPost && !requestCvDocument && !savedCandidateCvUrl) {
       alert('Le CV est obligatoire pour postuler. Ajoutez un CV ici ou dans votre espace candidature.')
       return
     }
@@ -1320,7 +1410,7 @@ const PostDetails = () => {
       let coverLetterUrl: string | null = null
       let coverLetterName: string | null = null
 
-      if (contactIntent === 'apply') {
+      if (contactIntent === 'apply' && isRequestListingPost) {
         if (requestCvDocument) {
           const uploadedCv = await uploadRequestFile(requestCvDocument, 'cv')
           cvUrl = uploadedCv.url
@@ -1566,6 +1656,20 @@ const PostDetails = () => {
   const isOwner = user && post && post.user_id === user.id
   const contactIntent = getContactIntent(post?.category?.slug)
   const isRequestListingPost = post?.listing_type === 'request'
+  const catSlugForMessage = (post?.category?.slug || '').trim().toLowerCase()
+
+  // Pour Lieu (réservation) : mettre à jour le message quand la date/heure choisie change
+  useEffect(() => {
+    if (!showSendRequestModal || contactIntent !== 'reserve' || !LIEU_CATEGORY_SLUGS.has(catSlugForMessage) || !reservationDate || !reservationTime) return
+    const reviewerName = post?.user?.full_name || post?.user?.username || ''
+    const msg = getDefaultContactMessage(catSlugForMessage, 'request', {
+      reviewerName,
+      reservationDate,
+      reservationTime
+    })
+    setRequestMessage(msg)
+  }, [showSendRequestModal, contactIntent, catSlugForMessage, reservationDate, reservationTime, post?.user?.full_name, post?.user?.username])
+
   const images = post?.images || []
   const isValidMediaUrl = (value: string) => {
     const lower = value.toLowerCase()
@@ -2617,8 +2721,10 @@ const PostDetails = () => {
             message={
               isRequestListingPost && !isCastingFigurantRequestPost
                 ? 'Votre message sera envoyé directement dans la messagerie.'
-                : contactIntent === 'apply'
+                : contactIntent === 'apply' && isRequestListingPost
                 ? 'Envoyez votre candidature avec votre CV.'
+                : contactIntent === 'apply'
+                ? "Ajoutez un message pour contacter l'annonceur."
                 : contactIntent === 'reserve'
                   ? 'Renseignez la date, l’heure et la durée, puis envoyez votre demande.'
                   : contactIntent === 'ticket'
@@ -2697,7 +2803,7 @@ const PostDetails = () => {
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
 
-            {!isRequestListingPost && contactIntent === 'apply' && (
+            {isRequestListingPost && contactIntent === 'apply' && (
               <>
                 <div className="confirmation-modal-field confirmation-upload-card confirmation-upload-card--required">
                   <div className="confirmation-upload-header">

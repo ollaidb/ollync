@@ -66,7 +66,10 @@ export const Step4Description = ({
   const subcategorySlugValue = (selectedSubcategory?.slug ?? formData.subcategory ?? '').toLowerCase()
   const isCastingCategory = CASTING_SLUGS.has(categorySlugValue)
   const isJobCategory = EMPLOI_SLUGS.has(categorySlugValue)
-  const isJobRequest = isJobCategory && isRequestListing
+  // Pour Emploi et Services/Mission, les rôles Offre/Demande sont inversés dans l'UI : on utilise le type inverse pour les champs.
+  const isEmploiOrServicesForDisplay = isJobCategory || ['services', 'poste-service'].includes(categorySlugValue)
+  const effectiveIsRequestListing = isEmploiOrServicesForDisplay ? !isRequestListing : isRequestListing
+  const isJobRequest = isJobCategory && effectiveIsRequestListing
   const isCastingFigurantRequest =
     isRequestListing && isCastingCategory && subcategorySlugValue === 'figurant'
   const CREATION_CONTENU_PROJECT_SUBCATEGORY_SLUGS = new Set([
@@ -792,7 +795,7 @@ export const Step4Description = ({
     description: 'Ex : Indique le service proposé, les outils maîtrisés, les délais et le type de mission que tu acceptes.'
   }
   const venteExample = venteExamples[subcategorySlug]
-  const posteServiceExample = isRequestListing
+  const posteServiceExample = (categorySlugValue === 'poste-service' ? effectiveIsRequestListing : isRequestListing)
     ? (posteServiceRequestExamples[subcategorySlug] || posteServiceRequestExamples.autre)
     : posteServiceExamples[subcategorySlug]
   const studioLieuExample = studioLieuExamples[subcategorySlug]
@@ -812,7 +815,7 @@ export const Step4Description = ({
         : categorySlug === 'emploi'
           ? emploiExample
           : categorySlug === 'services'
-            ? (isRequestListing ? servicesRequestExample : servicesExample)
+            ? (effectiveIsRequestListing ? servicesRequestExample : servicesExample)
             : categorySlug === 'vente'
               ? venteExample
               : categorySlug === 'poste-service'

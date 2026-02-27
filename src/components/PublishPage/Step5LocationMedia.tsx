@@ -101,7 +101,10 @@ export const Step5LocationMedia = ({
   const isEvenementsCategory = categorySlug === 'evenements'
   const isSuiviCategory = categorySlug === 'suivi'
   const isRequestListing = formData.listingType === 'request'
-  const isEmploiRequest = isEmploiCategory && isRequestListing
+  // Pour Emploi et Services/Mission, les rôles Offre/Demande sont inversés dans l'UI : on utilise le type inverse pour les champs.
+  const isEmploiOrServicesForDisplay = isEmploiCategory || isServicesCategory || isPosteServiceCategory
+  const effectiveIsRequestListing = isEmploiOrServicesForDisplay ? !isRequestListing : isRequestListing
+  const isEmploiRequest = isEmploiCategory && effectiveIsRequestListing
   const isCastingFigurantRequest = isCastingCategory && isRequestListing && subcategorySlug === 'figurant'
   const isProjetsEquipeRequest = isProjetsEquipeCategory && isRequestListing
   const eventMode = ((formData.event_mode || '') as 'in_person' | 'remote' | '')

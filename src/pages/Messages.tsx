@@ -20,7 +20,7 @@ import MatchRequestDetail from '../components/Messages/MatchRequestDetail'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { SwipeableListItem } from '../components/SwipeableListItem'
 import { useIsMobile } from '../hooks/useIsMobile'
-import { hapticSuccess, hapticWarning } from '../utils/haptic'
+import { hapticSuccess, hapticWarning, hapticLight } from '../utils/haptic'
 import { PageMeta } from '../components/PageMeta'
 import './Auth.css'
 import './Messages.css'
@@ -253,13 +253,15 @@ const Messages = () => {
   const [showRemoveMemberConfirm, setShowRemoveMemberConfirm] = useState(false)
   const [participantToRemove, setParticipantToRemove] = useState<ConversationParticipant | null>(null)
   const [showDissociateConfirm, setShowDissociateConfirm] = useState(false)
+  const [matchRequestToDelete, setMatchRequestToDelete] = useState<MatchRequest | null>(null)
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null)
   const [groupActionFeedback, setGroupActionFeedback] = useState<string | null>(null)
   const [hasMoreMessages, setHasMoreMessages] = useState(false)
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
 
   const MESSAGES_PAGE_SIZE = 50
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
-  const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
+  const messageTouchRef = useRef<{ id?: string; startX: number; startY: number; deltaX?: number; deltaY?: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
@@ -2515,6 +2517,48 @@ const Messages = () => {
     return openedAt
   }, [user])
 
+  const handleDismissMatchRequest = useCallback(async (request: MatchRequest) => {
+    if (!user) return
+    try {
+      if (request.status === 'pending') {
+        if (request.from_user_id === user.id) {
+          await supabase.from('match_requests').update({ status: 'cancelled' } as never).eq('id', request.id)
+        } else {
+          await supabase.from('match_requests').update({ status: 'declined' } as never).eq('id', request.id)
+        }
+      }
+      setMatchRequests((prev) => prev.filter((r) => r.id !== request.id))
+      setMatchRequestToDelete(null)
+      if (request.status !== 'accepted') {
+        const requests = await loadMatchRequests()
+        setMatchRequests(requests)
+      }
+    } catch (error) {
+      console.error('Error dismissing match request:', error)
+      alert('Erreur lors de la suppression')
+    }
+  }, [user, loadMatchRequests])
+
+  const handleCancelAppointmentFromList = useCallback(async (appointment: Appointment) => {
+    if (!user) return
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('appointments') as any)
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', appointment.id)
+      if (error) throw error
+      if (selectedAppointmentPreview?.id === appointment.id) {
+        setSelectedAppointmentPreview(null)
+      }
+      setAppointmentToCancel(null)
+      const data = await loadAppointments()
+      setAppointments(data)
+    } catch (error) {
+      console.error('Error cancelling appointment:', error)
+      alert('Erreur lors de l\'annulation du rendez-vous')
+    }
+  }, [user, loadAppointments, selectedAppointmentPreview?.id])
+
   if (!user) {
     return (
       <>
@@ -4689,19 +4733,34 @@ const Messages = () => {
                     const isLastMessage = msg.id === lastDisplayMessageId
 
                     return (
-                      <div
+                      <SwipeableListItem
                         key={msg.id}
-                        className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
-                        ref={(el) => {
-                          if (el) {
-                            messageRefsMap.current.set(msg.id, el)
-                            if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = el
-                          } else {
-                            messageRefsMap.current.delete(msg.id)
-                            if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = null
+                        enabled={isMobile}
+                        actions={[
+                          {
+                            id: 'delete',
+                            label: 'Supprimer',
+                            icon: <Trash2 size={20} />,
+                            destructive: true,
+                            onClick: () => {
+                              setActiveMessage(msg)
+                              setShowDeleteMessageConfirm(true)
+                            }
                           }
-                        }}
+                        ]}
                       >
+                        <div
+                          className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
+                          ref={(el) => {
+                            if (el) {
+                              messageRefsMap.current.set(msg.id, el)
+                              if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+                            } else {
+                              messageRefsMap.current.delete(msg.id)
+                              if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = null
+                            }
+                          }}
+                        >
                         <div
                           className="message-swipe-content"
                           onContextMenu={(event) => {
@@ -4723,6 +4782,8 @@ const Messages = () => {
                             if (!start) return
                             const deltaX = touch.clientX - start.startX
                             const deltaY = touch.clientY - start.startY
+                            start.deltaX = deltaX
+                            start.deltaY = deltaY
                             if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
                               if (longPressTimerRef.current) {
                                 window.clearTimeout(longPressTimerRef.current)
@@ -4734,6 +4795,13 @@ const Messages = () => {
                             if (longPressTimerRef.current) {
                               window.clearTimeout(longPressTimerRef.current)
                               longPressTimerRef.current = null
+                            }
+                            if (isMobile && messageTouchRef.current?.id === msg.id) {
+                              const { deltaX = 0, deltaY = 0 } = messageTouchRef.current
+                              if (deltaX > 40 && deltaX > 2 * Math.abs(deltaY)) {
+                                hapticLight()
+                                setReplyingToMessage(msg)
+                              }
                             }
                           }}
                         >
@@ -4841,6 +4909,7 @@ const Messages = () => {
                           ) : null}
                         </div>
                       </div>
+                      </SwipeableListItem>
                     )
                   })}
                 </div>
@@ -5304,79 +5373,113 @@ const Messages = () => {
                   request.request_type === 'sent'
                     ? !request.opened_by_sender_at
                     : !request.opened_by_recipient_at
-                return (
-                <div
-                  key={request.id}
-                  className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
-                  onClick={async () => {
-                    const openedAt = await markRequestAsOpenedByCurrentUser(request)
-                    if (openedAt) {
-                      const isSender = user ? request.from_user_id === user.id : false
-                      setSelectedMatchRequest({
-                        ...request,
-                        ...(isSender
-                          ? { opened_by_sender_at: openedAt }
-                          : { opened_by_recipient_at: openedAt })
-                      })
-                      return
-                    }
-                    setSelectedMatchRequest(request)
-                  }}
-                >
-                  <div className="conversation-avatar-wrapper">
-                    <img
-                      src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
-                      alt={request.other_user?.full_name || request.other_user?.username || 'User'}
-                      className="conversation-avatar"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
-                      }}
-                    />
-                  </div>
+                const itemContent = (
+                  <div
+                    className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
+                    onClick={async () => {
+                      const openedAt = await markRequestAsOpenedByCurrentUser(request)
+                      if (openedAt) {
+                        const isSender = user ? request.from_user_id === user.id : false
+                        setSelectedMatchRequest({
+                          ...request,
+                          ...(isSender
+                            ? { opened_by_sender_at: openedAt }
+                            : { opened_by_recipient_at: openedAt })
+                        })
+                        return
+                      }
+                      setSelectedMatchRequest(request)
+                    }}
+                  >
+                    <div className="conversation-avatar-wrapper">
+                      <img
+                        src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
+                        alt={request.other_user?.full_name || request.other_user?.username || 'User'}
+                        className="conversation-avatar"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
+                        }}
+                      />
+                    </div>
 
-                  <div className="conversation-info">
-                    <div className="conversation-item-header">
-                      <h3 className="conversation-name">
-                        {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
-                      </h3>
-                      <span className="conversation-time">
-                        {formatTime(request.created_at)}
-                      </span>
-                    </div>
-                    {(request.related_post_id || request.related_post) && (
-                      <>
-                        <p className="conversation-post-title">
-                          {request.related_post && request.related_post.status === 'active'
-                            ? request.related_post.title
-                            : 'Annonce supprimée'}
+                    <div className="conversation-info">
+                      <div className="conversation-item-header">
+                        <h3 className="conversation-name">
+                          {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+                        </h3>
+                        <span className="conversation-time">
+                          {formatTime(request.created_at)}
+                        </span>
+                      </div>
+                      {(request.related_post_id || request.related_post) && (
+                        <>
+                          <p className="conversation-post-title">
+                            {request.related_post && request.related_post.status === 'active'
+                              ? request.related_post.title
+                              : 'Annonce supprimée'}
+                          </p>
+                          {(!request.related_post || request.related_post.status !== 'active') && (
+                            <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
+                          )}
+                        </>
+                      )}
+                      {request.request_role && (
+                        <p className="conversation-post-role">
+                          Poste : {request.request_role}
                         </p>
-                        {(!request.related_post || request.related_post.status !== 'active') && (
-                          <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
-                        )}
-                      </>
-                    )}
-                    {request.request_role && (
-                      <p className="conversation-post-role">
-                        Poste : {request.request_role}
-                      </p>
-                    )}
-                    {!request.related_post && !request.related_post_id && request.related_service_name && (
-                      <p className="conversation-post-title">
-                        Service : {request.related_service_name}
-                      </p>
-                    )}
-                    <div className="conversation-footer">
-                      <span className={`conversation-badge ${request.from_user_id === user?.id ? 'sent' : 'received'}`}>
-                        {request.from_user_id === user?.id ? 'Envoyée' : 'Reçue'}
-                      </span>
-                      <span className="conversation-status-text">
-                        {request.status === 'pending' && 'En attente'}
-                        {request.status === 'accepted' && 'Acceptée'}
-                      </span>
+                      )}
+                      {!request.related_post && !request.related_post_id && request.related_service_name && (
+                        <p className="conversation-post-title">
+                          Service : {request.related_service_name}
+                        </p>
+                      )}
+                      <div className="conversation-footer">
+                        <span className={`conversation-badge ${request.from_user_id === user?.id ? 'sent' : 'received'}`}>
+                          {request.from_user_id === user?.id ? 'Envoyée' : 'Reçue'}
+                        </span>
+                        <span className="conversation-status-text">
+                          {request.status === 'pending' && 'En attente'}
+                          {request.status === 'accepted' && 'Acceptée'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )})}
+                )
+                return (
+                  <SwipeableListItem
+                    key={request.id}
+                    enabled={isMobile}
+                    onItemClick={async () => {
+                      const openedAt = await markRequestAsOpenedByCurrentUser(request)
+                      if (openedAt) {
+                        const isSender = user ? request.from_user_id === user.id : false
+                        setSelectedMatchRequest({
+                          ...request,
+                          ...(isSender
+                            ? { opened_by_sender_at: openedAt }
+                            : { opened_by_recipient_at: openedAt })
+                        })
+                        return
+                      }
+                      setSelectedMatchRequest(request)
+                    }}
+                    actions={[
+                      {
+                        id: 'delete',
+                        label: 'Supprimer',
+                        icon: <Trash2 size={20} />,
+                        destructive: true,
+                        onClick: () => {
+                          hapticWarning()
+                          setMatchRequestToDelete(request)
+                        }
+                      }
+                    ]}
+                  >
+                    {itemContent}
+                  </SwipeableListItem>
+                )
+              })}
             </div>
           )
         ) : activeFilter === 'matches' ? (
@@ -5398,97 +5501,106 @@ const Messages = () => {
                   request.request_type === 'sent'
                     ? !request.opened_by_sender_at
                     : !request.opened_by_recipient_at
-                return (
-                <div
-                  key={request.id}
-                  className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
-                  onClick={async (e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    await markRequestAsOpenedByCurrentUser(request)
-                    
-                    // Pour les match_requests acceptées, créer ou ouvrir la conversation
-                    if (!user) return
-                    
-                    try {
-                      const otherUserId = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
-                      
-                      // Si une conversation existe déjà, l'ouvrir
-                      if (request.conversation_id) {
-                        navigate(`/messages/${request.conversation_id}`)
-                        return
-                      }
-                      
-                      // Sinon, créer ou trouver une conversation existante
-                      const conversation = await findOrCreateConversation(otherUserId, request.related_post_id || undefined)
-                      
-                      if (conversation && (conversation as { id: string }).id) {
-                        // Mettre à jour la match_request avec l'ID de conversation
-                        await supabase
-                          .from('match_requests')
-                          .update({ conversation_id: (conversation as { id: string }).id } as never)
-                          .eq('id', request.id)
-                        
-                        // Recharger les données
-                        await loadMatchRequests().then((requests) => {
-                          setMatchRequests(requests)
-                        })
-                        loadConversations()
-                        
-                        // Naviguer vers la conversation
-                        navigate(`/messages/${(conversation as { id: string }).id}`)
-                      } else {
-                        alert('Erreur lors de la création de la conversation')
-                      }
-                    } catch (error) {
-                      console.error('Error opening conversation from match:', error)
-                      alert('Erreur lors de l\'ouverture de la conversation')
+                const openMatch = async () => {
+                  await markRequestAsOpenedByCurrentUser(request)
+                  if (!user) return
+                  try {
+                    const otherUserId = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
+                    if (request.conversation_id) {
+                      navigate(`/messages/${request.conversation_id}`)
+                      return
                     }
-                  }}
-                >
-                  <div className="conversation-avatar-wrapper">
-                    <img
-                      src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
-                      alt={request.other_user?.full_name || request.other_user?.username || 'User'}
-                      className="conversation-avatar"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
-                      }}
-                    />
-                  </div>
-
-                  <div className="conversation-info">
-                    <div className="conversation-item-header">
-                      <h3 className="conversation-name">
-                        {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
-                      </h3>
-                      <span className="conversation-time">
-                        {formatTime(request.accepted_at || request.created_at)}
-                      </span>
+                    const conversation = await findOrCreateConversation(otherUserId, request.related_post_id || undefined)
+                    if (conversation && (conversation as { id: string }).id) {
+                      await supabase
+                        .from('match_requests')
+                        .update({ conversation_id: (conversation as { id: string }).id } as never)
+                        .eq('id', request.id)
+                      await loadMatchRequests().then((requests) => setMatchRequests(requests))
+                      loadConversations()
+                      navigate(`/messages/${(conversation as { id: string }).id}`)
+                    } else {
+                      alert('Erreur lors de la création de la conversation')
+                    }
+                  } catch (error) {
+                    console.error('Error opening conversation from match:', error)
+                    alert('Erreur lors de l\'ouverture de la conversation')
+                  }
+                }
+                const matchItemContent = (
+                  <div
+                    className={`conversation-item ${isUnseen ? 'conversation-item--unseen' : ''}`}
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      await openMatch()
+                    }}
+                  >
+                    <div className="conversation-avatar-wrapper">
+                      <img
+                        src={request.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`}
+                        alt={request.other_user?.full_name || request.other_user?.username || 'User'}
+                        className="conversation-avatar"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(request.other_user?.full_name || request.other_user?.username || 'User')}`
+                        }}
+                      />
                     </div>
-                    {(request.related_post_id || request.related_post) && (
-                      <>
+
+                    <div className="conversation-info">
+                      <div className="conversation-item-header">
+                        <h3 className="conversation-name">
+                          {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
+                        </h3>
+                        <span className="conversation-time">
+                          {formatTime(request.accepted_at || request.created_at)}
+                        </span>
+                      </div>
+                      {(request.related_post_id || request.related_post) && (
+                        <>
+                          <p className="conversation-post-title">
+                            {request.related_post && request.related_post.status === 'active'
+                              ? request.related_post.title
+                              : 'Annonce supprimée'}
+                          </p>
+                          {(!request.related_post || request.related_post.status !== 'active') && (
+                            <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
+                          )}
+                        </>
+                      )}
+                      {!request.related_post && !request.related_post_id && request.related_service_name && (
                         <p className="conversation-post-title">
-                          {request.related_post && request.related_post.status === 'active'
-                            ? request.related_post.title
-                            : 'Annonce supprimée'}
+                          Service : {request.related_service_name}
                         </p>
-                        {(!request.related_post || request.related_post.status !== 'active') && (
-                          <p className="conversation-post-removed-hint">Cette annonce a été supprimée.</p>
-                        )}
-                      </>
-                    )}
-                    {!request.related_post && !request.related_post_id && request.related_service_name && (
-                      <p className="conversation-post-title">
-                        Service : {request.related_service_name}
+                      )}
+                      <p className="conversation-preview">
+                        Match accepté - Cliquez pour démarrer la conversation
                       </p>
-                    )}
-                    <p className="conversation-preview">
-                      Match accepté - Cliquez pour démarrer la conversation
-                    </p>
+                    </div>
                   </div>
-                </div>
-              )})}
+                )
+                return (
+                  <SwipeableListItem
+                    key={request.id}
+                    enabled={isMobile}
+                    onItemClick={openMatch}
+                    actions={[
+                      {
+                        id: 'delete',
+                        label: 'Supprimer',
+                        icon: <Trash2 size={20} />,
+                        destructive: true,
+                        onClick: () => {
+                          hapticWarning()
+                          setMatchRequestToDelete(request)
+                        }
+                      }
+                    ]}
+                  >
+                    {matchItemContent}
+                  </SwipeableListItem>
+                )
+              })}
             </div>
           )
         ) : activeFilter === 'appointments' ? (
@@ -5507,53 +5619,74 @@ const Messages = () => {
                 const statusLabel = isCancelled ? 'Annulé' : isPastAppointment ? 'Passé' : 'À venir'
                 const isModified = !!appointment.updated_at && !!appointment.created_at &&
                   (new Date(appointment.updated_at).getTime() - new Date(appointment.created_at).getTime() > 2000)
-                return (
-                <div
-                  key={appointment.id}
-                  className={`conversation-item appointment-item appointment-item--${statusKind}`}
-                  onClick={() => setSelectedAppointmentPreview(appointment)}
-                >
-                  <div className="conversation-avatar-wrapper">
-                    <img
-                      src={appointment.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`}
-                      alt={appointment.other_user?.full_name || appointment.other_user?.username || 'User'}
-                      className="conversation-avatar"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`
-                      }}
-                    />
-                  </div>
-                  <div className="conversation-info">
-                    <div className="conversation-item-header">
-                      <h3 className="conversation-name">{appointment.title}</h3>
-                      <span className="conversation-time">
-                        {formatAppointmentDate(appointment.appointment_datetime)}
-                      </span>
+                const appointmentItemContent = (
+                  <div
+                    className={`conversation-item appointment-item appointment-item--${statusKind}`}
+                    onClick={() => setSelectedAppointmentPreview(appointment)}
+                  >
+                    <div className="conversation-avatar-wrapper">
+                      <img
+                        src={appointment.other_user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`}
+                        alt={appointment.other_user?.full_name || appointment.other_user?.username || 'User'}
+                        className="conversation-avatar"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.other_user?.full_name || appointment.other_user?.username || 'User')}`
+                        }}
+                      />
                     </div>
-                    <div className="appointment-user-row">
-                      <p className="appointment-user-name">
-                        {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
-                      </p>
-                      <div className="appointment-badges">
-                        <span
-                          className={`appointment-status-badge appointment-status-badge--${statusKind}`}
-                          aria-label={isCancelled ? 'Rendez-vous annulé' : isPastAppointment ? 'Rendez-vous passé' : 'Rendez-vous à venir'}
-                        >
-                          {statusLabel}
+                    <div className="conversation-info">
+                      <div className="conversation-item-header">
+                        <h3 className="conversation-name">{appointment.title}</h3>
+                        <span className="conversation-time">
+                          {formatAppointmentDate(appointment.appointment_datetime)}
                         </span>
-                        {isModified && !isCancelled && (
+                      </div>
+                      <div className="appointment-user-row">
+                        <p className="appointment-user-name">
+                          {appointment.other_user?.full_name || appointment.other_user?.username || 'Utilisateur'}
+                        </p>
+                        <div className="appointment-badges">
                           <span
-                            className="appointment-status-badge appointment-status-badge--modified"
-                            aria-label="Rendez-vous modifié"
+                            className={`appointment-status-badge appointment-status-badge--${statusKind}`}
+                            aria-label={isCancelled ? 'Rendez-vous annulé' : isPastAppointment ? 'Rendez-vous passé' : 'Rendez-vous à venir'}
                           >
-                            Mise à jour
+                            {statusLabel}
                           </span>
-                        )}
+                          {isModified && !isCancelled && (
+                            <span
+                              className="appointment-status-badge appointment-status-badge--modified"
+                              aria-label="Rendez-vous modifié"
+                            >
+                              Mise à jour
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )})}
+                )
+                return (
+                  <SwipeableListItem
+                    key={appointment.id}
+                    enabled={isMobile}
+                    onItemClick={() => setSelectedAppointmentPreview(appointment)}
+                    actions={[
+                      {
+                        id: 'delete',
+                        label: 'Supprimer',
+                        icon: <Trash2 size={20} />,
+                        destructive: true,
+                        onClick: () => {
+                          hapticWarning()
+                          setAppointmentToCancel(appointment)
+                        }
+                      }
+                    ]}
+                  >
+                    {appointmentItemContent}
+                  </SwipeableListItem>
+                )
+              })}
             </div>
           )
         ) : filteredConversations.length === 0 ? (
@@ -5821,6 +5954,42 @@ const Messages = () => {
           }}
           confirmLabel="Supprimer"
           cancelLabel="Annuler"
+          isDestructive={true}
+        />
+      )}
+      {matchRequestToDelete && (
+        <ConfirmationModal
+          visible={!!matchRequestToDelete}
+          title="Supprimer"
+          message={
+            matchRequestToDelete.status === 'pending'
+              ? matchRequestToDelete.from_user_id === user?.id
+                ? 'Voulez-vous annuler cette demande ?'
+                : 'Voulez-vous refuser cette demande ?'
+              : 'Retirer ce match de la liste ?'
+          }
+          compact
+          onCancel={() => setMatchRequestToDelete(null)}
+          onConfirm={async () => {
+            if (matchRequestToDelete) await handleDismissMatchRequest(matchRequestToDelete)
+          }}
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
+          isDestructive={true}
+        />
+      )}
+      {appointmentToCancel && (
+        <ConfirmationModal
+          visible={!!appointmentToCancel}
+          title="Annuler le rendez-vous"
+          message="Voulez-vous vraiment annuler ce rendez-vous ?"
+          compact
+          onCancel={() => setAppointmentToCancel(null)}
+          onConfirm={async () => {
+            if (appointmentToCancel) await handleCancelAppointmentFromList(appointmentToCancel)
+          }}
+          confirmLabel="Annuler le RDV"
+          cancelLabel="Retour"
           isDestructive={true}
         />
       )}

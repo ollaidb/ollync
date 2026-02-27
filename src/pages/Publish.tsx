@@ -236,7 +236,8 @@ export default function Publish() {
     }
 
     const paymentConfig = getPaymentOptionConfig(data.exchange_type)
-    const isJobRequest = category?.slug === 'emploi' && data.listingType === 'request'
+    // Pour Emploi, rôles inversés dans l'UI : demande d'emploi = listingType 'offer'
+    const isJobRequest = category?.slug === 'emploi' && data.listingType === 'offer'
     const requiresPrice = !isJobRequest && !!paymentConfig?.requiresPrice
     const requiresExchangeService = !isJobRequest && !!paymentConfig?.requiresExchangeService
     const requiresRevenueShare = !isJobRequest && !!paymentConfig?.requiresPercentage
@@ -264,7 +265,8 @@ export default function Publish() {
   }, [enrichedPublicationTypes])
 
   useEffect(() => {
-    const isJobRequest = isEmploiCategory && formData.listingType === 'request'
+    // Pour Emploi, rôles inversés dans l'UI : demande d'emploi = listingType 'offer'
+    const isJobRequest = isEmploiCategory && formData.listingType === 'offer'
     if (isJobRequest) return
     if (!isVenteCategory && !isEmploiCategory) return
     if (formData.exchange_type === 'remuneration') return

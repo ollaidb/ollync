@@ -177,7 +177,8 @@ export const validatePublishForm = (
   const errors: string[] = []
   const EMPLOI_SLUGS = new Set(['emploi', 'montage', 'recrutement'])
   const isJobCategory = EMPLOI_SLUGS.has(formData.category || '')
-  const isJobRequest = isJobCategory && formData.listingType === 'request'
+  // Pour Emploi, les rôles Offre/Demande sont inversés dans l'UI (offerTitle = "Demande", requestTitle = "Offre") : demande d'emploi = listingType 'offer'.
+  const isJobRequest = isJobCategory && formData.listingType === 'offer'
   const isJobOffer = isJobCategory && !isJobRequest
   const isStudioLieuCategory = formData.category === 'studio-lieu'
   const isEvenementsCategory = formData.category === 'evenements'

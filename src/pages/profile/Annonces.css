@@ -79,8 +79,22 @@
   min-height: 200px;
 }
 
-.annonces-content:has(> .annonces-empty) {
+/* Bloc vide centré : le contenu (pull-to-refresh > scroll) occupe l'espace et centre le bloc */
+.annonces-content:has(.annonces-empty) {
   min-height: 52vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.annonces-content:has(.annonces-empty) .pull-to-refresh {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.annonces-content:has(.annonces-empty) .pull-to-refresh__scroll {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,7 +241,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-2xl);
-  z-index: 2100;
+  z-index: 60;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -278,14 +292,14 @@
   flex-shrink: 0;
 }
 
-/* Overlay */
+/* Overlay : z-index sous le header profil (100) pour que la tête reste visible en arrière-plan */
 .annonces-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
+  z-index: 50;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);

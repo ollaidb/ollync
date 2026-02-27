@@ -1,0 +1,11 @@
+/* Zone tactile pour le swipe-back iOS (mobile uniquement, gérée par le composant) */
+.swipe-back-edge {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 9998;
+  touch-action: none;
+  pointer-events: auto;
+}

@@ -32,6 +32,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 import { ToastProvider } from './contexts/ToastContext'
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext'
 import { useIsMobile } from './hooks/useIsMobile'
+import SwipeBack from './components/SwipeBack'
 import { useConsent } from './hooks/useConsent'
 import WebLayout from './layouts/WebLayout'
 import ConsentModal from './components/ConsentModal'
@@ -325,6 +326,7 @@ function AppContent() {
           <a href="#main-content" className="skip-link">Aller au contenu principal</a>
           {isMobile ? (
             <>
+              <SwipeBack />
               <main id="main-content" className="main-content without-header" tabIndex={-1}>
                 <motion.div
                   key={routeTransitionKey}

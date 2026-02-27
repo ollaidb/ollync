@@ -75,10 +75,13 @@ export const Step2Subcategory = ({
     const match = text.match(/^.*?[.!?](\s|$)/)
     return match ? match[0].trim() : text
   }
-  // Les libellés Offre/Demande sont swappés côté UI.
-  // On aligne donc les descriptions sur l'intention affichée et non la valeur technique stockée.
-  const listingTypeForDisplayedIntent =
-    listingType === 'offer' ? 'request' : listingType === 'request' ? 'offer' : ''
+  // Les libellés Offre/Demande sont swappés côté UI (offerTitle = "Demande", requestTitle = "Offre").
+  // On aligne les descriptions sur l'intention affichée. Pour Emploi et Services/Mission, les rôles
+  // sont inversés : on utilise donc listingType tel quel (pas de swap) pour ces catégories.
+  const isEmploiOrServicesCategory = ['emploi', 'montage', 'recrutement', 'services', 'poste-service'].includes(selectedCategory?.slug ?? '')
+  const listingTypeForDisplayedIntent = isEmploiOrServicesCategory
+    ? (listingType || '')
+    : (listingType === 'offer' ? 'request' : listingType === 'request' ? 'offer' : '')
 
   const getSubcategoryDescription = (subcategorySlug: string, fallback?: string) => {
     if (subcategorySlug === 'autre') return 'Soyez spécifique !'
