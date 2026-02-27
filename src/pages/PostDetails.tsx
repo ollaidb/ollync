@@ -1465,7 +1465,8 @@ const PostDetails = () => {
     if (!id || !user || post?.user_id !== user.id) return
 
     try {
-      const { data: rpcData, error } = await supabase.rpc('delete_own_post', { p_post_id: id }) as { data: { ok?: boolean; error?: string } | null; error: { message?: string } | null }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rpcData, error } = (await (supabase as any).rpc('delete_own_post', { p_post_id: id })) as { data: { ok?: boolean; error?: string } | null; error: { message?: string } | null }
       if (error) throw error
       if (rpcData?.ok) {
         navigate('/home')

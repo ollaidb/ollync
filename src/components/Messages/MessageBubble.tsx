@@ -548,15 +548,22 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
             </div>
           </div>
         )
-      case 'calendar_request':
+      case 'calendar_request': {
+        if (!message.sender_id) return null
         return (
           <AppointmentBlock
-            message={message}
+            message={{
+              id: message.id,
+              sender_id: message.sender_id,
+              conversation_id: message.conversation_id,
+              calendar_request_data: message.calendar_request_data,
+            }}
             isOwn={isOwn}
             isGroupConversation={isGroupConversation}
             currentUserGroupRole={currentUserGroupRole}
           />
         )
+      }
       case 'post_share': {
         const isSharedPostRemoved = sharedPost?.removed === true
         const postCardLabel = isSharedPostRemoved
