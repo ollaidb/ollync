@@ -32,6 +32,7 @@ interface Post {
   needed_date?: string | null
   number_of_people?: number | null
   delivery_available: boolean
+  status?: string
   user?: {
     username?: string | null
     full_name?: string | null
@@ -51,6 +52,8 @@ interface FollowedProfile {
   bio?: string | null
   postsCount?: number
   followers?: number
+  /** Si présent, le profil est considéré comme supprimé (ex. compte désactivé) */
+  deleted_at?: string | null
 }
 
 const Favorites = () => {
@@ -200,7 +203,7 @@ const Favorites = () => {
 
       const followingIds = follows.map((f: { following_id: string }) => f.following_id)
 
-      // Récupérer les profils
+      // Récupérer les profils (deleted_at optionnel : si présent, swipe activé uniquement pour profils supprimés)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, bio')
@@ -253,7 +256,8 @@ const Favorites = () => {
           avatar_url: profile.avatar_url,
           bio: profile.bio,
           postsCount: postsCountMap.get(profile.id) || 0,
-          followers: followersCountMap.get(profile.id) || 0
+          followers: followersCountMap.get(profile.id) || 0,
+          deleted_at: null as string | null
         }))
 
         setFollowedProfiles(profilesWithCounts)
@@ -516,11 +520,14 @@ const Favorites = () => {
               <>
                 {favoritePosts.length > 0 ? (
                   <div className="posts-list">
-                    {favoritePosts.map((post) => (
+                    {favoritePosts.map((post) => {
+                      const isPostRemoved = post.status !== 'active'
+                      const swipeEnabled = isMobile && isPostRemoved
+                      return (
                       <SwipeableListItem
                         key={post.id}
-                        enabled={isMobile}
-                        actions={[
+                        enabled={swipeEnabled}
+                        actions={swipeEnabled ? [
                           {
                             id: 'delete',
                             label: 'Supprimer',
@@ -528,17 +535,18 @@ const Favorites = () => {
                             destructive: true,
                             onClick: () => removeFromFavorites(post.id)
                           }
-                        ]}
+                        ] : []}
                       >
                         <PostCard 
                           post={post} 
                           viewMode="list" 
                           isLiked={true} 
                           onLike={fetchLikedPosts}
-                          isRemoved={(post as { status?: string }).status !== 'active'}
+                          isRemoved={isPostRemoved}
                         />
                       </SwipeableListItem>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <EmptyState
@@ -559,11 +567,14 @@ const Favorites = () => {
               <>
                 {followedProfiles.length > 0 ? (
                   <div className="profiles-list">
-                    {followedProfiles.map((profile) => (
+                    {followedProfiles.map((profile) => {
+                      const isProfileRemoved = !!(profile.deleted_at)
+                      const swipeEnabled = isMobile && isProfileRemoved
+                      return (
                       <SwipeableListItem
                         key={profile.id}
-                        enabled={isMobile}
-                        actions={[
+                        enabled={swipeEnabled}
+                        actions={swipeEnabled ? [
                           {
                             id: 'delete',
                             label: 'Supprimer',
@@ -571,7 +582,7 @@ const Favorites = () => {
                             destructive: true,
                             onClick: () => handleUnfollow(profile.id)
                           }
-                        ]}
+                        ] : []}
                       >
                         <div
                           className="profile-card"
@@ -601,7 +612,8 @@ const Favorites = () => {
                           </button>
                         </div>
                       </SwipeableListItem>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <EmptyState

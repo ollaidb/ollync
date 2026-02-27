@@ -232,7 +232,7 @@ export function useReminder() {
     }
 
     // Publier une annonce : afficher dès l’entrée si pas de brouillon ni messages en attente
-    if (!isNeverAsk('publish') && !isInCooldown('publish')) {
+    if (false && !isNeverAsk('publish') && !isInCooldown('publish')) {
       const publishLastShown = getPublishLastShown()
       const oneWeekMs = COOLDOWN_MS.publish
       if (publishLastShown != null && Date.now() - publishLastShown < oneWeekMs) {

@@ -4736,18 +4736,20 @@ const Messages = () => {
                       <SwipeableListItem
                         key={msg.id}
                         enabled={isMobile}
-                        actions={[
-                          {
-                            id: 'delete',
-                            label: 'Supprimer',
-                            icon: <Trash2 size={20} />,
-                            destructive: true,
-                            onClick: () => {
-                              setActiveMessage(msg)
-                              setShowDeleteMessageConfirm(true)
-                            }
-                          }
-                        ]}
+                        actions={isMobile
+                          ? []
+                          : [
+                              {
+                                id: 'delete',
+                                label: 'Supprimer',
+                                icon: <Trash2 size={20} />,
+                                destructive: true,
+                                onClick: () => {
+                                  setActiveMessage(msg)
+                                  setShowDeleteMessageConfirm(true)
+                                }
+                              }
+                            ]}
                       >
                         <div
                           className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
@@ -4978,6 +4980,7 @@ const Messages = () => {
                 <Send size={18} />
                 Transférer
               </button>
+              {!isMobile && (
               <button
                 className="message-action-item danger"
                 type="button"
@@ -4989,6 +4992,7 @@ const Messages = () => {
                 <Trash2 size={18} />
                 Supprimer
               </button>
+              )}
               <button
                 className="message-actions-close"
                 type="button"
@@ -5796,6 +5800,7 @@ const Messages = () => {
                         setShowListConversationActions(true)
                       }}
                       onTouchStart={(event) => {
+                        if (isMobile) return
                         const touch = event.touches[0]
                         conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
                         longPressTimerRef.current = window.setTimeout(() => {
@@ -5843,6 +5848,7 @@ const Messages = () => {
                           setShowListConversationActions(true)
                         }}
                         onTouchStart={(event) => {
+                          if (isMobile) return
                           const touch = event.touches[0]
                           conversationTouchRef.current = { id: conv.id, startX: touch.clientX, startY: touch.clientY }
                           longPressTimerRef.current = window.setTimeout(() => {
@@ -5880,7 +5886,7 @@ const Messages = () => {
           </div>
         )}
       </div>
-      {showListConversationActions && listActionConversation && (
+      {showListConversationActions && listActionConversation && !isMobile && (
         <div
           className="conversation-actions-overlay"
           onClick={() => {
