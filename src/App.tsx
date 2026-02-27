@@ -45,7 +45,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 import { SplashScreen } from './components/SplashScreen/SplashScreen'
 import { AuthTransitionOverlay } from './components/AuthTransitionOverlay/AuthTransitionOverlay'
-import AddToHomeScreenBanner from './components/AddToHomeScreenBanner'
 import './App.css'
 
 function isReminderRoute(pathname: string): boolean {
@@ -335,7 +334,6 @@ function AppContent() {
             </WebLayout>
           )}
         </div>
-        <AddToHomeScreenBanner />
       </ToastProvider>
     </NavigationHistoryProvider>
   )

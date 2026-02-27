@@ -44,7 +44,14 @@ Une fois le site déployé et ouvert sur ton téléphone :
 
 Sur mobile, une bannière en bas de l’écran propose aussi d’ajouter l’app à l’écran d’accueil (avec un bouton « Installer » sur Android).
 
-> Pour une installabilité optimale en production, ajoute des icônes PNG 192×192 et 512×512 dans `public/` et référence-les dans `public/manifest.webmanifest`.
+**Installer la PWA sur ton ordinateur (Chrome)**  
+- Ouvre l’app dans Chrome → clic sur les **3 points** (en haut à droite) → **« Installer l’application »** (ou « Installer Ollync »).  
+- L’app apparaîtra dans le dock, dans tes applications et sur le bureau, et s’ouvrira sans barre d’URL.  
+- **Raccourci** : dans la barre d’adresse, ouvre `chrome://apps` pour voir toutes tes PWA installées.
+
+**Prérequis PWA**  
+- En local : `localhost` suffit.  
+- En ligne : **HTTPS obligatoire** (Vercel le fournit).
 
 ## Build
 

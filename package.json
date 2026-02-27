@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "dev:mobile": "vite --host",
     "generate:seo": "node scripts/generate-seo-files.js",
-    "prebuild": "node scripts/generate-seo-files.js",
+    "prebuild": "node scripts/generate-seo-files.js && node scripts/generate-pwa-icons.js",
+    "generate:pwa-icons": "node scripts/generate-pwa-icons.js",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 200",
     "install-db": "node scripts/install.js",
     "install-db:editor": "node scripts/install.js editor",
@@ -48,6 +49,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "jsonwebtoken": "^9.0.3",
     "terser": "^5.44.1",
+    "sharp": "^0.33.5",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
