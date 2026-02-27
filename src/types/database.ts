@@ -115,6 +115,10 @@ export interface Database {
           contract_siren: string | null
           contract_signature: string | null
           contract_default_type: string | null
+          profile_type: string | null
+          display_categories: string[] | null
+          display_subcategories: string[] | null
+          show_in_users: boolean | null
           created_at: string
           updated_at: string
         }
@@ -138,6 +142,10 @@ export interface Database {
           contract_siren?: string | null
           contract_signature?: string | null
           contract_default_type?: string | null
+          profile_type?: string | null
+          display_categories?: string[] | null
+          display_subcategories?: string[] | null
+          show_in_users?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -161,6 +169,10 @@ export interface Database {
           contract_siren?: string | null
           contract_signature?: string | null
           contract_default_type?: string | null
+          profile_type?: string | null
+          display_categories?: string[] | null
+          display_subcategories?: string[] | null
+          show_in_users?: boolean | null
           created_at?: string
           updated_at?: string
         }

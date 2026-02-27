@@ -7,6 +7,7 @@ import { useConfirmation } from '../../hooks/useConfirmation'
 import { useToastContext } from '../../contexts/ToastContext'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import PostCard from '../../components/PostCard'
+import RecommendationsSection from '../../components/RecommendationsSection'
 import './Annonces.css'
 
 interface Post {
@@ -604,6 +605,11 @@ const Annonces = () => {
               )
             })}
           </div>
+        )}
+
+        {/* Section Pour vous - recommandations basées sur likes, recherches, publications */}
+        {!loading && filteredPosts.length > 0 && (
+          <RecommendationsSection viewMode="list" />
         )}
       </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { User, Mail, Phone, MapPin, Save, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
+import BirthDatePicker from '../../components/BirthDatePicker'
 import './PersonalInfo.css'
 
 const PersonalInfo = () => {
@@ -222,11 +223,11 @@ const PersonalInfo = () => {
                 <Calendar size={16} />
                 Date de naissance
               </label>
-              <input
-                type="date"
+              <BirthDatePicker
                 id="birth_date"
                 value={profile.birth_date}
-                onChange={(e) => setProfile(prev => ({ ...prev, birth_date: e.target.value }))}
+                onChange={(birth_date) => setProfile(prev => ({ ...prev, birth_date }))}
+                placeholder="jj/mm/aaaa"
               />
               <span className="form-helper">
                 Cette date nous permet d&rsquo;envoyer des vœux d&rsquo;anniversaire et des notifications de fêtes.

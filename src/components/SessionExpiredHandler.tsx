@@ -1,21 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useSupabase'
-import { useToastContext } from '../contexts/ToastContext'
 import { isPrivatePath } from '../utils/privatePaths'
-
-const DISCONNECTED_MESSAGE = 'Déconnexion validée.'
 
 /**
  * Détecte la perte de session sur une page privée (user passe de connecté à null).
- * Affiche "Déconnexion validée." et redirige vers login sauf si la déconnexion
- * a été initiée par l'utilisateur (le composant appelant gère alors la navigation).
+ * Redirige vers login sauf si la déconnexion a été initiée par l'utilisateur.
  */
 export function SessionExpiredHandler() {
   const { user, loading } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const { showInfo } = useToastContext()
   const previousUserRef = useRef<typeof user>(undefined)
 
   useEffect(() => {
@@ -33,14 +28,13 @@ export function SessionExpiredHandler() {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('ollync-logout-initiated')
       }
-      showInfo(DISCONNECTED_MESSAGE, 4000)
       if (!userInitiatedLogout) {
         const returnTo = encodeURIComponent(location.pathname + location.search)
         navigate(`/auth/login?returnTo=${returnTo}`, { replace: true })
       }
     }
     previousUserRef.current = user
-  }, [loading, user, location.pathname, location.search, navigate, showInfo])
+  }, [loading, user, location.pathname, location.search, navigate])
 
   return null
 }

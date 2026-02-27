@@ -484,6 +484,27 @@ const Search = () => {
       })
 
       setResults(postsWithRelations)
+
+      // Enregistrer dans search_history pour les recommandations (utilisateur connecté)
+      if (user?.id) {
+        const filters: Record<string, unknown> = {}
+        if (categoryId) filters.category_id = categoryId
+        if (subCategoryId) filters.sub_category_id = subCategoryId
+        if (paymentTypeFilter !== 'all') filters.payment_type = paymentTypeFilter
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(supabase as any)
+          .from('search_history')
+          .insert({
+            user_id: user.id,
+            search_query: query.trim() || null,
+            filters: Object.keys(filters).length > 0 ? filters : {},
+            results_count: filteredPosts.length
+          })
+          .then(({ error }: { error?: { message?: string } }) => {
+            if (error) console.warn('Search history insert failed (table may not exist):', error.message)
+          })
+      }
     } catch (error) {
       console.error('Error searching posts:', error)
       setResults([])
@@ -826,6 +847,7 @@ const Search = () => {
         onRefresh={() => searchPosts(searchQuery)}
         className="search-content"
         enabled={isMobile}
+        loading={loading}
       >
         {loading ? (
           <div className="search-loading">

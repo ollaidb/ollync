@@ -117,6 +117,51 @@
   right: -4px;
 }
 
+/* Lieu dans le modal de filtres */
+.users-filter-modal-location {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.users-filter-modal-location .location-input-wrapper {
+  height: 40px;
+}
+
+.users-filter-modal-location .location-input {
+  height: 40px;
+  padding: 8px 36px 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.users-filter-modal-location-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--foreground);
+  background: var(--muted);
+  width: fit-content;
+}
+
+.users-filter-modal-location-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 16px;
+}
+
+.users-filter-modal-location-chip-remove:hover {
+  color: var(--foreground);
+}
+
 /* Menu de filtres */
 .users-filters {
   display: flex;

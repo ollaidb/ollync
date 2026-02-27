@@ -79,6 +79,8 @@ const PageSecurite = () => {
           title: '5. Reporting security incidents',
           intro:
             'If you discover a security vulnerability or suspect unauthorized access to your account, contact us immediately at: collabbinta@gmail.com',
+          breachNote:
+            'In the event of a personal data breach that could pose a risk to your rights and freedoms, we undertake to notify the supervisory authority (CNIL) within 72 hours and to inform you without undue delay, in accordance with GDPR Article 33 and 34.',
           followUp: 'We take every report seriously and commit to:',
           items: [
             'Investigate the incident quickly',
@@ -99,12 +101,15 @@ const PageSecurite = () => {
           ]
         },
         compliance: {
-          title: '7. Compliance and certifications',
+          title: '7. Compliance and sub-processors',
           intro: 'Ollync commits to complying with applicable regulations and best practices:',
           items: [
             'GDPR (General Data Protection Regulation)',
             'Security practices aligned with hosting providers'
-          ]
+          ],
+          subProcessorsTitle: 'Sub-processors',
+          subProcessorsText:
+            'Ollync uses the following sub-processors for hosting and technical infrastructure: Supabase (database, authentication, storage, USA) and Vercel (hosting, USA). Data processing agreements (DPAs) and Standard Contractual Clauses (SCCs) are in place to ensure adequate protection of your data when transferred outside the EU.'
         },
         transparency: {
           title: '8. Transparency',
@@ -215,6 +220,8 @@ const PageSecurite = () => {
           title: "5. Signalement d'incidents de sécurité",
           intro:
             "Si vous découvrez une faille de sécurité ou suspectez un accès non autorisé à votre compte, contactez-nous immédiatement à : collabbinta@gmail.com",
+          breachNote:
+            "En cas de violation de données personnelles susceptible d'engendrer un risque pour vos droits et libertés, nous nous engageons à notifier l'autorité de contrôle (CNIL) dans les 72 heures et à vous en informer sans délai indu, conformément aux articles 33 et 34 du RGPD.",
           followUp: 'Nous prenons très au sérieux tout signalement et nous nous engageons à :',
           items: [
             "Enquêter rapidement sur l'incident",
@@ -235,12 +242,15 @@ const PageSecurite = () => {
           ]
         },
         compliance: {
-          title: '7. Conformité et certifications',
+          title: '7. Conformité et sous-traitants',
           intro: "Ollync s'engage à respecter les réglementations et bonnes pratiques applicables :",
           items: [
             'RGPD (Règlement Général sur la Protection des Données)',
             'Pratiques de sécurité alignées avec les prestataires d’hébergement'
-          ]
+          ],
+          subProcessorsTitle: 'Sous-traitants',
+          subProcessorsText:
+            "Ollync utilise les sous-traitants suivants pour l'hébergement et l'infrastructure technique : Supabase (base de données, authentification, stockage, USA) et Vercel (hébergement, USA). Des accords de traitement des données (DPA) et des Clauses Contractuelles Types (CCT) sont en place pour assurer une protection adéquate de vos données lors de leur transfert hors de l'UE."
         },
         transparency: {
           title: '8. Transparence',
@@ -345,6 +355,7 @@ const PageSecurite = () => {
 
           <h4>{content.incidents.title}</h4>
           <p>{content.incidents.intro}</p>
+          {content.incidents.breachNote && <p><strong>{content.incidents.breachNote}</strong></p>}
           <p>{content.incidents.followUp}</p>
           <ul>
             {content.incidents.items.map((item) => (
@@ -367,6 +378,12 @@ const PageSecurite = () => {
               <li key={item}>{item}</li>
             ))}
           </ul>
+          {content.compliance.subProcessorsTitle && (
+            <>
+              <h5>{content.compliance.subProcessorsTitle}</h5>
+              <p>{content.compliance.subProcessorsText}</p>
+            </>
+          )}
 
           <h4>{content.transparency.title}</h4>
           <p>{content.transparency.text}</p>

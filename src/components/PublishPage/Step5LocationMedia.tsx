@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { Upload, X, Loader } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
@@ -7,6 +8,7 @@ import { useConsent } from '../../hooks/useConsent'
 import { compressImageForPost, isCompressibleImageType } from '../../utils/imageCompression'
 import { LocationAutocomplete } from '../Location/LocationAutocomplete'
 import ConsentModal from '../ConsentModal'
+import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import './Step5LocationMedia.css'
 
 interface FormData {
@@ -279,6 +281,7 @@ export const Step5LocationMedia = ({
   }, [hasSheetOpen])
 
   // Hooks de consentement
+  const location = useLocation()
   const locationConsent = useConsent('location')
   const mediaConsent = useConsent('media')
 
@@ -1020,7 +1023,8 @@ export const Step5LocationMedia = ({
         onAccept={locationConsent.handleAccept}
         onReject={handleRejectLocation}
         onLearnMore={locationConsent.dismissModal}
-        learnMoreHref="/profile/legal/politique-confidentialite"
+        learnMoreHref={CONSENT_TO_LEGAL_PAGE.location}
+        returnTo={location.pathname + location.search}
         askAgainChecked={locationConsent.askAgainNextTime}
         onAskAgainChange={locationConsent.setAskAgainNextTime}
       />
@@ -1032,7 +1036,8 @@ export const Step5LocationMedia = ({
         onAccept={mediaConsent.handleAccept}
         onReject={handleRejectMedia}
         onLearnMore={mediaConsent.dismissModal}
-        learnMoreHref="/profile/legal/politique-confidentialite"
+        learnMoreHref={CONSENT_TO_LEGAL_PAGE.media}
+        returnTo={location.pathname + location.search}
         askAgainChecked={mediaConsent.askAgainNextTime}
         onAskAgainChange={mediaConsent.setAskAgainNextTime}
       />

@@ -1,9 +1,10 @@
-import { Heart, MapPin, Calendar, Users } from 'lucide-react'
-import { useState, useEffect, memo } from 'react'
+import { Heart, MapPin, Calendar, Users, Eye } from 'lucide-react'
+import { useState, useEffect, memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useToastContext } from '../contexts/ToastContext'
+import { isPostViewed } from '../utils/viewedPosts'
 import InlineVideoPreview from './InlineVideoPreview'
 import CategoryPlaceholderMedia from './CategoryPlaceholderMedia'
 import './PostCard.css'
@@ -66,6 +67,15 @@ const PostCard = ({
   const [liked, setLiked] = useState(isLiked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [checkingLike, setCheckingLike] = useState(true)
+  const [viewed, setViewed] = useState(() => isPostViewed(post.id))
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ postId: string }>) => {
+      if (e.detail?.postId === post.id) setViewed(true)
+    }
+    window.addEventListener('ollync-post-viewed', handler as EventListener)
+    return () => window.removeEventListener('ollync-post-viewed', handler as EventListener)
+  }, [post.id])
 
   // Vérifier si le post est liké par l'utilisateur actuel au chargement
   // Utiliser une vérification optimisée avec cache
@@ -300,40 +310,6 @@ const PostCard = ({
   const isVideo = !!mainMedia && /\.(mp4|webm|ogg|mov|m4v)$/i.test(String(mainMedia).split('?')[0].split('#')[0])
   const removedLabel = 'Annonce supprimée'
 
-  const getPaymentDisplay = () => {
-    const paymentType = post.payment_type || ''
-    const hasPrice = post.price !== null && post.price !== undefined
-
-    if ((paymentType === 'prix' || paymentType === 'co-creation' || paymentType === 'remuneration') && hasPrice) {
-      return `${post.price} €`
-    }
-
-    switch (paymentType) {
-      case 'echange':
-        return 'Échange de service'
-      case 'visibilite-contre-service':
-        return 'Visibilité contre service'
-      case 'co-creation':
-        return hasPrice ? `${post.price} €` : 'Co-création'
-      case 'participation':
-        return 'Participation'
-      case 'association':
-        return 'Association'
-      case 'partage-revenus':
-        return 'Partage de revenus'
-      case 'remuneration':
-        return hasPrice ? `${post.price} €` : 'Rémunération'
-      case 'prix':
-        return hasPrice ? `${post.price} €` : 'Prix'
-      case 'benevole':
-        return 'Bénévole'
-      case 'pourcentage':
-        return 'Pourcentage'
-      default:
-        return hasPrice ? `${post.price} €` : null
-    }
-  }
-
   const handleCardClick = (e: React.SyntheticEvent<HTMLElement>) => {
     // Ne pas naviguer si on clique sur un bouton d'action ou dans la zone d'actions
     const target = e.target as HTMLElement
@@ -359,6 +335,27 @@ const PostCard = ({
   }
 
   const displayName = post.user?.username || post.user?.full_name || 'Utilisateur'
+  const paymentDisplay = useMemo(() => {
+    const paymentType = post.payment_type || ''
+    const hasPrice = post.price !== null && post.price !== undefined
+    if ((paymentType === 'prix' || paymentType === 'co-creation' || paymentType === 'remuneration') && hasPrice) {
+      return `${post.price} €`
+    }
+    switch (paymentType) {
+      case 'echange': return 'Échange de service'
+      case 'visibilite-contre-service': return 'Visibilité contre service'
+      case 'co-creation': return hasPrice ? `${post.price} €` : 'Co-création'
+      case 'participation': return 'Participation'
+      case 'association': return 'Association'
+      case 'partage-revenus': return 'Partage de revenus'
+      case 'remuneration': return hasPrice ? `${post.price} €` : 'Rémunération'
+      case 'prix': return hasPrice ? `${post.price} €` : 'Prix'
+      case 'benevole': return 'Bénévole'
+      case 'pourcentage': return 'Pourcentage'
+      default: return hasPrice ? `${post.price} €` : null
+    }
+  }, [post.payment_type, post.price])
+  const titleDisplay = useMemo(() => truncateTitleToTwoSentences(post.title), [post.title])
   /** Sur les cartes, on n’affiche que la ville (pas toute l’adresse) pour laisser de la place à la date et au nombre de personnes. */
   const getLocationForCard = (location: string | null | undefined): string => {
     if (!location || !location.trim()) return ''
@@ -409,6 +406,11 @@ const PostCard = ({
               <Heart size={20} fill={liked ? 'currentColor' : 'none'} />
             </button>
           )}
+          {!isRemoved && viewed && (
+            <div className="post-card-viewed-badge" title="Déjà vu" aria-hidden>
+              <Eye size={12} strokeWidth={2.5} />
+            </div>
+          )}
           {!isRemoved && !hideCategoryBadge && categoryLabel && (
             <div className="post-card-category-badge">{categoryLabel}</div>
           )}
@@ -421,7 +423,7 @@ const PostCard = ({
         </div>
         <div className="post-card-content">
           <div className="post-card-header">
-            <h3 className="post-card-title">{isRemoved ? removedLabel : truncateTitleToTwoSentences(post.title)}</h3>
+            <h3 className="post-card-title">{isRemoved ? removedLabel : titleDisplay}</h3>
             {!isRemoved && actionMenu && (
               <div className="post-card-action-menu" onClick={(e) => e.stopPropagation()}>
                 {actionMenu}
@@ -453,8 +455,8 @@ const PostCard = ({
                 <div className="post-card-profile-name">{displayName}</div>
               </div>
             )}
-            {!isRemoved && getPaymentDisplay() && (
-              <div className="post-card-payment-display">{getPaymentDisplay()}</div>
+            {!isRemoved && paymentDisplay && (
+              <div className="post-card-payment-display">{paymentDisplay}</div>
             )}
           </div>
         </div>
@@ -510,8 +512,13 @@ const PostCard = ({
         {isRemoved && (
           <div className="post-card-removed-badge">{removedLabel}</div>
         )}
-        {!isRemoved && getPaymentDisplay() && (
-          <div className="post-card-payment-badge">{getPaymentDisplay()}</div>
+        {!isRemoved && viewed && (
+          <div className="post-card-viewed-badge" title="Déjà vu" aria-hidden>
+            <Eye size={12} strokeWidth={2.5} />
+          </div>
+        )}
+        {!isRemoved && paymentDisplay && (
+          <div className="post-card-payment-badge">{paymentDisplay}</div>
         )}
         {!isRemoved && !hideCategoryBadge && categoryLabel && (
           <div className="post-card-category-badge">{categoryLabel}</div>
@@ -524,7 +531,7 @@ const PostCard = ({
         )}
       </div>
       <div className="post-card-content">
-        <h3 className="post-card-title">{isRemoved ? removedLabel : truncateTitleToTwoSentences(post.title)}</h3>
+        <h3 className="post-card-title">{isRemoved ? removedLabel : titleDisplay}</h3>
         {!isRemoved && (
           <div className="post-card-info">
             {(locationForCard || post.number_of_people || post.needed_date) && (

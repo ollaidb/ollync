@@ -11,12 +11,14 @@ interface PullToRefreshProps {
   onRefresh: () => Promise<void> | void
   className?: string
   enabled?: boolean
+  /** Quand true, affiche le spinner en haut (chargement initial ou load more) */
+  loading?: boolean
 }
 
-export function PullToRefresh({ children, onRefresh, className = '', enabled = true }: PullToRefreshProps) {
+export function PullToRefresh({ children, onRefresh, className = '', enabled = true, loading = false }: PullToRefreshProps) {
   const { pullDistance, refreshing, handlers } = usePullToRefresh({ onRefresh, enabled })
 
-  const showIndicator = pullDistance > 0 || refreshing
+  const showIndicator = pullDistance > 0 || refreshing || loading
 
   return (
     <div className="pull-to-refresh">

@@ -8,7 +8,6 @@ import { PostCardSkeleton } from '../components/PostCardSkeleton'
 import RecommendationsSection from '../components/RecommendationsSection'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { useAuth } from '../hooks/useSupabase'
-import { useIsMobile } from '../hooks/useIsMobile'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import './Feed.css'
 
@@ -38,7 +37,6 @@ interface Post {
 
 const Feed = () => {
   const { user } = useAuth()
-  const isMobile = useIsMobile()
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -158,7 +156,7 @@ const Feed = () => {
         </div>
 
         {/* Zone scrollable */}
-        <PullToRefresh onRefresh={() => fetchPosts(0, true)} className="feed-scrollable" enabled={isMobile}>
+        <PullToRefresh onRefresh={() => fetchPosts(0, true)} className="feed-scrollable" enabled={true} loading={loading || loadingMore}>
           {/* État de chargement initial - afficher des skeletons */}
           {loading && posts.length === 0 ? (
             <div className={`posts-container ${viewMode}`}>

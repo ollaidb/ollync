@@ -180,7 +180,7 @@ i18n.use(initReactI18next).init({
           accept: 'J\'accepte',
           decline: 'Refuser',
           askAgain: 'Me redemander la prochaine fois',
-          learnMore: 'En savoir plus'
+          learnMore: 'Voir plus'
         },
         retryMessage: 'Pour continuer, vous devez accepter.',
         blocked: 'Action impossible sans consentement. Vous pouvez modifier ce choix dans les paramètres de gestion des données.',
@@ -191,7 +191,7 @@ i18n.use(initReactI18next).init({
           },
           media: {
             title: 'Utilisation des médias',
-            message: 'Nous utilisons vos photos et vidéos pour publier votre annonce.'
+            message: 'Nous utilisons vos photos pour publier votre annonce.'
           },
           profile_data: {
             title: 'Utilisation des données de profil',
@@ -277,7 +277,7 @@ i18n.use(initReactI18next).init({
       home: {
         loading: 'Chargement...',
         urgent: 'Urgent',
-        recommendations: 'Recommandations',
+        recommendations: 'Pour vous',
         recent: 'Annonce récente',
         searchPlaceholder: 'Rechercher sur ollync',
         searchPlaceholderShort: 'Rechercher sur ollync',
@@ -570,7 +570,7 @@ i18n.use(initReactI18next).init({
           },
           media: {
             title: 'Media usage',
-            message: 'We use your photos and videos to publish your listing.'
+            message: 'We use your photos to publish your listing.'
           },
           profile_data: {
             title: 'Profile data usage',
@@ -656,7 +656,7 @@ i18n.use(initReactI18next).init({
       home: {
         loading: 'Loading...',
         urgent: 'Urgent',
-        recommendations: 'Recommendations',
+        recommendations: 'For you',
         recent: 'Recent listings',
         searchPlaceholder: 'Search on Ollync',
         searchPlaceholderShort: 'Search on Ollync',

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Check, SlidersHorizontal, X } from 'lucide-react'
+import { LocationAutocomplete } from '../components/Location/LocationAutocomplete'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
@@ -65,7 +66,7 @@ const UsersPage = () => {
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const isMobile = useIsMobile()
-  const { t } = useTranslation(['categories'])
+  const { t } = useTranslation(['categories', 'search'])
   const categoryId = searchParams.get('category')
 
   const [users, setUsers] = useState<User[]>([])
@@ -78,12 +79,17 @@ const UsersPage = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
   const [pendingCategory, setPendingCategory] = useState<string>('all')
   const [pendingSubcategory, setPendingSubcategory] = useState<string>('all')
   const [pendingStatus, setPendingStatus] = useState<string>('all')
+  const [pendingLocation, setPendingLocation] = useState<string | null>(null)
+  const [pendingLocationFilter, setPendingLocationFilter] = useState('')
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({})
   const [supportsShowInUsers, setSupportsShowInUsers] = useState<boolean | null>(null)
   const [supportsDisplaySubcategories, setSupportsDisplaySubcategories] = useState<boolean | null>(null)
+  /** Si true, la table profiles n'a pas les colonnes optionnelles : on utilise un select minimal. */
+  const [useMinimalProfilesSelect, setUseMinimalProfilesSelect] = useState(false)
   const observerTarget = useRef<HTMLDivElement>(null)
 
   const USERS_PER_PAGE = 20
@@ -153,8 +159,8 @@ const UsersPage = () => {
   }, [pendingCategory])
 
   const activeFilterCount = useMemo(() => (
-    [selectedSubcategory, selectedStatus].filter((value) => value !== 'all').length
-  ), [selectedSubcategory, selectedStatus])
+    [selectedSubcategory, selectedStatus].filter((value) => value !== 'all').length + (selectedLocation ? 1 : 0)
+  ), [selectedSubcategory, selectedStatus, selectedLocation])
 
   const parseProfileTypes = (value: unknown) => {
     if (!value) return []
@@ -295,16 +301,22 @@ const UsersPage = () => {
             const subcategories = parseTextArray(profile.display_subcategories)
             if (!subcategories.includes(selectedSubcategory)) return false
           }
+          if (selectedLocation && 'location' in profile) {
+            const loc = (profile as User & { location?: string | null }).location
+            if (!loc || !loc.toLowerCase().includes(selectedLocation.toLowerCase())) return false
+          }
           return true
         })
       }
 
-      const selectColumns = supportsDisplaySubcategories === false
-        ? 'id, username, full_name, avatar_url, profile_type, email'
-        : 'id, username, full_name, avatar_url, profile_type, display_subcategories, email'
+      const selectColumns = useMinimalProfilesSelect
+        ? 'id, username, full_name, avatar_url, email'
+        : supportsDisplaySubcategories === false
+          ? 'id, username, full_name, avatar_url, profile_type, email'
+          : 'id, username, full_name, avatar_url, profile_type, display_subcategories, email'
 
-      // Filtre "Tout" : afficher tous les utilisateurs (avec filtres avancés optionnels)
-      if (!activeCategorySlug) {
+      // Filtre "Tout" ou select minimal (sans colonnes catégories) : afficher tous les utilisateurs
+      if (!activeCategorySlug || useMinimalProfilesSelect) {
         let query = supabase
           .from('profiles')
           .select(selectColumns, { count: 'exact' })
@@ -321,10 +333,35 @@ const UsersPage = () => {
 
         query = query.neq('email', MODERATOR_EMAIL)
 
+        if (selectedLocation) {
+          const searchTerm = selectedLocation.trim()
+          if (searchTerm) {
+            query = query.ilike('location', `%${searchTerm}%`)
+          }
+        }
+
         let { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
-        const missingSubcatColumn =
-          String((profilesError as { message?: string } | null)?.message || '').includes('display_subcategories')
-        if (profilesError && missingSubcatColumn && supportsDisplaySubcategories !== false) {
+        const errMsg = String((profilesError as { message?: string } | null)?.message || '')
+        const errCode = (profilesError as { code?: string } | null)?.code
+        const isBadRequest = errCode === 'PGRST204' || (profilesError as { status?: number } | null)?.status === 400
+        const missingColumn = errMsg.includes('display_subcategories') || errMsg.includes('profile_type') || errMsg.includes('show_in_users')
+
+        if (profilesError && (missingColumn || isBadRequest) && !useMinimalProfilesSelect) {
+          setUseMinimalProfilesSelect(true)
+          setSupportsDisplaySubcategories(false)
+          setSupportsShowInUsers(false)
+          let retryQuery = supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url, email', { count: 'exact' })
+            .order('updated_at', { ascending: false })
+            .range(start, end)
+          if (user) retryQuery = retryQuery.neq('id', user.id)
+          retryQuery = retryQuery.neq('email', MODERATOR_EMAIL)
+          const retry = await executeProfilesQuery(retryQuery)
+          profilesData = retry.data
+          profilesError = retry.error
+          count = retry.count
+        } else if (profilesError && errMsg.includes('display_subcategories') && supportsDisplaySubcategories !== false) {
           setSupportsDisplaySubcategories(false)
           let retryQuery = supabase
             .from('profiles')
@@ -381,10 +418,35 @@ const UsersPage = () => {
 
       query = query.neq('email', MODERATOR_EMAIL)
 
+      if (selectedLocation) {
+        const searchTerm = selectedLocation.trim()
+        if (searchTerm) {
+          query = query.ilike('location', `%${searchTerm}%`)
+        }
+      }
+
       let { data: profilesData, error: profilesError, count } = await executeProfilesQuery(query)
-      const missingSubcatColumn =
-        String((profilesError as { message?: string } | null)?.message || '').includes('display_subcategories')
-      if (profilesError && missingSubcatColumn && supportsDisplaySubcategories !== false) {
+      const errMsgCat = String((profilesError as { message?: string } | null)?.message || '')
+      const errCodeCat = (profilesError as { code?: string } | null)?.code
+      const isBadRequestCat = errCodeCat === 'PGRST204' || (profilesError as { status?: number } | null)?.status === 400
+      const missingColumnCat = errMsgCat.includes('display_subcategories') || errMsgCat.includes('profile_type') || errMsgCat.includes('show_in_users') || errMsgCat.includes('display_categories')
+
+      if (profilesError && (missingColumnCat || isBadRequestCat) && !useMinimalProfilesSelect) {
+        setUseMinimalProfilesSelect(true)
+        setSupportsDisplaySubcategories(false)
+        setSupportsShowInUsers(false)
+        let retryQuery = supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, email', { count: 'exact' })
+          .order('updated_at', { ascending: false })
+          .range(start, end)
+        if (user) retryQuery = retryQuery.neq('id', user.id)
+        retryQuery = retryQuery.neq('email', MODERATOR_EMAIL)
+        const retry = await executeProfilesQuery(retryQuery)
+        profilesData = retry.data
+        profilesError = retry.error
+        count = retry.count
+      } else if (profilesError && errMsgCat.includes('display_subcategories') && supportsDisplaySubcategories !== false) {
         setSupportsDisplaySubcategories(false)
         let retryQuery = supabase
           .from('profiles')
@@ -432,12 +494,14 @@ const UsersPage = () => {
     selectedCategory,
     selectedSubcategory,
     selectedStatus,
+    selectedLocation,
     categories,
     categoryId,
     user,
     fetchFollowingStatus,
     supportsShowInUsers,
-    supportsDisplaySubcategories
+    supportsDisplaySubcategories,
+    useMinimalProfilesSelect
   ])
 
   useEffect(() => {
@@ -447,7 +511,7 @@ const UsersPage = () => {
     setHasMore(true)
     setFollowingMap({})
     fetchUsers(0)
-  }, [selectedCategory, selectedSubcategory, selectedStatus, categoryId, fetchUsers])
+  }, [selectedCategory, selectedSubcategory, selectedStatus, selectedLocation, categoryId, fetchUsers])
 
   // Initialiser selectedCategory depuis categoryId si présent
   useEffect(() => {
@@ -473,7 +537,9 @@ const UsersPage = () => {
     setPendingCategory(selectedCategory)
     setPendingSubcategory(selectedSubcategory)
     setPendingStatus(selectedStatus)
-  }, [showAdvancedFilters, selectedCategory, selectedSubcategory, selectedStatus])
+    setPendingLocation(selectedLocation)
+    setPendingLocationFilter('')
+  }, [showAdvancedFilters, selectedCategory, selectedSubcategory, selectedStatus, selectedLocation])
 
   // Infinite scroll avec Intersection Observer
   useEffect(() => {
@@ -534,10 +600,18 @@ const UsersPage = () => {
     }
   }
 
+  const handlePendingLocationSelect = (location: { address: string; lat: number; lng: number; city?: string }) => {
+    const loc = location.city ?? location.address.split(',')[0]?.trim() ?? location.address
+    setPendingLocation(loc)
+    setPendingLocationFilter(location.address)
+  }
+
   const openAdvancedFilters = () => {
     setPendingCategory(selectedCategory)
     setPendingSubcategory(selectedSubcategory)
     setPendingStatus(selectedStatus)
+    setPendingLocation(selectedLocation)
+    setPendingLocationFilter(selectedLocation ?? '')
     setShowAdvancedFilters(true)
   }
 
@@ -549,6 +623,7 @@ const UsersPage = () => {
         : pendingSubcategory
     )
     setSelectedStatus(pendingStatus)
+    setSelectedLocation(pendingLocation)
     setShowAdvancedFilters(false)
   }
 
@@ -556,6 +631,8 @@ const UsersPage = () => {
     setPendingCategory('all')
     setPendingSubcategory('all')
     setPendingStatus('all')
+    setPendingLocation(null)
+    setPendingLocationFilter('')
   }
 
   return (
@@ -598,7 +675,7 @@ const UsersPage = () => {
       </div>
 
       {/* Zone scrollable */}
-      <PullToRefresh onRefresh={() => fetchUsers(0)} className="users-scrollable" enabled={isMobile}>
+      <PullToRefresh onRefresh={() => fetchUsers(0)} className="users-scrollable" enabled={isMobile} loading={loading || loadingMore}>
         {loading && users.length === 0 ? (
           <div className="users-loading">
             <p>Chargement des utilisateurs...</p>
@@ -619,10 +696,10 @@ const UsersPage = () => {
               const displayName = userItem.full_name?.trim() || 'Utilisateur'
 
               const profileTypes = parseProfileTypes(userItem.profile_type)
-                .filter(type => type !== 'other')
+                .filter(type => type !== 'other' && type !== 'user')
               const displayProfileTypes = profileTypes
                 .map(type => profileTypeLabelMap[type as keyof typeof profileTypeLabelMap] || type)
-                .slice(0, 2)
+                .slice(0, 1)
 
               return (
                 <div 
@@ -783,12 +860,40 @@ const UsersPage = () => {
               </div>
             </div>
 
+            <div className="users-filter-modal-section">
+              <p className="users-filter-modal-title">Lieu</p>
+              <div className="users-filter-modal-location">
+                <LocationAutocomplete
+                  value={pendingLocationFilter}
+                  onChange={setPendingLocationFilter}
+                  onLocationSelect={handlePendingLocationSelect}
+                  placeholder={t('search:locationPlaceholder') || 'Rechercher un lieu'}
+                />
+                {pendingLocation && (
+                  <div className="users-filter-modal-location-chip">
+                    <span>{pendingLocation}</span>
+                    <button
+                      type="button"
+                      className="users-filter-modal-location-chip-remove"
+                      onClick={() => {
+                        setPendingLocation(null)
+                        setPendingLocationFilter('')
+                      }}
+                      aria-label="Supprimer le lieu"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="users-filter-modal-actions">
               <button type="button" className="users-filter-modal-reset" onClick={resetAdvancedFilters}>
                 Réinitialiser
               </button>
               <button type="button" className="users-filter-modal-apply" onClick={applyAdvancedFilters}>
-                Appliquer le filtrage
+                Appliquer
               </button>
             </div>
           </div>

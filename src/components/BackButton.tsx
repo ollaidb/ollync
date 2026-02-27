@@ -48,6 +48,20 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
     // Retourner au niveau parent (ex: /profile/settings ou /profile)
     if (path.startsWith('/profile/')) {
       const previousPath = getPreviousPath()
+      const state = location.state as { fromConsentLearnMore?: boolean; returnTo?: string } | null
+      const helpRoots = ['/profile/contact', '/profile/legal', '/profile/resources']
+      const isHelpOrLegalPage = helpRoots.some((root) => path.startsWith(root))
+      // Retour depuis "En savoir plus" d'un bloc de consentement : revenir là où l'utilisateur était
+      if (isHelpOrLegalPage && state?.fromConsentLearnMore && state?.returnTo) {
+        markNavigatingBack()
+        navigate(state.returnTo)
+        return
+      }
+      if (isHelpOrLegalPage && previousPath && !previousPath.startsWith('/profile/')) {
+        markNavigatingBack()
+        navigate(previousPath)
+        return
+      }
       const profileSubRoutes = [
         'settings',
         'security',
@@ -97,9 +111,8 @@ const BackButton = ({ to, onClick, className = '', hideOnHome = false }: BackBut
         }
       }
 
-      const helpRoots = ['/profile/contact', '/profile/legal', '/profile/resources']
       if (helpRoots.some((root) => path.startsWith(root))) {
-        // Pour /profile/contact|legal|resources -> retour vers /profile/help
+        // Pour /profile/contact|legal|resources -> retour vers /profile/help (si on venait du profil)
         if (pathParts.length === 2) {
           markNavigatingBack()
           navigate('/profile/help')

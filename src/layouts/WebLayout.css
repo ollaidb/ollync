@@ -35,7 +35,7 @@
   color: var(--foreground);
   letter-spacing: 0.5px;
   text-decoration: none;
-  transition: opacity 0.2s ease, transform 0.18s ease-out;
+  transition: opacity 0.2s ease;
 }
 
 .web-logo:hover {
@@ -43,7 +43,7 @@
 }
 
 .web-logo:active {
-  transform: scale(0.97);
+  opacity: 0.85;
 }
 
 .web-nav {
@@ -59,11 +59,11 @@
   color: var(--foreground);
   text-decoration: none;
   font-weight: 600;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.18s ease-out;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.12s ease-out;
 }
 
 .web-nav-link:active {
-  transform: scale(0.98);
+  opacity: 0.88;
 }
 
 .web-nav-link:hover {

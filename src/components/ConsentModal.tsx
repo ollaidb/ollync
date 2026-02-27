@@ -9,8 +9,11 @@ interface ConsentModalProps {
   message: string
   onAccept: () => void
   onReject: () => void
+  /** Page légale spécifique pour ce consentement (une seule page, pas la liste). */
   learnMoreHref?: string
   onLearnMore?: () => void
+  /** Page de retour au clic sur "Voir plus" : retourner exactement où l'utilisateur était. */
+  returnTo?: string
   askAgainChecked?: boolean
   onAskAgainChange?: (value: boolean) => void
 }
@@ -23,6 +26,7 @@ const ConsentModal = ({
   onReject,
   learnMoreHref,
   onLearnMore,
+  returnTo,
   askAgainChecked = false,
   onAskAgainChange
 }: ConsentModalProps) => {
@@ -57,10 +61,12 @@ const ConsentModal = ({
             onClick={(event) => {
               event.preventDefault()
               onLearnMore?.()
-              navigate(resolvedLearnMoreHref)
+              navigate(resolvedLearnMoreHref, {
+                state: returnTo != null ? { fromConsentLearnMore: true, returnTo } : undefined
+              })
             }}
           >
-            {safeLabel('actions.learnMore', 'En savoir plus')}
+            {safeLabel('actions.learnMore', 'Voir plus')}
           </a>
         </p>
       )}

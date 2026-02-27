@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { RefreshCw } from 'lucide-react'
 import Footer from '../components/Footer'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { EmptyState } from '../components/EmptyState'
@@ -113,7 +114,7 @@ const UrgentPosts = () => {
       </div>
 
       {/* Liste des annonces par section avec scroll horizontal (3 par section) */}
-      <div className="category-content-section">
+      <PullToRefresh onRefresh={fetchPosts} className="category-content-section category-scrollable" enabled={true} loading={loading}>
         {loading ? (
           <div className="category-posts-section">
             <div className="category-posts-grid">
@@ -139,9 +140,9 @@ const UrgentPosts = () => {
                 ))}
               </div>
             </div>
-          ))
+            ))
         )}
-      </div>
+      </PullToRefresh>
       <Footer />
     </div>
   )

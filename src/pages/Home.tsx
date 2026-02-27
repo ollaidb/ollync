@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bell, Search, Sparkles, Plus, ArrowRight } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import Footer from '../components/Footer'
 import BackButton from '../components/BackButton'
@@ -14,6 +14,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabaseClient'
 import { PageMeta } from '../components/PageMeta'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
+import { SCROLL_HOME_TOP_EVENT } from '../utils/scrollToHomeTop'
 import './Home.css'
 
 interface Post {
@@ -43,6 +44,7 @@ interface Post {
 
 const Home = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const behavioralConsent = useConsent('behavioral_data')
   const { t } = useTranslation(['categories', 'home', 'common'])
@@ -55,6 +57,7 @@ const Home = () => {
     recent: t('home:recent')
   }
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
+  const [appNameClicked, setAppNameClicked] = useState(false)
   const [heroIndex, setHeroIndex] = useState(0)
   const heroSwipeStart = useRef<number | null>(null)
 
@@ -104,6 +107,27 @@ const Home = () => {
     }, 5000)
     return () => clearInterval(interval)
   }, [])
+
+  const isOnHomePage = location.pathname === '/home' || location.pathname === '/'
+
+  const scrollHomeToTop = useCallback(() => {
+    const scrollEl = document.querySelector('.home-scrollable') as HTMLElement | null
+    if (scrollEl) {
+      scrollEl.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [])
+
+  useEffect(() => {
+    const handler = () => scrollHomeToTop()
+    window.addEventListener(SCROLL_HOME_TOP_EVENT, handler)
+    return () => window.removeEventListener(SCROLL_HOME_TOP_EVENT, handler)
+  }, [scrollHomeToTop])
+
+  const handleHomeLogoClick = useCallback(() => {
+    setAppNameClicked(true)
+    setTimeout(() => setAppNameClicked(false), 300)
+    scrollHomeToTop()
+  }, [scrollHomeToTop])
 
   const HERO_SWIPE_THRESHOLD = 50
   const handleHeroSwipeStart = (clientX: number) => {
@@ -762,7 +786,7 @@ const Home = () => {
             </div>
           </div>
 
-          <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile}>
+          <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile} loading={loading}>
 
             {/* Catégories : Explorer en premier, puis les catégories */}
             <div className="home-categories-scroll">
@@ -822,8 +846,24 @@ const Home = () => {
           <div className="home-header-top">
             <BackButton hideOnHome={true} className="home-back-button" />
             <h1 
-              className="home-app-name"
-              onClick={() => navigate('/home')}
+              className={`home-app-name ${appNameClicked ? 'home-app-name--clicked' : ''}`}
+              onClick={() => {
+                if (isOnHomePage) {
+                  handleHomeLogoClick()
+                } else {
+                  navigate('/home')
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  if (isOnHomePage) handleHomeLogoClick()
+                  else navigate('/home')
+                }
+              }}
+              aria-label={t('common:nav.home') || 'Accueil'}
             >
               ollync
             </h1>
@@ -861,7 +901,7 @@ const Home = () => {
         </div>
 
         {/* CONTENU SCROLLABLE */}
-        <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile}>
+        <PullToRefresh onRefresh={loadAll} className="home-scrollable" enabled={isMobile} loading={loading}>
 
           {/* Catégories : Explorer en premier, puis les catégories */}
           <div className="home-categories-scroll">

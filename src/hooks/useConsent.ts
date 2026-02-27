@@ -304,6 +304,9 @@ export const useConsent = (consentType: ConsentType) => {
     }
     markAskedThisSession()
     setShowModal(false)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ollync_consent_last_shown', String(Date.now()))
+    }
 
     // Exécuter l'action en attente
     if (pendingAction) {
@@ -328,6 +331,9 @@ export const useConsent = (consentType: ConsentType) => {
     markAskedThisSession()
     setShowModal(false)
     setPendingAction(null)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ollync_consent_last_shown', String(Date.now()))
+    }
     // L'action n'est pas exécutée, l'utilisateur reste sur la page actuelle
   }
 
@@ -344,7 +350,7 @@ export const useConsent = (consentType: ConsentType) => {
     },
     media: {
       title: 'Utilisation des médias',
-      message: 'Nous utilisons vos photos et vidéos pour publier votre annonce.'
+      message: 'Nous utilisons vos photos pour publier votre annonce.'
     },
     profile_data: {
       title: 'Utilisation des données de profil',

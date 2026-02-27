@@ -501,7 +501,7 @@ const Notifications = () => {
         </div>
 
         {/* Zone scrollable */}
-        <PullToRefresh onRefresh={fetchNotifications} className="notifications-scrollable" enabled={isMobile}>
+        <PullToRefresh onRefresh={fetchNotifications} className="notifications-scrollable" enabled={isMobile} loading={loading}>
 
           {loading ? (
             <div className="loading-container">

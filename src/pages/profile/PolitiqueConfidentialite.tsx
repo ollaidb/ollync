@@ -20,7 +20,7 @@ const PolitiqueConfidentialite = () => {
             'Contact details (email address, phone number)',
             'Location (if enabled)',
             'Messages exchanged via the messaging feature',
-            'Published content (listings, photos, videos, descriptions)',
+            'Published content (listings, photos, descriptions)',
             'Connection and usage data (for example, login date/time, actions performed in the app)'
           ],
           note:
@@ -86,19 +86,57 @@ const PolitiqueConfidentialite = () => {
           text:
             'We keep your personal data for 2 years after your last account activity, unless a longer retention period is required by law.'
         },
+        transfers: {
+          title: '8. International data transfers',
+          intro:
+            'Ollync uses service providers based outside the European Union (hosting: Supabase, Vercel, in the United States). These transfers are framed by:',
+          items: [
+            'Standard Contractual Clauses (SCC) approved by the European Commission',
+            'The guarantees provided by these providers to protect your data'
+          ],
+          text:
+            'You can obtain a copy of these safeguards or additional information by contacting us.'
+        },
+        push: {
+          title: '9. Push notifications',
+          intro:
+            'If you enable push notifications, we process the following data to send you alerts:',
+          items: [
+            'Device subscription data (endpoint, cryptographic keys)',
+            'User identifier to associate the subscription with your account',
+            'Browser and device information (user agent)'
+          ],
+          text:
+            'This processing is based on your consent. You can withdraw it at any time by disabling notifications in your device or account settings.'
+        },
+        oauth: {
+          title: '10. Connection via Google or Apple',
+          text:
+            'If you sign in with Google or Apple, these providers transmit to us the information you have authorized (email, name, profile picture). Their processing of your data is governed by their respective privacy policies. We recommend consulting them before connecting.'
+        },
+        media: {
+          title: '11. Storage of published content (photos)',
+          text:
+            'Photos you publish are stored on our infrastructure. You retain ownership of your content. We may retain copies for security, backup or legal purposes for the retention period mentioned above. Deleted content is removed within a reasonable timeframe, except where retention is required by law.'
+        },
+        rightsDeadline: {
+          title: '12. Response time to your requests',
+          text:
+            'We undertake to respond to your requests to exercise your rights (access, rectification, erasure, etc.) within one month of receipt. This period may be extended by two months for complex requests. You will be informed of any extension.'
+        },
         cookies: {
-          title: '8. Cookies',
+          title: '13. Cookies',
           textBefore: 'Our site uses cookies to improve your experience. For more information, see our ',
           linkText: 'Cookie policy',
           textAfter: '.'
         },
         changes: {
-          title: '9. Changes',
+          title: '14. Changes',
           text:
             'We reserve the right to modify this privacy policy at any time. Any change will be published on this page with an updated “Last updated” date.'
         },
         complaint: {
-          title: '10. Complaint',
+          title: '15. Complaint',
           text: 'You can lodge a complaint with your data protection authority (CNIL in France).'
         }
       }
@@ -115,7 +153,7 @@ const PolitiqueConfidentialite = () => {
             'Coordonnées (adresse email, numéro de téléphone)',
             'Localisation (si activée)',
             'Messages échangés via la messagerie',
-            'Contenus publiés (annonces, photos, vidéos, descriptions)',
+            'Contenus publiés (annonces, photos, descriptions)',
             "Données de connexion et d'usage (ex : date/heure de connexion, actions réalisées dans l’application)"
           ],
           note:
@@ -181,20 +219,58 @@ const PolitiqueConfidentialite = () => {
           text:
             'Nous conservons vos données personnelles pendant 2 ans à compter de la dernière activité du compte, sauf obligation légale de conservation plus longue.'
         },
+        transfers: {
+          title: '8. Transferts internationaux',
+          intro:
+            "Ollync utilise des prestataires basés hors de l'Union européenne (hébergement : Supabase, Vercel, aux États-Unis). Ces transferts sont encadrés par :",
+          items: [
+            'Les Clauses Contractuelles Types (CCT) adoptées par la Commission européenne',
+            'Les garanties fournies par ces prestataires pour protéger vos données'
+          ],
+          text:
+            "Vous pouvez obtenir une copie de ces garanties ou des informations complémentaires en nous contactant."
+        },
+        push: {
+          title: '9. Notifications push',
+          intro:
+            "Si vous activez les notifications push, nous traitons les données suivantes pour vous envoyer des alertes :",
+          items: [
+            "Données d'abonnement de l'appareil (endpoint, clés cryptographiques)",
+            "Identifiant utilisateur pour associer l'abonnement à votre compte",
+            "Informations sur le navigateur et l'appareil (user agent)"
+          ],
+          text:
+            "Ce traitement repose sur votre consentement. Vous pouvez le retirer à tout moment en désactivant les notifications dans les paramètres de votre appareil ou de votre compte."
+        },
+        oauth: {
+          title: '10. Connexion via Google ou Apple',
+          text:
+            "Si vous vous connectez via Google ou Apple, ces prestataires nous transmettent les informations que vous avez autorisées (email, nom, photo de profil). Leur traitement de vos données est régi par leurs politiques de confidentialité respectives. Nous vous recommandons de les consulter avant de vous connecter."
+        },
+        media: {
+          title: '11. Stockage des contenus publiés (photos)',
+          text:
+            "Les photos que vous publiez sont stockées sur notre infrastructure. Vous restez titulaire de vos contenus. Nous pouvons conserver des copies à des fins de sécurité, sauvegarde ou obligations légales pendant la durée indiquée ci-dessus. Les contenus supprimés sont effacés dans un délai raisonnable, sauf obligation légale de conservation."
+        },
+        rightsDeadline: {
+          title: "12. Délai de réponse à vos demandes",
+          text:
+            "Nous nous engageons à répondre à vos demandes d'exercice de vos droits (accès, rectification, effacement, etc.) dans le mois suivant leur réception. Ce délai peut être prolongé de deux mois pour les demandes complexes. Vous serez informé de toute prolongation."
+        },
         cookies: {
-          title: '8. Cookies',
+          title: '13. Cookies',
           textBefore:
             'Notre site utilise des cookies pour améliorer votre expérience. Pour plus d\'informations, consultez notre ',
           linkText: 'Politique cookies',
           textAfter: '.'
         },
         changes: {
-          title: '9. Modifications',
+          title: '14. Modifications',
           text:
             'Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment. Toute modification sera publiée sur cette page avec une mise à jour de la date de "Dernière mise à jour".'
         },
         complaint: {
-          title: '10. Réclamation',
+          title: '15. Réclamation',
           text: 'Vous pouvez déposer une réclamation auprès de la CNIL.'
         }
       }
@@ -263,6 +339,33 @@ const PolitiqueConfidentialite = () => {
 
           <h4>{content.retention.title}</h4>
           <p>{content.retention.text}</p>
+
+          <h4>{content.transfers.title}</h4>
+          <p>{content.transfers.intro}</p>
+          <ul>
+            {content.transfers.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>{content.transfers.text}</p>
+
+          <h4>{content.push.title}</h4>
+          <p>{content.push.intro}</p>
+          <ul>
+            {content.push.items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p>{content.push.text}</p>
+
+          <h4>{content.oauth.title}</h4>
+          <p>{content.oauth.text}</p>
+
+          <h4>{content.media.title}</h4>
+          <p>{content.media.text}</p>
+
+          <h4>{content.rightsDeadline.title}</h4>
+          <p>{content.rightsDeadline.text}</p>
 
           <h4>{content.cookies.title}</h4>
           <p>

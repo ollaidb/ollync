@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Save, X, Camera, Plus, ChevronUp, ChevronDown, Check, Instagram, Linkedin, Facebook, Globe } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -11,6 +11,7 @@ import { useToastContext } from '../../contexts/ToastContext'
 import { useNavigationHistory } from '../../hooks/useNavigationHistory'
 import PageHeader from '../../components/PageHeader'
 import ConsentModal from '../../components/ConsentModal'
+import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import SaveChangesModal from '../../components/SaveChangesModal'
 import { LocationAutocomplete } from '../../components/Location/LocationAutocomplete'
@@ -19,11 +20,13 @@ import { publicationTypes } from '../../constants/publishData'
 import { getAllPaymentOptions, getPaymentOptionConfig, getPaymentOptionsForCategory } from '../../utils/publishHelpers'
 import { getLinkPlatform } from '../../utils/linkPlatform'
 import { compressImageForAvatar, isCompressibleImageType } from '../../utils/imageCompression'
+import AvatarCropModal from '../../components/AvatarCropModal/AvatarCropModal'
 import './EditPublicProfile.css'
 
 const EditPublicProfile = () => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,6 +95,9 @@ const EditPublicProfile = () => {
   const [keyboardInset, setKeyboardInset] = useState(0)
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [linkInputValue, setLinkInputValue] = useState('')
+  const [showAvatarCropModal, setShowAvatarCropModal] = useState(false)
+  const [avatarCropImageSrc, setAvatarCropImageSrc] = useState('')
+  const avatarCropObjectUrlRef = useRef<string | null>(null)
   const fromProfileProgress = searchParams.get('from') === 'profile-progress'
 
   const VENUE_CATEGORY_SLUGS = useMemo(() => (['studio-lieu', 'lieu']), [])
@@ -644,8 +650,16 @@ const EditPublicProfile = () => {
     }
   }, [isVenueSettingsPanelOpen, isVenuePaymentOpen, isVenueOpeningDaysOpen])
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const revokeAvatarCropObjectUrl = useCallback(() => {
+    if (avatarCropObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarCropObjectUrlRef.current)
+      avatarCropObjectUrlRef.current = null
+    }
+  }, [])
+
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file || !user) return
 
     if (file.size > 5242880) { // 5MB
@@ -659,14 +673,27 @@ const EditPublicProfile = () => {
       return
     }
 
+    revokeAvatarCropObjectUrl()
+    const url = URL.createObjectURL(file)
+    avatarCropObjectUrlRef.current = url
+    setAvatarCropImageSrc(url)
+    setShowAvatarCropModal(true)
+  }
+
+  const handleAvatarCropConfirm = useCallback(async (croppedBlob: Blob) => {
+    if (!user) return
+    setShowAvatarCropModal(false)
+    revokeAvatarCropObjectUrl()
+    setAvatarCropImageSrc('')
     setUploadingAvatar(true)
 
     try {
-      let payload: File | Blob = file
-      let fileExt = file.name.split('.').pop() || 'jpg'
-      if (isCompressibleImageType(file.type)) {
+      let payload: File | Blob = croppedBlob
+      let fileExt = croppedBlob.type === 'image/webp' ? 'webp' : 'jpg'
+      const fileForCompress = new File([croppedBlob], `avatar.${fileExt}`, { type: croppedBlob.type })
+      if (isCompressibleImageType(croppedBlob.type)) {
         try {
-          const compressed = await compressImageForAvatar(file)
+          const compressed = await compressImageForAvatar(fileForCompress)
           fileExt = compressed.type === 'image/webp' ? 'webp' : 'jpg'
           payload = new File([compressed], `avatar.${fileExt}`, { type: compressed.type })
         } catch (err) {
@@ -675,7 +702,6 @@ const EditPublicProfile = () => {
       }
       const fileName = `${user.id}/avatar_${Date.now()}.${fileExt}`
 
-      // Supprimer l'ancienne photo si elle existe
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/').slice(-2).join('/')
         await supabase.storage.from('posts').remove([oldPath])
@@ -691,24 +717,29 @@ const EditPublicProfile = () => {
       if (uploadError) {
         console.error('Error uploading avatar:', uploadError)
         alert('Erreur lors du téléchargement de la photo')
-        setUploadingAvatar(false)
-        return
-      }
-
-      const { data } = supabase.storage
-        .from('posts')
-        .getPublicUrl(fileName)
-
-      if (data?.publicUrl) {
-        setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }))
+      } else {
+        const { data } = supabase.storage.from('posts').getPublicUrl(fileName)
+        if (data?.publicUrl) {
+          setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }))
+        }
       }
     } catch (error) {
       console.error('Error uploading avatar:', error)
       alert('Erreur lors du téléchargement de la photo')
+    } finally {
+      setUploadingAvatar(false)
     }
+  }, [user, profile.avatar_url, revokeAvatarCropObjectUrl])
 
-    setUploadingAvatar(false)
-  }
+  const handleAvatarCropCancel = useCallback(() => {
+    setShowAvatarCropModal(false)
+    setAvatarCropImageSrc('')
+    revokeAvatarCropObjectUrl()
+  }, [revokeAvatarCropObjectUrl])
+
+  useEffect(() => {
+    return () => revokeAvatarCropObjectUrl()
+  }, [revokeAvatarCropObjectUrl])
 
 
   const profileTypeOptions = useMemo(() => ([
@@ -1354,7 +1385,7 @@ const EditPublicProfile = () => {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={handleAvatarUpload}
+                  onChange={handleAvatarFileSelect}
                   style={{ display: 'none' }}
                 />
                 <button
@@ -2325,7 +2356,8 @@ const EditPublicProfile = () => {
         onAccept={profileConsent.handleAccept}
         onReject={handleRejectConsent}
         onLearnMore={profileConsent.dismissModal}
-        learnMoreHref="/profile/legal/politique-confidentialite"
+        learnMoreHref={CONSENT_TO_LEGAL_PAGE.profile_data}
+        returnTo={location.pathname + location.search}
         askAgainChecked={profileConsent.askAgainNextTime}
         onAskAgainChange={profileConsent.setAskAgainNextTime}
       />
@@ -2339,6 +2371,12 @@ const EditPublicProfile = () => {
         discardLabel="Non"
         saveLabel="Oui"
         isSaving={saving}
+      />
+      <AvatarCropModal
+        visible={showAvatarCropModal}
+        imageSrc={avatarCropImageSrc}
+        onConfirm={handleAvatarCropConfirm}
+        onCancel={handleAvatarCropCancel}
       />
 
       {/* Modal de confirmation */}

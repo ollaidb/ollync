@@ -17,14 +17,14 @@
   animation: splash-evaporate 1.2s ease-out 2.6s forwards;
 }
 
-/* Fade progressif du nom : lettres s’estompent en douceur (plus vite que les blobs) */
+/* Fade progressif du contenu : nom et phrase s'estompent en douceur */
 @keyframes splash-letters-fade {
   0% { opacity: 1; color: var(--primary); }
   40% { opacity: 0.5; color: color-mix(in srgb, var(--primary) 50%, var(--background)); }
   100% { opacity: 0; color: var(--background); }
 }
 
-/* Fade uniforme : fond et lettres disparaissent ensemble */
+/* Fade uniforme : fond et contenu disparaissent ensemble */
 @keyframes splash-evaporate {
   0% {
     opacity: 1;
@@ -40,18 +40,16 @@
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.6em;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  /* Nom commence à disparaître en avance (2.2s) pour s’aligner avec les blobs à la fin */
   animation: splash-letters-fade 1.4s ease-in-out 2.2s forwards;
 }
 
+/* Nom de l'app : visible dès le départ, style moderne */
 .splash-screen__title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
   margin: 0;
   font-family: var(--font-sans);
   font-weight: 800;
@@ -59,82 +57,43 @@
   letter-spacing: 0.02em;
   color: var(--primary);
   line-height: 1;
-  animation: splash-title-hug 2.4s ease-in-out 1.8s forwards;
-}
-
-/* Effet 3D : ombres en couleurs claires (sans noir) */
-.splash-screen__letter {
-  display: inline-block;
-  opacity: 0;
-  transform: translate(var(--tx), var(--ty)) scale(0.3);
-  animation: splash-letter-meet 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  animation-delay: calc(0.2s + var(--letter-index) * 0.08s);
-  color: inherit;
   text-shadow:
-    0.03em 0.03em 0 color-mix(in srgb, var(--primary) 85%, var(--background)),
-    0.06em 0.06em 0 color-mix(in srgb, var(--primary) 65%, var(--background)),
-    0.09em 0.09em 0.12em color-mix(in srgb, var(--primary) 45%, var(--background)),
-    0.02em 0.02em 0.06em color-mix(in srgb, var(--primary) 25%, var(--background));
+    0.02em 0.02em 0 color-mix(in srgb, var(--primary) 85%, var(--background)),
+    0.04em 0.04em 0 color-mix(in srgb, var(--primary) 65%, var(--background)),
+    0.06em 0.06em 0.1em color-mix(in srgb, var(--primary) 40%, var(--background));
 }
 
-/* Rencontre : lettres arrivent de partout, se croisent, câlin, puis place finale */
-@keyframes splash-letter-meet {
+/* Phrase clé : style luxe, moderne */
+.splash-screen__tagline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  margin-top: 0.5em;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(1rem, 3.2vw, 1.2rem);
+  letter-spacing: 0.18em;
+  color: oklch(0.48 0.03 286);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* Apparition fluide, élégante — fade doux sans rebond */
+.splash-screen__phrase {
+  opacity: 0;
+  animation: splash-phrase-reveal 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-delay: calc(0.4s + var(--phrase-index) * 0.55s);
+}
+
+@keyframes splash-phrase-reveal {
   0% {
     opacity: 0;
-    transform: translate(var(--tx), var(--ty)) scale(0.2);
-  }
-  35% {
-    opacity: 0.9;
-    transform: translate(var(--mid-x), var(--mid-y)) scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1.02);
-  }
-  60% {
-    opacity: 1;
-    transform: translate(var(--hug-dx), 0) scale(1.08);
-  }
-  75% {
-    opacity: 1;
-    transform: translate(var(--hug-dx), 0) scale(1.05);
+    letter-spacing: 0.3em;
   }
   100% {
     opacity: 1;
-    transform: translate(0, 0) scale(1);
+    letter-spacing: 0.18em;
   }
-}
-
-/* Lettres depuis les bords de l’écran : chemins qui se croisent (comme la boule) */
-.splash-screen__letter:nth-child(1) { --tx: -48vw; --ty: -38vh; --mid-x: -22px; --mid-y: 28px;  --hug-dx: 0.14em; }
-.splash-screen__letter:nth-child(2) { --tx: 46vw;  --ty: 42vh;  --mid-x: 28px;  --mid-y: -32px; --hug-dx: 0.08em; }
-.splash-screen__letter:nth-child(3) { --tx: -44vw; --ty: 40vh;  --mid-x: 18px;  --mid-y: 22px;  --hug-dx: 0.04em; }
-.splash-screen__letter:nth-child(4) { --tx: 45vw;  --ty: -36vh; --mid-x: -28px; --mid-y: -18px; --hug-dx: -0.04em; }
-.splash-screen__letter:nth-child(5) { --tx: 42vw;  --ty: 35vh;  --mid-x: -18px; --mid-y: 35px;  --hug-dx: -0.08em; }
-.splash-screen__letter:nth-child(6) { --tx: -46vw; --ty: -34vh; --mid-x: 32px;  --mid-y: -22px; --hug-dx: -0.14em; }
-
-/* Animation “câlin” du mot : tout le titre se serre puis reprend sa place */
-@keyframes splash-title-hug {
-  0%, 45% {
-    letter-spacing: 0.02em;
-  }
-  55% {
-    letter-spacing: -0.12em;
-  }
-  70% {
-    letter-spacing: -0.08em;
-  }
-  100% {
-    letter-spacing: 0.02em;
-  }
-}
-
-/* Mobile : mêmes bords en vw/vh, points intermédiaires plus serrés */
-@media (max-width: 420px) {
-  .splash-screen__letter:nth-child(1) { --tx: -45vw; --ty: -35vh; --mid-x: -16px; --mid-y: 22px;  --hug-dx: 0.14em; }
-  .splash-screen__letter:nth-child(2) { --tx: 44vw;  --ty: 38vh;  --mid-x: 22px;  --mid-y: -26px; --hug-dx: 0.08em; }
-  .splash-screen__letter:nth-child(3) { --tx: -42vw; --ty: 36vh;  --mid-x: 14px;  --mid-y: 18px;  --hug-dx: 0.04em; }
-  .splash-screen__letter:nth-child(4) { --tx: 43vw;  --ty: -34vh; --mid-x: -22px; --mid-y: -14px; --hug-dx: -0.04em; }
-  .splash-screen__letter:nth-child(5) { --tx: 40vw;  --ty: 32vh;  --mid-x: -14px; --mid-y: 28px;  --hug-dx: -0.08em; }
-  .splash-screen__letter:nth-child(6) { --tx: -44vw; --ty: -32vh; --mid-x: 26px;  --mid-y: -18px; --hug-dx: -0.14em; }
 }

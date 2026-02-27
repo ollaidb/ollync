@@ -1,8 +1,10 @@
 /**
  * Utilitaire pour récupérer les recommandations basées sur les actions de l'utilisateur
- * - Likes : Recommande des posts dans les mêmes catégories que les posts likés
- * - Exclut les posts déjà likés par l'utilisateur
- * - Exclut les propres posts de l'utilisateur
+ * - Likes : catégories des posts likés
+ * - Applications/demandes : catégories des annonces auxquelles l'utilisateur a postulé
+ * - Publications : catégories des annonces publiées par l'utilisateur
+ * - Recherches : catégories filtrées dans search_history
+ * Exclut les posts déjà likés, déjà candidatés et les propres posts de l'utilisateur
  */
 
 import { supabase } from '../lib/supabaseClient'
@@ -17,10 +19,18 @@ interface LikeRow {
   post_id: string
 }
 
-interface LikedPostData {
+interface ApplicationRow {
+  post_id: string
+}
+
+interface PostCategoryRow {
   id: string
   category_id: string
   sub_category_id?: string | null
+}
+
+interface SearchHistoryRow {
+  filters?: { category_id?: string }
 }
 
 interface PostRow {
@@ -58,67 +68,62 @@ interface CategoryRow {
 }
 
 /**
- * Récupère les recommandations pour un utilisateur basées sur ses likes
+ * Récupère les recommandations pour un utilisateur basées sur likes, applications, publications et recherches
  */
 export async function fetchRecommendations(options: FetchRecommendationsOptions): Promise<MappedPost[]> {
   const { userId, limit = 10 } = options
 
   try {
-    // 1. Récupérer les IDs des posts que l'utilisateur a likés
-    const { data: likes, error: likesError } = await supabase
-      .from('likes')
-      .select('post_id')
-      .eq('user_id', userId)
+    // 1. Récupérer en parallèle : likes, applications, publications de l'utilisateur, search_history
+    const [likesRes, applicationsRes, userPostsRes, searchHistoryRes] = await Promise.all([
+      supabase.from('likes').select('post_id').eq('user_id', userId),
+      supabase.from('applications').select('post_id').eq('applicant_id', userId),
+      supabase.from('posts').select('id, category_id, sub_category_id').eq('user_id', userId).in('status', ['active', 'archived', 'completed']),
+      supabase.from('search_history').select('filters').eq('user_id', userId).order('searched_at', { ascending: false }).limit(20)
+    ])
 
-    if (likesError) {
-      console.error('Error fetching liked posts:', likesError)
-      return []
-    }
+    const likedPostIds = !likesRes.error && likesRes.data ? (likesRes.data as LikeRow[]).map((l) => l.post_id) : []
+    const appliedPostIds = !applicationsRes.error && applicationsRes.data ? (applicationsRes.data as ApplicationRow[]).map((a) => a.post_id) : []
+    const userPostsData = !userPostsRes.error && userPostsRes.data ? (userPostsRes.data as PostCategoryRow[]) : []
+    const searchHistoryData = !searchHistoryRes.error && searchHistoryRes.data ? (searchHistoryRes.data as SearchHistoryRow[]) : []
 
-    // Si l'utilisateur n'a pas encore liké de posts, retourner un tableau vide
-    if (!likes || likes.length === 0) {
-      return []
-    }
+    // 2. Collecter les post IDs pour récupérer les catégories (likes + applications)
+    const postIdsForCategories = [...new Set([...likedPostIds, ...appliedPostIds])]
 
-    const likedPostIds = (likes as LikeRow[]).map((like) => like.post_id)
-
-    // 2. Récupérer les posts likés pour obtenir leurs catégories
-    const { data: likedPostsData, error: likedPostsError } = await supabase
-      .from('posts')
-      .select('id, category_id, sub_category_id')
-      .in('id', likedPostIds)
-      .eq('status', 'active')
-
-    if (likedPostsError) {
-      console.error('Error fetching liked posts data:', likedPostsError)
-      return []
-    }
-
-    if (!likedPostsData || likedPostsData.length === 0) {
-      return []
-    }
-
-    // 3. Extraire les catégories uniques des posts likés
+    // 3. Extraire les catégories de toutes les sources
     const categoryIds = new Set<string>()
-    const subCategoryIds = new Set<string>()
-    
-    const likedPosts = likedPostsData as LikedPostData[]
-    likedPosts.forEach((post) => {
-      if (post.category_id) {
-        categoryIds.add(post.category_id)
+
+    // Depuis les posts likés ou postulés
+    if (postIdsForCategories.length > 0) {
+      const { data: postsData } = await supabase
+        .from('posts')
+        .select('id, category_id, sub_category_id')
+        .in('id', postIdsForCategories)
+        .eq('status', 'active')
+
+      if (postsData) {
+        (postsData as PostCategoryRow[]).forEach((post) => {
+          if (post.category_id) categoryIds.add(post.category_id)
+        })
       }
-      if (post.sub_category_id) {
-        subCategoryIds.add(post.sub_category_id)
-      }
+    }
+
+    // Depuis les publications de l'utilisateur (catégories dans lesquelles il publie)
+    userPostsData.forEach((post) => {
+      if (post.category_id) categoryIds.add(post.category_id)
     })
 
-    // Si aucune catégorie trouvée, retourner un tableau vide
+    // Depuis search_history (filters.category_id)
+    searchHistoryData.forEach((row) => {
+      if (row.filters?.category_id) categoryIds.add(row.filters.category_id)
+    })
+
     if (categoryIds.size === 0) {
       return []
     }
 
-    // 4. Créer un Set des IDs des posts déjà likés (pour les exclure)
-    const likedPostIdsSet = new Set<string>(likedPostIds)
+    // 4. Posts à exclure : déjà likés, déjà postulés, propres posts
+    const excludedPostIds = new Set<string>([...likedPostIds, ...appliedPostIds])
 
     // 5. Récupérer les posts recommandés dans les catégories préférées
     // Exclure les posts déjà likés et les propres posts de l'utilisateur
@@ -154,10 +159,10 @@ export async function fetchRecommendations(options: FetchRecommendationsOptions)
       .order('created_at', { ascending: false })
       .limit(limit * 2) // Récupérer plus pour avoir un meilleur choix
 
-    // Exclure les posts déjà likés après récupération
+    // Exclure les posts déjà likés/postulés après récupération
     const allRecommendedPosts = (recommendedPosts || []) as PostRow[]
-    const filteredPosts = likedPostIdsSet.size > 0
-      ? allRecommendedPosts.filter((post) => !likedPostIdsSet.has(post.id))
+    const filteredPosts = excludedPostIds.size > 0
+      ? allRecommendedPosts.filter((post) => !excludedPostIds.has(post.id))
       : allRecommendedPosts
 
     if (postsError) {

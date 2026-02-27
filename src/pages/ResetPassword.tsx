@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import { AuthBackground } from '../components/Auth/AuthBackground'
 import './Auth.css'
 
 const ResetPassword = () => {
@@ -114,8 +115,11 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="auth-page-wrap">
+      <AuthBackground />
+      <div className="auth-page">
+        <div className="auth-container-wrap">
+          <div className="auth-container">
         <div className="auth-header">
           <h1 className="auth-logo">Ollync</h1>
           <p className="auth-subtitle">
@@ -213,6 +217,8 @@ const ResetPassword = () => {
               Se connecter
             </button>
           )}
+        </div>
+          </div>
         </div>
       </div>
     </div>

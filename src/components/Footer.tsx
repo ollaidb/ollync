@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { scrollToHomeTop } from '../utils/scrollToHomeTop'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
@@ -187,22 +188,29 @@ const Footer = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/')
   }
 
+  const handleHomeClick = () => {
+    if (location.pathname === '/home' || location.pathname === '/') {
+      scrollToHomeTop()
+    } else {
+      navigate('/home')
+    }
+  }
+
   return (
     <footer className="footer">
       {navItems.map((item, index) => {
         const Icon = item.icon
         const active = isActive(item.path)
         const isCenter = index === 2 // L'icône PlusCircle est au centre
+        const isHome = item.path === '/home'
         return (
           <motion.button
             key={item.path}
             className={`footer-item ${active ? 'active' : ''} ${isCenter ? 'footer-center' : ''}`}
-            onClick={() => navigate(item.path)}
+            onClick={() => (isHome ? handleHomeClick() : navigate(item.path))}
             onMouseEnter={() => prefetchRoute(item.path)}
             onFocus={() => prefetchRoute(item.path)}
             aria-label={item.label}
-            whileTap={{ scale: isCenter ? 0.92 : 0.96 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
           >
             {isCenter ? (
               <div className="footer-center-icon-wrapper">

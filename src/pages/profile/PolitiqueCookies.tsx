@@ -21,6 +21,14 @@ const PolitiqueCookies = () => {
             'Strictly necessary cookies (operation, security, sessions)',
             'Preference cookies (language, display)',
             'Audience measurement cookies (if enabled)'
+          ],
+          tableTitle: 'Indicative list of cookies',
+          tableIntro: 'Examples of cookies that may be used:',
+          tableRows: [
+            { name: 'sb-*-auth-token', purpose: 'Supabase user session', duration: 'Session', type: 'Strictly necessary' },
+            { name: 'consent_*', purpose: 'Storing your consent choices', duration: 'Persistent (1 year)', type: 'Preferences' },
+            { name: 'ollync_*', purpose: 'Application preferences (language, display)', duration: 'Variable', type: 'Preferences' },
+            { name: 'Audience measurement', purpose: 'Visit statistics (if accepted)', duration: 'Limited', type: 'Optional' }
           ]
         },
         thirdParty: {
@@ -43,7 +51,7 @@ const PolitiqueCookies = () => {
         },
         management: {
           title: '6. Managing cookies',
-          text: 'You can manage or delete cookies in your browser settings.'
+          text: 'You can manage or delete cookies in your browser settings. You can also withdraw your consent at any time by clearing your browser data or by contacting us. The consent modal may reappear on your next visit so you can make a new choice.'
         },
         personalData: {
           title: '7. Links',
@@ -67,6 +75,14 @@ const PolitiqueCookies = () => {
             'Cookies strictement nécessaires (fonctionnement, sécurité, sessions)',
             'Cookies de préférences (langue, affichage)',
             'Cookies de mesure d’audience (si activés)'
+          ],
+          tableTitle: 'Liste indicative des cookies',
+          tableIntro: "Exemples de cookies susceptibles d'être utilisés :",
+          tableRows: [
+            { name: 'sb-*-auth-token', purpose: 'Session utilisateur Supabase', duration: 'Session', type: 'Strictement nécessaire' },
+            { name: 'consent_*', purpose: "Mémorisation de vos choix de consentement", duration: 'Persistant (1 an)', type: 'Préférences' },
+            { name: 'ollync_*', purpose: 'Préférences applicatives (langue, affichage)', duration: 'Variable', type: 'Préférences' },
+            { name: "Mesure d'audience", purpose: 'Statistiques de visite (si accepté)', duration: 'Limité', type: 'Optionnel' }
           ]
         },
         thirdParty: {
@@ -89,7 +105,7 @@ const PolitiqueCookies = () => {
         },
         management: {
           title: '6. Gestion des cookies',
-          text: 'Vous pouvez gérer ou supprimer les cookies dans les paramètres de votre navigateur.'
+          text: "Vous pouvez gérer ou supprimer les cookies dans les paramètres de votre navigateur. Vous pouvez également retirer votre consentement à tout moment en effaçant les données du navigateur ou en nous contactant. Le bandeau de consentement pourra réapparaître lors d'une prochaine visite pour vous permettre de faire un nouveau choix."
         },
         personalData: {
           title: '7. Liens',
@@ -118,6 +134,32 @@ const PolitiqueCookies = () => {
               <li key={item}>{item}</li>
             ))}
           </ul>
+          {content.usage.tableTitle && (
+            <>
+              <h5>{content.usage.tableTitle}</h5>
+              <p>{content.usage.tableIntro}</p>
+              <table className="legal-cookies-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--border)' }}>{isEnglish ? 'Name' : 'Nom'}</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--border)' }}>{isEnglish ? 'Purpose' : 'Finalité'}</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--border)' }}>{isEnglish ? 'Duration' : 'Durée'}</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid var(--border)' }}>{isEnglish ? 'Type' : 'Type'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {content.usage.tableRows.map((row, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{row.name}</td>
+                      <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{row.purpose}</td>
+                      <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{row.duration}</td>
+                      <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{row.type}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
 
           <h4>{content.thirdParty.title}</h4>
           <p>{content.thirdParty.intro}</p>

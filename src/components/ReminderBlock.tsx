@@ -5,19 +5,23 @@ import './ReminderBlock.css'
 
 interface ReminderBlockProps {
   reminder: ReminderItem
-  onDismiss: (type: ReminderItem['type']) => void
+  onDismiss: (type: ReminderItem['type'], action: import('../hooks/useReminder').DismissAction) => void
 }
 
 export default function ReminderBlock({ reminder, onDismiss }: ReminderBlockProps) {
   const navigate = useNavigate()
 
   const handleAction = () => {
-    onDismiss(reminder.type)
+    onDismiss(reminder.type, 'cooldown')
     navigate(reminder.href)
   }
 
+  const handleNeverAsk = () => {
+    onDismiss(reminder.type, 'never')
+  }
+
   const handleClose = () => {
-    onDismiss(reminder.type)
+    onDismiss(reminder.type, 'cooldown')
   }
 
   return (
@@ -33,9 +37,9 @@ export default function ReminderBlock({ reminder, onDismiss }: ReminderBlockProp
           type="button"
           className="reminder-block-close"
           onClick={handleClose}
-          aria-label="Fermer le rappel"
+          aria-label="Fermer"
         >
-          <X size={20} strokeWidth={2} />
+          <X size={18} strokeWidth={2} />
         </button>
 
         <h2 id="reminder-block-title" className="reminder-block-title">
@@ -44,13 +48,22 @@ export default function ReminderBlock({ reminder, onDismiss }: ReminderBlockProp
         <p id="reminder-block-message" className="reminder-block-message">
           {reminder.message}
         </p>
-        <button
-          type="button"
-          className="reminder-block-cta"
-          onClick={handleAction}
-        >
-          {reminder.buttonLabel}
-        </button>
+        <div className="reminder-block-actions">
+          <button
+            type="button"
+            className="reminder-block-button reminder-block-button-cancel"
+            onClick={handleNeverAsk}
+          >
+            Ne plus demander
+          </button>
+          <button
+            type="button"
+            className="reminder-block-button reminder-block-button-primary"
+            onClick={handleAction}
+          >
+            {reminder.buttonLabel}
+          </button>
+        </div>
       </div>
     </div>
   )

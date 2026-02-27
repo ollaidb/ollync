@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { RefreshCw, Heart, Search, SlidersHorizontal, Users, X } from 'lucide-react'
+import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import BackButton from '../components/BackButton'
 import InlineVideoPreview from '../components/InlineVideoPreview'
 import CategoryPlaceholderMedia from '../components/CategoryPlaceholderMedia'
@@ -283,7 +284,7 @@ const RecentPosts = () => {
       </div>
 
       {/* Zone scrollable */}
-      <div className="swipe-scrollable">
+      <PullToRefresh onRefresh={fetchPosts} className="swipe-scrollable" enabled={true} loading={loading}>
         {loading ? (
           <div className="swipe-loading">
             <p>Chargement des annonces...</p>
@@ -385,7 +386,7 @@ const RecentPosts = () => {
             })}
           </div>
         )}
-      </div>
+      </PullToRefresh>
 
       {isFilterOpen && (
         <div

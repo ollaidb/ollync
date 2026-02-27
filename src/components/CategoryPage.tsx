@@ -7,6 +7,7 @@ import PostCard from './PostCard'
 import { PostCardSkeleton } from './PostCardSkeleton'
 import BackButton from './BackButton'
 import { EmptyState } from './EmptyState'
+import { PullToRefresh } from './PullToRefresh/PullToRefresh'
 import { fetchSubMenusForCategory } from '../utils/categoryHelpers'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { useAuth } from '../hooks/useSupabase'
@@ -611,14 +612,11 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
       </div>
 
       {/* Contenu scrollable */}
-      <div className="swipe-scrollable category-scrollable">
+      <PullToRefresh onRefresh={fetchPosts} className="swipe-scrollable category-scrollable" enabled={true} loading={loading}>
         <div className="category-header-spacer" aria-hidden="true" />
-        <div
-          key={`${submenu || 'tout'}:${subSubMenu || ''}:${subSubSubMenu || ''}`}
-          className="category-content-section category-content-transition"
-        >
+        <div className={`category-content-section category-content-transition${loading ? ' is-loading' : ''}`}>
         {loading ? (
-          <div className="category-posts-section">
+          <div className="category-posts-section category-posts-loading">
             <div className="category-posts-grid">
               <PostCardSkeleton viewMode="grid" count={3} />
             </div>
@@ -650,7 +648,7 @@ const CategoryPage = ({ categorySlug, categoryName }: CategoryPageProps) => {
           ))
         )}
         </div>
-      </div>
+      </PullToRefresh>
 
       {isFilterOpen && (
         <div

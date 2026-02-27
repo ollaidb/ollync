@@ -2,85 +2,85 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://ollync.fr/</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://ollync.fr/home</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://ollync.fr/feed</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://ollync.fr/search</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://ollync.fr/favorites</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://ollync.fr/creation-contenu</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/emploi</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/casting-role</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/studio-lieu</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/services</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/evenements</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/vente</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/urgent</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://ollync.fr/recent</loc>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-02-27</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>

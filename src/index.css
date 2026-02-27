@@ -259,20 +259,20 @@ button {
 
 /* Effet au clic : feedback visuel léger pour rendre l’app vivante */
 .tap-effect {
-  transition: transform 0.18s ease-out, opacity 0.15s ease-out;
+  transition: opacity 0.12s ease-out;
 }
 .tap-effect:active {
-  transform: scale(0.97);
+  opacity: 0.88;
 }
 @media (hover: hover) {
   .tap-effect:hover {
-    transition: transform 0.2s ease-out, opacity 0.15s ease-out;
+    transition: opacity 0.12s ease-out;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .tap-effect,
   .tap-effect:active {
-    transform: none;
+    opacity: 1;
     transition: none;
   }
 }

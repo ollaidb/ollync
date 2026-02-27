@@ -1,16 +1,19 @@
 {
   "name": "Ollync",
   "short_name": "Ollync",
-  "description": "Mise en relation Ollync",
+  "description": "Mise en relation pour créateurs de contenu",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
   "icons": [
     {
       "src": "/vite.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

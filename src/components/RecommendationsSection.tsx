@@ -51,15 +51,20 @@ const RecommendationsSection = ({ viewMode = 'grid' }: RecommendationsSectionPro
       try {
         setLoading(true)
         
-        // D'abord vérifier si l'utilisateur a des actions (likes) dans l'application
-        const { data: likes, error: likesError } = await supabase
-          .from('likes')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1)
+        // Vérifier si l'utilisateur a des actions : likes, demandes (applications), publications, recherches
+        const [likesRes, applicationsRes, postsRes, searchRes] = await Promise.all([
+          supabase.from('likes').select('id').eq('user_id', user.id).limit(1),
+          supabase.from('applications').select('id').eq('applicant_id', user.id).limit(1),
+          supabase.from('posts').select('id').eq('user_id', user.id).in('status', ['active', 'archived', 'completed']).limit(1),
+          supabase.from('search_history').select('id').eq('user_id', user.id).limit(1)
+        ])
 
-        // Si pas d'actions, ne pas charger les recommandations
-        if (likesError || !likes || likes.length === 0) {
+        const hasLikes = !likesRes.error && likesRes.data && likesRes.data.length > 0
+        const hasApplications = !applicationsRes.error && applicationsRes.data && applicationsRes.data.length > 0
+        const hasPosts = !postsRes.error && postsRes.data && postsRes.data.length > 0
+        const hasSearches = !searchRes.error && searchRes.data && searchRes.data.length > 0
+
+        if (!hasLikes && !hasApplications && !hasPosts && !hasSearches) {
           setHasActions(false)
           setRecommendations([])
           setLoading(false)
@@ -108,10 +113,10 @@ const RecommendationsSection = ({ viewMode = 'grid' }: RecommendationsSectionPro
         <div className="recommendations-header">
           <div className="recommendations-title">
             <Sparkles size={20} />
-            <h2>Recommandations pour vous</h2>
+            <h2>Pour vous</h2>
           </div>
           <p className="recommendations-subtitle">
-            Basées sur vos likes et vos préférences
+            Basées sur vos likes, vos recherches et vos publications
           </p>
         </div>
         <div className={`recommendations-posts ${viewMode}`}>

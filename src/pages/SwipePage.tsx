@@ -495,7 +495,7 @@ const SwipePage = () => {
       </div>
 
       {/* Zone scrollable */}
-      <PullToRefresh onRefresh={() => fetchPosts(0)} className="swipe-scrollable" enabled={isMobile}>
+      <PullToRefresh onRefresh={() => fetchPosts(0)} className="swipe-scrollable" enabled={isMobile} loading={loading || loadingMore}>
         {loading && posts.length === 0 ? (
           <div className="swipe-loading">
             <p>Chargement des annonces...</p>

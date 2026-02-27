@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import { checkModerationTextFromDb } from '../../utils/moderation'
 import ConsentModal from '../ConsentModal'
+import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import CalendarPicker from './CalendarPicker'
 import PostSelector from './PostSelector'
 import './MessageInput.css'
@@ -125,6 +126,7 @@ const getMemberDisplayName = (m: MentionableMember) =>
 
 const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId, groupMembers = [] }: MessageInputProps) => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
@@ -1032,7 +1034,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         onAccept={mediaConsent.handleAccept}
         onReject={mediaConsent.handleReject}
         onLearnMore={mediaConsent.dismissModal}
-        learnMoreHref="/profile/legal/politique-confidentialite"
+        learnMoreHref={CONSENT_TO_LEGAL_PAGE.media}
+        returnTo={location.pathname + location.search}
         askAgainChecked={mediaConsent.askAgainNextTime}
         onAskAgainChange={mediaConsent.setAskAgainNextTime}
       />
@@ -1044,7 +1047,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         onAccept={messagingConsent.handleAccept}
         onReject={messagingConsent.handleReject}
         onLearnMore={messagingConsent.dismissModal}
-        learnMoreHref="/profile/legal/politique-confidentialite"
+        learnMoreHref={CONSENT_TO_LEGAL_PAGE.messaging}
+        returnTo={location.pathname + location.search}
         askAgainChecked={messagingConsent.askAgainNextTime}
         onAskAgainChange={messagingConsent.setAskAgainNextTime}
       />

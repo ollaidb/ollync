@@ -1,13 +1,13 @@
 /**
- * Splash screen : fond AuthBackground + nom « Ollync » animé.
- * Les lettres arrivent depuis différents points et se rejoignent au centre.
- * Affiché à chaque ouverture complète de l'application.
+ * Splash screen : fond AuthBackground + nom « Ollync » présent dès l'affichage.
+ * Phrase clé « Un projet, une annonce, une rencontre » affichée ligne par ligne.
  */
 import { useEffect } from 'react'
 import { AuthBackground } from '../Auth/AuthBackground'
 import './SplashScreen.css'
 
 const APP_NAME = 'Ollync'
+const TAGLINE_PHRASES = ['Un projet', 'une annonce', 'une rencontre']
 
 interface SplashScreenProps {
   onComplete: () => void
@@ -15,7 +15,7 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   useEffect(() => {
-    /* Fade finit à 2.6s + 1.2s = 3.8s ; on masque juste après */
+    /* Phrase 1 à 0.2s, 2 à 0.8s, 3 à 1.4s ; fade à 2.6s ; masque à ~3.8s */
     const timer = setTimeout(onComplete, 3900)
     return () => clearTimeout(timer)
   }, [onComplete])
@@ -24,17 +24,18 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     <div className="splash-screen" role="img" aria-label="Ollync">
       <AuthBackground />
       <div className="splash-screen__content">
-        <h1 className="splash-screen__title">
-          {APP_NAME.split('').map((letter, i) => (
+        <h1 className="splash-screen__title">{APP_NAME}</h1>
+        <p className="splash-screen__tagline" aria-hidden="true">
+          {TAGLINE_PHRASES.map((phrase, i) => (
             <span
               key={i}
-              className="splash-screen__letter"
-              style={{ '--letter-index': i } as React.CSSProperties}
+              className="splash-screen__phrase"
+              style={{ '--phrase-index': i } as React.CSSProperties}
             >
-              {letter}
+              {phrase}
             </span>
           ))}
-        </h1>
+        </p>
       </div>
     </div>
   )

@@ -246,7 +246,10 @@ const Messages = () => {
   const [participantToRemove, setParticipantToRemove] = useState<ConversationParticipant | null>(null)
   const [showDissociateConfirm, setShowDissociateConfirm] = useState(false)
   const [groupActionFeedback, setGroupActionFeedback] = useState<string | null>(null)
+  const [hasMoreMessages, setHasMoreMessages] = useState(false)
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false)
 
+  const MESSAGES_PAGE_SIZE = 50
   const conversationTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const messageTouchRef = useRef<{ id?: string; startX: number; startY: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
@@ -1092,26 +1095,34 @@ const Messages = () => {
     }
   }
 
-  const loadMessages = async (convId: string) => {
+  const loadMessages = async (convId: string, options?: { olderThan?: string }) => {
     if (!user) return
 
+    const isLoadOlder = Boolean(options?.olderThan)
     const requestId = ++loadMessagesRequestIdRef.current
-    setMessagesLoading(true)
-    // Utiliser select('*') pour éviter les problèmes de colonnes manquantes
+    if (isLoadOlder) {
+      setLoadingOlderMessages(true)
+    } else {
+      setMessagesLoading(true)
+      setHasMoreMessages(false)
+    }
+
+    const messageColumns = 'id, content, sender_id, created_at, read_at, edited_at, message_type, file_url, file_name, file_type, location_data, price_data, rate_data, calendar_request_data, shared_post_id, shared_contract_id, shared_profile_id, is_deleted, deleted_for_user_id, is_deleted_for_all, deleted_for_all_at, conversation_id, sender'
     try {
+      const buildQuery = (source: 'view' | 'table') => {
+        let q = source === 'view'
+          ? supabase.from('public_messages_with_sender' as any).select(messageColumns)
+          : supabase.from('messages').select(messageColumns.replace(', sender', ''))
+        q = q.eq('conversation_id', convId)
+        if (isLoadOlder && options?.olderThan) {
+          q = q.lt('created_at', options.olderThan)
+        }
+        return q.order('created_at', { ascending: false }).limit(MESSAGES_PAGE_SIZE)
+      }
+
       const { data: messagesData, error } = await fetchWithFallback(
-        () =>
-          supabase
-            .from('public_messages_with_sender' as any)
-            .select('*')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: true }),
-        () =>
-          supabase
-            .from('messages')
-            .select('*')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: true })
+        () => buildQuery('view'),
+        () => buildQuery('table')
       )
 
       if (error) {
@@ -1122,15 +1133,13 @@ const Messages = () => {
       }
 
       if (messagesData && messagesData.length > 0) {
+        setHasMoreMessages(messagesData.length === MESSAGES_PAGE_SIZE)
+        const rawOrdered = (messagesData as Array<Message & { is_deleted?: boolean | null; deleted_for_user_id?: string | null; is_deleted_for_all?: boolean | null }>).slice().reverse()
         // Filtrer les messages supprimés côté client (soft delete)
         // Un message est visible si :
         // - is_deleted est null/false OU
         // - deleted_for_user_id n'est pas égal à l'utilisateur actuel
-        const visibleMessages = (messagesData as Array<Message & { 
-          is_deleted?: boolean | null
-          deleted_for_user_id?: string | null
-          is_deleted_for_all?: boolean | null
-        }>).filter((msg) => {
+        const visibleMessages = rawOrdered.filter((msg) => {
           if (msg.is_deleted_for_all === true) {
             return false
           }
@@ -1182,9 +1191,14 @@ const Messages = () => {
           /* ignore */
         }
         shouldScrollToBottomRef.current = !hasRestorePending
-        setMessages(formattedMessages)
+        if (isLoadOlder) {
+          setMessages((prev) => [...formattedMessages, ...prev])
+        } else {
+          setMessages(formattedMessages)
+        }
 
-        // Marquer les messages non lus comme lus
+        if (!isLoadOlder) {
+          // Marquer les messages non lus comme lus (initial load uniquement)
         const unreadMessages = formattedMessages.filter(
           (msg) => msg.sender_id !== user.id && !msg.read_at
         )
@@ -1214,16 +1228,26 @@ const Messages = () => {
             )
           )
         }
+        }
       } else {
         if (requestId !== loadMessagesRequestIdRef.current) return
-        setMessages([])
+        setHasMoreMessages(false)
+        if (!isLoadOlder) setMessages([])
       }
     } finally {
       if (requestId === loadMessagesRequestIdRef.current) {
         setMessagesLoading(false)
+        setLoadingOlderMessages(false)
       }
     }
   }
+
+  const loadOlderMessages = useCallback(() => {
+    const convId = selectedConversation?.id || conversationId
+    if (!convId || loadingOlderMessages || !hasMoreMessages || messages.length === 0) return
+    const oldest = messages[0]?.created_at
+    if (oldest) loadMessages(convId, { olderThan: oldest })
+  }, [selectedConversation?.id, conversationId, loadingOlderMessages, hasMoreMessages, messages])
 
   useEffect(() => {
     if (!isInfoView || !selectedConversation || !user) return
@@ -4543,6 +4567,23 @@ const Messages = () => {
                       En savoir plus
                     </button>
                   </div>
+                </div>
+              )}
+              {hasMoreMessages && !loadingOlderMessages && (
+                <div className="conversation-load-older-wrapper">
+                  <button
+                    type="button"
+                    className="conversation-load-older-btn"
+                    onClick={loadOlderMessages}
+                    aria-label="Charger les messages précédents"
+                  >
+                    Charger les messages précédents
+                  </button>
+                </div>
+              )}
+              {loadingOlderMessages && (
+                <div className="conversation-load-older-wrapper">
+                  <span className="conversation-load-older-spinner" aria-busy="true">Chargement...</span>
                 </div>
               )}
               {groupedMessages.map((group, groupIndex) => (

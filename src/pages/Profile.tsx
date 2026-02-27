@@ -612,6 +612,45 @@ const Profile = () => {
     )
   }
 
+  /* Pages légales accessibles sans connexion (pour inscription, "Voir plus" depuis consentements) */
+  const legalDetailPaths = [
+    '/profile/legal/mentions-legales',
+    '/profile/legal/politique-confidentialite',
+    '/profile/legal/cgu',
+    '/profile/legal/cgv',
+    '/profile/legal/politique-cookies',
+    '/profile/legal/securite'
+  ]
+  if (!user && !isPublicProfile && legalDetailPaths.includes(location.pathname)) {
+    const LegalContent = (() => {
+      if (location.pathname === '/profile/legal/mentions-legales') return MentionsLegales
+      if (location.pathname === '/profile/legal/politique-confidentialite') return PolitiqueConfidentialite
+      if (location.pathname === '/profile/legal/cgu') return CGU
+      if (location.pathname === '/profile/legal/cgv') return CGV
+      if (location.pathname === '/profile/legal/politique-cookies') return PolitiqueCookies
+      if (location.pathname === '/profile/legal/securite') return PageSecurite
+      return null
+    })()
+    if (LegalContent) {
+      return (
+        <div className="app">
+          <div className="profile-page">
+            <div className="profile-header-fixed">
+              <div className="profile-header-content">
+                <BackButton />
+                <h1 className="profile-title">{getPageTitle()}</h1>
+                <div className="profile-header-spacer" />
+              </div>
+            </div>
+            <div className="profile-scrollable profile-scrollable-increased-padding">
+              <LegalContent />
+            </div>
+          </div>
+        </div>
+      )
+    }
+  }
+
   /* Afficher l'écran "pas connecté" seulement pour les routes qui nécessitent un compte.
    * Les profils publics (/profile/public/:id) restent accessibles sans connexion. */
   if (!user && !isPublicProfile) {

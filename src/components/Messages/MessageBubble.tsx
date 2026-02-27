@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { File, MapPin, DollarSign, Share2, X, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
@@ -92,7 +92,7 @@ interface MessageBubbleProps {
 const getMemberDisplayName = (m: MentionableMember) =>
   (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
 
-const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick }: MessageBubbleProps) => {
+const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick }: MessageBubbleProps) => {
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
@@ -863,4 +863,5 @@ const MessageBubble = ({ message, isOwn, showAvatar = false, systemSenderEmail, 
   )
 }
 
+const MessageBubble = memo(MessageBubbleInner)
 export default MessageBubble

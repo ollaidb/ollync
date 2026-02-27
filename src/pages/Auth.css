@@ -493,9 +493,29 @@
   margin-bottom: 4px;
 }
 
+.conditions-block-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 8px 0;
+}
+
+.conditions-block-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  margin: 0 0 12px 0;
+}
+
+.conditions-block-choice {
+  margin-bottom: 20px;
+}
+
 .condition-item {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .condition-label {
@@ -535,7 +555,6 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  margin-left: 8px;
   text-decoration: underline;
   flex-shrink: 0;
   transition: color 0.2s ease;

@@ -22,6 +22,30 @@ npm install
 npm run dev
 ```
 
+### Tester en PWA sur ton téléphone
+
+L’app est déjà configurée en **PWA** (manifeste + service worker). Tu peux la lancer comme une app sur ton téléphone de deux façons :
+
+**Option 1 – Test en local (même Wi‑Fi)**  
+1. Sur ton PC : `npm run dev:mobile` (ou `npm run dev -- --host`).  
+2. Note l’URL affichée, par ex. `http://192.168.x.x:3000`.  
+3. Sur ton téléphone (même réseau) : ouvre cette URL dans Chrome (Android) ou Safari (iOS).  
+4. **Android** : Menu (⋮) → « Ajouter à l’écran d’accueil » ou « Installer l’application ».  
+5. **iOS** : Partager → « Sur l’écran d’accueil ».
+
+**Option 2 – Version en ligne (après déploiement)**  
+Ouvre **https://ollync.fr** sur ton téléphone, puis utilise le même « Ajouter à l’écran d’accueil » / « Sur l’écran d’accueil ». L’app s’ouvrira en mode standalone (sans barre d’URL).
+
+**Avoir Ollync parmi tes applications (écran d’accueil / tiroir d’apps)**  
+Une fois le site déployé et ouvert sur ton téléphone :
+
+- **Sur Android** : ouvre https://ollync.fr dans Chrome → menu (⋮) → « Ajouter à l’écran d’accueil » ou « Installer l’application ». L’icône Ollync apparaîtra sur ton écran d’accueil et dans la liste de tes applications.
+- **Sur iPhone/iPad** : ouvre https://ollync.fr dans Safari → touche **Partager** (en bas) → « Sur l’écran d’accueil » → Ajouter. L’icône Ollync apparaîtra sur l’écran d’accueil avec tes autres apps.
+
+Sur mobile, une bannière en bas de l’écran propose aussi d’ajouter l’app à l’écran d’accueil (avec un bouton « Installer » sur Android).
+
+> Pour une installabilité optimale en production, ajoute des icônes PNG 192×192 et 512×512 dans `public/` et référence-les dans `public/manifest.webmanifest`.
+
 ## Build
 
 ```bash

@@ -1,0 +1,323 @@
+/* Calendrier personnalisé pour date de naissance – design Ollync */
+
+.birth-date-picker-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.birth-date-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  background: var(--input);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.birth-date-picker-trigger:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.birth-date-picker-trigger:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.birth-date-picker-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.birth-date-picker-icon {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.birth-date-picker-placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Overlay sombre en arrière-plan */
+.birth-date-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Popover calendrier – centré, au premier plan, taille réduite */
+.birth-date-picker-popover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  min-width: 260px;
+  max-width: 90vw;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  padding: 12px;
+}
+
+/* Variables pour react-day-picker – taille réduite, design Ollync */
+.birth-date-picker-popover.rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  --rdp-day_height: 32px;
+  --rdp-day_width: 32px;
+  --rdp-day_button-height: 30px;
+  --rdp-day_button-width: 30px;
+  --rdp-day_button-border-radius: 10px;
+  --rdp-day_button-border: none;
+  --rdp-today-color: var(--primary);
+  --rdp-nav_button-height: 28px;
+  --rdp-nav_button-width: 28px;
+  --rdp-nav_height: 32px;
+  --rdp-dropdown-gap: 8px;
+  --rdp-outside-opacity: 0.4;
+  --rdp-disabled-opacity: 0.35;
+  --rdp-animation_duration: 0.2s;
+  font-family: var(--font-sans);
+}
+
+.birth-date-picker-popover .rdp-months {
+  justify-content: center;
+}
+
+/* Zone mois + année (caption avec dropdowns) */
+.birth-date-picker-popover .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  height: auto;
+  min-height: 40px;
+}
+
+.birth-date-picker-popover .rdp-weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: capitalize;
+}
+
+.birth-date-picker-popover .rdp-day_button {
+  font-size: 12px;
+  color: var(--foreground);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.birth-date-picker-popover .rdp-day_button:hover:not([disabled]):not(.rdp-selected) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.birth-date-picker-popover .rdp-day_button.rdp-selected {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.birth-date-picker-popover .rdp-day_button.rdp-today:not(.rdp-selected) {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Boutons de navigation (mois précédent / suivant) */
+.birth-date-picker-popover .rdp-nav {
+  gap: 6px;
+  height: var(--rdp-nav_height);
+}
+
+.birth-date-picker-popover .rdp-button_previous,
+.birth-date-picker-popover .rdp-button_next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--rdp-nav_button-width);
+  height: var(--rdp-nav_button-height);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--input);
+  color: var(--foreground);
+  transition: all 0.15s ease;
+}
+
+.birth-date-picker-popover .rdp-button_previous:hover:not(:disabled),
+.birth-date-picker-popover .rdp-button_next:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--input));
+  color: var(--primary);
+}
+
+.birth-date-picker-popover .rdp-nav .rdp-chevron {
+  fill: currentColor;
+  width: 14px;
+  height: 14px;
+}
+
+/* Conteneur des dropdowns mois/année */
+.birth-date-picker-popover .rdp-dropdowns {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+/* Dropdown personnalisé (remplace le select natif) – design Ollync */
+.birth-date-picker-popover .birth-date-custom-dropdown {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--input);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.birth-date-custom-dropdown[data-disabled="true"] .birth-date-custom-dropdown-trigger {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-trigger:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-chevron {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  transition: transform 0.2s ease;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown[data-open="true"] .birth-date-custom-dropdown-chevron {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* Liste des options (mois/année) – personnalisée, design Ollync */
+.birth-date-picker-popover .birth-date-custom-dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-item:hover:not(:disabled) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-item.selected {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.birth-date-picker-popover .birth-date-custom-dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Conserver les styles pour l'ancien dropdown natif si présent */
+.birth-date-picker-popover .rdp-dropdown_root {
+  flex: 1;
+  min-width: 0;
+}
+
+.birth-date-picker-popover .rdp-caption_label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 360px) {
+  .birth-date-picker-popover {
+    min-width: 240px;
+    padding: 10px;
+  }
+
+  .birth-date-picker-popover .rdp-dropdown_root {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .birth-date-picker-popover .rdp-caption_label {
+    font-size: 13px;
+  }
+
+  .birth-date-picker-popover.rdp-root {
+    --rdp-day_height: 28px;
+    --rdp-day_width: 28px;
+    --rdp-day_button-height: 26px;
+    --rdp-day_button-width: 26px;
+  }
+}

@@ -440,6 +440,7 @@ const Favorites = () => {
         onRefresh={() => activeTab === 'posts' ? fetchLikedPosts() : fetchFollowedProfiles()}
         className="favorites-content"
         enabled={isMobile}
+        loading={loading}
       >
         {loading ? (
           activeTab === 'posts' ? (

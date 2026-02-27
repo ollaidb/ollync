@@ -35,12 +35,17 @@ import { useIsMobile } from './hooks/useIsMobile'
 import { useConsent } from './hooks/useConsent'
 import WebLayout from './layouts/WebLayout'
 import ConsentModal from './components/ConsentModal'
+import { CONSENT_TO_LEGAL_PAGE } from './utils/consentLegalPages'
 import ReminderBlock from './components/ReminderBlock'
-import { useReminder } from './hooks/useReminder'
+import { useReminder, REMINDER_FIRST_SEEN_KEY } from './hooks/useReminder'
+import { useAppUsageTime } from './hooks/useAppUsageTime'
+import { useAuth } from './hooks/useSupabase'
+import PersonalizationQuestionnaire from './components/PersonalizationQuestionnaire/PersonalizationQuestionnaire'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SessionExpiredHandler } from './components/SessionExpiredHandler'
 import { SplashScreen } from './components/SplashScreen/SplashScreen'
 import { AuthTransitionOverlay } from './components/AuthTransitionOverlay/AuthTransitionOverlay'
+import AddToHomeScreenBanner from './components/AddToHomeScreenBanner'
 import './App.css'
 
 function isReminderRoute(pathname: string): boolean {
@@ -79,13 +84,18 @@ function AppContent() {
   const routeTransitionKey = location.pathname
   const isAuthPage = location.pathname.startsWith('/auth/')
   const isMobile = useIsMobile()
+  const cookiesConsent = useConsent('cookies')
+  const { user } = useAuth()
   const { reminder, dismiss } = useReminder()
-  const showReminder = reminder != null && isReminderRoute(location.pathname)
+  const { shouldShowQuestionnaire, markCompleted } = useAppUsageTime()
   const isConsentInfoPage =
     location.pathname === '/profile/legal/politique-cookies' ||
     location.pathname === '/profile/legal/politique-confidentialite'
   const showFooter = !isAuthPage && !location.pathname.startsWith('/messages/') && location.pathname !== '/notifications' && !location.pathname.startsWith('/post/') && location.pathname !== '/publish' && location.pathname !== '/publier-annonce' && !location.pathname.startsWith('/profile/')
-  const cookiesConsent = useConsent('cookies')
+  const showReminder =
+    reminder != null &&
+    isReminderRoute(location.pathname) &&
+    !cookiesConsent.showModal
 
   useEffect(() => {
     if (isConsentInfoPage) return
@@ -95,13 +105,35 @@ function AppContent() {
     if (cookiesConsent.hasConsented === true) return
     cookiesConsent.requireConsent(() => {})
   }, [
-    cookiesConsent.canPromptNow,
-    cookiesConsent.hasConsented,
-    cookiesConsent.loading,
-    cookiesConsent.showModal,
-    cookiesConsent.requireConsent,
+    cookiesConsent,
     isConsentInfoPage
   ])
+
+  // Enregistrer la fin d'affichage du splash (même si on l'a sauté) pour le délai avant tout bloc de demande d'action
+  useEffect(() => {
+    if (!showSplash && typeof window !== 'undefined') {
+      try {
+        if (!sessionStorage.getItem('ollync_splash_completed_at')) {
+          sessionStorage.setItem('ollync_splash_completed_at', String(Date.now()))
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [showSplash])
+
+  // Enregistrer la première visite sur une route "reminder" quand l'utilisateur est connecté (délai avant "Publier une annonce")
+  useEffect(() => {
+    if (user && !cookiesConsent.loading && isReminderRoute(location.pathname)) {
+      try {
+        if (!sessionStorage.getItem(REMINDER_FIRST_SEEN_KEY)) {
+          sessionStorage.setItem(REMINDER_FIRST_SEEN_KEY, String(Date.now()))
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [user, location.pathname, cookiesConsent.loading])
 
   // Précharger les pages principales au démarrage pour affichage immédiat au clic
   useEffect(() => {
@@ -230,7 +262,18 @@ function AppContent() {
     <NavigationHistoryProvider>
       <ToastProvider>
         <SessionExpiredHandler />
-        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+        {showSplash && (
+          <SplashScreen
+            onComplete={() => {
+              try {
+                sessionStorage.setItem('ollync_splash_completed_at', String(Date.now()))
+              } catch {
+                // ignore
+              }
+              setShowSplash(false)
+            }}
+          />
+        )}
         {showAuthTransition && (
           <AuthTransitionOverlay
             onComplete={() => navigate('/home', { replace: true })}
@@ -243,12 +286,20 @@ function AppContent() {
           onAccept={cookiesConsent.handleAccept}
           onReject={cookiesConsent.handleReject}
           onLearnMore={cookiesConsent.dismissModal}
-          learnMoreHref="/profile/legal/politique-cookies"
+          learnMoreHref={CONSENT_TO_LEGAL_PAGE.cookies}
+          returnTo={location.pathname + location.search}
           askAgainChecked={cookiesConsent.askAgainNextTime}
           onAskAgainChange={cookiesConsent.setAskAgainNextTime}
         />
         {showReminder && reminder && (
           <ReminderBlock reminder={reminder} onDismiss={dismiss} />
+        )}
+        {user && shouldShowQuestionnaire && !isAuthPage && (
+          <PersonalizationQuestionnaire
+            visible
+            onComplete={markCompleted}
+            userId={user.id}
+          />
         )}
         <div className={`app ${isMobile ? 'app--mobile' : 'app--web'}`} data-platform={isMobile ? 'mobile' : 'web'}>
           <a href="#main-content" className="skip-link">Aller au contenu principal</a>
@@ -284,6 +335,7 @@ function AppContent() {
             </WebLayout>
           )}
         </div>
+        <AddToHomeScreenBanner />
       </ToastProvider>
     </NavigationHistoryProvider>
   )

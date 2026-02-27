@@ -14,6 +14,7 @@ import ConfirmationModal from '../components/ConfirmationModal'
 import { useToastContext } from '../contexts/ToastContext'
 import { useNavigationHistory } from '../hooks/useNavigationHistory'
 import { useTranslation } from 'react-i18next'
+import { markPostAsViewed } from '../utils/viewedPosts'
 import { PageMeta } from '../components/PageMeta'
 import './PostDetails.css'
 
@@ -618,6 +619,8 @@ const PostDetails = () => {
         category: categoryData,
         sub_category: subCategoryData
       } as Post)
+
+      markPostAsViewed(id)
 
       if (post.user_id) {
         await fetchAuthorPostCount(post.user_id)

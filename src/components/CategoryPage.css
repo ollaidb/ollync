@@ -532,18 +532,11 @@
 }
 
 .category-content-transition {
-  animation: categoryContentIn 0.2s ease;
+  transition: opacity 0.18s ease-out;
 }
 
-@keyframes categoryContentIn {
-  from {
-    opacity: 0.72;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.category-content-section.category-content-transition.is-loading {
+  opacity: 0.72;
 }
 
 .category-content-section:has(> .empty-state-wrapper.marketing) {

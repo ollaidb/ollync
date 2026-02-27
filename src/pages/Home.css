@@ -60,6 +60,18 @@
   opacity: 0.85;
 }
 
+/* Animation au clic pour feedback visuel */
+.home-app-name--clicked {
+  animation: home-app-name-click 0.3s ease-out;
+}
+
+@keyframes home-app-name-click {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.92); }
+  70% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
 .home-header-actions {
   display: flex;
   gap: 12px;
