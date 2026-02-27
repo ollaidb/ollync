@@ -235,12 +235,15 @@ export function useReminder() {
     if (false && !isNeverAsk('publish') && !isInCooldown('publish')) {
       const publishLastShown = getPublishLastShown()
       const oneWeekMs = COOLDOWN_MS.publish
-      if (publishLastShown != null && Date.now() - publishLastShown < oneWeekMs) {
+      const lastShownOk =
+        publishLastShown !== null ? Date.now() - (publishLastShown as number) < oneWeekMs : false
+      if (lastShownOk) {
         // Déjà affiché cette semaine
       } else {
         try {
           const firstSeenRaw = sessionStorage.getItem(STORAGE_FIRST_SEEN_MAIN)
-          const firstSeen = firstSeenRaw ? parseInt(firstSeenRaw, 10) : 0
+          const firstSeen =
+            firstSeenRaw === null ? 0 : parseInt(firstSeenRaw as string, 10)
           const elapsed = Number.isFinite(firstSeen) ? Date.now() - firstSeen : 0
           if (elapsed >= PUBLISH_REMINDER_DELAY_MS) {
             return {
