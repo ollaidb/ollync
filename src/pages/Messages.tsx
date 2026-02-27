@@ -4802,7 +4802,7 @@ const Messages = () => {
                               }
                             }
                             if (isMobile && start.id === msg.id && deltaX < 0) {
-                              const capped = Math.max(deltaX, -120)
+                              const capped = Math.max(deltaX, -40)
                               setMessageReplySwipeOffset({ id: msg.id, x: capped })
                             }
                           }}
