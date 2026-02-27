@@ -45,7 +45,7 @@
   color: var(--primary-foreground);
 }
 
-.publish-action-button.primary:hover {
+.publish-action-button.primary:hover:not(:disabled):not(.is-disabled) {
   background-color: var(--accent);
 }
 

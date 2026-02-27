@@ -379,12 +379,116 @@
   border-radius: 16px;
   padding: 11px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   cursor: pointer;
   min-height: 108px;
+  position: relative;
+  overflow: hidden;
 }
+
+.home-hero-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-animation {
+  flex-shrink: 0;
+  width: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-animation-3d {
+  perspective: 320px;
+  transform-style: preserve-3d;
+}
+
+.hero-illus {
+  width: 88px;
+  height: 88px;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.hero-illus svg,
+.hero-svg-thick,
+.hero-svg-camera {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Bloc 1 : bloc fixe, seul l’icône caméra émet le flash à chaque prise */
+.hero-illus-camera {
+  position: relative;
+}
+
+/* Faisceau de flash qui part de l’icône caméra uniquement (pas tout le bloc) */
+.hero-camera-flash-burst {
+  position: absolute;
+  width: 220%;
+  height: 220%;
+  left: -60%;
+  top: -60%;
+  background: radial-gradient(circle at 70% 35%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.7) 15%, rgba(255, 255, 255, 0.4) 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  animation: hero-camera-flash-burst 8s ease-out infinite;
+  z-index: 1;
+}
+
+@keyframes hero-camera-flash-burst {
+  0%, 24%, 30%, 54%, 60%, 100% { opacity: 0; }
+  25%, 55% { opacity: 1; }
+  26%, 56% { opacity: 0.9; }
+  27%, 57% { opacity: 0.5; }
+  28%, 58% { opacity: 0.15; }
+  29%, 59% { opacity: 0; }
+}
+
+.hero-camera-flash {
+  animation: hero-camera-flash 8s ease-out infinite;
+}
+
+.hero-camera-flash-glow {
+  animation: hero-camera-flash-glow 8s ease-out infinite;
+}
+
+@keyframes hero-camera-flash {
+  0%, 25%, 30%, 55%, 60%, 100% { opacity: 0; transform: scale(0.8); }
+  26% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 12px #fff); }
+  27% { opacity: 0.9; transform: scale(1.1); }
+  28%, 56% { opacity: 0; }
+  57% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 12px #fff); }
+  58% { opacity: 0.85; }
+  59% { opacity: 0; }
+}
+
+@keyframes hero-camera-flash-glow {
+  0%, 25%, 30%, 55%, 60%, 100% { opacity: 0; }
+  26%, 57% { opacity: 0.7; }
+  27%, 58% { opacity: 0; }
+}
+
+/* Bloc 1 : appareil photo — flash du petit cercle sur l’objectif */
+
+/* Bloc 2 : collaboration — idée/lightbulb qui pulse */
+
+/* Bloc 3 : équipe — trait de connexion qui s’anime */
 
 .home-hero-card--one {
   background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);

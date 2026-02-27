@@ -25,6 +25,7 @@ const PersonalInfo = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchProfile intentionally excluded
   }, [user])
 
   const fetchProfile = async () => {

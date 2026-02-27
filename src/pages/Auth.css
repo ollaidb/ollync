@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary);
+  background: color-mix(in srgb, var(--primary) 35%, var(--background));
   padding: 20px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -104,7 +104,7 @@
 .auth-logo {
   font-size: 32px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--foreground);
   margin: 0 0 8px 0;
 }
 
@@ -261,7 +261,7 @@
   justify-content: center;
   gap: 8px;
   padding: 14px 24px;
-  background: var(--primary);
+  background: color-mix(in srgb, var(--primary) 85%, var(--card));
   color: var(--primary-foreground);
   border: none;
   border-radius: 8px;
@@ -275,7 +275,7 @@
 .auth-button-secondary {
   background: transparent;
   color: var(--primary);
-  border: 1px solid var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 50%, var(--border));
   margin-top: 12px;
 }
 
@@ -425,7 +425,7 @@
   justify-content: center;
   gap: 12px;
   padding: 14px 24px;
-  background: var(--primary);
+  background: color-mix(in srgb, var(--primary) 85%, var(--card));
   color: var(--primary-foreground);
   border: none;
   border-radius: 8px;

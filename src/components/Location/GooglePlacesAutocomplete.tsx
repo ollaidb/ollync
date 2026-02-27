@@ -120,10 +120,12 @@ export const GooglePlacesAutocomplete = ({
   }, [isGoogleReady, loadError, onChange, onLocationSelect])
 
   // Synchroniser l'état local avec la prop value quand elle change depuis l'extérieur
+  // inputValue exclu des deps pour éviter une boucle (on le met à jour dans l'effet)
   useEffect(() => {
     if (value !== inputValue && document.activeElement !== inputRef.current) {
       setInputValue(value)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- inputValue intentionally excluded
   }, [value])
 
   const handleClear = () => {

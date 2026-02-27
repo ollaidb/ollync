@@ -96,6 +96,7 @@ const UrgentPosts = () => {
 
   useEffect(() => {
     fetchPosts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded
   }, [user?.id])
 
   return (

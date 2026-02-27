@@ -698,6 +698,25 @@
   padding-top: 2px;
 }
 
+.contracts-duration-custom-wrap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.contracts-duration-custom-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.contracts-duration-custom-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .contracts-post-sheet-list {
   overflow-y: auto;
   display: grid;

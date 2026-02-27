@@ -86,6 +86,7 @@ interface ContractRecord {
   custom_clauses: string | null
   status: string
   agreement_confirmed: boolean
+  contract_duration?: string | null
   created_at: string
   creator_opened_at?: string | null
   counterparty_opened_at?: string | null
@@ -128,6 +129,7 @@ interface ContractDraftSnapshot {
   price_value?: string
   revenue_share?: string
   exchange_service?: string
+  contract_duration?: string
   visibilite_offer_type?: 'visibilite' | 'service' | ''
   visibilite_service_details?: string
   co_creation_details?: string
@@ -215,7 +217,9 @@ const Contracts = () => {
   const [contractPostSearch, setContractPostSearch] = useState('')
   const [showPostPicker, setShowPostPicker] = useState(false)
   const [showPaymentPicker, setShowPaymentPicker] = useState(false)
+  const [showDurationPicker, setShowDurationPicker] = useState(false)
   const [showVisibiliteOfferTypePicker, setShowVisibiliteOfferTypePicker] = useState(false)
+  const [contractDuration, setContractDuration] = useState<string>('')
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareConversationsLoading, setShareConversationsLoading] = useState(false)
   const [shareConversationSearch, setShareConversationSearch] = useState('')
@@ -267,6 +271,23 @@ const Contracts = () => {
       { id: 'service', name: 'Service', description: 'Tu offres une prestation ou un service en échange.' }
     ],
     []
+  )
+
+  const contractDurationOptions = useMemo(
+    () => [
+      { id: '1 mois', name: '1 mois' },
+      { id: '3 mois', name: '3 mois' },
+      { id: '6 mois', name: '6 mois' },
+      { id: '1 an', name: '1 an' },
+      { id: '2 ans', name: '2 ans' },
+      { id: 'Autre', name: 'Autre (à préciser)' }
+    ],
+    []
+  )
+
+  const selectedDurationId = useMemo(
+    () => (contractDurationOptions.some((o) => o.id === contractDuration) ? contractDuration : 'Autre'),
+    [contractDuration, contractDurationOptions]
   )
 
   const filteredOwnedPosts = useMemo(() => {
@@ -339,6 +360,7 @@ const Contracts = () => {
     setPriceValue(draft.price_value || '')
     setRevenueShare(draft.revenue_share || '')
     setExchangeService(draft.exchange_service || '')
+    setContractDuration(draft.contract_duration || '')
     setVisibiliteOfferType((draft.visibilite_offer_type || '') as '' | 'visibilite' | 'service')
     setVisibiliteServiceDetails(draft.visibilite_service_details || '')
     setCoCreationDetails(draft.co_creation_details || '')
@@ -464,6 +486,7 @@ const Contracts = () => {
         price_value: priceValue,
         revenue_share: revenueShare,
         exchange_service: exchangeService,
+        contract_duration: contractDuration,
         visibilite_offer_type: visibiliteOfferType,
         visibilite_service_details: visibiliteServiceDetails,
         co_creation_details: coCreationDetails,
@@ -503,6 +526,7 @@ const Contracts = () => {
     agreementConfirmed,
     contractName,
     contractType,
+    contractDuration,
     customArticles,
     customClauses,
     defaultArticles,
@@ -516,7 +540,8 @@ const Contracts = () => {
     selectedPaymentType,
     visibiliteOfferType,
     visibiliteServiceDetails,
-    user
+    user,
+    activeDraftId
   ])
 
   // loadData useEffect moved below loadContracts
@@ -568,6 +593,7 @@ const Contracts = () => {
       showPostPicker ||
       shareModalOpen ||
       (showPaymentPicker && Boolean(selectedContext)) ||
+      showDurationPicker ||
       (showVisibiliteOfferTypePicker && shouldShowVisibiliteOfferType)
     if (hasBlockingOverlay) {
       document.body.style.overflow = 'hidden'
@@ -580,7 +606,7 @@ const Contracts = () => {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
-  }, [isSignatureModalOpen, selectedContext, shareModalOpen, showPaymentPicker, showPostPicker, showVisibiliteOfferTypePicker, shouldShowVisibiliteOfferType])
+  }, [isSignatureModalOpen, selectedContext, shareModalOpen, showPaymentPicker, showDurationPicker, showPostPicker, showVisibiliteOfferTypePicker, shouldShowVisibiliteOfferType])
 
   useEffect(() => {
     setPreferredCounterpartyId(counterpartyParam)
@@ -605,6 +631,7 @@ const Contracts = () => {
           exchange_service,
           contract_content,
           custom_clauses,
+          contract_duration,
           status,
           agreement_confirmed,
           created_at,
@@ -748,6 +775,7 @@ const Contracts = () => {
     setPriceValue(targetContract.price != null ? String(targetContract.price) : '')
     setRevenueShare(targetContract.revenue_share_percentage != null ? String(targetContract.revenue_share_percentage) : '')
     setExchangeService(targetContract.exchange_service || '')
+    setContractDuration(targetContract.contract_duration || '')
     setCustomClauses(targetContract.custom_clauses || '')
     setAgreementConfirmed(Boolean(targetContract.agreement_confirmed))
     setHydratedSharedContractId(sharedContractParam)
@@ -1465,6 +1493,10 @@ const Contracts = () => {
     const creatorSignature = resolveContractSignature(creator)
     const counterpartySignature = resolveContractSignature(counterparty)
 
+    const durationLine = contractDuration.trim()
+      ? `Durée du contrat : ${contractDuration.trim()}`
+      : null
+
     return [
       `Nom du contrat : ${title}`,
       `Date d'envoi : ${today}`,
@@ -1476,6 +1508,7 @@ const Contracts = () => {
       '',
       `Annonce : ${post.title}`,
       `Type de paiement : ${paymentLine}`,
+      durationLine,
       `Résumé de la collaboration : ${post.description || 'Description non précisée.'}`,
       '',
       `Conditions financières :`,
@@ -1529,6 +1562,10 @@ const Contracts = () => {
       `Autre partie : ${resolveContractSignature(counterparty) ? 'Signature enregistrée' : 'À compléter'}`
     ]
 
+    const durationLine = contractDuration.trim()
+      ? `Durée du contrat : ${contractDuration.trim()}`
+      : ''
+
     return {
       title,
       dateLine: signatureDateLine,
@@ -1536,6 +1573,7 @@ const Contracts = () => {
       parties,
       postTitle: post.title,
       paymentLine,
+      durationLine,
       summary: post.description || 'Description non précisée.',
       remuneration: remunerationText,
       articles: combinedArticles,
@@ -1707,6 +1745,7 @@ const Contracts = () => {
       parties: string[]
       postTitle: string
       paymentLine: string
+      durationLine?: string
       summary: string
       remuneration: string
       articles: { title: string; content: string }[]
@@ -1785,6 +1824,9 @@ const Contracts = () => {
       addSectionTitle('Annonce')
       addParagraph(`Titre : ${data.postTitle}`)
       addParagraph(`Type de paiement : ${data.paymentLine}`)
+      if (data.durationLine) {
+        addParagraph(data.durationLine)
+      }
       addParagraph(`Résumé : ${data.summary}`)
 
       addSectionTitle('Conditions financières')
@@ -1824,6 +1866,7 @@ const Contracts = () => {
     setPriceValue('')
     setRevenueShare('')
     setExchangeService('')
+    setContractDuration('')
     setVisibiliteOfferType('')
     setVisibiliteServiceDetails('')
     setCoCreationDetails('')
@@ -1843,6 +1886,7 @@ const Contracts = () => {
     price_value: priceValue,
     revenue_share: revenueShare,
     exchange_service: exchangeService,
+    contract_duration: contractDuration,
     visibilite_offer_type: visibiliteOfferType,
     visibilite_service_details: visibiliteServiceDetails,
     co_creation_details: coCreationDetails,
@@ -2017,6 +2061,7 @@ const Contracts = () => {
     if (!targetDraft) return
     setHandledDraftParam(draftParam)
     handleLoadDraft(targetDraft)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleLoadDraft intentionally excluded
   }, [draftParam, drafts, handledDraftParam])
 
   useEffect(() => {
@@ -2027,6 +2072,7 @@ const Contracts = () => {
     if (!targetDraft) return
     setHandledDraftNameParam(draftNameParam)
     handleLoadDraft(targetDraft)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleLoadDraft intentionally excluded
   }, [draftNameParam, drafts, handledDraftNameParam])
 
   useEffect(() => {
@@ -2109,6 +2155,7 @@ const Contracts = () => {
         exchange_service: exchangeService.trim() || null,
         contract_content: contractContent,
         custom_clauses: customClauses.trim() || null,
+        contract_duration: contractDuration.trim() || null,
         status: agreementConfirmed ? 'confirmed' : 'generated',
         agreement_confirmed: agreementConfirmed
       })
@@ -2511,6 +2558,23 @@ const Contracts = () => {
                         </span>
                       </button>
                     </div>
+                    <div className="contracts-grid-wide contracts-post-picker-field">
+                      <div className="contracts-field-title">
+                        <span>Durée du contrat</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={`contracts-post-picker-trigger ${showDurationPicker ? 'open' : ''}`}
+                        onClick={() => setShowDurationPicker(true)}
+                      >
+                        <span>
+                          {contractDuration || 'Choisir la durée'}
+                        </span>
+                        <span className="contracts-post-picker-trigger-action">
+                          {contractDuration ? 'Changer' : 'Choisir'}
+                        </span>
+                      </button>
+                    </div>
                     {shouldShowPrice && (
                       <label>
                         Montant (€)
@@ -2767,6 +2831,66 @@ const Contracts = () => {
                           truncateDescription={false}
                         />
                       </div>
+                    </div>
+                  </div>
+                ), document.body)
+              )}
+
+              {showDurationPicker && (
+                canUsePortal && createPortal((
+                  <div className="contracts-payment-sheet-overlay" onClick={() => setShowDurationPicker(false)}>
+                    <div
+                      className="contracts-payment-sheet"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="contracts-payment-sheet-header">
+                        <h3>Durée du contrat</h3>
+                        <button
+                          type="button"
+                          className="contracts-payment-sheet-close"
+                          onClick={() => setShowDurationPicker(false)}
+                          aria-label="Fermer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="contracts-payment-sheet-help">
+                        Le contrat va durer combien de temps ? Cette durée s’affichera sur l’aperçu et le PDF.
+                      </p>
+                      <div className="contracts-payment-sheet-list">
+                        <CustomList
+                          items={contractDurationOptions}
+                          selectedId={selectedDurationId}
+                          onSelectItem={(optionId) => {
+                            if (optionId === 'Autre') {
+                              setContractDuration('')
+                            } else {
+                              setContractDuration(optionId)
+                              setShowDurationPicker(false)
+                            }
+                          }}
+                          className="publish-list contracts-publish-list"
+                          showCheckbox={false}
+                          showDescription={false}
+                          truncateDescription={false}
+                        />
+                      </div>
+                      {selectedDurationId === 'Autre' && (
+                        <div className="contracts-duration-custom-wrap">
+                          <label className="contracts-duration-custom-label" htmlFor="contract-duration-custom">
+                            Précisez la durée
+                          </label>
+                          <input
+                            id="contract-duration-custom"
+                            type="text"
+                            className="contracts-input contracts-duration-custom-input"
+                            value={contractDuration}
+                            onChange={(e) => setContractDuration(e.target.value)}
+                            placeholder="Ex: 4 mois, 18 mois, 1 an et demi"
+                            autoFocus
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ), document.body)

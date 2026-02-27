@@ -223,6 +223,8 @@ export const Step5LocationMedia = ({
     isEmploiRequest,
     isCastingFigurantRequest,
     isProjetsEquipeRequest,
+    isEventInPerson,
+    isEventRemote,
     formData.video,
     formData.profileLevel,
     formData.profileRoles,

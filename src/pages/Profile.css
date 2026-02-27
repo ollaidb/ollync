@@ -87,7 +87,7 @@
   margin: 0 auto;
 }
 
-/* Carte de profil */
+/* Carte de profil : ombre uniquement autour du bloc (accès au profil public) */
 .profile-card {
   background: var(--ui-block-bg);
   border-radius: var(--ui-block-radius);
@@ -96,15 +96,18 @@
   display: flex;
   align-items: center;
   gap: var(--ui-block-gap);
-  margin-bottom: 12px;
+  margin-bottom: 24px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--ui-block-shadow);
+  transition: box-shadow 0.2s ease;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .profile-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .profile-card-avatar {
@@ -149,20 +152,20 @@
   flex-shrink: 0;
 }
 
-/* Liste des options */
+/* Liste des options : blocs séparés mais plus resserrés (la carte profil reste le bloc principal) */
 .profile-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .profile-menu-item {
   width: 100%;
   background: var(--background);
-  border: none;
-  border-radius: 0;
-  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -175,10 +178,6 @@
   position: relative;
 }
 
-.profile-menu-item:not(:last-of-type) {
-  border-bottom: 1px solid var(--border);
-}
-
 .profile-menu-item:hover {
   background: var(--muted);
 }
@@ -188,7 +187,11 @@
   color: var(--primary-foreground);
 }
 
-.profile-menu-item.active .profile-menu-item-icon,
+.profile-menu-item.active .profile-menu-item-icon-wrap {
+  background: color-mix(in srgb, var(--primary-foreground) 25%, transparent);
+  color: var(--primary-foreground);
+}
+
 .profile-menu-item.active .profile-menu-item-chevron {
   color: var(--primary-foreground);
 }
@@ -211,14 +214,22 @@
   }
 }
 
-.profile-menu-item-icon {
-  width: 24px;
-  height: 24px;
+/* Icône dans un bloc violet (adapté mode clair / sombre via --primary et --card) */
+.profile-menu-item-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted-foreground);
   flex-shrink: 0;
+}
+
+.profile-menu-item-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .profile-menu-item-label {
@@ -232,17 +243,21 @@
 }
 
 
-/* Sous-items (pour Paramètres) */
+/* Sous-items (pour Paramètres) : visuellement rattachés au bloc au-dessus */
 .profile-menu-subitems {
   background: var(--muted);
-  padding: 0;
+  padding: 8px 12px 12px;
+  margin-top: -1px;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid var(--border);
+  border-top: none;
 }
 
 .profile-menu-subitem {
   width: 100%;
   background: transparent;
   border: none;
-  padding: 12px 16px 12px 52px;
+  padding: 10px 12px 10px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -252,6 +267,7 @@
   color: var(--muted-foreground);
   font-size: 14px;
   font-weight: 400;
+  border-radius: 8px;
 }
 
 .profile-menu-subitem:hover {
@@ -271,11 +287,14 @@
   flex-shrink: 0;
 }
 
-/* Bouton de déconnexion */
+/* Bouton de déconnexion : pas d’effet bloc, simple ligne */
 .profile-menu-item-logout {
   color: var(--destructive);
   margin-top: 8px;
-  border-radius: 12px;
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid var(--border);
+  background: var(--background);
 }
 
 .profile-menu-item-logout:hover {
@@ -289,8 +308,14 @@
   }
 }
 
-.profile-menu-item-logout .profile-menu-item-icon {
-  color: var(--destructive);
+.profile-menu-item-icon-wrap-logout {
+  background: color-mix(in srgb, var(--destructive) 18%, transparent) !important;
+  color: var(--destructive) !important;
+}
+
+.profile-menu-item-logout:hover .profile-menu-item-icon-wrap-logout {
+  background: color-mix(in srgb, var(--destructive) 25%, transparent) !important;
+  color: var(--destructive) !important;
 }
 
 .profile-menu-item-logout .profile-menu-item-chevron {
@@ -321,7 +346,7 @@
   height: calc(env(safe-area-inset-bottom, 0px) + 72px);
 }
 
-/* Bouton de connexion */
+/* Bouton de connexion (quand non connecté) */
 .profile-menu-item-login {
   color: var(--primary);
   margin-top: 8px;
@@ -339,7 +364,8 @@
   }
 }
 
-.profile-menu-item-login .profile-menu-item-icon {
+.profile-menu-item-login .profile-menu-item-icon-wrap {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
   color: var(--primary);
 }
 
@@ -498,7 +524,7 @@
 
   .profile-card {
     padding: var(--ui-block-padding);
-    margin-bottom: 10px;
+    margin-bottom: 20px;
   }
 
   .profile-card-avatar {
@@ -511,12 +537,22 @@
   }
 
   .profile-menu-item {
-    padding: 12px;
+    padding: 10px 14px;
     font-size: 15px;
   }
 
+  .profile-menu-item-icon-wrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  .profile-menu-item-icon {
+    width: 22px;
+    height: 22px;
+  }
+
   .profile-menu-subitem {
-    padding: 10px 14px 10px 46px;
+    padding: 10px 12px 10px 8px;
     font-size: 13px;
   }
 }

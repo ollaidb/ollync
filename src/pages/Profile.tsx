@@ -565,9 +565,10 @@ const Profile = () => {
                 <button
                   className={`profile-menu-item ${isActive ? 'active' : ''}`}
                   onClick={item.onClick}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <div className="profile-menu-item-icon">
-                    <Icon size={20} />
+                  <div className="profile-menu-item-icon-wrap" aria-hidden>
+                    <Icon size={24} className="profile-menu-item-icon" />
                   </div>
                   <span className="profile-menu-item-label">{item.label}</span>
                   <ChevronRight size={18} className="profile-menu-item-chevron" />
@@ -596,8 +597,8 @@ const Profile = () => {
           className="profile-menu-item profile-menu-item-logout"
           onClick={handleSignOutClick}
         >
-          <div className="profile-menu-item-icon">
-            <LogOut size={20} />
+          <div className="profile-menu-item-icon-wrap profile-menu-item-icon-wrap-logout" aria-hidden>
+            <LogOut size={24} className="profile-menu-item-icon" />
           </div>
           <span className="profile-menu-item-label">{t('profile:logout')}</span>
         </button>

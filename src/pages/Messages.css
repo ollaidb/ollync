@@ -3581,59 +3581,141 @@
   }
 }
 
-/* Web-only layout adjustments */
+/* Web-only layout adjustments — pleine largeur pour aligner avec le menu (sidebar) */
+.app--web .messages-page-container {
+  width: 100%;
+  max-width: 100%;
+}
+
 .app--web .messages-header {
   position: static;
   padding: 0 0 12px;
-  max-width: 680px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .app--web .messages-content {
   padding-top: 12px;
-  max-width: 680px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .app--web .messages-list {
   padding: 0;
-  max-width: 680px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .app--web .conversation-messages-list {
-  padding: 0 0 24px;
+  padding: 0 0 16px;
+}
+
+/* Titres et textes en web : environ deux tiers pour un affichage plus compact */
+.app--web .messages-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.app--web .conversation-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app--web .conversation-header-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app--web .conversation-header-status {
+  font-size: 12px;
+}
+
+.app--web .conversation-preview {
+  font-size: 13px;
+}
+
+.app--web .conversation-post-title {
+  font-size: 13px;
+}
+
+.app--web .conversation-time {
+  font-size: 13px;
+}
+
+.app--web .messages-filter-btn {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.app--web .conversation-info-card h3,
+.app--web .conversation-info-card-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.app--web .conversation-info-profile-name,
+.app--web .conversation-info-group-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app--web .conversation-info-members-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app--web .conversation-actions-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.app--web .conversation-modal-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.app--web .conversation-record-row-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app--web .conversation-record-row-subtitle {
+  font-size: 12px;
 }
 
 @media (min-width: 1024px) {
   .app--web .messages-page-container:not(.conversation-page) {
-    max-width: 720px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 100%;
+    margin: 0;
   }
 
   .app--web .messages-header {
-    padding: 0;
+    padding: 10px 16px;
     margin-bottom: 8px;
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 14px;
     background: color-mix(in srgb, var(--card) 96%, transparent);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 4%, transparent);
-    padding: 12px 14px;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--foreground) 4%, transparent);
+    width: 100%;
+    max-width: 100%;
   }
 
   .app--web .messages-content {
     padding-top: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   .app--web .messages-list {
-    max-width: 680px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .app--web .conversation-page {
-    max-width: 720px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 100%;
+    margin: 0;
     height: calc(100vh - 48px);
     border-radius: 18px;
     border: 1px solid var(--border);
@@ -3646,7 +3728,7 @@
     top: 0;
     left: auto;
     right: auto;
-    padding: 12px 14px;
+    padding: 10px 16px;
     border-radius: 18px 18px 0 0;
     background: color-mix(in srgb, var(--background) 94%, transparent);
     backdrop-filter: blur(8px);
@@ -3658,13 +3740,12 @@
   }
 
   .app--web .conversation-messages-list {
-    padding: 10px 10px calc(var(--messages-input-offset, 82px) + 8px);
+    padding: 10px 12px calc(var(--messages-input-offset, 82px) + 6px);
   }
 
   .app--web .conversation-info-content {
-    max-width: 680px;
-    margin: 0 auto;
     width: 100%;
+    max-width: 100%;
     padding-top: 12px;
     padding-left: 0;
     padding-right: 0;
@@ -3676,7 +3757,7 @@
     right: auto;
     bottom: 0;
     width: 100%;
-    padding: 10px 12px 12px;
+    padding: 10px 16px 12px;
     box-shadow: none;
     border-top: 1px solid var(--border);
     background: color-mix(in srgb, var(--background) 95%, transparent);
@@ -3686,6 +3767,22 @@
 
   .app--web .conversation-modal-content {
     max-width: 560px;
-    width: calc(100vw - 320px);
+    width: min(560px, calc(100vw - 320px));
+  }
+
+  /* Liste des conversations : environ deux tiers pour affichage plus compact */
+  .app--web .conversations-list {
+    gap: 10px;
+  }
+
+  .app--web .conversation-item {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .app--web .conversation-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
   }
 }

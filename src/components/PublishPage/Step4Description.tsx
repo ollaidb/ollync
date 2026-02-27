@@ -846,12 +846,14 @@ export const Step4Description = ({
         co_creation_details: ''
       })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- formData.exchange_type, onUpdateFormData excluded to avoid loops
   }, [paymentOptions])
 
   useEffect(() => {
     if (!showUgActorTypeSection && formData.ugc_actor_type) {
       onUpdateFormData({ ugc_actor_type: '' })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- formData.ugc_actor_type, onUpdateFormData intentionally excluded
   }, [showUgActorTypeSection])
 
   useEffect(() => {
@@ -866,7 +868,8 @@ export const Step4Description = ({
         co_creation_details: ''
       })
     }
-  }, [isJobCategory, isJobRequest, formData.exchange_type, onUpdateFormData])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onUpdateFormData excluded to avoid re-run loops
+  }, [isJobCategory, isJobRequest, formData.exchange_type])
 
   useEffect(() => {
     if (!isJobRequest) return

@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, use
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom'
-import { MailOpen, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check, MessageCircle } from 'lucide-react'
+import { MailOpen, Search, Users, Archive, Plus, Calendar, Pin, Trash2, Copy, Send, Camera, Film, ChevronRight, Download, Share2, Check, MessageCircle, Reply } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useSupabase'
 import { useUnreadCommunicationCounts } from '../hooks/useUnreadCommunicationCounts'
@@ -168,6 +168,7 @@ interface Message {
   deleted_for_user_id?: string | null
   is_deleted_for_all?: boolean | null
   deleted_for_all_at?: string | null
+  reply_to_message_id?: string | null
   sender?: {
     username?: string | null
     full_name?: string | null
@@ -215,6 +216,9 @@ const Messages = () => {
   const [showListConversationActions, setShowListConversationActions] = useState(false)
   const [activeMessage, setActiveMessage] = useState<Message | null>(null)
   const [showMessageActions, setShowMessageActions] = useState(false)
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null)
+  const messageRefsMap = useRef(new Map<string, HTMLDivElement>())
+  const messagesById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
   const [showDeleteMessageConfirm, setShowDeleteMessageConfirm] = useState(false)
   const [showForwardMessage, setShowForwardMessage] = useState(false)
   const [forwardMessage, setForwardMessage] = useState<Message | null>(null)
@@ -370,6 +374,7 @@ const Messages = () => {
     }
     run()
     return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversations intentionally excluded
   }, [user, inviteToken, navigate])
 
   useEffect(() => {
@@ -456,6 +461,7 @@ const Messages = () => {
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return
     scheduleScrollToBottom('end')
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
   }, [messages])
 
   useEffect(() => {
@@ -490,6 +496,7 @@ const Messages = () => {
         viewport.removeEventListener('scroll', updateOffset)
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
   }, [])
 
   useEffect(() => {
@@ -1107,7 +1114,7 @@ const Messages = () => {
       setHasMoreMessages(false)
     }
 
-    const messageColumns = 'id, content, sender_id, created_at, read_at, edited_at, message_type, file_url, file_name, file_type, location_data, price_data, rate_data, calendar_request_data, shared_post_id, shared_contract_id, shared_profile_id, is_deleted, deleted_for_user_id, is_deleted_for_all, deleted_for_all_at, conversation_id, sender'
+    const messageColumns = 'id, content, sender_id, created_at, read_at, edited_at, message_type, file_url, file_name, file_type, location_data, price_data, rate_data, calendar_request_data, shared_post_id, shared_contract_id, shared_profile_id, is_deleted, deleted_for_user_id, is_deleted_for_all, deleted_for_all_at, conversation_id, reply_to_message_id, sender'
     try {
       const buildQuery = (source: 'view' | 'table') => {
         let q = source === 'view'
@@ -1247,6 +1254,7 @@ const Messages = () => {
     if (!convId || loadingOlderMessages || !hasMoreMessages || messages.length === 0) return
     const oldest = messages[0]?.created_at
     if (oldest) loadMessages(convId, { olderThan: oldest })
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMessages intentionally excluded
   }, [selectedConversation?.id, conversationId, loadingOlderMessages, hasMoreMessages, messages])
 
   useEffect(() => {
@@ -4668,7 +4676,15 @@ const Messages = () => {
                       <div
                         key={msg.id}
                         className={`message-swipe-row ${isOwn ? 'own' : 'other'}`}
-                        ref={isLastMessage ? lastMessageRef : null}
+                        ref={(el) => {
+                          if (el) {
+                            messageRefsMap.current.set(msg.id, el)
+                            if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+                          } else {
+                            messageRefsMap.current.delete(msg.id)
+                            if (isLastMessage && lastMessageRef) (lastMessageRef as React.MutableRefObject<HTMLDivElement | null>).current = null
+                          }
+                        }}
                       >
                         <div
                           className="message-swipe-content"
@@ -4710,6 +4726,9 @@ const Messages = () => {
                             isOwn={isOwn}
                             showAvatar={showAvatar}
                             systemSenderEmail={SYSTEM_SENDER_EMAIL}
+                            replyTo={msg.reply_to_message_id ? messagesById.get(msg.reply_to_message_id) : undefined}
+                            onReplyClick={(id) => messageRefsMap.current.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                            currentUserId={user?.id}
                             onDelete={async () => {
                               if (user && isOwn) {
                                 await handleDeleteMessage(msg, false)
@@ -4761,12 +4780,34 @@ const Messages = () => {
                             }
                             onMentionClick={
                               isGroupConversation
-                                ? (participant) => {
+                                ? async (participant) => {
                                     const full = infoParticipants.find((p) => p.user_id === participant.user_id)
                                     if (full) {
                                       setSelectedParticipant(full)
                                       setShowMemberBottomSheet(true)
+                                      return
                                     }
+                                    const { data: profileRow } = await supabase
+                                      .from('profiles')
+                                      .select('id, username, full_name, avatar_url')
+                                      .eq('id', participant.user_id)
+                                      .maybeSingle()
+                                    const fallbackParticipant: ConversationParticipant = {
+                                      user_id: participant.user_id,
+                                      role: null,
+                                      profile: profileRow
+                                        ? {
+                                            id: (profileRow as { id: string }).id,
+                                            username: (profileRow as { username?: string | null }).username,
+                                            full_name: (profileRow as { full_name?: string | null }).full_name,
+                                            avatar_url: (profileRow as { avatar_url?: string | null }).avatar_url
+                                          }
+                                        : participant.profile
+                                          ? { id: participant.user_id, ...participant.profile }
+                                          : null
+                                    }
+                                    setSelectedParticipant(fallbackParticipant)
+                                    setShowMemberBottomSheet(true)
                                   }
                                 : undefined
                             }
@@ -4815,6 +4856,17 @@ const Messages = () => {
                   </button>
                 ))}
               </div>
+              <button
+                className="message-action-item"
+                type="button"
+                onClick={() => {
+                  setReplyingToMessage(activeMessage)
+                  setShowMessageActions(false)
+                }}
+              >
+                <Reply size={18} />
+                Répondre
+              </button>
               <button
                 className="message-action-item"
                 type="button"
@@ -4898,6 +4950,177 @@ const Messages = () => {
             setForwardMessage(null)
           }}
         />
+        {selectedParticipant && showMemberBottomSheet && isGroupConversation && createPortal(
+          (() => {
+            const canManageMembersFromChat = !!user && selectedConversation?.group_creator_id === user.id
+            return (
+              <>
+                <div
+                  className="conversation-member-sheet-backdrop"
+                  onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
+                />
+                <div className="conversation-member-sheet-panel">
+                  <div className="conversation-member-sheet-header conversation-member-sheet-header-minimal">
+                    <button
+                      type="button"
+                      className="conversation-member-sheet-close"
+                      onClick={() => { setShowMemberBottomSheet(false); setSelectedParticipant(null) }}
+                      aria-label="Fermer"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="conversation-member-sheet-body">
+                    <div className="conversation-member-sheet-profile-centered">
+                      <img
+                        src={selectedParticipant.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`}
+                        alt={selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur')}`
+                        }}
+                      />
+                      {selectedParticipant.user_id !== user?.id ? (
+                        <button
+                          type="button"
+                          className="conversation-member-sheet-name conversation-member-sheet-name-link"
+                          onClick={() => {
+                            const profileId = selectedParticipant.profile?.id || selectedParticipant.user_id
+                            if (!profileId) return
+                            setShowMemberBottomSheet(false)
+                            setSelectedParticipant(null)
+                            openPublicProfile(profileId)
+                          }}
+                        >
+                          {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
+                        </button>
+                      ) : (
+                        <p className="conversation-member-sheet-name">
+                          {selectedParticipant.profile?.full_name || selectedParticipant.profile?.username || 'Utilisateur'}
+                        </p>
+                      )}
+                      <p className="conversation-member-sheet-role">
+                        {selectedParticipant.user_id === selectedConversation?.group_creator_id
+                          ? 'Créateur(trice)'
+                          : selectedParticipant.role === 'moderator'
+                            ? 'Administrateur(trice)'
+                            : 'Membre'}
+                      </p>
+                      {selectedParticipant.user_id !== user?.id && (
+                        <button
+                          type="button"
+                          className="conversation-member-sheet-action-icon"
+                          onClick={async () => {
+                            if (!user) return
+                            const conv = await findOrCreateConversation(selectedParticipant.user_id)
+                            setShowMemberBottomSheet(false)
+                            setSelectedParticipant(null)
+                            if (conv && (conv as { id: string }).id) {
+                              navigate(`/messages/${(conv as { id: string }).id}`)
+                            }
+                          }}
+                          title="Message privé"
+                        >
+                          <MessageCircle size={20} />
+                        </button>
+                      )}
+                    </div>
+                    {selectedParticipant.user_id !== user?.id && canManageMembersFromChat && (
+                      <div className="conversation-member-sheet-list">
+                        <button
+                          type="button"
+                          className="conversation-member-sheet-list-item"
+                          onClick={async () => {
+                            if (!selectedConversation?.id) return
+                            try {
+                              const nextRole = selectedParticipant.role === 'moderator' ? 'member' : 'moderator'
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              await (supabase.from('conversation_participants') as any)
+                                .update({ role: nextRole })
+                                .eq('conversation_id', selectedConversation.id)
+                                .eq('user_id', selectedParticipant.user_id)
+                              setInfoParticipants((prev) => prev.map((p) => p.user_id === selectedParticipant.user_id ? { ...p, role: nextRole } : p))
+                              setSelectedParticipant((prev) => prev ? { ...prev, role: nextRole } : prev)
+                              setShowMemberBottomSheet(false)
+                              showGroupActionFeedback(nextRole === 'moderator' ? 'Administrateur(trice) ajouté(e)' : 'Administrateur(trice) retiré(e)')
+                            } catch (error) {
+                              console.error('Error updating role:', error)
+                              alert('Impossible de mettre à jour le rôle')
+                            }
+                          }}
+                        >
+                          <span>{selectedParticipant.role === 'moderator' ? 'Retirer administrateur(trice)' : 'Définir administrateur(trice)'}</span>
+                          <ChevronRight size={18} className="conversation-member-sheet-chevron" />
+                        </button>
+                        <button
+                          type="button"
+                          className="conversation-member-sheet-list-item danger"
+                          onClick={() => {
+                            setParticipantToRemove(selectedParticipant)
+                            setShowRemoveMemberConfirm(true)
+                          }}
+                        >
+                          <span>Retirer du groupe</span>
+                          <ChevronRight size={18} className="conversation-member-sheet-chevron" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )
+          })(),
+          document.body
+        )}
+        {showRemoveMemberConfirm && participantToRemove && isGroupConversation && (
+          <ConfirmationModal
+            visible={showRemoveMemberConfirm}
+            title="Retirer du groupe"
+            message={`Voulez-vous vraiment retirer ${participantToRemove.profile?.full_name || participantToRemove.profile?.username || 'cet utilisateur'} du groupe ?`}
+            compact
+            onCancel={() => {
+              setShowRemoveMemberConfirm(false)
+              setParticipantToRemove(null)
+            }}
+            onConfirm={async () => {
+              if (!selectedConversation?.id || !user || !participantToRemove) return
+              try {
+                const removedName = participantToRemove.profile?.full_name || participantToRemove.profile?.username || 'Un membre'
+                const groupNameForMsg = (selectedConversation.group_name || selectedConversation.name || 'Groupe').trim()
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('conversation_participants') as any)
+                  .update({ is_active: false })
+                  .eq('conversation_id', selectedConversation.id)
+                  .eq('user_id', participantToRemove.user_id)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (supabase.from('messages') as any).insert({
+                  conversation_id: selectedConversation.id,
+                  sender_id: user.id,
+                  message_type: 'text',
+                  content: `${removedName} a été retiré du groupe`,
+                  calendar_request_data: {
+                    kind: 'group_event',
+                    event_type: 'member_removed',
+                    members: [{ user_id: participantToRemove.user_id, name: removedName }],
+                    group_name: groupNameForMsg
+                  }
+                })
+                setInfoParticipants((prev) => prev.filter((p) => p.user_id !== participantToRemove.user_id))
+                setShowMemberBottomSheet(false)
+                setSelectedParticipant(null)
+                setShowRemoveMemberConfirm(false)
+                setParticipantToRemove(null)
+                loadMessages(selectedConversation.id)
+                showGroupActionFeedback('Membre retiré(e)')
+              } catch (error) {
+                console.error('Error removing participant:', error)
+                alert('Impossible de retirer ce participant')
+              }
+            }}
+            confirmLabel="Retirer"
+            cancelLabel="Annuler"
+            isDestructive={true}
+          />
+        )}
         {user && (selectedConversation || conversationId) && (
           <div className="conversation-input-container" ref={inputContainerRef}>
             {isSystemConversation && (
@@ -4912,9 +5135,12 @@ const Messages = () => {
               counterpartyId={!isGroupConversation ? (selectedConversation?.other_user?.id || null) : null}
               groupMembers={isGroupConversation ? infoParticipants : undefined}
               disabled={isSystemConversation}
+              replyingTo={replyingToMessage}
+              onClearReply={() => setReplyingToMessage(null)}
               onMessageSent={async () => {
                 const currentId = selectedConversation?.id || conversationId
                 if (!currentId) return
+                setReplyingToMessage(null)
                 shouldScrollToBottomRef.current = true
                 await loadMessages(currentId)
                 scheduleScrollToBottom('center')

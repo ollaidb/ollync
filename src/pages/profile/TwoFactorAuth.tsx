@@ -19,6 +19,7 @@ const TwoFactorAuth = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchTwoFactorStatus intentionally excluded
   }, [user])
 
   const fetchTwoFactorStatus = async () => {
@@ -36,7 +37,7 @@ const TwoFactorAuth = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error)
       } else if (profile) {
-        const profileData = profile as any
+        const profileData = profile as { phone?: string; phone_verified?: boolean; two_factor_enabled?: boolean }
         setTwoFactorEnabled(profileData.two_factor_enabled || false)
         setAvailableMethods({
           phone: {
@@ -71,7 +72,7 @@ const TwoFactorAuth = () => {
     setTwoFactorEnabled(newStatus)
 
     try {
-      const { error } = await (supabase.from('profiles') as any)
+      const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update({ 
           two_factor_enabled: newStatus,
           updated_at: new Date().toISOString()

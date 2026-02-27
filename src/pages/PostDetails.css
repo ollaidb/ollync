@@ -991,6 +991,24 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Sur desktop : les blocs d’info ont un fond léger par défaut et réagissent au survol */
+@media (hover: hover) and (pointer: fine) {
+  .post-additional-info-section .post-info-item,
+  .post-location-details-section .post-info-item {
+    padding-left: 12px;
+    padding-right: 12px;
+    margin-left: -12px;
+    margin-right: -12px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--muted) 15%, transparent);
+    transition: background 0.2s ease;
+  }
+  .post-additional-info-section .post-info-item:hover,
+  .post-location-details-section .post-info-item:hover {
+    background: color-mix(in srgb, var(--muted) 28%, transparent);
+  }
+}
+
 .post-info-item:last-child {
   border-bottom: none;
   padding-bottom: 0;
@@ -1443,6 +1461,20 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Desktop : le bouton ne doit pas sembler "déjà cliqué" par défaut (style outline, rempli au survol) */
+@media (hover: hover) and (pointer: fine) {
+  .post-action-btn-primary:not(.post-action-button-sent):not(.post-action-button-accepted) {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+  }
+  .post-action-btn-primary:not(.post-action-button-sent):not(.post-action-button-accepted):hover {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+}
+
 /* Styles pour les états du bouton dans la barre d'action fixe */
 .post-action-btn-primary.post-action-button-sent {
   background: var(--muted);
@@ -1659,6 +1691,19 @@
 
 .post-details-page.vinted-mode .post-action-btn-primary:hover {
   background: #059669;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .post-details-page.vinted-mode .post-action-btn-primary:not(.post-action-button-sent):not(.post-action-button-accepted) {
+    background: transparent;
+    color: #10B981;
+    border: 2px solid #10B981;
+  }
+  .post-details-page.vinted-mode .post-action-btn-primary:not(.post-action-button-sent):not(.post-action-button-accepted):hover {
+    background: #10B981;
+    color: white;
+    border-color: #10B981;
+  }
 }
 
 /* ============================================

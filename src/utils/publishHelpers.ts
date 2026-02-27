@@ -473,6 +473,36 @@ export const handlePublish = async (
     return
   }
 
+  // Si on publie une annonce existante déjà en ligne, rediriger vers la fiche et afficher un message
+  if (status === 'active' && existingPostId) {
+    try {
+      const { data: existingPost, error: fetchError } = await supabase
+        .from('posts')
+        .select('id, status')
+        .eq('id', existingPostId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!fetchError && existingPost) {
+        const postStatus = (existingPost as { status?: string }).status
+        if (postStatus === 'active' || postStatus === 'pending') {
+          const message = postStatus === 'pending'
+            ? 'Cette annonce est déjà en cours de vérification.'
+            : 'Cette annonce est déjà publiée.'
+          if (showToast) {
+            showToast(message)
+          } else {
+            alert(message)
+          }
+          navigate(`/post/${existingPostId}`, { state: { originPath: '/home' } })
+          return
+        }
+      }
+    } catch (err) {
+      console.error('Error checking existing post status:', err)
+    }
+  }
+
   // Vérifier que le profil existe
   try {
     const { data: profile, error: profileError } = await supabase

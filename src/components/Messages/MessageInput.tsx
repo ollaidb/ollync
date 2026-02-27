@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
+import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2, Reply } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
 import { checkModerationTextFromDb } from '../../utils/moderation'
@@ -16,6 +16,13 @@ export interface MentionableMember {
   profile?: { full_name?: string | null; username?: string | null } | null
 }
 
+export interface ReplyingToMessage {
+  id: string
+  content?: string | null
+  message_type?: string
+  sender_id?: string | null
+}
+
 interface MessageInputProps {
   conversationId: string
   senderId: string
@@ -24,6 +31,8 @@ interface MessageInputProps {
   openCalendarOnMount?: boolean
   counterpartyId?: string | null
   groupMembers?: MentionableMember[]
+  replyingTo?: ReplyingToMessage | null
+  onClearReply?: () => void
 }
 
 type MessageType = 'text' | 'photo' | 'video' | 'document' | 'location' | 'price' | 'rate' | 'calendar_request' | 'post_share' | 'contract_share'
@@ -124,7 +133,26 @@ const makeSelectorLabelsUnique = (items: SelectableContract[]) => {
 const getMemberDisplayName = (m: MentionableMember) =>
   (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
 
-const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId, groupMembers = [] }: MessageInputProps) => {
+const REPLY_PREVIEW_MAX_LEN = 15
+
+/** Libellé pour l’aperçu du message répondu : Rendez-vous (Mes/Ses), Annonce, Image, etc. */
+function getReplyPreviewLabel(
+  msg: { message_type?: string; sender_id?: string | null; content?: string | null },
+  currentUserId?: string | null
+): string {
+  const type = msg.message_type || 'text'
+  if (type === 'calendar_request') {
+    return currentUserId && msg.sender_id === currentUserId ? 'Mes rendez-vous' : 'Ses rendez-vous'
+  }
+  if (type === 'post_share') return 'Annonce'
+  if (type === 'photo' || type === 'video') return 'Image'
+  if (type === 'document') return 'Document'
+  const raw = String(msg.content || '').trim()
+  if (!raw) return 'Message'
+  return raw.length <= REPLY_PREVIEW_MAX_LEN ? raw : `${raw.slice(0, REPLY_PREVIEW_MAX_LEN)}…`
+}
+
+const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = false, openCalendarOnMount = false, counterpartyId, groupMembers = [], replyingTo, onClearReply }: MessageInputProps) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [message, setMessage] = useState('')
@@ -172,6 +200,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         conversation_id: conversationId,
         sender_id: senderId,
         message_type: type,
+        ...(replyingTo?.id ? { reply_to_message_id: replyingTo.id } : {}),
         ...extraData
       }
 
@@ -760,6 +789,23 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
 
   return (
     <>
+      {replyingTo && (
+        <div className="message-reply-preview-bar">
+          <span className="message-reply-preview-line" aria-hidden="true" />
+          <span className="message-reply-preview-content">
+            <Reply size={14} className="message-reply-preview-icon" />
+            <span className="message-reply-preview-text">{getReplyPreviewLabel(replyingTo, senderId)}</span>
+          </span>
+          <button
+            type="button"
+            className="message-reply-preview-close"
+            onClick={onClearReply}
+            aria-label="Annuler la réponse"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
       {/* Overlay transparent avec bloc de rendez-vous au centre */}
       {showCalendarModal && (
         <div className="appointment-overlay" onClick={handleCalendarClose}>

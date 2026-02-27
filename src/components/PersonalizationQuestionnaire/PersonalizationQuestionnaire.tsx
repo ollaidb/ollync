@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { publicationTypes } from '../../constants/publishData'
 import { supabase } from '../../lib/supabaseClient'
 import { markPersonalizationQuestionnaireCompleted } from '../../hooks/useAppUsageTime'
@@ -154,6 +155,15 @@ export default function PersonalizationQuestionnaire({
   return (
     <div className="personalization-questionnaire-overlay">
       <div className="personalization-questionnaire-modal">
+        {/* Bouton fermer (X) : même comportement que "Plus tard" — réafficher après 24 h */}
+        <button
+          type="button"
+          className="personalization-questionnaire-close"
+          onClick={onSkip}
+          aria-label="Fermer (réafficher dans 24 h)"
+        >
+          <X size={22} />
+        </button>
         {/* Barre de progression fixe en haut */}
         <div className="personalization-progress-wrap">
           <div className="personalization-progress-bar">

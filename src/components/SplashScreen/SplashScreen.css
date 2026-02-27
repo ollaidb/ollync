@@ -24,7 +24,7 @@
   transform: translateZ(0);
   contain: layout style paint;
   background: var(--splash-bg);
-  animation: splash-evaporate 1.2s ease-out 2.6s forwards;
+  animation: splash-evaporate 1.2s ease-out 4s forwards;
 }
 
 /* iOS Safari : remplir la zone visible quand la barre d’URL est visible */
@@ -70,7 +70,7 @@
   justify-content: center;
   gap: 0.6em;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  animation: splash-letters-fade 1.4s ease-in-out 2.2s forwards;
+  animation: splash-letters-fade 1.4s ease-in-out 4s forwards;
 }
 
 /* Nom de l'app : visible dès le départ, style moderne, violet */

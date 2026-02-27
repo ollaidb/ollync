@@ -87,12 +87,36 @@ interface MessageBubbleProps {
   currentUserGroupRole?: string | null
   /** Si fourni, appelé au clic sur une annonce partagée (permet de préserver le scroll de la conversation) */
   onPostClick?: (postId: string) => void
+  /** Message auquel on répond (affiché au-dessus du contenu avec trait, cliquable pour scroll) */
+  replyTo?: { id: string; content?: string | null; message_type?: string; sender_id?: string | null } | null
+  /** Appelé au clic sur le bandeau "message répondu" pour scroller vers le message d'origine */
+  onReplyClick?: (messageId: string) => void
+  /** ID de l'utilisateur connecté (pour afficher "Mes rendez-vous" vs "Ses rendez-vous") */
+  currentUserId?: string | null
 }
 
 const getMemberDisplayName = (m: MentionableMember) =>
   (m.profile?.full_name || m.profile?.username || 'Utilisateur').trim() || 'Utilisateur'
 
-const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick }: MessageBubbleProps) => {
+const REPLY_PREVIEW_MAX_LEN = 15
+
+function getReplyPreviewLabel(
+  msg: { message_type?: string; sender_id?: string | null; content?: string | null },
+  currentUserId?: string | null
+): string {
+  const type = msg.message_type || 'text'
+  if (type === 'calendar_request') {
+    return currentUserId && msg.sender_id === currentUserId ? 'Mes rendez-vous' : 'Ses rendez-vous'
+  }
+  if (type === 'post_share') return 'Annonce'
+  if (type === 'photo' || type === 'video') return 'Image'
+  if (type === 'document') return 'Document'
+  const raw = String(msg.content || '').trim()
+  if (!raw) return 'Message'
+  return raw.length <= REPLY_PREVIEW_MAX_LEN ? raw : `${raw.slice(0, REPLY_PREVIEW_MAX_LEN)}…`
+}
+
+const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEmail, groupParticipants = [], onMentionClick, isGroupConversation = false, currentUserGroupRole = null, onPostClick, replyTo, onReplyClick, currentUserId }: MessageBubbleProps) => {
   const [showImageModal, setShowImageModal] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
   const [showContractDocumentPreview, setShowContractDocumentPreview] = useState(false)
@@ -687,6 +711,21 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
           </>
         ) : (
           <div className={`message-bubble ${isOwn ? 'own' : 'other'} ${['calendar_request', 'post_share', 'contract_share'].includes(message.message_type || '') ? 'calendar-message' : ''}`}>
+            {replyTo && (
+              <button
+                type="button"
+                className="message-reply-quote"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onReplyClick?.(replyTo.id)
+                }}
+              >
+                <span className="message-reply-quote-line" aria-hidden="true" />
+                <span className="message-reply-quote-text">
+                  {getReplyPreviewLabel(replyTo, currentUserId)}
+                </span>
+              </button>
+            )}
             {renderMessageContent()}
             <span className="message-time">
               {new Date(message.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

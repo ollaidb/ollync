@@ -64,6 +64,7 @@ const RecentPosts = () => {
 
   useEffect(() => {
     fetchPosts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, [])
 
   useEffect(() => {

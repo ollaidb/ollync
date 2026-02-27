@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Bell, Search, Camera, Users, Target, ShoppingBag, Briefcase, Building2, Calendar, LucideIcon, ChevronRight } from 'lucide-react'
@@ -18,8 +18,10 @@ const Header = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t, i18n } = useTranslation(['categories', 'common', 'home'])
-  const translateCategoryLabel = (id: string, fallback: string) =>
-    t(`categories:titles.${id}`, { defaultValue: fallback })
+  const translateCategoryLabel = useCallback(
+    (id: string, fallback: string) => t(`categories:titles.${id}`, { defaultValue: fallback }),
+    [t]
+  )
   const translateSubMenuLabel = (slug: string, fallback: string) =>
     t(`categories:submenus.${slug}`, { defaultValue: fallback })
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
@@ -101,7 +103,7 @@ const Header = () => {
     }
 
     loadSubMenus()
-  }, [i18n.language])
+  }, [i18n.language, translateCategoryLabel])
 
   const isHomePage = location.pathname === '/' || location.pathname === '/home'
 

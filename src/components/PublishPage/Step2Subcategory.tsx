@@ -1,4 +1,15 @@
 import { PublicationType } from '../../constants/publishData'
+
+export interface ExamplePost {
+  id: string
+  title?: string
+  description?: string
+  images?: string[] | null
+  is_urgent?: boolean | null
+  user_id?: string | null
+  user?: { username?: string | null; full_name?: string | null; avatar_url?: string | null } | null
+  category?: { name: string; slug: string } | null
+}
 import { Heart } from 'lucide-react'
 import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +21,7 @@ interface Step2SubcategoryProps {
   selectedCategory: PublicationType | null
   listingType?: 'offer' | 'request' | ''
   onSelectSubcategory: (subcategoryId: string) => void
-  examplePosts: any[]
+  examplePosts: ExamplePost[]
   loadingPosts: boolean
 }
 
@@ -346,7 +357,7 @@ export const Step2Subcategory = ({
                       {post.user_id && (
                         <div 
                           className="example-post-profile"
-                          onClick={(e) => handleProfileClick(e, post.user_id)}
+                          onClick={(e) => handleProfileClick(e, post.user_id ?? undefined)}
                         >
                           <div className="example-post-avatar">
                             {post.user?.avatar_url ? (

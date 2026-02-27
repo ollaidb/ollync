@@ -77,6 +77,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook export
 export function useAccessibility() {
   const ctx = useContext(AccessibilityContext)
   return ctx ?? defaultValue

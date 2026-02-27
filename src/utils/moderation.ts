@@ -26,7 +26,8 @@ export async function checkModerationTextFromDb(text: string): Promise<Moderatio
   }
 
   try {
-    // RPC args not in generated types; cast for runtime call
+    // RPC check_moderation_text not in generated Database types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = (await (supabase as any).rpc('check_moderation_text', { input_text: String(text).trim() })) as { data: { score?: number; reasons?: string[] }[] | { score?: number; reasons?: string[] } | null; error: { message?: string } | null }
 
     if (error) {

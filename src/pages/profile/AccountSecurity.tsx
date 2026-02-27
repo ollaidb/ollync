@@ -22,6 +22,7 @@ const AccountSecurity = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSecurityStatus intentionally excluded
   }, [user])
 
   const fetchSecurityStatus = async () => {
@@ -53,10 +54,10 @@ const AccountSecurity = () => {
           lastModified: null // Supabase ne stocke pas cette info directement
         },
         phone: {
-          number: (profile as any)?.phone || null,
-          verified: (profile as any)?.phone_verified || false
+          number: (profile as { phone?: string | null; phone_verified?: boolean } | null)?.phone ?? null,
+          verified: (profile as { phone_verified?: boolean } | null)?.phone_verified ?? false
         },
-        twoFactor: (profile as any)?.two_factor_enabled || false,
+        twoFactor: (profile as { two_factor_enabled?: boolean } | null)?.two_factor_enabled ?? false,
         devicesCount
       })
     } catch (error) {

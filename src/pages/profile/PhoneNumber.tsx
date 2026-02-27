@@ -22,6 +22,7 @@ const PhoneNumber = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPhoneStatus intentionally excluded
   }, [user])
 
   const fetchPhoneStatus = async () => {
@@ -38,9 +39,10 @@ const PhoneNumber = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching phone:', error)
       } else if (data) {
-        setCurrentPhone((data as any).phone)
-        setPhone((data as any).phone || '')
-        setIsVerified((data as any).phone_verified || false)
+        const profile = data as { phone?: string | null; phone_verified?: boolean }
+        setCurrentPhone(profile.phone ?? '')
+        setPhone(profile.phone ?? '')
+        setIsVerified(profile.phone_verified ?? false)
       }
     } catch (error) {
       console.error('Error in fetchPhoneStatus:', error)
@@ -73,7 +75,7 @@ const PhoneNumber = () => {
 
     try {
       // Mettre à jour le numéro dans le profil
-      const { error: updateError } = await (supabase.from('profiles') as any)
+      const { error: updateError } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update({ 
           phone: cleanedPhone,
           phone_verified: false, // Réinitialiser la vérification si le numéro change
@@ -155,7 +157,7 @@ const PhoneNumber = () => {
         setMessage({ type: 'error', text: 'Code incorrect. Veuillez réessayer.' })
       } else {
         // Mettre à jour le statut de vérification
-        const { error: updateError } = await (supabase.from('profiles') as any)
+        const { error: updateError } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
           .update({ 
             phone_verified: true,
             updated_at: new Date().toISOString()

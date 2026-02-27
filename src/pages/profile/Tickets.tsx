@@ -323,7 +323,7 @@ const Tickets = () => {
                 {selectedTicket.eventMode === 'remote' ? (
                   <p className="ticket-detail-description">
                     Événement à distance
-                    {selectedTicket.eventPlatform ? ` • Plateforme: ${selectedTicket.eventPlatform}` : ''}
+                    {selectedTicket.eventPlatform ? ` • distance–plate-forme: ${selectedTicket.eventPlatform}` : ''}
                   </p>
                 ) : (
                   <p className="ticket-detail-description">

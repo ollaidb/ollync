@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Shield, Lock, Phone, KeyRound, Smartphone, ChevronRight, UserX } from 'lucide-react'
 import { useAuth } from '../../hooks/useSupabase'
 import './Security.css'
 
 const Security = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const isModerator = (user?.email || '').trim().toLowerCase() === 'binta22116@gmail.com'
 
@@ -63,14 +64,16 @@ const Security = () => {
             <div className="security-menu-list">
               {menuItems.map((item) => {
                 const Icon = item.icon
+                const isActive = location.pathname === item.path
                 return (
                   <button
                     key={item.id}
-                    className="security-menu-item"
+                    className={`security-menu-item ${isActive ? 'active' : ''}`}
                     onClick={() => navigate(item.path)}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <div className="security-menu-item-icon">
-                      <Icon size={20} />
+                    <div className="security-menu-item-icon-wrap" aria-hidden>
+                      <Icon size={24} className="security-menu-item-icon" />
                     </div>
                     <span className="security-menu-item-label">{item.label}</span>
                     <ChevronRight size={18} className="security-menu-item-chevron" />

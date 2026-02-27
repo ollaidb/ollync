@@ -2119,7 +2119,7 @@ const PostDetails = () => {
             <div className="post-title-meta">
               {isEvenementRemote && post.event_platform && (
                 <span className="post-title-meta-item">
-                  Plateforme : {post.event_platform}
+                  distance–plate-forme : {post.event_platform}
                 </span>
               )}
               {post.location && !isEvenementRemote && (
@@ -2360,7 +2360,7 @@ const PostDetails = () => {
                 <h3 className="post-additional-title">Localisation</h3>
                 {isEvenementRemote ? (
                   <div className="post-info-item">
-                    <span className="post-info-label">Plateforme</span>
+                    <span className="post-info-label">distance–plate-forme</span>
                     <div className="post-info-value">
                       <span>{post.event_platform}</span>
                     </div>

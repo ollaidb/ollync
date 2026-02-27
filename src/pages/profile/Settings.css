@@ -10,23 +10,23 @@
 }
 
 .settings-section {
-  background: var(--card);
-  border-radius: 12px;
-  overflow: hidden;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
   margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
 }
 
 .settings-menu-list {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .settings-menu-item {
   width: 100%;
   background: var(--card);
-  border: none;
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   padding: 16px;
   display: flex;
   align-items: center;
@@ -40,10 +40,6 @@
   position: relative;
 }
 
-.settings-menu-item:not(:last-child) {
-  border-bottom: 1px solid var(--border);
-}
-
 .settings-menu-item:hover {
   background: var(--muted);
 }
@@ -53,7 +49,11 @@
   color: var(--primary-foreground);
 }
 
-.settings-menu-item.active .settings-menu-item-icon,
+.settings-menu-item.active .settings-menu-item-icon-wrap {
+  background: color-mix(in srgb, var(--primary-foreground) 25%, transparent);
+  color: var(--primary-foreground);
+}
+
 .settings-menu-item.active .settings-menu-item-chevron {
   color: var(--primary-foreground);
 }
@@ -76,14 +76,22 @@
   }
 }
 
-.settings-menu-item-icon {
-  width: 24px;
-  height: 24px;
+/* Icône dans un bloc arrondi (style aligné avec la page Aide) */
+.settings-menu-item-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted-foreground);
   flex-shrink: 0;
+}
+
+.settings-menu-item-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .settings-menu-item-label {
@@ -97,9 +105,7 @@
 }
 
 .settings-menu-item-destructive {
-  border-top: 1px solid var(--border);
   margin-top: 8px;
-  padding-top: 20px;
   color: var(--destructive);
 }
 
@@ -108,7 +114,8 @@
   font-weight: 500;
 }
 
-.settings-menu-item-icon-destructive {
+.settings-menu-item-icon-wrap.settings-menu-item-icon-destructive {
+  background: color-mix(in srgb, var(--destructive) 18%, transparent);
   color: var(--destructive);
 }
 
@@ -120,7 +127,8 @@
   color: var(--destructive);
 }
 
-.settings-menu-item-destructive:hover .settings-menu-item-icon-destructive {
+.settings-menu-item-destructive:hover .settings-menu-item-icon-wrap.settings-menu-item-icon-destructive {
+  background: color-mix(in srgb, var(--destructive) 25%, transparent);
   color: var(--destructive);
 }
 
@@ -136,5 +144,15 @@
   .settings-menu-item {
     padding: 14px;
     font-size: 15px;
+  }
+
+  .settings-menu-item-icon-wrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  .settings-menu-item-icon {
+    width: 22px;
+    height: 22px;
   }
 }

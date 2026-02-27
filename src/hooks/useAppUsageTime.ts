@@ -6,7 +6,7 @@ const USAGE_THRESHOLD_MS = 60 * 60 * 1000 // 1 heure
 const PERSIST_INTERVAL_MS = 30 * 1000 // Sauvegarder toutes les 30 secondes
 const COMPLETED_KEY = 'ollync_personalization_questionnaire_completed'
 const REMIND_LATER_KEY = 'ollync_personalization_remind_later_at'
-const REMIND_LATER_DAYS_MS = 5 * 24 * 60 * 60 * 1000 // 5 jours
+const REMIND_LATER_HOURS_MS = 24 * 60 * 60 * 1000 // 24 heures
 
 export interface UsageState {
   /** Temps cumulé en ms */
@@ -58,7 +58,7 @@ export function markPersonalizationQuestionnaireCompleted(): void {
   }
 }
 
-/** Enregistre "Répondre plus tard" : on redemandera après 5 jours */
+/** Enregistre "Répondre plus tard" ou fermeture (X) : on redemandera après 24 h */
 export function setPersonalizationRemindLater(): void {
   try {
     localStorage.setItem(REMIND_LATER_KEY, String(Date.now()))
@@ -81,7 +81,7 @@ function getRemindLaterAt(): number | null {
 /**
  * Hook qui track le temps d'utilisation cumulé de l'app pour un utilisateur connecté.
  * Retourne true quand l'utilisateur a cumulé >= 1 heure et n'a pas encore complété le questionnaire.
- * "Plus tard" reporte l'affichage de 5 jours.
+ * "Plus tard" ou la croix reporte l'affichage de 24 heures.
  */
 export function useAppUsageTime(): {
   shouldShowQuestionnaire: boolean
@@ -103,7 +103,7 @@ export function useAppUsageTime(): {
     }
 
     const remindAt = getRemindLaterAt()
-    if (remindAt && Date.now() - remindAt < REMIND_LATER_DAYS_MS) {
+    if (remindAt && Date.now() - remindAt < REMIND_LATER_HOURS_MS) {
       setShouldShow(false)
       return
     }
@@ -124,7 +124,7 @@ export function useAppUsageTime(): {
       const nextState: UsageState = { totalMs: nextTotal, sessionStartAt: now }
       saveUsage(user.id, nextState)
       const remindLater = getRemindLaterAt()
-      const withinRemindPeriod = remindLater && now - remindLater < REMIND_LATER_DAYS_MS
+      const withinRemindPeriod = remindLater && now - remindLater < REMIND_LATER_HOURS_MS
       setShouldShow(nextTotal >= USAGE_THRESHOLD_MS && !withinRemindPeriod)
     }
 

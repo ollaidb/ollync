@@ -167,6 +167,7 @@ export default function HomePage() {
           styles.scrollContent,
           { paddingBottom: insets.bottom + 20 }
         ]}
+        contentInsetAdjustmentBehavior="never"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -198,6 +199,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingBottom: 16,
+    minHeight: 56,
+    justifyContent: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
     flexDirection: "row",

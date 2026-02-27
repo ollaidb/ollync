@@ -213,6 +213,7 @@ export const useConsent = (consentType: ConsentType) => {
     fetchConsent().finally(() => {
       setLoading(false)
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConsent, loadFromStorage intentionally excluded
   }, [user, consentType, isGuestConsent])
 
   useEffect(() => {
@@ -243,6 +244,7 @@ export const useConsent = (consentType: ConsentType) => {
     return () => {
       window.clearTimeout(timeout)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- COOKIE_PROMPT_DELAY_MS, getCookiesFirstSeenKey are constants
   }, [consentType, user])
 
   const canPromptNow =

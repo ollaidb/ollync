@@ -22,6 +22,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook export
 export const useToastContext = () => {
   const context = useContext(ToastContext)
   if (context === undefined) {

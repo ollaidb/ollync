@@ -1,11 +1,19 @@
-import { PublicationType, Subcategory } from '../../constants/publishData'
+import { PublicationType, Subcategory, type Platform } from '../../constants/publishData'
+
+export interface ExamplePost {
+  id: string
+  title?: string
+  description?: string
+  images?: string[] | null
+  user?: { username?: string | null; full_name?: string | null; avatar_url?: string | null } | null
+}
 import './Step3Option.css'
 
 interface Step3OptionProps {
   selectedSubcategory: Subcategory | null
   selectedCategory: PublicationType | null
-  onSelectOption: (option: { id: string; name: string; platforms?: any[] }) => void
-  examplePosts: any[]
+  onSelectOption: (option: { id: string; name: string; platforms?: Platform[] }) => void
+  examplePosts: ExamplePost[]
   loadingPosts: boolean
 }
 

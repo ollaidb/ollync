@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { scrollToHomeTop } from '../utils/scrollToHomeTop'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
 import { Home, Heart, PlusCircle, MessageCircle, User } from 'lucide-react'
 import { prefetchRoute } from '../utils/routePrefetch'
 import { useAuth } from '../hooks/useSupabase'
@@ -181,12 +180,23 @@ const Footer = () => {
     { path: '/profile', icon: User, label: t('nav.profile') }
   ]
 
-  const isActive = (path: string) => {
-    if (path === '/home') {
-      return location.pathname === '/' || location.pathname === '/home'
-    }
-    return location.pathname === path || location.pathname.startsWith(path + '/')
-  }
+  // Une seule route active à la fois, dérivée du pathname pour éviter que l’icône Accueil
+  // reste visuellement active sur Favoris / Messages / Profil (bug d’état désynchronisé).
+  const pathname = location.pathname
+  const activePath =
+    pathname === '/' || pathname === '/home'
+      ? '/home'
+      : pathname === '/favorites' || pathname.startsWith('/favorites/')
+        ? '/favorites'
+        : pathname === '/publish' || pathname.startsWith('/publish/')
+          ? '/publish'
+          : pathname === '/messages' || pathname.startsWith('/messages/')
+            ? '/messages'
+            : pathname === '/profile' || pathname.startsWith('/profile/')
+              ? '/profile'
+              : null
+
+  const isActive = (path: string) => activePath === path
 
   const handleHomeClick = () => {
     if (location.pathname === '/home' || location.pathname === '/') {
@@ -204,13 +214,15 @@ const Footer = () => {
         const isCenter = index === 2 // L'icône PlusCircle est au centre
         const isHome = item.path === '/home'
         return (
-          <motion.button
+          <button
+            type="button"
             key={item.path}
             className={`footer-item ${active ? 'active' : ''} ${isCenter ? 'footer-center' : ''}`}
             onClick={() => (isHome ? handleHomeClick() : navigate(item.path))}
             onMouseEnter={() => prefetchRoute(item.path)}
             onFocus={() => prefetchRoute(item.path)}
             aria-label={item.label}
+            aria-current={active ? 'page' : undefined}
           >
             {isCenter ? (
               <div className="footer-center-icon-wrapper">
@@ -226,7 +238,7 @@ const Footer = () => {
                 )}
               </div>
             )}
-          </motion.button>
+          </button>
         )
       })}
     </footer>

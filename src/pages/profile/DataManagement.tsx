@@ -22,6 +22,7 @@ const DataManagement = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchConsent intentionally excluded
   }, [user])
 
   const fetchConsent = async () => {
@@ -38,7 +39,7 @@ const DataManagement = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching data consent:', error)
       } else {
-        setDataConsent((data as any)?.data_consent_enabled || false)
+        setDataConsent((data as { data_consent_enabled?: boolean } | null)?.data_consent_enabled ?? false)
       }
     } catch (error) {
       console.error('Error in fetchConsent:', error)
@@ -54,7 +55,7 @@ const DataManagement = () => {
     setDataConsent(newConsent)
 
     try {
-      const { error } = await (supabase.from('profiles') as any)
+        const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update({ 
           data_consent_enabled: newConsent,
           updated_at: new Date().toISOString()

@@ -10,23 +10,23 @@
 }
 
 .security-section {
-  background: var(--card);
-  border-radius: 12px;
-  overflow: hidden;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
   margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
 }
 
 .security-menu-list {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .security-menu-item {
   width: 100%;
   background: var(--card);
-  border: none;
-  border-radius: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   padding: 16px;
   display: flex;
   align-items: center;
@@ -40,22 +40,58 @@
   position: relative;
 }
 
-.security-menu-item:not(:last-child) {
-  border-bottom: 1px solid var(--border);
-}
-
 .security-menu-item:hover {
   background: var(--muted);
+}
+
+.security-menu-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.security-menu-item.active .security-menu-item-icon-wrap {
+  background: color-mix(in srgb, var(--primary-foreground) 25%, transparent);
+  color: var(--primary-foreground);
+}
+
+.security-menu-item.active .security-menu-item-chevron {
+  color: var(--primary-foreground);
+}
+
+.security-menu-item:active {
+  background: var(--muted);
+}
+
+@media (hover: none) {
+  .security-menu-item:hover {
+    background: var(--card);
+  }
+
+  .security-menu-item:active {
+    background: var(--muted);
+  }
+
+  .security-menu-item.active:active {
+    background: var(--primary);
+  }
+}
+
+/* Icône dans un bloc arrondi (style aligné avec Aide / Paramètres) */
+.security-menu-item-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .security-menu-item-icon {
   width: 24px;
   height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted-foreground);
-  flex-shrink: 0;
 }
 
 .security-menu-item-label {
@@ -76,5 +112,15 @@
   .security-menu-item {
     padding: 14px;
     font-size: 15px;
+  }
+
+  .security-menu-item-icon-wrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  .security-menu-item-icon {
+    width: 22px;
+    height: 22px;
   }
 }

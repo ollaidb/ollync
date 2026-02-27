@@ -170,6 +170,7 @@ export default function ProfilePage() {
           styles.scrollContent,
           { paddingBottom: insets.bottom + 20 }
         ]}
+        contentInsetAdjustmentBehavior="never"
         showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity
@@ -255,6 +256,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingVertical: 16,
+    minHeight: 56,
+    justifyContent: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },

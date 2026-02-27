@@ -10,6 +10,8 @@ interface PublishActionsProps {
   isValid?: boolean
   validationErrors?: string[]
   insets?: { bottom: number }
+  /** Désactive le bouton Publier pendant l'envoi pour éviter le double clic */
+  isPublishing?: boolean
 }
 
 export const PublishActions = ({ 
@@ -19,13 +21,16 @@ export const PublishActions = ({
   onPublish,
   onInvalidPublishAttempt,
   isValid = true,
-  validationErrors = []
+  validationErrors = [],
+  isPublishing = false
 }: PublishActionsProps) => {
   const rawFirstError = !isValid ? validationErrors[0] : null
   const firstError =
     rawFirstError && /lieu est obligatoire|adresse est obligatoire/i.test(rawFirstError)
       ? null
       : rawFirstError
+
+  const publishDisabled = !isValid || isPublishing
 
   return (
     <div className="publish-actions">
@@ -38,22 +43,25 @@ export const PublishActions = ({
         <button
           className="publish-action-button secondary"
           onClick={onSaveDraft}
+          disabled={isPublishing}
+          aria-disabled={isPublishing}
         >
           Enregistrer comme brouillon
         </button>
         <button
-          className={`publish-action-button primary ${!isValid ? 'is-disabled' : ''}`}
+          className={`publish-action-button primary ${publishDisabled ? 'is-disabled' : ''}`}
           onClick={() => {
-            if (!isValid) {
-              onInvalidPublishAttempt?.()
+            if (publishDisabled) {
+              if (!isValid) onInvalidPublishAttempt?.()
               return
             }
             onPublish()
           }}
-          aria-disabled={!isValid}
-          title={!isValid ? firstError || 'Veuillez compléter les champs obligatoires' : undefined}
+          disabled={isPublishing}
+          aria-disabled={publishDisabled}
+          title={!isValid ? firstError || 'Veuillez compléter les champs obligatoires' : isPublishing ? 'Publication en cours...' : undefined}
         >
-          Publier
+          {isPublishing ? 'Publication...' : 'Publier'}
         </button>
       </div>
     </div>

@@ -54,6 +54,7 @@ export interface Database {
           custom_clauses: string | null
           status: string | null
           agreement_confirmed: boolean | null
+          contract_duration: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -72,6 +73,7 @@ export interface Database {
           custom_clauses?: string | null
           status?: string | null
           agreement_confirmed?: boolean | null
+          contract_duration?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -90,6 +92,7 @@ export interface Database {
           custom_clauses?: string | null
           status?: string | null
           agreement_confirmed?: boolean | null
+          contract_duration?: string | null
           created_at?: string | null
           updated_at?: string | null
         }

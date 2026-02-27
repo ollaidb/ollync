@@ -133,6 +133,7 @@ const Notifications = () => {
     return () => {
       supabase.removeChannel(channel)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchNotifications intentionally excluded
   }, [user])
 
   const markAsRead = async (id: string) => {

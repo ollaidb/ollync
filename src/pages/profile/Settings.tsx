@@ -82,8 +82,8 @@ const Settings = () => {
                     aria-label={item.label}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <div className={`settings-menu-item-icon ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`} aria-hidden>
-                      <Icon size={20} />
+                    <div className={`settings-menu-item-icon-wrap ${isDestructive ? 'settings-menu-item-icon-destructive' : ''}`} aria-hidden>
+                      <Icon size={24} className="settings-menu-item-icon" />
                     </div>
                     <span className="settings-menu-item-label">{item.label}</span>
                     {!isDestructive && <ChevronRight size={18} className="settings-menu-item-chevron" aria-hidden />}

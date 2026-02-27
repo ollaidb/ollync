@@ -30,8 +30,9 @@
   border: none;
   cursor: pointer;
   color: var(--foreground);
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
   min-width: 50px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .footer-icon-wrapper {
@@ -59,13 +60,21 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Hover : uniquement sur l’élément survolé, pas de réaction sur les autres */
 .footer-item:hover {
   color: var(--accent);
   transform: translateY(-2px);
 }
 
+/* État actif (page courante) : couleur seule, pas de transform pour éviter toute réaction visuelle parasite */
 .footer-item.active {
   color: var(--primary);
+  transform: none;
+}
+
+/* Au clic/tap : léger feedback uniquement sur le bouton vraiment pressé */
+.footer-item:active {
+  opacity: 0.85;
 }
 
 /* Icône centrale adaptée au style des catégories */

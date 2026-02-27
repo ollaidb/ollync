@@ -17,6 +17,7 @@ interface State {
  * Boutons utilisant window.location pour garantir que les actions fonctionnent
  * même en cas d'erreur de chargement de module ou de contexte React dégradé.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- local helper component
 function ErrorBoundaryActions() {
   const handleRetry = () => {
     window.location.reload()

@@ -80,6 +80,7 @@ export const NavigationHistoryProvider = ({ children }: { children: ReactNode })
     if (historyRef.current.length > 100) {
       historyRef.current = historyRef.current.slice(-100)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isMainTabRoot is stable
   }, [location])
 
   /**
@@ -149,6 +150,7 @@ export const NavigationHistoryProvider = ({ children }: { children: ReactNode })
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook export
 export const useNavigationHistory = () => {
   const context = useContext(NavigationHistoryContext)
   if (context === undefined) {

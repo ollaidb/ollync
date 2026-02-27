@@ -14,8 +14,8 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   useEffect(() => {
-    /* Phrase 1 à 0.2s, 2 à 0.8s, 3 à 1.4s ; fade à 2.6s ; masque à ~3.8s */
-    const timer = setTimeout(onComplete, 3900)
+    /* Phrases visibles ~2.5s ; pause lecture ~1.5s ; fade à 4s, fin ~5.4s */
+    const timer = setTimeout(onComplete, 5600)
     return () => clearTimeout(timer)
   }, [onComplete])
 

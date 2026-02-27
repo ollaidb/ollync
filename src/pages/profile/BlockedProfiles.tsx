@@ -33,6 +33,7 @@ const BlockedProfiles = () => {
       setBlockedProfiles([])
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchBlockedProfiles intentionally excluded
   }, [user])
 
   const fetchBlockedProfiles = async () => {

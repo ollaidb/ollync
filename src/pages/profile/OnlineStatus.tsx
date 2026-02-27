@@ -15,6 +15,7 @@ const OnlineStatus = () => {
     } else {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchOnlineStatus intentionally excluded
   }, [user])
 
   const fetchOnlineStatus = async () => {
@@ -31,7 +32,7 @@ const OnlineStatus = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching online status:', error)
       } else {
-        setIsOnline((data as any)?.is_online || false)
+        setIsOnline((data as { is_online?: boolean } | null)?.is_online ?? false)
       }
     } catch (error) {
       console.error('Error in fetchOnlineStatus:', error)
@@ -47,7 +48,7 @@ const OnlineStatus = () => {
     setIsOnline(newStatus)
 
     try {
-      const { error } = await (supabase.from('profiles') as any)
+      const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update({ 
           is_online: newStatus,
           updated_at: new Date().toISOString()

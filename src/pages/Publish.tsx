@@ -150,6 +150,7 @@ export default function Publish() {
   const editPostId = searchParams.get('edit')
   const [isGuideOpen, setIsGuideOpen] = useState(false)
   const [hasAttemptedPublish, setHasAttemptedPublish] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
   const [hasRestoredNewDraft, setHasRestoredNewDraft] = useState(false)
   const NEW_DRAFT_STEP_KEY = 'publishDraftStep:new'
   const NEW_DRAFT_DATA_KEY = 'publishDraftData:new'
@@ -492,14 +493,21 @@ export default function Publish() {
     setFormData((prev) => ({ ...prev, ...updates }))
   }, [])
 
-  const handlePublishPost = (status: 'draft' | 'active') => {
+  const handlePublishPost = async (status: 'draft' | 'active') => {
     if (status === 'active') {
       setHasAttemptedPublish(true)
+      setIsPublishing(true)
     }
-    const showToastMessage = (message: string) => {
-      showSuccess(message)
+    try {
+      const showToastMessage = (message: string) => {
+        showSuccess(message)
+      }
+      await handlePublish(formData, navigate, status, showToastMessage, editPostId)
+    } finally {
+      if (status === 'active') {
+        setIsPublishing(false)
+      }
     }
-    handlePublish(formData, navigate, status, showToastMessage, editPostId)
   }
 
   useEffect(() => {
@@ -706,6 +714,7 @@ export default function Publish() {
           onInvalidPublishAttempt={() => setHasAttemptedPublish(true)}
           isValid={validation.isValid}
           validationErrors={validation.errors}
+          isPublishing={isPublishing}
         />
       )}
 

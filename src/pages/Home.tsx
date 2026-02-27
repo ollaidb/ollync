@@ -100,11 +100,11 @@ const Home = () => {
   // Nombre d'annonces par section : mobile 5, web 4
   const maxPostsPerSection = isMobile ? 5 : 4
 
-  // Défilement automatique des 3 slides du hero
+  // Défilement automatique des 3 slides du hero (12 s par slide)
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroIndex((i) => (i + 1) % 3)
-    }, 5000)
+    }, 12000)
     return () => clearInterval(interval)
   }, [])
 
@@ -169,18 +169,58 @@ const Home = () => {
                 onClick={() => setHeroIndex((i) => (i + 1) % 3)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setHeroIndex((i) => (i + 1) % 3); } }}
               >
-                <div className="home-hero-text">
-                  <span className="home-hero-title">{panel.title}</span>
-                  <span className="home-hero-subtitle">{panel.description}</span>
+                <div className="home-hero-content">
+                  <div className="home-hero-text">
+                    <span className="home-hero-title">{panel.title}</span>
+                    <span className="home-hero-subtitle">{panel.description}</span>
+                  </div>
+                  <button
+                    className="home-hero-cta"
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); navigate(panel.route); }}
+                  >
+                    {panel.button}
+                    <ArrowRight size={14} />
+                  </button>
                 </div>
-                <button
-                  className="home-hero-cta"
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); navigate(panel.route); }}
-                >
-                  {panel.button}
-                  <ArrowRight size={14} />
-                </button>
+                <div className="home-hero-animation home-hero-animation-3d" aria-hidden>
+                  {index === 0 && (
+                    <div className="hero-illus hero-illus-camera">
+                      <div className="hero-camera-flash-burst" aria-hidden />
+                      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="hero-svg-camera" aria-hidden>
+                        <defs>
+                          <linearGradient id="hero-skin" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#fff5f0" />
+                            <stop offset="100%" stopColor="#e8d4cc" />
+                          </linearGradient>
+                          <linearGradient id="hero-camera-body" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#2d3748" />
+                            <stop offset="50%" stopColor="#1a202c" />
+                            <stop offset="100%" stopColor="#0d1117" />
+                          </linearGradient>
+                          <linearGradient id="hero-camera-lens" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#4a5568" />
+                            <stop offset="100%" stopColor="#1a202c" />
+                          </linearGradient>
+                        </defs>
+                        {/* Personne couchée — silhouette très discrète */}
+                        <ellipse cx="35" cy="78" rx="38" ry="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+                        {/* Main gauche sous l’appareil */}
+                        <path d="M48 62 L56 58 L62 64 L58 72 L50 70 Z" fill="url(#hero-skin)" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" strokeLinejoin="round" />
+                        {/* Main droite sur le côté de l’appareil */}
+                        <path d="M78 54 L88 50 L92 58 L86 66 L76 64 Z" fill="url(#hero-skin)" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" strokeLinejoin="round" />
+                        {/* Appareil photo — élément central, bien lisible */}
+                        <rect x="54" y="44" width="38" height="28" rx="5" fill="url(#hero-camera-body)" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+                        <rect x="62" y="52" width="22" height="14" rx="2" fill="url(#hero-camera-lens)" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
+                        <circle cx="73" cy="59" r="5" fill="rgba(255,255,255,0.85)" />
+                        <rect x="86" y="46" width="10" height="10" rx="2" fill="#4a5568" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+                        {/* Flash — gros, bien visible */}
+                        <circle cx="91" cy="46" r="10" fill="#ffffff" className="hero-camera-flash" />
+                        <circle cx="91" cy="46" r="15" fill="rgba(255,255,255,0.45)" className="hero-camera-flash hero-camera-flash-glow" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               </article>
             ))}
           </div>

@@ -47,7 +47,8 @@ export function useBatchLikes(postIds: string[]) {
     }
 
     checkLikes()
-  }, [postIds.join(',')]) // Utiliser join pour créer une dépendance stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- postIds.join(',') for stable identity
+  }, [postIds.join(',')])
 
   const isLiked = useMemo(() => {
     return (postId: string) => likedPosts.has(postId)

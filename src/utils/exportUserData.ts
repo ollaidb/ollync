@@ -38,6 +38,8 @@ export async function exportUserData(userId: string): Promise<ExportedUserData> 
     supabase.from('posts').select('*').eq('user_id', userId),
     supabase.from('likes').select('*').eq('user_id', userId),
     supabase.from('notifications').select('*').eq('user_id', userId),
+    // match_requests table may not be in generated Database types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any).from('match_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`),
     supabase.from('applications').select('*').eq('applicant_id', userId),
     supabase.from('conversations').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`),
