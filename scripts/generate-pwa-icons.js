@@ -1,12 +1,12 @@
 /**
- * Génère les icônes PWA 192x192 et 512x512 à partir de public/vite.svg.
+ * Génère les icônes PWA 192x192 et 512x512 à partir de public/ollync-icon.svg (nom Ollync violet sur fond blanc).
  * À lancer avant le build : npm run generate:pwa-icons
  */
 const path = require('path')
 const fs = require('fs')
 
 const publicDir = path.join(__dirname, '..', 'public')
-const svgPath = path.join(publicDir, 'vite.svg')
+const svgPath = path.join(publicDir, 'ollync-icon.svg')
 
 async function main() {
   let sharp

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { publicationTypes } from '../../constants/publishData'
 import { supabase } from '../../lib/supabaseClient'
@@ -6,7 +6,8 @@ import { markPersonalizationQuestionnaireCompleted } from '../../hooks/useAppUsa
 import './PersonalizationQuestionnaire.css'
 
 const MAX_CATEGORIES = 3
-const MAX_SUBCATEGORIES_PER_CATEGORY = 3
+const MIN_CATEGORIES = 1
+const MAX_SUBCATEGORIES_TOTAL = 5
 const MAX_STATUSES = 3
 
 const PROFILE_TYPE_OPTIONS = [
@@ -27,15 +28,39 @@ const PROFILE_TYPE_OPTIONS = [
   { id: 'other', label: 'Autre' }
 ]
 
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+/** Toutes les sous-catégories de l'app (hors "tout") */
+function getAllSubcategories(): { categorySlug: string; subSlug: string }[] {
+  const result: { categorySlug: string; subSlug: string }[] = []
+  for (const cat of publicationTypes) {
+    for (const sub of cat.subcategories) {
+      if (sub.slug !== 'tout') {
+        result.push({ categorySlug: cat.slug, subSlug: sub.slug })
+      }
+    }
+  }
+  return result
+}
+
 interface PersonalizationQuestionnaireProps {
   visible: boolean
   onComplete: () => void
+  onSkip: () => void
   userId: string
 }
 
 export default function PersonalizationQuestionnaire({
   visible,
   onComplete,
+  onSkip,
   userId
 }: PersonalizationQuestionnaireProps) {
   const { t } = useTranslation(['categories', 'common'])
@@ -45,16 +70,13 @@ export default function PersonalizationQuestionnaire({
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
+  const categoriesShuffled = useMemo(() => shuffle(publicationTypes), [])
+  const allSubcategories = useMemo(getAllSubcategories, [])
+
   const categoryLabel = (slug: string) =>
     t(`categories:titles.${slug}`, { defaultValue: publicationTypes.find((c) => c.slug === slug)?.name ?? slug })
   const subcategoryLabel = (slug: string) =>
     t(`categories:submenus.${slug}`, { defaultValue: slug })
-
-  const subcategoriesForCategory = (categorySlug: string) => {
-    const cat = publicationTypes.find((c) => c.slug === categorySlug)
-    if (!cat) return []
-    return cat.subcategories.filter((s) => s.slug !== 'tout')
-  }
 
   const toggleCategory = (slug: string) => {
     setSelectedCategories((prev) => {
@@ -68,8 +90,7 @@ export default function PersonalizationQuestionnaire({
     const key = `${categorySlug}::${subSlug}`
     setSelectedSubcategories((prev) => {
       if (prev.includes(key)) return prev.filter((k) => k !== key)
-      const sameCategory = prev.filter((k) => k.startsWith(`${categorySlug}::`))
-      if (sameCategory.length >= MAX_SUBCATEGORIES_PER_CATEGORY) return prev
+      if (prev.length >= MAX_SUBCATEGORIES_TOTAL) return prev
       return [...prev, key]
     })
   }
@@ -81,9 +102,6 @@ export default function PersonalizationQuestionnaire({
       return [...prev, id]
     })
   }
-
-  const subcategoryCountForCategory = (categorySlug: string) =>
-    selectedSubcategories.filter((k) => k.startsWith(`${categorySlug}::`)).length
 
   const handleNext = () => {
     if (step < 3) setStep((s) => (s + 1) as 1 | 2 | 3)
@@ -122,51 +140,52 @@ export default function PersonalizationQuestionnaire({
     }
   }
 
-  const canProceed = (() => {
-    if (step === 1) return selectedCategories.length > 0
-    if (step === 2) return true
-    return selectedStatuses.length > 0
-  })()
+  const canProceedStep1 = selectedCategories.length >= MIN_CATEGORIES && selectedCategories.length <= MAX_CATEGORIES
+  const canProceed = step === 1 ? canProceedStep1 : true
 
   if (!visible) return null
+
+  const stepTitles: Record<1 | 2 | 3, string> = {
+    1: 'Quels univers te parlent le plus ?',
+    2: 'Choisis les thématiques qui t’inspirent',
+    3: 'Comment te définirais-tu ?'
+  }
 
   return (
     <div className="personalization-questionnaire-overlay">
       <div className="personalization-questionnaire-modal">
-        <div className="personalization-questionnaire-header">
-          <h2>Personnaliser tes recommandations</h2>
-          <p>
-            Tu utilises Creatik depuis un moment. Aide-nous à mieux te
-            recommander du contenu.
-          </p>
-          <div className="personalization-steps" aria-hidden="true">
-            <span
-              className={step >= 1 ? 'active' : ''}
-              aria-current={step === 1 ? 'step' : undefined}
-            >
-              1. Catégories
-            </span>
-            <span
-              className={step >= 2 ? 'active' : ''}
-              aria-current={step === 2 ? 'step' : undefined}
-            >
-              2. Sous-catégories
-            </span>
-            <span
-              className={step >= 3 ? 'active' : ''}
-              aria-current={step === 3 ? 'step' : undefined}
-            >
-              3. Statut
-            </span>
+        {/* Barre de progression fixe en haut */}
+        <div className="personalization-progress-wrap">
+          <div className="personalization-progress-bar">
+            <div
+              className="personalization-progress-fill"
+              style={{ width: `${(step / 3) * 100}%` }}
+              role="progressbar"
+              aria-valuenow={step}
+              aria-valuemin={1}
+              aria-valuemax={3}
+              aria-label={`Étape ${step} sur 3`}
+            />
           </div>
+          <div className="personalization-progress-steps" aria-hidden="true">
+            <span className={step >= 1 ? 'active' : ''}>1</span>
+            <span className={step >= 2 ? 'active' : ''}>2</span>
+            <span className={step >= 3 ? 'active' : ''}>3</span>
+          </div>
+        </div>
+
+        <div className="personalization-questionnaire-header">
+          <p className="personalization-step-title">{stepTitles[step]}</p>
         </div>
 
         <div className="personalization-questionnaire-body">
           {step === 1 && (
-            <div className="personalization-step-content">
-              <h3>Quelles catégories t&apos;intéressent ? (max {MAX_CATEGORIES})</h3>
+            <div className="personalization-step-content personalization-step-content--animate">
+              <p className="personalization-question">
+                Sélectionne trois catégories.
+              </p>
               <div className="personalization-options-grid">
-                {publicationTypes.map((cat) => {
+                {categoriesShuffled.map((cat) => {
                   const selected = selectedCategories.includes(cat.slug)
                   const disabled =
                     !selected && selectedCategories.length >= MAX_CATEGORIES
@@ -186,65 +205,45 @@ export default function PersonalizationQuestionnaire({
                 })}
               </div>
               <p className="personalization-hint">
-                {selectedCategories.length} / {MAX_CATEGORIES} sélectionnées
+                {selectedCategories.length} / {MAX_CATEGORIES} max
               </p>
             </div>
           )}
 
           {step === 2 && (
-            <div className="personalization-step-content">
-              <h3>
-                Quelles sous-catégories pour chaque catégorie ? (max{' '}
-                {MAX_SUBCATEGORIES_PER_CATEGORY} par catégorie)
-              </h3>
-              {selectedCategories.map((categorySlug) => {
-                const subs = subcategoriesForCategory(categorySlug)
-                const count = subcategoryCountForCategory(categorySlug)
-                return (
-                  <div
-                    key={categorySlug}
-                    className="personalization-subcategory-group"
-                  >
-                    <h4>{categoryLabel(categorySlug)}</h4>
-                    <div className="personalization-options-grid">
-                      {subs.map((sub) => {
-                        const key = `${categorySlug}::${sub.slug}`
-                        const selected = selectedSubcategories.includes(key)
-                        const disabled =
-                          !selected &&
-                          count >= MAX_SUBCATEGORIES_PER_CATEGORY
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            className={`personalization-option-chip small ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}
-                            onClick={() =>
-                              toggleSubcategory(categorySlug, sub.slug)
-                            }
-                            disabled={disabled}
-                            aria-pressed={selected}
-                            aria-label={`${subcategoryLabel(sub.slug)}${selected ? ' (sélectionné)' : ''}`}
-                          >
-                            {subcategoryLabel(sub.slug)}
-                          </button>
-                        )
-                      })}
-                    </div>
-                    <p className="personalization-hint">
-                      {count} / {MAX_SUBCATEGORIES_PER_CATEGORY}
-                    </p>
-                  </div>
-                )
-              })}
+            <div className="personalization-step-content personalization-step-content--animate">
+              <p className="personalization-question">
+                Sélectionne jusqu’à cinq sous-catégories.
+              </p>
+              <div className="personalization-options-grid personalization-options-grid--dense">
+                {allSubcategories.map(({ categorySlug, subSlug }) => {
+                  const key = `${categorySlug}::${subSlug}`
+                  const selected = selectedSubcategories.includes(key)
+                  const disabled =
+                    !selected && selectedSubcategories.length >= MAX_SUBCATEGORIES_TOTAL
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`personalization-option-chip small ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}
+                      onClick={() => toggleSubcategory(categorySlug, subSlug)}
+                      disabled={disabled}
+                      aria-pressed={selected}
+                      aria-label={`${subcategoryLabel(subSlug)}${selected ? ' (sélectionné)' : ''}`}
+                    >
+                      {subcategoryLabel(subSlug)}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="personalization-hint">
+                {selectedSubcategories.length} / {MAX_SUBCATEGORIES_TOTAL} max
+              </p>
             </div>
           )}
 
           {step === 3 && (
-            <div className="personalization-step-content">
-              <h3>Quel est ton statut ? (max {MAX_STATUSES})</h3>
-              <p className="personalization-subtitle">
-                Indique les statuts qui te correspondent
-              </p>
+            <div className="personalization-step-content personalization-step-content--animate">
               <div className="personalization-options-grid">
                 {PROFILE_TYPE_OPTIONS.map((opt) => {
                   const selected = selectedStatuses.includes(opt.id)
@@ -266,7 +265,7 @@ export default function PersonalizationQuestionnaire({
                 })}
               </div>
               <p className="personalization-hint">
-                {selectedStatuses.length} / {MAX_STATUSES} sélectionnés
+                {selectedStatuses.length} / {MAX_STATUSES} max
               </p>
             </div>
           )}
@@ -283,7 +282,14 @@ export default function PersonalizationQuestionnaire({
               Retour
             </button>
           ) : (
-            <span />
+            <button
+              type="button"
+              className="personalization-btn personalization-btn-text"
+              onClick={onSkip}
+              disabled={saving}
+            >
+              Répondre plus tard
+            </button>
           )}
           <button
             type="button"

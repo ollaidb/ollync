@@ -427,7 +427,7 @@ export const getMyLocation = async (
 
 export const handlePublish = async (
   formData: FormData,
-  navigate: (path: string) => void,
+  navigate: (path: string, options?: { state?: { originPath?: string } }) => void,
   status: 'draft' | 'active',
   showToast?: (message: string) => void,
   existingPostId?: string | null
@@ -877,7 +877,13 @@ export const handlePublish = async (
       if (status === 'draft') {
         navigate(`/publish?edit=${postId}`)
       } else {
-        navigate(`/post/${postId}`)
+        // Publication réussie : retour = accueil (pas le formulaire)
+        // + effacer le brouillon pour ne pas republier la même annonce
+        try {
+          sessionStorage.removeItem('publishDraftStep:new')
+          sessionStorage.removeItem('publishDraftData:new')
+        } catch { /* ignore */ }
+        navigate(`/post/${postId}`, { state: { originPath: '/home' } })
       }
     }
   } catch (error: unknown) {

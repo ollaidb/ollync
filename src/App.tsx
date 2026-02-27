@@ -86,7 +86,7 @@ function AppContent() {
   const cookiesConsent = useConsent('cookies')
   const { user } = useAuth()
   const { reminder, dismiss } = useReminder()
-  const { shouldShowQuestionnaire, markCompleted } = useAppUsageTime()
+  const { shouldShowQuestionnaire, markCompleted, skipAndRemindLater } = useAppUsageTime()
   const isConsentInfoPage =
     location.pathname === '/profile/legal/politique-cookies' ||
     location.pathname === '/profile/legal/politique-confidentialite'
@@ -297,6 +297,7 @@ function AppContent() {
           <PersonalizationQuestionnaire
             visible
             onComplete={markCompleted}
+            onSkip={skipAndRemindLater}
             userId={user.id}
           />
         )}

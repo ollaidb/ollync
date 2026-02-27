@@ -14,11 +14,14 @@
   box-sizing: border-box;
 }
 
+/* Taille fixe pour que l'écran ne change pas entre les étapes */
 .personalization-questionnaire-modal {
   background: var(--card);
   border-radius: 20px;
   max-width: 480px;
   width: 100%;
+  height: 560px;
+  min-height: 560px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -27,75 +30,117 @@
   overflow: hidden;
 }
 
-.personalization-questionnaire-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid var(--border);
+/* Barre de progression */
+.personalization-progress-wrap {
+  padding: 16px 24px 0;
+  flex-shrink: 0;
 }
 
-.personalization-questionnaire-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.personalization-questionnaire-header p {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: var(--muted-foreground);
-  line-height: 1.5;
-}
-
-.personalization-steps {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--muted-foreground);
-}
-
-.personalization-steps span {
-  padding: 4px 8px;
-  border-radius: 6px;
+.personalization-progress-bar {
+  height: 6px;
   background: var(--muted);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 
-.personalization-steps span.active {
+.personalization-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.35s ease-out;
+}
+
+.personalization-progress-steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.personalization-progress-steps span {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.personalization-progress-steps span.active {
   background: var(--primary);
   color: var(--primary-foreground);
+}
+
+.personalization-questionnaire-header {
+  padding: 16px 24px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.personalization-step-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.3;
 }
 
 .personalization-questionnaire-body {
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
+  min-height: 0;
 }
 
-.personalization-step-content h3 {
+.personalization-step-content {
+  animation: personalization-step-in 0.35s ease-out;
+}
+
+.personalization-step-content--animate .personalization-option-chip {
+  animation: personalization-chip-in 0.4s ease-out backwards;
+}
+
+.personalization-step-content--animate .personalization-option-chip:nth-child(1) { animation-delay: 0.05s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(2) { animation-delay: 0.08s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(3) { animation-delay: 0.11s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(4) { animation-delay: 0.14s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(5) { animation-delay: 0.17s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(6) { animation-delay: 0.2s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(7) { animation-delay: 0.23s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(8) { animation-delay: 0.26s; }
+.personalization-step-content--animate .personalization-option-chip:nth-child(n+9) { animation-delay: 0.29s; }
+
+@keyframes personalization-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes personalization-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.personalization-question {
   margin: 0 0 16px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.personalization-subtitle {
-  margin: -8px 0 16px 0;
-  font-size: 13px;
-  color: var(--muted-foreground);
-}
-
-.personalization-subcategory-group {
-  margin-bottom: 24px;
-}
-
-.personalization-subcategory-group:last-child {
-  margin-bottom: 0;
-}
-
-.personalization-subcategory-group h4 {
-  margin: 0 0 12px 0;
   font-size: 14px;
-  font-weight: 600;
+  line-height: 1.5;
   color: var(--foreground);
 }
 
@@ -103,6 +148,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.personalization-options-grid--dense {
+  gap: 6px;
 }
 
 .personalization-option-chip {
@@ -119,13 +168,15 @@
 
 .personalization-option-chip:hover:not(.disabled) {
   border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  transform: translateY(-1px);
 }
 
 .personalization-option-chip.selected {
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 .personalization-option-chip.disabled {
@@ -144,6 +195,21 @@
   color: var(--muted-foreground);
 }
 
+.personalization-subcategory-group {
+  margin-bottom: 20px;
+}
+
+.personalization-subcategory-group:last-child {
+  margin-bottom: 0;
+}
+
+.personalization-subcategory-group-title {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
 .personalization-questionnaire-actions {
   display: flex;
   justify-content: space-between;
@@ -152,6 +218,7 @@
   padding: 16px 24px;
   border-top: 1px solid var(--border);
   background: var(--background);
+  flex-shrink: 0;
 }
 
 .personalization-btn {
@@ -188,14 +255,28 @@
   background: var(--border);
 }
 
+.personalization-btn-text {
+  background: transparent;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.personalization-btn-text:hover:not(:disabled) {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .personalization-questionnaire-modal {
+    height: 100%;
+    min-height: 520px;
     max-height: 95vh;
   }
 
   .personalization-questionnaire-header,
   .personalization-questionnaire-body,
-  .personalization-questionnaire-actions {
+  .personalization-questionnaire-actions,
+  .personalization-progress-wrap {
     padding-left: 16px;
     padding-right: 16px;
   }

@@ -1,6 +1,16 @@
 -- ============================================
 -- ENSURE UNIQUE DIRECT CONVERSATIONS PER USER PAIR
 -- ============================================
+-- ATTENTION : Ce script marque des conversations en "supprimées" (deleted_at)
+-- pour les paires (user1, user2) qui ont plusieurs conversations directes.
+-- Il garde une seule conversation par paire (celle avec le dernier message)
+-- et déplace les messages des autres vers celle-ci, puis met deleted_at sur les autres.
+--
+-- À n'exécuter qu'une fois (migration) ou avec précaution : les utilisateurs
+-- ne verront plus qu'une seule conversation par personne (les autres disparaissent
+-- de la liste car deleted_at IS NOT NULL). Les messages ne sont pas perdus,
+-- ils sont fusionnés dans la conversation conservée.
+--
 DO $$
 BEGIN
   IF NOT EXISTS (

@@ -184,7 +184,7 @@ export function useReminder() {
       // ignore
     }
 
-    // Brouillons : maximum une fois par semaine (pas à chaque connexion)
+    // Brouillons : maximum une fois par semaine ; si l'utilisateur a choisi "Ne plus demander", ne plus jamais afficher.
     if (!loading && draftCount > 0 && !isNeverAsk('draft')) {
       const lastShown = getDraftLastShown()
       const dismissed = getDismissedAt('draft')
@@ -192,9 +192,9 @@ export function useReminder() {
         ? Math.max(lastShown, dismissed)
         : lastShown ?? dismissed
       if (lastInteraction != null && Date.now() - lastInteraction < COOLDOWN_MS.draft) {
-        // Pas encore 7 jours depuis la dernière affichage ou fermeture
+        // Pas encore 7 jours depuis la dernière affichage ou fermeture → ne pas afficher
       } else {
-        setDraftLastShown()
+        // On affiche au plus une fois par semaine ; setDraftLastShown() est appelé dans le useEffect plus bas (une seule fois à l'affichage)
         return {
           type: 'draft',
           title: 'Terminer ton brouillon',
@@ -265,6 +265,7 @@ export function useReminder() {
   const dismiss = useCallback((type: ReminderType, action: DismissAction) => {
     try {
       const now = Date.now()
+      // "never" = l'utilisateur a choisi "Ne plus demander" → on ne redemande plus jamais (persisté en localStorage)
       if (action === 'never') {
         localStorage.setItem(`${STORAGE_NEVER_PREFIX}${type}`, 'true')
       }
@@ -279,6 +280,9 @@ export function useReminder() {
   useEffect(() => {
     if (reminder?.type === 'publish') {
       setPublishLastShown()
+    }
+    if (reminder?.type === 'draft') {
+      setDraftLastShown()
     }
   }, [reminder?.type])
 

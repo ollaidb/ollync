@@ -1,4 +1,4 @@
-import { Heart, MapPin, Calendar, Users, Eye } from 'lucide-react'
+import { Heart, HeartOff, MapPin, Calendar, Users, Eye } from 'lucide-react'
 import { useState, useEffect, memo, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -432,6 +432,20 @@ const PostCard = ({
           </div>
           {!isRemoved && <p className="post-card-description">{post.description.substring(0, 100)}...</p>}
           {isRemoved && <p className="post-card-description">Cette annonce a été retirée.</p>}
+          {isRemoved && (
+            <div className="post-card-actions post-card-removed-actions" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="post-card-action"
+                onClick={(e) => { e.stopPropagation(); handleLike(e) }}
+                disabled={checkingLike}
+                aria-label="Retirer des favoris"
+              >
+                <HeartOff size={18} />
+                <span>Retirer des favoris</span>
+              </button>
+            </div>
+          )}
           <div className={`post-card-footer ${hideProfile || !post.user ? 'post-card-footer-right-only' : ''}`}>
             {!hideProfile && post.user && !isRemoved && (
               <div className="post-card-profile" onClick={handleProfileClick}>
@@ -578,6 +592,20 @@ const PostCard = ({
           </div>
         )}
         {isRemoved && <p className="post-card-description">Cette annonce a été retirée.</p>}
+        {isRemoved && (
+          <div className="post-card-actions post-card-removed-actions post-card-removed-actions-grid" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="post-card-action"
+              onClick={(e) => { e.stopPropagation(); handleLike(e) }}
+              disabled={checkingLike}
+              aria-label="Retirer des favoris"
+            >
+              <HeartOff size={16} />
+              <span>Retirer des favoris</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -358,7 +358,9 @@ const Favorites = () => {
         <div className="auth-page">
           <div className="favorites-page-container">
             <div className="favorites-header-not-connected">
+              <BackButton />
               <h1 className="favorites-title-centered">{t('favorites:title')}</h1>
+              <div className="favorites-header-spacer" aria-hidden="true" />
             </div>
             <div className="favorites-content-not-connected">
               <Heart className="favorites-not-connected-icon" strokeWidth={1.5} />

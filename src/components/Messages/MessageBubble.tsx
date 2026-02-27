@@ -51,7 +51,7 @@ interface MessageBubbleProps {
   message: {
     id: string
     content?: string | null
-    sender_id: string
+    sender_id?: string | null
     created_at: string
     edited_at?: string | null
     message_type?: string
@@ -657,7 +657,7 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
           ) : message.sender?.avatar_url ? (
             <img
               src={message.sender.avatar_url}
-              alt={message.sender.full_name || message.sender.username || ''}
+              alt={message.sender?.full_name || message.sender?.username || 'Compte supprimé'}
               className="message-avatar"
             />
           ) : (

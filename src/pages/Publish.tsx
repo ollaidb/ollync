@@ -8,6 +8,7 @@ import { handlePublish, validatePublishForm, getPaymentOptionConfig } from '../u
 import { useAuth } from '../hooks/useSupabase'
 import { useToastContext } from '../contexts/ToastContext'
 import { AuthBackground } from '../components/Auth/AuthBackground'
+import BackButton from '../components/BackButton'
 import { PublishHeader } from '../components/PublishPage/PublishHeader'
 import { PublishGuideModal } from '../components/PublishPage/PublishGuideModal'
 import { Step0OfferDemand, type OfferDemandType } from '../components/PublishPage/Step0OfferDemand'
@@ -520,7 +521,9 @@ export default function Publish() {
         <div className="auth-page">
           <div className="publish-page-container">
             <div className="publish-header-not-connected">
+              <BackButton />
               <h1 className="publish-title-centered">Publier</h1>
+              <div className="publish-header-spacer" aria-hidden="true" />
             </div>
             <div className="publish-content-not-connected">
               <PlusCircle className="publish-not-connected-icon" strokeWidth={1.5} />

@@ -31,8 +31,8 @@ const isSystemUserEmail = (email?: string | null) =>
 
 interface Conversation {
   id: string
-  user1_id: string
-  user2_id: string
+  user1_id: string | null
+  user2_id: string | null
   created_at?: string | null
   post_id?: string | null
   group_name?: string | null
@@ -110,9 +110,9 @@ interface MatchRequest {
 
 interface Appointment {
   id: string
-  conversation_id: string
-  sender_id: string
-  recipient_id: string
+  conversation_id?: string | null
+  sender_id?: string | null
+  recipient_id?: string | null
   title: string
   appointment_datetime: string
   status?: string | null
@@ -149,7 +149,7 @@ interface ConversationParticipant {
 interface Message {
   id: string
   content?: string | null
-  sender_id: string
+  sender_id?: string | null
   created_at: string
   read_at?: string | null
   edited_at?: string | null
@@ -1037,7 +1037,7 @@ const Messages = () => {
             last_activity_at?: string | null
             is_online?: boolean | null
           })
-        } : null,
+        } : (!isGroupConversation ? { id: '', full_name: 'Compte supprimé', username: null, avatar_url: null } : null),
         postTitle
       } as Conversation)
 
@@ -1175,7 +1175,7 @@ const Messages = () => {
 
         const formattedMessages: Message[] = visibleMessages.map((msg) => ({
           ...msg,
-          sender: msg.sender || sendersMap.get(msg.sender_id) || null
+          sender: msg.sender || (msg.sender_id ? sendersMap.get(msg.sender_id) : null) || null
         }))
 
         if (requestId !== loadMessagesRequestIdRef.current) return
@@ -1645,7 +1645,7 @@ const Messages = () => {
           const otherUserId = appointment.sender_id === user.id ? appointment.recipient_id : appointment.sender_id
           return {
             ...appointment,
-            other_user: usersMap.get(otherUserId) || null
+            other_user: otherUserId ? (usersMap.get(otherUserId) || null) : null
           }
         })
       }
@@ -1974,9 +1974,10 @@ const Messages = () => {
             const sanitizedContent = rawContent.trim() === '0' ? '' : rawContent
 
             const state = stateMap.get(conv.id)
+            const isGroup = (conv as { is_group?: boolean }).is_group
             return {
               ...conv,
-              other_user: otherUser,
+              other_user: otherUser || (!isGroup ? { id: '', full_name: 'Compte supprimé', username: null, avatar_url: null } : null),
               postTitle,
               lastMessage: lastMsgRow ? {
                 content: sanitizedContent,
@@ -2010,7 +2011,10 @@ const Messages = () => {
 
           // Pour les conversations individuelles, créer une clé unique basée sur les deux utilisateurs
           const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id
-          if (!otherUserId) continue // Ignorer si pas d'autre utilisateur
+          if (!otherUserId) {
+            finalConversations.push(conv)
+            continue
+          }
           
           const conversationKey = [user.id, otherUserId].sort().join('_')
 

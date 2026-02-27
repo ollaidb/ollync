@@ -162,15 +162,17 @@ BEGIN
 END $$;
 
 -- Fonctions de moderation (SECURITY DEFINER)
--- Supprimer un post
+-- "Supprimer" un post = soft delete (status = 'deleted'), pas de DELETE pour garder les traces
 CREATE OR REPLACE FUNCTION public.delete_post_as_admin(target_post_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   current_user_id UUID;
   current_email TEXT;
+  v_updated INT;
 BEGIN
   current_user_id := auth.uid();
   IF current_user_id IS NULL THEN
@@ -181,11 +183,18 @@ BEGIN
   FROM public.profiles
   WHERE id = current_user_id;
 
-  IF lower(current_email) <> 'binta22116@gmail.com' THEN
+  IF current_email IS NULL OR lower(trim(current_email)) <> 'binta22116@gmail.com' THEN
     RAISE EXCEPTION 'Acces refuse';
   END IF;
 
-  DELETE FROM public.posts WHERE id = target_post_id;
+  UPDATE public.posts
+  SET status = 'deleted', updated_at = NOW()
+  WHERE id = target_post_id;
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  IF v_updated = 0 THEN
+    RAISE EXCEPTION 'Annonce introuvable';
+  END IF;
 END;
 $$;
 

@@ -56,10 +56,21 @@
   background-color: var(--background);
   padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
   padding-bottom: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border);
+}
+
+.publish-header-not-connected .publish-title-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 120px);
+  pointer-events: none;
 }
 
 .publish-title-centered {
@@ -69,8 +80,6 @@
   margin: 0;
   text-align: center;
 }
-
-/* Content pour utilisateur non connecté */
 .publish-content-not-connected {
   position: fixed;
   top: 0;

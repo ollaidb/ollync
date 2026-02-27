@@ -1465,11 +1465,15 @@ const PostDetails = () => {
     if (!id || !user || post?.user_id !== user.id) return
 
     try {
-      const { error } = await supabase.from('posts').delete().eq('id', id)
+      const { data: rpcData, error } = await supabase.rpc('delete_own_post', { p_post_id: id }) as { data: { ok?: boolean; error?: string } | null; error: { message?: string } | null }
       if (error) throw error
-      navigate('/home')
-    } catch (error) {
-      console.error('Error deleting post:', error)
+      if (rpcData?.ok) {
+        navigate('/home')
+      } else {
+        alert(rpcData?.error === 'post_introuvable_ou_interdit' ? 'Annonce introuvable ou vous n\'êtes pas le propriétaire.' : 'Erreur lors de la suppression')
+      }
+    } catch (err) {
+      console.error('Error deleting post:', err)
       alert('Erreur lors de la suppression')
     }
   }

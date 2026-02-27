@@ -5,7 +5,6 @@ import PostCard from '../components/PostCard'
 import BackButton from '../components/BackButton'
 import { EmptyState } from '../components/EmptyState'
 import { PostCardSkeleton } from '../components/PostCardSkeleton'
-import RecommendationsSection from '../components/RecommendationsSection'
 import { fetchPostsWithRelations } from '../utils/fetchPostsWithRelations'
 import { useAuth } from '../hooks/useSupabase'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
@@ -181,11 +180,6 @@ const Feed = () => {
                   <PostCard key={post.id} post={post} viewMode={viewMode} />
                 ))}
               </div>
-
-              {/* Section de recommandations - affichée après les annonces normales */}
-              {!loading && posts.length > 0 && (
-                <RecommendationsSection viewMode={viewMode} />
-              )}
 
               {hasMore && (
                 <>
