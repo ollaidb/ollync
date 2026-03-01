@@ -23,6 +23,23 @@ import { compressImageForAvatar, isCompressibleImageType } from '../../utils/ima
 import AvatarCropModal from '../../components/AvatarCropModal/AvatarCropModal'
 import './EditPublicProfile.css'
 
+type VenueOpeningSlot = { day: string; enabled: boolean; start: string; end: string }
+type VenueOpeningHoursBySubcategory = Record<string, VenueOpeningSlot[]>
+
+const DEFAULT_VENUE_OPENING_HOURS: VenueOpeningSlot[] = [
+  { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
+]
+
+const cloneDefaultVenueOpeningHours = (): VenueOpeningSlot[] => (
+  DEFAULT_VENUE_OPENING_HOURS.map((slot) => ({ ...slot }))
+)
+
 const EditPublicProfile = () => {
   const { t } = useTranslation(['categories'])
   const navigate = useNavigate()
@@ -49,15 +66,7 @@ const EditPublicProfile = () => {
       payment_type: string
       value: string
     }>,
-    venue_opening_hours: [
-      { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
-      { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
-    ] as Array<{ day: string; enabled: boolean; start: string; end: string }>,
+    venue_opening_hours: {} as VenueOpeningHoursBySubcategory,
     venue_billing_hours: '01:00',
     venue_payment_types: [] as string[],
     socialLinks: [] as string[],
@@ -92,6 +101,7 @@ const EditPublicProfile = () => {
   const [isVenueSettingsPanelOpen, setIsVenueSettingsPanelOpen] = useState(false)
   const [isVenuePaymentOpen, setIsVenuePaymentOpen] = useState(false)
   const [isVenueOpeningDaysOpen, setIsVenueOpeningDaysOpen] = useState(false)
+  const [selectedVenueSubcategoryKey, setSelectedVenueSubcategoryKey] = useState<string | null>(null)
   const [keyboardInset, setKeyboardInset] = useState(0)
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [linkInputValue, setLinkInputValue] = useState('')
@@ -121,10 +131,43 @@ const EditPublicProfile = () => {
   const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false)
   const pendingNavigateTargetRef = useRef<string | null>(null)
 
+  const serializeProfileForDirtyCheck = useCallback((value: typeof profile) => {
+    const venueSubcategories = value.display_subcategories
+      .filter((key) => VENUE_CATEGORY_SLUGS.some((slug) => key.startsWith(`${slug}::`)))
+      .sort()
+    const legacyVenueSlots = value.venue_opening_hours.__legacy__
+    const normalizedVenueOpeningHours: VenueOpeningHoursBySubcategory = {}
+    venueSubcategories.forEach((subcategoryKey) => {
+      const sourceSlots = value.venue_opening_hours[subcategoryKey] || legacyVenueSlots || cloneDefaultVenueOpeningHours()
+      normalizedVenueOpeningHours[subcategoryKey] = cloneDefaultVenueOpeningHours().map((defaultSlot) => {
+        const source = sourceSlots.find((slot) => slot.day === defaultSlot.day)
+        return source
+          ? {
+              day: String(source.day),
+              enabled: Boolean(source.enabled),
+              start: String(source.start),
+              end: String(source.end)
+            }
+          : defaultSlot
+      })
+    })
+
+    const normalized = {
+      ...value,
+      skills: [...value.skills].sort(),
+      display_categories: [...value.display_categories].sort(),
+      display_subcategories: [...value.display_subcategories].sort(),
+      profile_types: [...value.profile_types].sort(),
+      socialLinks: [value.socialLinks[0] || '', value.socialLinks[1] || '', value.socialLinks[2] || ''],
+      venue_opening_hours: normalizedVenueOpeningHours
+    }
+    return JSON.stringify(normalized)
+  }, [VENUE_CATEGORY_SLUGS])
+
   const hasUnsavedChanges = useMemo(() => {
     if (initialProfileRef.current === null) return false
-    return JSON.stringify(profile) !== initialProfileRef.current
-  }, [profile])
+    return serializeProfileForDirtyCheck(profile) !== initialProfileRef.current
+  }, [profile, serializeProfileForDirtyCheck])
 
   const getBackNavigationTarget = useCallback(() => {
     const prev = getPreviousPath()
@@ -265,31 +308,38 @@ const EditPublicProfile = () => {
       return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
     }
 
-    const parseVenueOpeningHours = (value: unknown) => {
-      const defaults = [
-        { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
-        { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
-      ]
-      if (!Array.isArray(value)) return defaults
-      const map = new Map<string, { day: string; enabled: boolean; start: string; end: string }>()
-      value.forEach((item) => {
-        if (!item || typeof item !== 'object') return
-        const obj = item as Record<string, unknown>
-        const day = String(obj.day || '').toLowerCase()
-        if (!day) return
-        map.set(day, {
-          day,
-          enabled: Boolean(obj.enabled),
-          start: formatTime(normalizeTime(String(obj.start || '09:00')) || '09:00'),
-          end: formatTime(normalizeTime(String(obj.end || '18:00')) || '18:00')
+    const normalizeVenueSlots = (slotsValue: unknown): VenueOpeningSlot[] => {
+      const slotsMap = new Map<string, VenueOpeningSlot>()
+      if (Array.isArray(slotsValue)) {
+        slotsValue.forEach((item) => {
+          if (!item || typeof item !== 'object') return
+          const obj = item as Record<string, unknown>
+          const day = String(obj.day || '').toLowerCase()
+          if (!day) return
+          slotsMap.set(day, {
+            day,
+            enabled: Boolean(obj.enabled),
+            start: formatTime(normalizeTime(String(obj.start || '09:00')) || '09:00'),
+            end: formatTime(normalizeTime(String(obj.end || '18:00')) || '18:00')
+          })
         })
+      }
+      return cloneDefaultVenueOpeningHours().map((slot) => slotsMap.get(slot.day) || slot)
+    }
+
+    const parseVenueOpeningHours = (value: unknown): VenueOpeningHoursBySubcategory => {
+      if (!value) return {}
+      if (Array.isArray(value)) {
+        // Compatibilité ancien format: un seul planning global.
+        return { __legacy__: normalizeVenueSlots(value) }
+      }
+      if (typeof value !== 'object') return {}
+      const record = value as Record<string, unknown>
+      const result: VenueOpeningHoursBySubcategory = {}
+      Object.entries(record).forEach(([subKey, slotsValue]) => {
+        result[subKey] = normalizeVenueSlots(slotsValue)
       })
-      return defaults.map((slot) => map.get(slot.day) || slot)
+      return result
     }
 
     const parseVenuePaymentTypes = (value: unknown) => {
@@ -419,10 +469,10 @@ const EditPublicProfile = () => {
       show_in_users: (profileData as { show_in_users?: boolean | null }).show_in_users ?? true
     }
     setProfile(initialProfile)
-    initialProfileRef.current = JSON.stringify(initialProfile)
+    initialProfileRef.current = serializeProfileForDirtyCheck(initialProfile)
 
     setLoading(false)
-  }, [user])
+  }, [user, serializeProfileForDirtyCheck])
 
   const isVenueDisplayCategory = useMemo(
     () => profile.display_categories.some((slug) => VENUE_CATEGORY_SLUGS.includes(slug)),
@@ -431,6 +481,14 @@ const EditPublicProfile = () => {
   const isServicesDisplayCategory = useMemo(
     () => profile.display_categories.some((slug) => SERVICE_CATEGORY_SLUGS.includes(slug)),
     [profile.display_categories, SERVICE_CATEGORY_SLUGS]
+  )
+  const selectedVenueSubcategories = useMemo(
+    () => profile.display_subcategories.filter((key) => VENUE_CATEGORY_SLUGS.some((slug) => key.startsWith(`${slug}::`))),
+    [profile.display_subcategories, VENUE_CATEGORY_SLUGS]
+  )
+  const selectedVenueSubcategorySet = useMemo(
+    () => new Set(selectedVenueSubcategories),
+    [selectedVenueSubcategories]
   )
   const venuePaymentOptions = useMemo(
     () => getPaymentOptionsForCategory('studio-lieu'),
@@ -468,20 +526,48 @@ const EditPublicProfile = () => {
     return h * 60 + m
   }
 
+  const venueSubcategoryLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+    publicationTypes.forEach((category) => {
+      if (!VENUE_CATEGORY_SLUGS.includes(category.slug)) return
+      category.subcategories
+        .filter((sub) => sub.slug !== 'tout')
+        .forEach((sub) => {
+          map.set(`${category.slug}::${sub.slug}`, sub.name)
+        })
+    })
+    return map
+  }, [VENUE_CATEGORY_SLUGS])
+
+  const currentVenueSubcategoryKey = useMemo(() => (
+    selectedVenueSubcategoryKey && selectedVenueSubcategorySet.has(selectedVenueSubcategoryKey)
+      ? selectedVenueSubcategoryKey
+      : selectedVenueSubcategories[0] || null
+  ), [selectedVenueSubcategoryKey, selectedVenueSubcategorySet, selectedVenueSubcategories])
+
+  const currentVenueOpeningHours = useMemo(() => {
+    if (!currentVenueSubcategoryKey) return cloneDefaultVenueOpeningHours()
+    return profile.venue_opening_hours[currentVenueSubcategoryKey] || cloneDefaultVenueOpeningHours()
+  }, [currentVenueSubcategoryKey, profile.venue_opening_hours])
+
   const updateVenueDay = (
+    subcategoryKey: string,
     day: string,
     updates: Partial<{ enabled: boolean; start: string; end: string }>
   ) => {
     setProfile((prev) => ({
       ...prev,
-      venue_opening_hours: prev.venue_opening_hours.map((slot) =>
-        slot.day === day ? { ...slot, ...updates } : slot
-      )
+      venue_opening_hours: {
+        ...prev.venue_opening_hours,
+        [subcategoryKey]: (prev.venue_opening_hours[subcategoryKey] || cloneDefaultVenueOpeningHours()).map((slot) =>
+          slot.day === day ? { ...slot, ...updates } : slot
+        )
+      }
     }))
   }
 
-  const stepVenueTime = (day: string, key: 'start' | 'end', deltaMinutes: number) => {
-    const target = profile.venue_opening_hours.find((slot) => slot.day === day)
+  const stepVenueTime = (subcategoryKey: string, day: string, key: 'start' | 'end', deltaMinutes: number) => {
+    const target = (profile.venue_opening_hours[subcategoryKey] || []).find((slot) => slot.day === day)
     if (!target) return
     const base = target[key] || '09:00'
     const [hRaw, mRaw] = base.split(':')
@@ -491,7 +577,7 @@ const EditPublicProfile = () => {
     const normalized = ((total % (24 * 60)) + (24 * 60)) % (24 * 60)
     const nextH = Math.floor(normalized / 60)
     const nextM = normalized % 60
-    updateVenueDay(day, { [key]: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}` })
+    updateVenueDay(subcategoryKey, day, { [key]: `${String(nextH).padStart(2, '0')}:${String(nextM).padStart(2, '0')}` })
   }
 
   const setVenuePaymentType = (paymentType: string) => {
@@ -514,13 +600,20 @@ const EditPublicProfile = () => {
     })
   }
 
-  const toggleVenueOpeningDay = (day: string) => {
-    const target = profile.venue_opening_hours.find((slot) => slot.day === day)
+  const toggleVenueOpeningDay = (subcategoryKey: string, day: string) => {
+    const target = (profile.venue_opening_hours[subcategoryKey] || []).find((slot) => slot.day === day)
     if (!target) return
-    updateVenueDay(day, { enabled: !target.enabled })
+    updateVenueDay(subcategoryKey, day, { enabled: !target.enabled })
   }
 
-  const selectedVenueOpeningDays = profile.venue_opening_hours.filter((slot) => slot.enabled)
+  const selectedVenueOpeningDays = currentVenueOpeningHours.filter((slot) => slot.enabled)
+  const venueMissingSubcategoryKeys = useMemo(
+    () => selectedVenueSubcategories.filter((subcategoryKey) => {
+      const hours = profile.venue_opening_hours[subcategoryKey] || []
+      return !hours.some((slot) => slot.enabled)
+    }),
+    [selectedVenueSubcategories, profile.venue_opening_hours]
+  )
 
   const renderVenueBottomSheet = (
     open: boolean,
@@ -564,6 +657,33 @@ const EditPublicProfile = () => {
       setIsVenueOpeningDaysOpen(false)
     }
   }, [isVenueDisplayCategory])
+
+  useEffect(() => {
+    setProfile((prev) => {
+      const nextVenueHours: VenueOpeningHoursBySubcategory = {}
+
+      // Migration: ancien format global => appliquer aux sous-catégories lieu sélectionnées.
+      const legacy = prev.venue_opening_hours.__legacy__
+      selectedVenueSubcategories.forEach((subcategoryKey) => {
+        nextVenueHours[subcategoryKey] = (prev.venue_opening_hours[subcategoryKey] || legacy || cloneDefaultVenueOpeningHours()).map((slot) => ({ ...slot }))
+      })
+
+      const prevSerialized = JSON.stringify(prev.venue_opening_hours)
+      const nextSerialized = JSON.stringify(nextVenueHours)
+      if (prevSerialized === nextSerialized) return prev
+      return { ...prev, venue_opening_hours: nextVenueHours }
+    })
+  }, [selectedVenueSubcategories])
+
+  useEffect(() => {
+    if (!currentVenueSubcategoryKey) {
+      setSelectedVenueSubcategoryKey(null)
+      return
+    }
+    if (selectedVenueSubcategoryKey !== currentVenueSubcategoryKey) {
+      setSelectedVenueSubcategoryKey(currentVenueSubcategoryKey)
+    }
+  }, [currentVenueSubcategoryKey, selectedVenueSubcategoryKey])
 
   useEffect(() => {
     if (profile.display_categories.length === 0) {
@@ -1201,6 +1321,18 @@ const EditPublicProfile = () => {
     
     try {
       if (isVenueDisplayCategory) {
+        if (selectedVenueSubcategories.length === 0) {
+          showError('Pour la catégorie Lieu, choisissez au moins une sous-catégorie')
+          setSaving(false)
+          return
+        }
+
+        if (venueMissingSubcategoryKeys.length > 0) {
+          showError('Renseignez les jours ouvrables pour chaque sous-catégorie Lieu')
+          setSaving(false)
+          return
+        }
+
         if (!selectedVenuePaymentType) {
           showError('Choisissez un moyen de paiement pour le lieu')
           setSaving(false)
@@ -1307,6 +1439,8 @@ const EditPublicProfile = () => {
         if (savedData && savedData[0]) {
           console.log(`✅ Services sauvegardés: ${savedData[0].services?.length || 0}`, savedData[0].services)
         }
+        // Marquer l'état courant comme "sauvegardé" pour éviter les faux prompts.
+        initialProfileRef.current = serializeProfileForDirtyCheck(profile)
         showSuccess('Validé')
         // Petit délai pour laisser le toast s'afficher avant la navigation
         setTimeout(() => {
@@ -1354,7 +1488,7 @@ const EditPublicProfile = () => {
     categories: profile.display_categories.length === 0,
     status: profile.profile_types.length === 0,
     link: !profile.socialLinks.some((l) => (l || '').trim()),
-    venue_opening_hours: isVenueDisplayCategory && !profile.venue_opening_hours.some((slot) => slot.enabled),
+    venue_opening_hours: isVenueDisplayCategory && (selectedVenueSubcategories.length === 0 || venueMissingSubcategoryKeys.length > 0),
     services_required: isServicesDisplayCategory && profile.services.length === 0
   }
 
@@ -1707,22 +1841,44 @@ const EditPublicProfile = () => {
               </div>
             )}
 
-            {isVenueDisplayCategory &&
-              selectedDisplaySubcategoryCategory &&
-              VENUE_CATEGORY_SLUGS.includes(selectedDisplaySubcategoryCategory) && (
+            {isVenueDisplayCategory && (
               <div className={`form-group venue-settings-entry-group ${fromProfileProgress && missingCompletionSections.venue_opening_hours ? 'profile-progress-missing' : ''}`}>
+                {selectedVenueSubcategories.length === 0 && (
+                  <p className="venue-required-error">
+                    La catégorie Lieu exige au moins une sous-catégorie et des jours ouvrables.
+                  </p>
+                )}
+
+                {selectedVenueSubcategories.length > 0 && (
+                  <div className="profile-subcategory-category-switcher">
+                    {selectedVenueSubcategories.map((subcategoryKey) => (
+                      <button
+                        key={subcategoryKey}
+                        type="button"
+                        className={`profile-subcategory-category-chip ${currentVenueSubcategoryKey === subcategoryKey ? 'active' : ''}`}
+                        onClick={() => setSelectedVenueSubcategoryKey(subcategoryKey)}
+                      >
+                        {venueSubcategoryLabelMap.get(subcategoryKey) || subcategoryKey.split('::')[1] || subcategoryKey}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   type="button"
                   className="venue-settings-entry-button"
+                  disabled={!currentVenueSubcategoryKey}
                   onClick={() => setIsVenueSettingsPanelOpen(true)}
                 >
                   <span className="venue-settings-entry-title">
-                    {selectedVenueOpeningDays.length > 0 ? 'Modifier vos jours ouvrables' : 'Ajouter vos jours ouvrables'}
+                    {currentVenueSubcategoryKey
+                      ? `Lieu · ${venueSubcategoryLabelMap.get(currentVenueSubcategoryKey) || currentVenueSubcategoryKey.split('::')[1] || currentVenueSubcategoryKey}`
+                      : 'Lieu'}
                   </span>
                   <span className="venue-settings-entry-subtitle">
                     {selectedVenueOpeningDays.length > 0
                       ? `${selectedVenueOpeningDays.length} jour(s) configuré(s)${selectedVenuePaymentType ? ' · paiement configuré' : ''}`
-                      : 'Cliquez pour configurer les horaires et le moyen de paiement'}
+                      : 'Les jours ouvrables sont obligatoires pour cette sous-catégorie'}
                   </span>
                 </button>
 
@@ -1736,13 +1892,25 @@ const EditPublicProfile = () => {
                   </div>
                 )}
 
+                {venueMissingSubcategoryKeys.length > 0 && (
+                  <p className="venue-required-error">
+                    Jours ouvrables obligatoires pour: {venueMissingSubcategoryKeys
+                      .map((key) => venueSubcategoryLabelMap.get(key) || key.split('::')[1] || key)
+                      .join(', ')}
+                  </p>
+                )}
+
                 {renderVenueBottomSheet(
                   isVenueSettingsPanelOpen,
                   () => setIsVenueSettingsPanelOpen(false),
                   '',
                   <div className="venue-settings-sheet-content">
                     <div className="opening-hours-sheet-header">
-                      <h3>Configurer le lieu</h3>
+                      <h3>
+                        {currentVenueSubcategoryKey
+                          ? `Configurer le lieu · ${venueSubcategoryLabelMap.get(currentVenueSubcategoryKey) || currentVenueSubcategoryKey.split('::')[1] || currentVenueSubcategoryKey}`
+                          : 'Configurer le lieu'}
+                      </h3>
                       <button
                         type="button"
                         className="opening-hours-sheet-close"
@@ -1835,7 +2003,11 @@ const EditPublicProfile = () => {
                             '',
                             <div className="opening-hours-sheet-content">
                               <div className="opening-hours-sheet-header">
-                                <h3>Jours d’ouverture</h3>
+                                <h3>
+                                  {currentVenueSubcategoryKey
+                                    ? `Jours d’ouverture · ${venueSubcategoryLabelMap.get(currentVenueSubcategoryKey) || currentVenueSubcategoryKey.split('::')[1] || currentVenueSubcategoryKey}`
+                                    : 'Jours d’ouverture'}
+                                </h3>
                                 <button
                                   type="button"
                                   className="opening-hours-sheet-close"
@@ -1847,7 +2019,7 @@ const EditPublicProfile = () => {
                               </div>
                               <div className="opening-hours-sheet-divider" />
                               <div className="opening-days-list">
-                                {profile.venue_opening_hours.map((slot) => (
+                                {currentVenueOpeningHours.map((slot) => (
                                   <div
                                     key={slot.day}
                                     className={`opening-day-item ${slot.enabled ? 'selected' : ''}`}
@@ -1855,7 +2027,10 @@ const EditPublicProfile = () => {
                                     <button
                                       type="button"
                                       className="opening-day-row"
-                                      onClick={() => toggleVenueOpeningDay(slot.day)}
+                                      onClick={() => {
+                                        if (!currentVenueSubcategoryKey) return
+                                        toggleVenueOpeningDay(currentVenueSubcategoryKey, slot.day)
+                                      }}
                                     >
                                       <span>{venueDayLabels[slot.day] || slot.day}</span>
                                       <span className={`opening-day-check ${slot.enabled ? 'checked' : ''}`} aria-hidden="true">
@@ -1874,10 +2049,14 @@ const EditPublicProfile = () => {
                                                 className="form-input opening-hours-time"
                                                 value={slot.start}
                                                 onChange={(event) =>
-                                                  updateVenueDay(slot.day, { start: normalizeTime(event.target.value) })
+                                                  currentVenueSubcategoryKey
+                                                    ? updateVenueDay(currentVenueSubcategoryKey, slot.day, { start: normalizeTime(event.target.value) })
+                                                    : undefined
                                                 }
                                                 onBlur={() =>
-                                                  updateVenueDay(slot.day, { start: formatTime(slot.start || '09:00') })
+                                                  currentVenueSubcategoryKey
+                                                    ? updateVenueDay(currentVenueSubcategoryKey, slot.day, { start: formatTime(slot.start || '09:00') })
+                                                    : undefined
                                                 }
                                                 placeholder="HH:MM"
                                                 inputMode="numeric"
@@ -1886,7 +2065,10 @@ const EditPublicProfile = () => {
                                                 <button
                                                   type="button"
                                                   className="time-stepper-btn"
-                                                  onClick={() => stepVenueTime(slot.day, 'start', 30)}
+                                                  onClick={() => {
+                                                    if (!currentVenueSubcategoryKey) return
+                                                    stepVenueTime(currentVenueSubcategoryKey, slot.day, 'start', 30)
+                                                  }}
                                                   aria-label="Augmenter de 30 minutes"
                                                 >
                                                   <ChevronUp size={14} />
@@ -1894,7 +2076,10 @@ const EditPublicProfile = () => {
                                                 <button
                                                   type="button"
                                                   className="time-stepper-btn"
-                                                  onClick={() => stepVenueTime(slot.day, 'start', -30)}
+                                                  onClick={() => {
+                                                    if (!currentVenueSubcategoryKey) return
+                                                    stepVenueTime(currentVenueSubcategoryKey, slot.day, 'start', -30)
+                                                  }}
                                                   aria-label="Diminuer de 30 minutes"
                                                 >
                                                   <ChevronDown size={14} />
@@ -1910,10 +2095,14 @@ const EditPublicProfile = () => {
                                                 className="form-input opening-hours-time"
                                                 value={slot.end}
                                                 onChange={(event) =>
-                                                  updateVenueDay(slot.day, { end: normalizeTime(event.target.value) })
+                                                  currentVenueSubcategoryKey
+                                                    ? updateVenueDay(currentVenueSubcategoryKey, slot.day, { end: normalizeTime(event.target.value) })
+                                                    : undefined
                                                 }
                                                 onBlur={() =>
-                                                  updateVenueDay(slot.day, { end: formatTime(slot.end || '18:00') })
+                                                  currentVenueSubcategoryKey
+                                                    ? updateVenueDay(currentVenueSubcategoryKey, slot.day, { end: formatTime(slot.end || '18:00') })
+                                                    : undefined
                                                 }
                                                 placeholder="HH:MM"
                                                 inputMode="numeric"
@@ -1922,7 +2111,10 @@ const EditPublicProfile = () => {
                                                 <button
                                                   type="button"
                                                   className="time-stepper-btn"
-                                                  onClick={() => stepVenueTime(slot.day, 'end', 30)}
+                                                  onClick={() => {
+                                                    if (!currentVenueSubcategoryKey) return
+                                                    stepVenueTime(currentVenueSubcategoryKey, slot.day, 'end', 30)
+                                                  }}
                                                   aria-label="Augmenter de 30 minutes"
                                                 >
                                                   <ChevronUp size={14} />
@@ -1930,7 +2122,10 @@ const EditPublicProfile = () => {
                                                 <button
                                                   type="button"
                                                   className="time-stepper-btn"
-                                                  onClick={() => stepVenueTime(slot.day, 'end', -30)}
+                                                  onClick={() => {
+                                                    if (!currentVenueSubcategoryKey) return
+                                                    stepVenueTime(currentVenueSubcategoryKey, slot.day, 'end', -30)
+                                                  }}
                                                   aria-label="Diminuer de 30 minutes"
                                                 >
                                                   <ChevronDown size={14} />

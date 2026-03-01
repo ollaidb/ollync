@@ -314,6 +314,28 @@ html:not(.dark) .profile-identity-block {
   flex-shrink: 0;
 }
 
+.profile-location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.profile-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 14%, var(--background));
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  max-width: 100%;
+}
+
 
 /* Section droite : Statistiques */
 .profile-right-section {
@@ -473,7 +495,6 @@ html:not(.dark) .profile-identity-block {
   box-shadow: var(--ui-block-shadow);
   border: var(--ui-block-border);
   transition: all 0.2s ease;
-  cursor: pointer;
 }
 
 .service-block:hover {
@@ -563,6 +584,36 @@ html:not(.dark) .profile-identity-block {
   margin: 8px 0 0 0;
 }
 
+.service-block-meta {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.service-block-meta-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.service-block-meta-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.service-block-meta-value {
+  font-size: 14px;
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.service-block-request-btn {
+  margin-top: 14px;
+}
+
 .service-read-more-btn {
   display: inline-flex;
   align-items: center;
@@ -621,6 +672,17 @@ html:not(.dark) .profile-identity-block {
   padding: var(--ui-block-padding);
   box-shadow: var(--ui-block-shadow);
   border: var(--ui-block-border);
+}
+
+.profile-venue-subcategory-card {
+  margin-bottom: 10px;
+}
+
+.profile-venue-subcategory-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
 }
 
 .profile-venue-hours-list {
@@ -1234,6 +1296,15 @@ html:not(.dark) .profile-identity-block {
     gap: 3px;
   }
 
+  .profile-location-row {
+    gap: 6px;
+  }
+
+  .profile-status-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
   .profile-location-text svg {
     width: 12px;
     height: 12px;
@@ -1345,6 +1416,10 @@ html:not(.dark) .profile-identity-block {
   }
 
   .service-block-description-text {
+    font-size: 13px;
+  }
+
+  .service-block-meta-value {
     font-size: 13px;
   }
 

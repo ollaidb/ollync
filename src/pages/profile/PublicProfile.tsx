@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, DollarSign, RefreshCw, Linkedin, Globe, CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Share, MapPin, Plus, Instagram, Facebook, Star, MoreHorizontal, AlertTriangle, Flag, Linkedin, Globe, CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
 import BackButton from '../../components/BackButton'
@@ -10,10 +10,10 @@ import { PhotoModal } from '../../components/ProfilePage/PhotoModal'
 import { EmptyState } from '../../components/EmptyState'
 import PostCard from '../../components/PostCard'
 import { useToastContext } from '../../contexts/ToastContext'
-import ServiceDetailModal from '../../components/ServiceDetailModal'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import { getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { getLinkPlatform } from '../../utils/linkPlatform'
+import { publicationTypes } from '../../constants/publishData'
 import { PageMeta } from '../../components/PageMeta'
 import { useTranslation } from 'react-i18next'
 import './PublicProfile.css'
@@ -25,10 +25,49 @@ interface Service {
   value: string
 }
 
+type VenueOpeningSlot = { day: string; enabled: boolean; start: string; end: string }
+
+const DEFAULT_VENUE_OPENING_HOURS: VenueOpeningSlot[] = [
+  { day: 'lundi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'mardi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'mercredi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'jeudi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'vendredi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'samedi', enabled: false, start: '09:00', end: '18:00' },
+  { day: 'dimanche', enabled: false, start: '09:00', end: '18:00' }
+]
+
+const cloneDefaultVenueOpeningHours = (): VenueOpeningSlot[] => (
+  DEFAULT_VENUE_OPENING_HOURS.map((slot) => ({ ...slot }))
+)
+
 const normalizeServicePaymentType = (value: string) => {
   if (value === 'price') return 'remuneration'
   if (value === 'exchange') return 'echange'
   return value || 'remuneration'
+}
+
+const PROFILE_TYPE_LABELS: Record<string, string> = {
+  creator: 'Créateur(trice) de contenu',
+  freelance: 'Prestataire / Freelance',
+  company: 'Entreprise',
+  studio: 'Studio / Lieu',
+  institut: 'Institut / Beauté',
+  'community-manager': 'Community manager',
+  monteur: 'Monteur(euse)',
+  animateur: 'Animateur(rice)',
+  redacteur: 'Rédacteur(rice)',
+  scenariste: 'Scénariste',
+  coach: 'Coach',
+  agence: 'Agence',
+  branding: 'Branding',
+  'analyse-profil': 'Analyse de profil'
+}
+
+const buildDefaultServiceOfferMessage = (reviewerName?: string | null) => {
+  const safeName = String(reviewerName || '').trim()
+  const greeting = safeName ? `Bonjour ${safeName},` : 'Bonjour,'
+  return `${greeting} je suis intéressé par votre service et disponible pour échanger sur les détails.`
 }
 
 interface ProfileData {
@@ -43,7 +82,8 @@ interface ProfileData {
   skills?: string[]
   services?: Service[] | string[] // Peut être un tableau d'objets ou de strings (compatibilité)
   display_categories?: string[] | null
-  venue_opening_hours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | null
+  display_subcategories?: string[] | null
+  venue_opening_hours?: Array<{ day: string; enabled: boolean; start: string; end: string }> | Record<string, Array<{ day: string; enabled: boolean; start: string; end: string }>> | null
   venue_billing_hours?: number | null
   venue_payment_types?: string[] | null
   languages?: Array<{ name: string; level: string }>
@@ -543,13 +583,13 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const fetchServiceRequestStatus = useCallback(async (service: Service | null) => {
     if (!service || !user || !profileId || profileId === user.id) {
       setServiceMatchRequest(null)
-      return
+      return null
     }
 
     const serviceName = String(service.name || '').trim()
     if (!serviceName) {
       setServiceMatchRequest(null)
-      return
+      return null
     }
 
     try {
@@ -566,38 +606,46 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking service request:', error)
         setServiceMatchRequest(null)
-        return
+        return null
       }
 
       if (data) {
-        setServiceMatchRequest({ id: data.id, status: data.status })
+        const request = { id: data.id, status: data.status as 'pending' | 'accepted' | 'declined' | 'cancelled' }
+        setServiceMatchRequest(request)
+        return request
       } else {
         setServiceMatchRequest(null)
+        return null
       }
     } catch (error) {
       console.error('Error checking service request:', error)
       setServiceMatchRequest(null)
+      return null
     }
   }, [profileId, user])
 
-  const handleServiceRequestClick = () => {
+  const handleServiceRequestClick = async (service: Service) => {
     if (!user) {
       navigate('/auth/login')
       return
     }
 
-    if (!selectedService || !profileId) return
+    if (!profileId) return
 
-    if (serviceMatchRequest?.status === 'accepted') {
+    setSelectedService(service)
+    setServiceRequestMessage(buildDefaultServiceOfferMessage(profile?.full_name || profile?.username))
+    setShowServiceCancelModal(false)
+
+    const request = await fetchServiceRequestStatus(service)
+    if (request?.status === 'accepted') {
       return
     }
 
-    if (serviceMatchRequest?.status === 'pending') {
+    if (request?.status === 'pending') {
       setShowServiceCancelModal(true)
       return
     }
 
-    setServiceRequestMessage('')
     setShowServiceSendModal(true)
   }
 
@@ -673,12 +721,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     } finally {
       setServiceRequestLoading(false)
     }
-  }
-
-  const handleCloseServiceModal = () => {
-    setSelectedService(null)
-    setShowServiceSendModal(false)
-    setShowServiceCancelModal(false)
   }
 
   const handleOpenVenueReservationModal = () => {
@@ -1129,6 +1171,9 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const displayName = profile.full_name || profile.username || 'Utilisateur'
   const normalizedDisplayCategories = (profile.display_categories || []).map((slug) => String(slug))
+  const normalizedDisplaySubcategories = Array.isArray(profile.display_subcategories)
+    ? profile.display_subcategories.map((item) => String(item))
+    : []
   const parseProfileTypes = (value: unknown) => {
     if (!value) return [] as string[]
     if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
@@ -1146,13 +1191,70 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     return trimmed.split('||').map((item) => item.trim()).filter(Boolean)
   }
   const normalizedProfileTypes = parseProfileTypes(profile.profile_type)
+  const profileStatusLabel = normalizedProfileTypes.length > 0
+    ? (PROFILE_TYPE_LABELS[normalizedProfileTypes[0]] || normalizedProfileTypes[0])
+    : ''
   const socialLinksValues = profile.social_links
     ? Object.values(profile.social_links).filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
     : []
-  const venueOpeningHoursForCompletion = Array.isArray(profile.venue_opening_hours)
-    ? profile.venue_opening_hours
-    : []
-  const hasAtLeastOneVenueOpeningDay = venueOpeningHoursForCompletion.some((slot) => Boolean(slot?.enabled))
+  const venueSubcategoryLabelMap = new Map<string, string>()
+  publicationTypes.forEach((category) => {
+    if (!VENUE_CATEGORY_SLUGS.includes(category.slug)) return
+    category.subcategories
+      .filter((sub) => sub.slug !== 'tout')
+      .forEach((sub) => {
+        venueSubcategoryLabelMap.set(`${category.slug}::${sub.slug}`, sub.name)
+      })
+  })
+  const selectedVenueSubcategoryKeys = normalizedDisplaySubcategories.filter((key) =>
+    VENUE_CATEGORY_SLUGS.some((slug) => key.startsWith(`${slug}::`))
+  )
+
+  const normalizeVenueSlots = (value: unknown): VenueOpeningSlot[] => {
+    const map = new Map<string, VenueOpeningSlot>()
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (!item || typeof item !== 'object') return
+        const obj = item as Record<string, unknown>
+        const day = String(obj.day || '').toLowerCase()
+        if (!day) return
+        map.set(day, {
+          day,
+          enabled: Boolean(obj.enabled),
+          start: String(obj.start || '09:00'),
+          end: String(obj.end || '18:00')
+        })
+      })
+    }
+    return cloneDefaultVenueOpeningHours().map((slot) => map.get(slot.day) || slot)
+  }
+
+  const parseVenueOpeningHoursBySubcategory = (): Record<string, VenueOpeningSlot[]> => {
+    const value = profile.venue_opening_hours
+    if (!value) return {}
+    if (Array.isArray(value)) {
+      const normalized = normalizeVenueSlots(value)
+      if (selectedVenueSubcategoryKeys.length === 0) return { __legacy__: normalized }
+      return selectedVenueSubcategoryKeys.reduce<Record<string, VenueOpeningSlot[]>>((acc, key) => {
+        acc[key] = normalized.map((slot) => ({ ...slot }))
+        return acc
+      }, {})
+    }
+    if (typeof value !== 'object') return {}
+    const record = value as Record<string, unknown>
+    const result: Record<string, VenueOpeningSlot[]> = {}
+    Object.entries(record).forEach(([key, slots]) => {
+      result[key] = normalizeVenueSlots(slots)
+    })
+    return result
+  }
+
+  const venueOpeningHoursBySubcategory = parseVenueOpeningHoursBySubcategory()
+  const venueOpeningHoursForCompletion = selectedVenueSubcategoryKeys.length > 0
+    ? selectedVenueSubcategoryKeys.map((key) => venueOpeningHoursBySubcategory[key] || cloneDefaultVenueOpeningHours())
+    : Object.values(venueOpeningHoursBySubcategory)
+  const hasAtLeastOneVenueOpeningDay = venueOpeningHoursForCompletion.length > 0 &&
+    venueOpeningHoursForCompletion.every((slots) => slots.some((slot) => Boolean(slot?.enabled)))
   const rawServicesForCompletion = Array.isArray(profile.services) ? profile.services : []
   const hasAtLeastOneService = rawServicesForCompletion.some((service) => {
     if (!service) return false
@@ -1186,9 +1288,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const isVenueOnlyProfile =
     normalizedDisplayCategories.length > 0 &&
     normalizedDisplayCategories.every((slug) => VENUE_CATEGORY_SLUGS.includes(slug))
-  const venueOpeningHours = Array.isArray(profile.venue_opening_hours)
-    ? profile.venue_opening_hours
-    : []
   const venuePaymentTypes = Array.isArray(profile.venue_payment_types)
     ? profile.venue_payment_types
     : []
@@ -1435,10 +1534,17 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               modifier le profil
             </button>
           )}
-          {profile.location && (
-            <div className="profile-location-text">
-              <span>{profile.location.split(',')[0].trim()}</span>
-              <MapPin size={14} />
+          {(profile.location || profileStatusLabel) && (
+            <div className="profile-location-row">
+              {profile.location && (
+                <div className="profile-location-text">
+                  <span>{profile.location.split(',')[0].trim()}</span>
+                  <MapPin size={14} />
+                </div>
+              )}
+              {profileStatusLabel && (
+                <span className="profile-status-badge">{profileStatusLabel}</span>
+              )}
             </div>
           )}
         </div>
@@ -1604,50 +1710,35 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                     const serviceValue = service.value ? String(service.value).trim() : ''
                     const serviceKey = `${serviceName}-${index}`
                     return (
-                      <div
-                        key={serviceKey}
-                        className="service-block"
-                        onClick={() => setSelectedService(service)}
-                      >
+                      <div key={serviceKey} className="service-block">
                         <div className="service-block-header">
                           <h4 className="service-block-title">{serviceName || `Service ${index + 1}`}</h4>
-                          <div className="service-block-payment">
-                            {(() => {
-                              const paymentConfig = getPaymentOptionConfig(service.payment_type)
-                              const paymentLabel = paymentConfig?.name || 'Paiement'
-                              const requiresPrice = paymentConfig?.requiresPrice || service.payment_type === 'price'
-                              const requiresExchangeService = paymentConfig?.requiresExchangeService || service.payment_type === 'exchange'
-                              const requiresPercentage = !!paymentConfig?.requiresPercentage
-                              if ((requiresPrice || requiresPercentage) && serviceValue) {
-                                return (
-                                  <div className="service-block-price">
-                                    <DollarSign size={16} />
-                                    <span>{serviceValue}</span>
-                                  </div>
-                                )
-                              }
-                              if (requiresExchangeService) {
-                                return (
-                                  <div className="service-block-exchange-badge">
-                                    <RefreshCw size={16} />
-                                    <span>{paymentLabel}</span>
-                                  </div>
-                                )
-                              }
-                              return (
-                                <div className="service-block-payment-badge">
-                                  <span>{paymentLabel}</span>
-                                </div>
-                              )
-                            })()}
-                          </div>
                         </div>
-                        {serviceDescription && (
-                          <div className="service-block-description-section">
-                            <p className="service-block-description-text">
-                              {serviceDescription.length > 150 ? serviceDescription.substring(0, 150) + '...' : serviceDescription}
+                        <div className="service-block-description-section">
+                          <p className="service-block-description-text">
+                            {serviceDescription || 'Description non renseignée'}
+                          </p>
+                        </div>
+                        <div className="service-block-meta">
+                          <p className="service-block-meta-item">
+                            <span className="service-block-meta-label">Moyen de paiement</span>
+                            <span className="service-block-meta-value">{getPaymentOptionConfig(service.payment_type)?.name || 'Paiement'}</span>
+                          </p>
+                          {serviceValue && (
+                            <p className="service-block-meta-item">
+                              <span className="service-block-meta-label">Détail</span>
+                              <span className="service-block-meta-value">{serviceValue}</span>
                             </p>
-                          </div>
+                          )}
+                        </div>
+                        {!isOwnProfile && user && profileId !== user.id && (
+                          <button
+                            type="button"
+                            className="profile-venue-book-btn service-block-request-btn"
+                            onClick={() => handleServiceRequestClick(service)}
+                          >
+                            Faire une demande
+                          </button>
                         )}
                       </div>
                     )
@@ -1665,20 +1756,37 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           <div className="profile-content-a-propos">
             {hasReservationsSection ? (
               <div className="profile-venue-section">
-                <h3 className="services-title">jours ouvrables</h3>
-                <div className="profile-venue-card">
-                  {venueOpeningHours.filter((slot) => slot.enabled).length > 0 ? (
-                    <div className="profile-venue-hours-list">
-                      {venueOpeningHours.filter((slot) => slot.enabled).map((slot) => (
-                        <div key={slot.day} className="profile-venue-hours-row">
-                          <span>{venueDayLabels[slot.day] || slot.day}</span>
-                          <span>{slot.start} - {slot.end}</span>
+                <h3 className="services-title">Lieu</h3>
+                {(selectedVenueSubcategoryKeys.length > 0
+                  ? selectedVenueSubcategoryKeys
+                  : ['__legacy__']
+                ).map((subcategoryKey) => {
+                  const slots = venueOpeningHoursBySubcategory[subcategoryKey] || cloneDefaultVenueOpeningHours()
+                  const enabledSlots = slots.filter((slot) => slot.enabled)
+                  const subcategoryLabel = subcategoryKey === '__legacy__'
+                    ? 'Sous-catégorie'
+                    : (venueSubcategoryLabelMap.get(subcategoryKey) || subcategoryKey.split('::')[1] || subcategoryKey)
+
+                  return (
+                    <div key={subcategoryKey} className="profile-venue-card profile-venue-subcategory-card">
+                      <h4 className="profile-venue-subcategory-title">{subcategoryLabel}</h4>
+                      {enabledSlots.length > 0 ? (
+                        <div className="profile-venue-hours-list">
+                          {enabledSlots.map((slot) => (
+                            <div key={`${subcategoryKey}-${slot.day}`} className="profile-venue-hours-row">
+                              <span>{venueDayLabels[slot.day] || slot.day}</span>
+                              <span>{slot.start} - {slot.end}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="profile-venue-empty">Horaires non renseignés</p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="profile-venue-empty">Horaires non renseignés</p>
-                  )}
+                  )
+                })}
+
+                <div className="profile-venue-card">
                   <div className="profile-venue-meta">
                     {venuePaymentEntries.map(({ id, value }) => (
                       <div key={`${id}-${value}`} className="profile-venue-chip">
@@ -1766,15 +1874,6 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
         fullName={profile.full_name}
         username={profile.username}
         onClose={() => setShowPhotoModal(false)}
-      />
-
-      <ServiceDetailModal
-        service={selectedService}
-        onClose={handleCloseServiceModal}
-        canRequest={!!selectedService && !!user && !isOwnProfile && profileId !== user?.id}
-        requestStatus={serviceMatchRequest?.status || null}
-        onRequestClick={handleServiceRequestClick}
-        requestLoading={serviceRequestLoading}
       />
 
       {showServiceSendModal && (
