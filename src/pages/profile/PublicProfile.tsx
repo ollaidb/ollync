@@ -101,6 +101,8 @@ interface ProfileData {
 
 interface Post {
   id: string
+  listing_type?: string | null
+  payment_type?: string | null
   title: string
   description: string
   images?: string[] | null
@@ -143,7 +145,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [followersCount, setFollowersCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'services' | 'ouverture' | 'avis'>('a-propos')
+  const [activeTab, setActiveTab] = useState<'a-propos' | 'annonces' | 'services' | 'ouverture' | 'evenements' | 'emploi' | 'avis'>('a-propos')
   const [posts, setPosts] = useState<Post[]>([])
   const [postsLoaded, setPostsLoaded] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -185,6 +187,8 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const isOwnerViewingProfile = Boolean(isOwnProfile || !userId || (user && (userId === user.id || profileId === user.id)))
   const VENUE_CATEGORY_SLUGS = ['studio-lieu', 'lieu']
   const SERVICE_CATEGORY_SLUGS = ['services', 'service', 'mission', 'poste-service']
+  const EVENT_CATEGORY_SLUGS = ['evenements', 'evenement']
+  const EMPLOYMENT_CATEGORY_SLUGS = ['emploi']
   const venueDayLabels: Record<string, string> = {
     lundi: 'Lundi',
     mardi: 'Mardi',
@@ -258,7 +262,15 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const venueWeekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
   const normalizeTab = (value?: string | null) => {
-    if (value === 'annonces' || value === 'avis' || value === 'a-propos' || value === 'services' || value === 'ouverture') {
+    if (
+      value === 'annonces' ||
+      value === 'avis' ||
+      value === 'a-propos' ||
+      value === 'services' ||
+      value === 'ouverture' ||
+      value === 'evenements' ||
+      value === 'emploi'
+    ) {
       return value
     }
     return null
@@ -266,7 +278,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
   const contentScrollRef = useRef<HTMLDivElement>(null)
 
-  const handleTabChange = (tab: 'a-propos' | 'annonces' | 'services' | 'ouverture' | 'avis') => {
+  const handleTabChange = (tab: 'a-propos' | 'annonces' | 'services' | 'ouverture' | 'evenements' | 'emploi' | 'avis') => {
     setActiveTab(tab)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', tab)
@@ -1425,8 +1437,47 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     }
     return cleanedServices
   })()
-  const hasServicesSection = !isVenueOnlyProfile && services.length > 0
-  const hasReservationsSection = isVenueProfile
+  const isOfferListing = (post: Post) => {
+    const listingType = String(post.listing_type || '').toLowerCase().trim()
+    return listingType === 'offer' || listingType === 'offre'
+  }
+  const serviceOfferPosts = posts.filter((post) =>
+    isOfferListing(post) && SERVICE_CATEGORY_SLUGS.includes(String(post.category?.slug || '').toLowerCase())
+  )
+  const venueOfferPosts = posts.filter((post) =>
+    isOfferListing(post) && VENUE_CATEGORY_SLUGS.includes(String(post.category?.slug || '').toLowerCase())
+  )
+  const eventOfferPosts = posts.filter((post) =>
+    isOfferListing(post) && EVENT_CATEGORY_SLUGS.includes(String(post.category?.slug || '').toLowerCase())
+  )
+  const employmentOfferPosts = posts.filter((post) =>
+    isOfferListing(post) && EMPLOYMENT_CATEGORY_SLUGS.includes(String(post.category?.slug || '').toLowerCase())
+  )
+  const hasEventsSection = eventOfferPosts.length > 0
+  const hasEmploymentSection = employmentOfferPosts.length > 0
+  const hasAutoServicesSection = serviceOfferPosts.length > 0
+  const hasServicesSection = !isVenueOnlyProfile && (services.length > 0 || hasAutoServicesSection)
+  const hasReservationsSection = isVenueProfile || venueOfferPosts.length > 0
+
+  const formatPostDate = (rawDate?: string | null) => {
+    if (!rawDate) return 'Date non renseignée'
+    const parsed = new Date(rawDate)
+    if (Number.isNaN(parsed.getTime())) return rawDate
+    return parsed.toLocaleDateString('fr-FR')
+  }
+
+  const getPostPaymentLabel = (post: Post) => {
+    const paymentId = String(post.payment_type || '').trim()
+    const paymentName = getPaymentOptionConfig(paymentId)?.name || 'Paiement'
+    if (typeof post.price === 'number') {
+      return `${paymentName} • ${post.price}€`
+    }
+    return paymentName
+  }
+
+  const openPostDetails = (postId: string) => {
+    navigate(`/post/${postId}`, { state: { from: `/profile/public/${profileId}?tab=${activeTab}` } })
+  }
 
   return (
     <>
@@ -1614,6 +1665,22 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           >
             ouverture
           </button>
+          {hasEventsSection && (
+            <button
+              className={`profile-menu-btn ${activeTab === 'evenements' ? 'active' : ''}`}
+              onClick={() => handleTabChange('evenements')}
+            >
+              évènement
+            </button>
+          )}
+          {hasEmploymentSection && (
+            <button
+              className={`profile-menu-btn ${activeTab === 'emploi' ? 'active' : ''}`}
+              onClick={() => handleTabChange('emploi')}
+            >
+              emploi
+            </button>
+          )}
           <button
             className={`profile-menu-btn ${activeTab === 'avis' ? 'active' : ''}`}
             onClick={() => handleTabChange('avis')}
@@ -1704,7 +1771,37 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               <div className="profile-services-section">
                 <h3 className="services-title">services</h3>
                 <div className="services-list-container">
-                  {services.map((service, index) => {
+                  {hasAutoServicesSection && serviceOfferPosts.map((post, index) => {
+                    const postKey = `service-post-${post.id}-${index}`
+                    return (
+                      <div key={postKey} className="service-block">
+                        <div className="service-block-header">
+                          <h4 className="service-block-title">{post.title?.trim() || `Service ${index + 1}`}</h4>
+                        </div>
+                        <div className="service-block-description-section">
+                          <p className="service-block-description-text">
+                            {String(post.description || '').trim() || 'Description non renseignée'}
+                          </p>
+                        </div>
+                        <div className="service-block-meta">
+                          <p className="service-block-meta-item">
+                            <span className="service-block-meta-label">Moyen de paiement</span>
+                            <span className="service-block-meta-value">{getPostPaymentLabel(post)}</span>
+                          </p>
+                        </div>
+                        {!isOwnProfile && user && profileId !== user.id && (
+                          <button
+                            type="button"
+                            className="profile-venue-book-btn service-block-request-btn"
+                            onClick={() => openPostDetails(post.id)}
+                          >
+                            Faire une demande
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {!hasAutoServicesSection && services.map((service, index) => {
                     const serviceName = String(service.name || '').trim()
                     const serviceDescription = service.description ? String(service.description).trim() : ''
                     const serviceValue = service.value ? String(service.value).trim() : ''
@@ -1757,6 +1854,27 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
             {hasReservationsSection ? (
               <div className="profile-venue-section">
                 <h3 className="services-title">Lieu</h3>
+                {venueOfferPosts.map((post, index) => (
+                  <div key={`venue-post-${post.id}-${index}`} className="profile-venue-card profile-venue-post-card">
+                    {Array.isArray(post.images) && post.images[0] && (
+                      <img src={post.images[0]} alt={post.title || 'Lieu'} className="profile-venue-post-image" />
+                    )}
+                    <h4 className="profile-venue-subcategory-title">{post.title?.trim() || `Lieu ${index + 1}`}</h4>
+                    <p className="profile-venue-empty">{String(post.description || '').trim() || 'Description non renseignée'}</p>
+                    <div className="profile-venue-meta">
+                      <div className="profile-venue-chip">{getPostPaymentLabel(post)}</div>
+                    </div>
+                    {!isOwnProfile && user && profileId !== user.id && (
+                      <button
+                        type="button"
+                        className="profile-venue-book-btn"
+                        onClick={() => openPostDetails(post.id)}
+                      >
+                        Faire une demande
+                      </button>
+                    )}
+                  </div>
+                ))}
                 {(selectedVenueSubcategoryKeys.length > 0
                   ? selectedVenueSubcategoryKeys
                   : ['__legacy__']
@@ -1809,6 +1927,86 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
               </div>
             ) : (
               <EmptyState type="category" customTitle="Horaires non renseignés" customSubtext="Les jours et horaires d’ouverture apparaîtront ici pour les profils lieu." />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'evenements' && (
+          <div className="profile-content-a-propos">
+            {hasEventsSection ? (
+              <div className="profile-services-section">
+                <h3 className="services-title">évènement</h3>
+                <div className="services-list-container">
+                  {eventOfferPosts.map((post, index) => (
+                    <div key={`event-post-${post.id}-${index}`} className="service-block">
+                      <div className="service-block-header">
+                        <h4 className="service-block-title">{post.title?.trim() || `Évènement ${index + 1}`}</h4>
+                      </div>
+                      <div className="service-block-description-section">
+                        <p className="service-block-description-text">
+                          {String(post.description || '').trim() || 'Description non renseignée'}
+                        </p>
+                      </div>
+                      <div className="service-block-meta">
+                        <p className="service-block-meta-item">
+                          <span className="service-block-meta-label">Date</span>
+                          <span className="service-block-meta-value">{formatPostDate(post.needed_date)}</span>
+                        </p>
+                        <p className="service-block-meta-item">
+                          <span className="service-block-meta-label">Moyen de paiement</span>
+                          <span className="service-block-meta-value">{getPostPaymentLabel(post)}</span>
+                        </p>
+                      </div>
+                      {!isOwnProfile && user && profileId !== user.id && (
+                        <button
+                          type="button"
+                          className="profile-venue-book-btn service-block-request-btn"
+                          onClick={() => openPostDetails(post.id)}
+                        >
+                          Faire une demande
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <EmptyState type="category" customTitle="Aucun évènement" customSubtext="Les évènements publiés en offre apparaîtront ici." />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'emploi' && (
+          <div className="profile-content-a-propos">
+            {hasEmploymentSection ? (
+              <div className="profile-services-section">
+                <h3 className="services-title">emploi</h3>
+                <div className="services-list-container">
+                  {employmentOfferPosts.map((post, index) => (
+                    <div key={`employment-post-${post.id}-${index}`} className="service-block">
+                      <div className="service-block-header">
+                        <h4 className="service-block-title">{post.title?.trim() || `Offre d'emploi ${index + 1}`}</h4>
+                      </div>
+                      <div className="service-block-description-section">
+                        <p className="service-block-description-text">
+                          {String(post.description || '').trim() || 'Description non renseignée'}
+                        </p>
+                      </div>
+                      {!isOwnProfile && user && profileId !== user.id && (
+                        <button
+                          type="button"
+                          className="profile-venue-book-btn service-block-request-btn"
+                          onClick={() => openPostDetails(post.id)}
+                        >
+                          Postuler
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <EmptyState type="category" customTitle="Aucun emploi" customSubtext="Les offres d’emploi publiées apparaîtront ici." />
             )}
           </div>
         )}

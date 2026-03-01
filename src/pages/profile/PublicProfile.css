@@ -678,6 +678,18 @@ html:not(.dark) .profile-identity-block {
   margin-bottom: 10px;
 }
 
+.profile-venue-post-card {
+  margin-bottom: 10px;
+}
+
+.profile-venue-post-image {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  object-fit: cover;
+  max-height: 180px;
+}
+
 .profile-venue-subcategory-title {
   margin: 0 0 10px;
   font-size: 14px;
