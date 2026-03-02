@@ -225,6 +225,8 @@ const Messages = () => {
   const [showListConversationActions, setShowListConversationActions] = useState(false)
   const [activeMessage, setActiveMessage] = useState<Message | null>(null)
   const [showMessageActions, setShowMessageActions] = useState(false)
+  const [showCustomReactionInput, setShowCustomReactionInput] = useState(false)
+  const [customReaction, setCustomReaction] = useState('')
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null)
   const messageRefsMap = useRef(new Map<string, HTMLDivElement>())
   const messagesById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
