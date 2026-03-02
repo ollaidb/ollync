@@ -242,7 +242,6 @@ const PostDetails = () => {
   const [reservationDurationText, setReservationDurationText] = useState('01:00')
   const [isReservationDatePickerOpen, setIsReservationDatePickerOpen] = useState(false)
   const [eventNoSpotsNotice, setEventNoSpotsNotice] = useState(false)
-  const [eventNoSpotsAcknowledged, setEventNoSpotsAcknowledged] = useState(false)
   const [reservationCalendarMonth, setReservationCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -938,7 +937,7 @@ const PostDetails = () => {
     }
   }
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!user) {
       navigate('/auth/login')
       return
@@ -952,6 +951,13 @@ const PostDetails = () => {
       post?.listing_type === 'request' &&
       (subSlug === 'figurant' || subName.includes('figurant'))
     const reviewerName = post?.user?.full_name || post?.user?.username || ''
+
+    const isEventTicketIntent = getContactIntent(catSlug) === 'ticket'
+    const hasSpotsForEvent = isEventTicketIntent ? await hasAvailableSpots() : true
+
+
+
+
 
     if (post?.listing_type === 'request' && !isFigurant) {
       const msg = getDefaultContactMessage(catSlug, 'offer', { reviewerName, subSlug })
@@ -967,9 +973,7 @@ const PostDetails = () => {
       setReservationDurationMinutes(60)
       setReservationDurationText('01:00')
       setIsReservationDatePickerOpen(false)
-      setEventNoSpotsNotice(false)
-    setEventNoSpotsAcknowledged(false)
-      setEventNoSpotsAcknowledged(false)
+      setEventNoSpotsNotice(isEventTicketIntent && !hasSpotsForEvent)
       setShowSendRequestModal(true)
       return
     }
@@ -1007,8 +1011,7 @@ const PostDetails = () => {
     setReservationDurationMinutes(durationMin)
     setReservationDurationText(minutesToDurationText(durationMin))
     setIsReservationDatePickerOpen(false)
-    setEventNoSpotsNotice(false)
-    setEventNoSpotsAcknowledged(false)
+    setEventNoSpotsNotice(isEventTicketIntent && !hasSpotsForEvent)
     setShowSendRequestModal(true)
   }
 
@@ -1414,19 +1417,14 @@ const PostDetails = () => {
       const hasSpots = await hasAvailableSpots()
       if (!hasSpots) {
         if (contactIntent === 'ticket') {
-          if (!eventNoSpotsAcknowledged) {
-            setEventNoSpotsNotice(true)
-            setEventNoSpotsAcknowledged(true)
-            return
-          }
-          // 2e clic : on laisse l'envoi se poursuivre
+          setEventNoSpotsNotice(true)
+          // Événement: on autorise l'envoi même sans places.
         } else {
           alert('Il n’y a plus de place disponible pour cette annonce.')
           return
         }
       } else {
         setEventNoSpotsNotice(false)
-        setEventNoSpotsAcknowledged(false)
       }
     }
 
@@ -1524,7 +1522,6 @@ const PostDetails = () => {
         setReservationDurationText('01:00')
         setIsReservationDatePickerOpen(false)
         setEventNoSpotsNotice(false)
-      setEventNoSpotsAcknowledged(false)
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -1713,6 +1710,9 @@ const PostDetails = () => {
   useEffect(() => {
     if (!showSendRequestModal || contactIntent !== 'reserve' || !LIEU_CATEGORY_SLUGS.has(catSlugForMessage) || !reservationDate || !reservationTime) return
     const reviewerName = post?.user?.full_name || post?.user?.username || ''
+
+
+
     const msg = getDefaultContactMessage(catSlugForMessage, 'request', {
       reviewerName,
       reservationDate,
@@ -1834,7 +1834,7 @@ const PostDetails = () => {
     }
 
     if (contactIntent === 'reserve') return 'Envoyer ma demande'
-    if (contactIntent === 'ticket') return 'Envoyer ma demande'
+    if (contactIntent === 'ticket') return 'Réserver un billet'
     if (contactIntent === 'apply') return 'Postuler'
     if (contactIntent === 'buy') return 'Envoyer ma demande'
     return 'Faire une demande'
@@ -2792,7 +2792,6 @@ const PostDetails = () => {
               setReservationDurationText('01:00')
               setIsReservationDatePickerOpen(false)
               setEventNoSpotsNotice(false)
-      setEventNoSpotsAcknowledged(false)
             }}
             confirmLabel={
               loadingRequest
@@ -2848,9 +2847,9 @@ const PostDetails = () => {
             </div>
 
 
-            {contactIntent === 'ticket' && eventNoSpotsNotice && eventNoSpotsAcknowledged && (
+            {contactIntent === 'ticket' && eventNoSpotsNotice && (
               <div className="confirmation-required-alert" role="status">
-                Plus de place disponible. Cliquez à nouveau sur « Envoyer » pour confirmer la demande.
+                Plus de place disponible, mais vous pouvez quand même envoyer votre demande.
               </div>
             )}
 
