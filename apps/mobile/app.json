@@ -11,10 +11,23 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ollync.mobile"
+      "bundleIdentifier": "com.ollync.mobile",
+      "associatedDomains": [
+        "applinks:ollync.app",
+        "applinks:www.ollync.app"
+      ],
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ollync a besoin de la caméra pour prendre des photos/vidéos à publier dans vos annonces.",
+        "NSPhotoLibraryUsageDescription": "Ollync a besoin de l'accès à vos photos pour importer des médias dans vos annonces et messages.",
+        "NSMicrophoneUsageDescription": "Ollync a besoin du micro pour enregistrer des vidéos avec audio dans vos annonces.",
+        "NSLocationWhenInUseUsageDescription": "Ollync utilise votre position pour renseigner la localisation de vos annonces et améliorer les résultats proches de vous."
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
