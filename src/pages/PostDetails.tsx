@@ -2829,6 +2829,11 @@ const PostDetails = () => {
                     </label>
                     <span className="confirmation-upload-badge">Requis</span>
                   </div>
+                  {!savedCandidateCvUrl && !requestCvDocument && (
+                    <div className="confirmation-required-alert" role="alert">
+                      <strong>Action requise :</strong> ajoutez un CV pour pouvoir postuler.
+                    </div>
+                  )}
                   {savedCandidateCvUrl && !requestCvDocument && (
                     <div className="confirmation-modal-file-name confirmation-modal-file-name--saved">
                       <div className="confirmation-modal-file-main">

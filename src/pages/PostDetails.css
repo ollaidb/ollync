@@ -2398,3 +2398,19 @@
 .dark .btn-cancel:hover {
   background: var(--border);
 }
+
+
+.confirmation-required-alert {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid hsl(var(--warning, 35 92% 50%) / 0.55);
+  background: hsl(var(--warning, 35 92% 50%) / 0.12);
+  color: var(--foreground);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.confirmation-required-alert strong {
+  font-weight: 700;
+}
