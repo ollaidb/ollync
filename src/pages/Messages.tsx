@@ -270,6 +270,7 @@ const Messages = () => {
   /** Offset du swipe « répondre » en px (le message suit le doigt) */
   const [messageReplySwipeOffset, setMessageReplySwipeOffset] = useState<{ id: string; x: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
+  const messageLongPressTimerRef = useRef<number | null>(null)
   const customReactionInputRef = useRef<HTMLInputElement | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
@@ -4840,7 +4841,7 @@ const Messages = () => {
                           }}
                           onPointerDown={(event) => {
                             if (event.pointerType !== 'touch') return
-                            longPressTimerRef.current = window.setTimeout(() => {
+                            messageLongPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowCustomReactionInput(false)
                               setCustomReaction('')
@@ -4848,21 +4849,21 @@ const Messages = () => {
                             }, 500)
                           }}
                           onPointerUp={() => {
-                            if (longPressTimerRef.current) {
-                              window.clearTimeout(longPressTimerRef.current)
-                              longPressTimerRef.current = null
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
                             }
                           }}
                           onPointerCancel={() => {
-                            if (longPressTimerRef.current) {
-                              window.clearTimeout(longPressTimerRef.current)
-                              longPressTimerRef.current = null
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
                             }
                           }}
 
                           onMouseDown={(event) => {
                             if (event.button !== 0) return
-                            longPressTimerRef.current = window.setTimeout(() => {
+                            messageLongPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowCustomReactionInput(false)
                               setCustomReaction('')
@@ -4870,22 +4871,22 @@ const Messages = () => {
                             }, 450)
                           }}
                           onMouseUp={() => {
-                            if (longPressTimerRef.current) {
-                              window.clearTimeout(longPressTimerRef.current)
-                              longPressTimerRef.current = null
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
                             }
                           }}
                           onMouseLeave={() => {
-                            if (longPressTimerRef.current) {
-                              window.clearTimeout(longPressTimerRef.current)
-                              longPressTimerRef.current = null
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
                             }
                           }}
                           onTouchStart={(event) => {
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
                             setMessageReplySwipeOffset((prev) => (prev != null && prev.id !== msg.id ? null : prev))
-                            longPressTimerRef.current = window.setTimeout(() => {
+                            messageLongPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowCustomReactionInput(false)
                             setCustomReaction('')
@@ -4900,10 +4901,10 @@ const Messages = () => {
                             const deltaY = touch.clientY - start.startY
                             start.deltaX = deltaX
                             start.deltaY = deltaY
-                            if (Math.abs(deltaX) > 24 || Math.abs(deltaY) > 24) {
-                              if (longPressTimerRef.current) {
-                                window.clearTimeout(longPressTimerRef.current)
-                                longPressTimerRef.current = null
+                            if (Math.abs(deltaX) > 34 || Math.abs(deltaY) > 34) {
+                              if (messageLongPressTimerRef.current) {
+                                window.clearTimeout(messageLongPressTimerRef.current)
+                                messageLongPressTimerRef.current = null
                               }
                             }
                             const swipeDirectionOk = isOwn ? deltaX < 0 : deltaX > 0
@@ -4915,9 +4916,9 @@ const Messages = () => {
                             }
                           }}
                           onTouchEnd={() => {
-                            if (longPressTimerRef.current) {
-                              window.clearTimeout(longPressTimerRef.current)
-                              longPressTimerRef.current = null
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
                             }
                             if (isMobile && messageTouchRef.current?.id === msg.id) {
                               const { deltaX = 0, deltaY = 0 } = messageTouchRef.current
@@ -4930,6 +4931,13 @@ const Messages = () => {
                                 setReplyingToMessage(msg)
                               }
                             }
+                          }}
+                          onTouchCancel={() => {
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                              messageLongPressTimerRef.current = null
+                            }
+                            setMessageReplySwipeOffset(null)
                           }}
                         >
                           <MessageBubble
