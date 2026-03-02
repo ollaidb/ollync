@@ -620,3 +620,14 @@
 .dark .confirmation-upload-card {
   background: color-mix(in srgb, var(--card) 92%, var(--background));
 }
+
+
+.confirmation-upload-card--error {
+  border-color: hsl(var(--destructive, 0 84% 60%));
+  box-shadow: 0 0 0 1px hsl(var(--destructive, 0 84% 60%) / 0.25);
+  background: hsl(var(--destructive, 0 84% 60%) / 0.06);
+}
+
+.confirmation-upload-card--error .confirmation-modal-label {
+  color: hsl(var(--destructive, 0 84% 60%));
+}

@@ -231,6 +231,7 @@ const PostDetails = () => {
   const [requestRole, setRequestRole] = useState('')
   const [requestCvDocument, setRequestCvDocument] = useState<File | null>(null)
   const [requestCvDocumentName, setRequestCvDocumentName] = useState<string>('')
+  const [showCvRequiredError, setShowCvRequiredError] = useState(false)
   const [requestCoverLetterDocument, setRequestCoverLetterDocument] = useState<File | null>(null)
   const [requestCoverLetterDocumentName, setRequestCoverLetterDocumentName] = useState<string>('')
   const [savedCandidateCvUrl, setSavedCandidateCvUrl] = useState<string | null>(null)
@@ -956,6 +957,7 @@ const PostDetails = () => {
       setRequestRole('')
       setRequestCvDocument(null)
       setRequestCvDocumentName('')
+      setShowCvRequiredError(false)
       setRequestCoverLetterDocument(null)
       setRequestCoverLetterDocumentName('')
       setReservationDate('')
@@ -992,6 +994,7 @@ const PostDetails = () => {
     setRequestRole('')
     setRequestCvDocument(null)
     setRequestCvDocumentName('')
+    setShowCvRequiredError(false)
     setRequestCoverLetterDocument(null)
     setRequestCoverLetterDocumentName('')
     setReservationDate(reservationDateInit)
@@ -1368,7 +1371,7 @@ const PostDetails = () => {
     }
 
     if (contactIntent === 'apply' && !requestCvDocument && !savedCandidateCvUrl) {
-      alert('Le CV est obligatoire pour postuler. Ajoutez un CV ici ou dans votre espace candidature.')
+      setShowCvRequiredError(true)
       return
     }
 
@@ -2759,6 +2762,7 @@ const PostDetails = () => {
               setRequestRole('')
               setRequestCvDocument(null)
               setRequestCvDocumentName('')
+              setShowCvRequiredError(false)
               setRequestCoverLetterDocument(null)
               setRequestCoverLetterDocumentName('')
               setReservationDate('')
@@ -2822,14 +2826,14 @@ const PostDetails = () => {
 
             {contactIntent === 'apply' && (
               <>
-                <div className="confirmation-modal-field confirmation-upload-card confirmation-upload-card--required">
+                <div className={`confirmation-modal-field confirmation-upload-card confirmation-upload-card--required ${showCvRequiredError && !savedCandidateCvUrl && !requestCvDocument ? 'confirmation-upload-card--error' : ''}`}>
                   <div className="confirmation-upload-header">
                     <label className="confirmation-modal-label" htmlFor="match-request-cv">
                       CV (obligatoire)
                     </label>
                     <span className="confirmation-upload-badge">Requis</span>
                   </div>
-                  {!savedCandidateCvUrl && !requestCvDocument && (
+                  {showCvRequiredError && !savedCandidateCvUrl && !requestCvDocument && (
                     <div className="confirmation-required-alert" role="alert">
                       <strong>Action requise :</strong> ajoutez un CV pour pouvoir postuler.
                     </div>
@@ -2855,6 +2859,7 @@ const PostDetails = () => {
                         validateRequestFile(file)
                         setRequestCvDocument(file)
                         setRequestCvDocumentName(file.name)
+                        setShowCvRequiredError(false)
                       } catch (error) {
                         alert(error instanceof Error ? error.message : 'Fichier invalide')
                       }
@@ -2876,6 +2881,8 @@ const PostDetails = () => {
                         onClick={() => {
                           setRequestCvDocument(null)
                           setRequestCvDocumentName('')
+              setShowCvRequiredError(false)
+                          setShowCvRequiredError(false)
                         }}
                         aria-label="Supprimer le CV"
                       >
