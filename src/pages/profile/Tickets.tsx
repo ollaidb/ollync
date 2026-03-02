@@ -48,7 +48,7 @@ const getRequestStatusLabel = (status: RequestStatus) => {
 const toDayStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 
 const buildQrValue = (ticket: TicketItem) => {
-  const configuredBaseUrl = (import.meta.env.VITE_PUBLIC_APP_URL || import.meta.env.VITE_APP_URL || 'https://ollync.fr').replace(/\/$/, '')
+  const configuredBaseUrl = (import.meta.env.VITE_PUBLIC_APP_URL || import.meta.env.VITE_APP_URL || 'https://ollync.app').replace(/\/$/, '')
   // En présentiel, le QR doit ouvrir directement l'annonce concernée (URL publique, pas localhost).
   if (ticket.eventMode === 'in_person') {
     return `${configuredBaseUrl}/post/${ticket.postId}`
