@@ -241,6 +241,7 @@ const PostDetails = () => {
   const [reservationDurationMinutes, setReservationDurationMinutes] = useState<number>(60)
   const [reservationDurationText, setReservationDurationText] = useState('01:00')
   const [isReservationDatePickerOpen, setIsReservationDatePickerOpen] = useState(false)
+  const [eventNoSpotsNotice, setEventNoSpotsNotice] = useState(false)
   const [reservationCalendarMonth, setReservationCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -965,6 +966,7 @@ const PostDetails = () => {
       setReservationDurationMinutes(60)
       setReservationDurationText('01:00')
       setIsReservationDatePickerOpen(false)
+      setEventNoSpotsNotice(false)
       setShowSendRequestModal(true)
       return
     }
@@ -1002,6 +1004,7 @@ const PostDetails = () => {
     setReservationDurationMinutes(durationMin)
     setReservationDurationText(minutesToDurationText(durationMin))
     setIsReservationDatePickerOpen(false)
+    setEventNoSpotsNotice(false)
     setShowSendRequestModal(true)
   }
 
@@ -1406,8 +1409,15 @@ const PostDetails = () => {
     if (contactIntent === 'ticket' || contactIntent === 'reserve') {
       const hasSpots = await hasAvailableSpots()
       if (!hasSpots) {
-        alert('Il n’y a plus de place disponible pour cette annonce.')
-        return
+        if (contactIntent === 'ticket') {
+          setEventNoSpotsNotice(true)
+          // On autorise quand même l'envoi de la demande pour les événements.
+        } else {
+          alert('Il n’y a plus de place disponible pour cette annonce.')
+          return
+        }
+      } else {
+        setEventNoSpotsNotice(false)
       }
     }
 
@@ -1504,6 +1514,7 @@ const PostDetails = () => {
         setReservationDurationMinutes(60)
         setReservationDurationText('01:00')
         setIsReservationDatePickerOpen(false)
+        setEventNoSpotsNotice(false)
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -2770,6 +2781,7 @@ const PostDetails = () => {
               setReservationDurationMinutes(60)
               setReservationDurationText('01:00')
               setIsReservationDatePickerOpen(false)
+              setEventNoSpotsNotice(false)
             }}
             confirmLabel={
               loadingRequest
@@ -2823,6 +2835,13 @@ const PostDetails = () => {
               />
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
+
+
+            {contactIntent === 'ticket' && eventNoSpotsNotice && (
+              <div className="confirmation-required-alert" role="status">
+                Plus de place disponible, mais vous pouvez quand même envoyer une demande.
+              </div>
+            )}
 
             {contactIntent === 'apply' && (
               <>
