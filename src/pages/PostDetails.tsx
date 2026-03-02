@@ -242,6 +242,7 @@ const PostDetails = () => {
   const [reservationDurationText, setReservationDurationText] = useState('01:00')
   const [isReservationDatePickerOpen, setIsReservationDatePickerOpen] = useState(false)
   const [eventNoSpotsNotice, setEventNoSpotsNotice] = useState(false)
+  const [eventNoSpotsAcknowledged, setEventNoSpotsAcknowledged] = useState(false)
   const [reservationCalendarMonth, setReservationCalendarMonth] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -967,6 +968,8 @@ const PostDetails = () => {
       setReservationDurationText('01:00')
       setIsReservationDatePickerOpen(false)
       setEventNoSpotsNotice(false)
+    setEventNoSpotsAcknowledged(false)
+      setEventNoSpotsAcknowledged(false)
       setShowSendRequestModal(true)
       return
     }
@@ -1410,14 +1413,19 @@ const PostDetails = () => {
       const hasSpots = await hasAvailableSpots()
       if (!hasSpots) {
         if (contactIntent === 'ticket') {
-          setEventNoSpotsNotice(true)
-          // On autorise quand même l'envoi de la demande pour les événements.
+          if (!eventNoSpotsAcknowledged) {
+            setEventNoSpotsNotice(true)
+            setEventNoSpotsAcknowledged(true)
+            return
+          }
+          // 2e clic : on laisse l'envoi se poursuivre
         } else {
           alert('Il n’y a plus de place disponible pour cette annonce.')
           return
         }
       } else {
         setEventNoSpotsNotice(false)
+        setEventNoSpotsAcknowledged(false)
       }
     }
 
@@ -1515,6 +1523,7 @@ const PostDetails = () => {
         setReservationDurationText('01:00')
         setIsReservationDatePickerOpen(false)
         setEventNoSpotsNotice(false)
+      setEventNoSpotsAcknowledged(false)
         showSuccess('Demande envoyée')
       }
     } catch (error) {
@@ -2782,6 +2791,7 @@ const PostDetails = () => {
               setReservationDurationText('01:00')
               setIsReservationDatePickerOpen(false)
               setEventNoSpotsNotice(false)
+      setEventNoSpotsAcknowledged(false)
             }}
             confirmLabel={
               loadingRequest
@@ -2839,7 +2849,7 @@ const PostDetails = () => {
 
             {contactIntent === 'ticket' && eventNoSpotsNotice && (
               <div className="confirmation-required-alert" role="status">
-                Plus de place disponible, mais vous pouvez quand même envoyer une demande.
+                Plus de place disponible. Cliquez à nouveau sur « Envoyer » pour confirmer la demande.
               </div>
             )}
 
