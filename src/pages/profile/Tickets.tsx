@@ -48,13 +48,13 @@ const getRequestStatusLabel = (status: RequestStatus) => {
 const toDayStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 
 const buildQrValue = (ticket: TicketItem) => {
-  const baseUrl = window.location.origin
-  // En présentiel, le QR doit ouvrir directement l'annonce concernée.
+  const configuredBaseUrl = (import.meta.env.VITE_PUBLIC_APP_URL || import.meta.env.VITE_APP_URL || 'https://ollync.fr').replace(/\/$/, '')
+  // En présentiel, le QR doit ouvrir directement l'annonce concernée (URL publique, pas localhost).
   if (ticket.eventMode === 'in_person') {
-    return `${baseUrl}/post/${ticket.postId}`
+    return `${configuredBaseUrl}/post/${ticket.postId}`
   }
-  // À distance, on conserve le mode validation ticket si nécessaire.
-  return `${baseUrl}/post/${ticket.postId}?ticketValidation=1&ticketRequest=${encodeURIComponent(ticket.id)}`
+  // À distance, on conserve le mode validation ticket.
+  return `${configuredBaseUrl}/post/${ticket.postId}?ticketValidation=1&ticketRequest=${encodeURIComponent(ticket.id)}`
 }
 
 const Tickets = () => {
