@@ -270,6 +270,7 @@ const Messages = () => {
   /** Offset du swipe « répondre » en px (le message suit le doigt) */
   const [messageReplySwipeOffset, setMessageReplySwipeOffset] = useState<{ id: string; x: number } | null>(null)
   const longPressTimerRef = useRef<number | null>(null)
+  const customReactionInputRef = useRef<HTMLInputElement | null>(null)
   const messagesListRef = useRef<HTMLDivElement | null>(null)
   const inputContainerRef = useRef<HTMLDivElement | null>(null)
   const shouldScrollToBottomRef = useRef(false)
@@ -2270,6 +2271,17 @@ const Messages = () => {
   }
 
   const reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏']
+
+  const submitCustomReaction = async () => {
+    if (!activeMessage) return
+    const emoji = Array.from(customReaction.trim())[0]
+    if (!emoji) return
+    await handleAddReaction(activeMessage, emoji)
+    setCustomReaction('')
+    setShowCustomReactionInput(false)
+    setShowMessageActions(false)
+  }
+
 
   const handleAddReaction = async (msg: Message, emoji: string) => {
     if (!user) return
@@ -4814,6 +4826,8 @@ const Messages = () => {
                           onContextMenu={(event) => {
                             event.preventDefault()
                             setActiveMessage(msg)
+                            setShowCustomReactionInput(false)
+                            setCustomReaction('')
                             setShowMessageActions(true)
                           }}
                           onTouchStart={(event) => {
@@ -4822,7 +4836,9 @@ const Messages = () => {
                             setMessageReplySwipeOffset((prev) => (prev != null && prev.id !== msg.id ? null : prev))
                             longPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
-                              setShowMessageActions(true)
+                              setShowCustomReactionInput(false)
+                            setCustomReaction('')
+                            setShowMessageActions(true)
                             }, 500)
                           }}
                           onTouchMove={(event) => {
@@ -4975,7 +4991,7 @@ const Messages = () => {
         {showMessageActions && activeMessage && (
           <div
             className="message-actions-overlay"
-            onClick={() => setShowMessageActions(false)}
+            onClick={() => { setShowMessageActions(false); setShowCustomReactionInput(false); setCustomReaction('') }}
           >
             <div
               className="message-actions-menu message-actions-card"
@@ -4995,7 +5011,34 @@ const Messages = () => {
                     {emoji}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  className="message-reaction-btn"
+                  onClick={() => {
+                    setShowCustomReactionInput(true)
+                    setTimeout(() => customReactionInputRef.current?.focus(), 30)
+                  }}
+                  aria-label="Choisir un emoji du clavier"
+                  title="Plus d'emojis"
+                >
+                  ➕
+                </button>
               </div>
+              {showCustomReactionInput && (
+                <div className="message-custom-reaction">
+                  <input
+                    ref={customReactionInputRef}
+                    type="text"
+                    inputMode="text"
+                    placeholder="😀"
+                    className="message-custom-reaction-input"
+                    value={customReaction}
+                    onChange={(e) => setCustomReaction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void submitCustomReaction() } }}
+                  />
+                  <button type="button" className="message-custom-reaction-send" onClick={() => void submitCustomReaction()}>OK</button>
+                </div>
+              )}
               <button
                 className="message-action-item"
                 type="button"
@@ -5048,7 +5091,7 @@ const Messages = () => {
               <button
                 className="message-actions-close"
                 type="button"
-                onClick={() => setShowMessageActions(false)}
+                onClick={() => { setShowMessageActions(false); setShowCustomReactionInput(false); setCustomReaction('') }}
                 aria-label="Fermer"
               >
                 ×
