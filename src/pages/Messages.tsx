@@ -487,7 +487,7 @@ const Messages = () => {
     if (!inputContainerRef.current) return
     const updateOffset = () => {
       if (!inputContainerRef.current || !messagesListRef.current) return
-      const baseHeight = inputContainerRef.current.getBoundingClientRect().height + 12
+      const baseHeight = inputContainerRef.current.getBoundingClientRect().height + 16
       let keyboardGap = 0
       if (window.visualViewport) {
         const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop
@@ -495,7 +495,7 @@ const Messages = () => {
       }
       const height = baseHeight + keyboardGap
       messagesListRef.current.style.setProperty('--messages-input-offset', `${height}px`)
-      if (shouldScrollToBottomRef.current) {
+      if (shouldScrollToBottomRef.current || keyboardGap > 0) {
         scheduleScrollToBottom('end')
       }
     }
@@ -507,6 +507,10 @@ const Messages = () => {
       viewport.addEventListener('resize', updateOffset)
       viewport.addEventListener('scroll', updateOffset)
     }
+    const handleFocusIn = () => {
+      window.setTimeout(updateOffset, 50)
+    }
+    window.addEventListener('focusin', handleFocusIn)
     return () => {
       observer.disconnect()
       const viewport = window.visualViewport
@@ -514,6 +518,7 @@ const Messages = () => {
         viewport.removeEventListener('resize', updateOffset)
         viewport.removeEventListener('scroll', updateOffset)
       }
+      window.removeEventListener('focusin', handleFocusIn)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
   }, [])

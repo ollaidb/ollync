@@ -173,6 +173,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
   const mediaInputRef = useRef<HTMLInputElement>(null)
+  const messageTextareaRef = useRef<HTMLTextAreaElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
@@ -182,6 +183,15 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   // Hooks de consentement
   const mediaConsent = useConsent('media')
   const messagingConsent = useConsent('messaging')
+
+
+  useEffect(() => {
+    const textarea = messageTextareaRef.current
+    if (!textarea) return
+    textarea.style.height = '0px'
+    const nextHeight = Math.min(textarea.scrollHeight, 150)
+    textarea.style.height = `${Math.max(nextHeight, 24)}px`
+  }, [message])
 
   useEffect(() => {
     if (openCalendarOnMount) {
