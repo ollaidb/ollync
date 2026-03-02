@@ -1459,6 +1459,30 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
   const hasServicesSection = !isVenueOnlyProfile && (services.length > 0 || hasAutoServicesSection)
   const hasReservationsSection = isVenueProfile || venueOfferPosts.length > 0
 
+  const availableTabs: Array<'a-propos' | 'annonces' | 'services' | 'ouverture' | 'evenements' | 'emploi' | 'avis'> = [
+    'a-propos',
+    'annonces',
+    'services',
+    ...(hasReservationsSection ? ['ouverture' as const] : []),
+    ...(hasEventsSection ? ['evenements' as const] : []),
+    ...(hasEmploymentSection ? ['emploi' as const] : []),
+    'avis'
+  ]
+
+
+
+  useEffect(() => {
+    if (!availableTabs.includes(activeTab)) {
+      const fallbackTab = availableTabs.includes('a-propos') ? 'a-propos' : availableTabs[0]
+      if (fallbackTab) {
+        setActiveTab(fallbackTab)
+        const nextParams = new URLSearchParams(searchParams)
+        nextParams.set('tab', fallbackTab)
+        setSearchParams(nextParams, { replace: true })
+      }
+    }
+  }, [activeTab, availableTabs, searchParams, setSearchParams])
+
   const formatPostDate = (rawDate?: string | null) => {
     if (!rawDate) return 'Date non renseignée'
     const parsed = new Date(rawDate)
@@ -1659,12 +1683,14 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
           >
             service
           </button>
-          <button
-            className={`profile-menu-btn ${activeTab === 'ouverture' ? 'active' : ''}`}
-            onClick={() => handleTabChange('ouverture')}
-          >
-            ouverture
-          </button>
+          {hasReservationsSection && (
+            <button
+              className={`profile-menu-btn ${activeTab === 'ouverture' ? 'active' : ''}`}
+              onClick={() => handleTabChange('ouverture')}
+            >
+              ouverture
+            </button>
+          )}
           {hasEventsSection && (
             <button
               className={`profile-menu-btn ${activeTab === 'evenements' ? 'active' : ''}`}

@@ -23,7 +23,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1200;
   background-color: var(--card);
   padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
   padding-left: 20px;
@@ -31,6 +31,10 @@
   padding-bottom: 12px;
   border-radius: 0 0 20px 20px;
   box-shadow: var(--shadow-md);
+
+  isolation: isolate;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Une seule ligne: Logo + Barre de recherche + Icônes swipe et notification */
