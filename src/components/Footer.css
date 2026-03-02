@@ -1,3 +1,10 @@
+
+body.message-overlay-open .footer {
+  opacity: 0.15;
+  filter: blur(8px);
+  pointer-events: none;
+}
+
 .footer {
   position: fixed;
   bottom: 0;

@@ -281,6 +281,19 @@ export function AppointmentBlock({
     }
   }
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const shouldMark = showModal || showCancelConfirm
+    if (shouldMark) {
+      document.body.classList.add('message-overlay-open')
+    } else {
+      document.body.classList.remove('message-overlay-open')
+    }
+    return () => {
+      document.body.classList.remove('message-overlay-open')
+    }
+  }, [showModal, showCancelConfirm])
+
   const canUsePortal = typeof document !== 'undefined'
 
   const overlay =

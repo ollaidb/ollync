@@ -4830,6 +4830,13 @@ const Messages = () => {
                             setCustomReaction('')
                             setShowMessageActions(true)
                           }}
+                          onDoubleClick={(event) => {
+                            event.preventDefault()
+                            setActiveMessage(msg)
+                            setShowCustomReactionInput(false)
+                            setCustomReaction('')
+                            setShowMessageActions(true)
+                          }}
 
                           onMouseDown={(event) => {
                             if (event.button !== 0) return
@@ -4861,7 +4868,7 @@ const Messages = () => {
                               setShowCustomReactionInput(false)
                             setCustomReaction('')
                             setShowMessageActions(true)
-                            }, 500)
+                            }, 420)
                           }}
                           onTouchMove={(event) => {
                             const touch = event.touches[0]
