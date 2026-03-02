@@ -1187,7 +1187,7 @@ const PostDetails = () => {
         const { error: messageError } = await (supabase.from('messages') as any).insert({
           conversation_id: (conversation as { id: string }).id,
           sender_id: user!.id,
-          message_type: 'text',
+          message_type: 'post_share',
           content: trimmed,
           shared_post_id: id
         })

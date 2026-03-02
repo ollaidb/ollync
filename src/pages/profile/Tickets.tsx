@@ -49,6 +49,11 @@ const toDayStart = (date: Date) => new Date(date.getFullYear(), date.getMonth(),
 
 const buildQrValue = (ticket: TicketItem) => {
   const baseUrl = window.location.origin
+  // En présentiel, le QR doit ouvrir directement l'annonce concernée.
+  if (ticket.eventMode === 'in_person') {
+    return `${baseUrl}/post/${ticket.postId}`
+  }
+  // À distance, on conserve le mode validation ticket si nécessaire.
   return `${baseUrl}/post/${ticket.postId}?ticketValidation=1&ticketRequest=${encodeURIComponent(ticket.id)}`
 }
 
