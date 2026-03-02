@@ -1008,6 +1008,7 @@ const PostDetails = () => {
     setReservationDurationText(minutesToDurationText(durationMin))
     setIsReservationDatePickerOpen(false)
     setEventNoSpotsNotice(false)
+    setEventNoSpotsAcknowledged(false)
     setShowSendRequestModal(true)
   }
 
@@ -2847,7 +2848,7 @@ const PostDetails = () => {
             </div>
 
 
-            {contactIntent === 'ticket' && eventNoSpotsNotice && (
+            {contactIntent === 'ticket' && eventNoSpotsNotice && eventNoSpotsAcknowledged && (
               <div className="confirmation-required-alert" role="status">
                 Plus de place disponible. Cliquez à nouveau sur « Envoyer » pour confirmer la demande.
               </div>
