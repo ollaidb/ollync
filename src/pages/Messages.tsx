@@ -201,7 +201,12 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [activeFilter, setActiveFilter] = useState<FilterType>(() => {
+    const initialFilter = searchParams.get('filter')
+    return initialFilter && ['all', 'posts', 'matches', 'match_requests', 'groups', 'appointments', 'archived'].includes(initialFilter)
+      ? (initialFilter as FilterType)
+      : 'all'
+  })
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [showCreateActionModal, setShowCreateActionModal] = useState(false)
   const [showSelectGroupUsers, setShowSelectGroupUsers] = useState(false)
@@ -272,6 +277,7 @@ const Messages = () => {
   const lastMessageRef = useRef<HTMLDivElement | null>(null)
   const headerRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const messagesContentRef = useRef<HTMLDivElement | null>(null)
   const groupPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const aliasSaveFeedbackTimerRef = useRef<number | null>(null)
   const groupActionFeedbackTimerRef = useRef<number | null>(null)
@@ -777,14 +783,31 @@ const Messages = () => {
     }
   }
 
+  const isMissingRelationError = (error: { code?: string; message?: string } | null | undefined) => {
+    if (!error) return false
+    const message = (error.message || '').toLowerCase()
+    return (
+      error.code === '42P01' || // relation does not exist
+      error.code === 'PGRST205' || // table/view not in schema cache
+      message.includes('does not exist') ||
+      message.includes('not found in the schema cache')
+    )
+  }
+
   const fetchWithFallback = async (
-    runView: () => PromiseLike<{ data: any; error: { code?: string } | null; count?: number | null }>,
-    runTable: () => PromiseLike<{ data: any; error: { code?: string } | null; count?: number | null }>
-  ): Promise<{ data: any; error: { code?: string } | null; count?: number | null }> => {
+    runView: () => PromiseLike<{ data: any; error: { code?: string; message?: string } | null; count?: number | null }>,
+    runTable: () => PromiseLike<{ data: any; error: { code?: string; message?: string } | null; count?: number | null }>
+  ): Promise<{ data: any; error: { code?: string; message?: string } | null; count?: number | null }> => {
     const viewResult = await runView()
     if (!viewResult.error) {
       return viewResult
     }
+
+    // Fallback seulement si la vue n'existe pas, pas pour masquer d'autres erreurs (RLS, auth, réseau...)
+    if (!isMissingRelationError(viewResult.error)) {
+      return viewResult
+    }
+
     return runTable()
   }
 
@@ -1410,11 +1433,28 @@ const Messages = () => {
       // Charger les posts liés (tous statuts : pour afficher "Annonce supprimée" si retirée)
       const { data: posts } = postIds.length > 0 ? await supabase
         .from('posts')
-        .select('id, title, status')
+        .select('id, title, status, category_id')
         .in('id', [...new Set(postIds)]) : { data: [] }
 
       const usersMap = new Map((users || []).map((u: { id: string; username?: string | null; full_name?: string | null; avatar_url?: string | null }) => [u.id, u]))
-      const postsMap = new Map((posts || []).map((p: { id: string; title: string; status?: string }) => [p.id, p]))
+      const categoryIds = Array.from(new Set((posts || [])
+        .map((p: { category_id?: string | null }) => p.category_id)
+        .filter((id): id is string => Boolean(id))))
+
+      const { data: categories } = categoryIds.length > 0 ? await supabase
+        .from('categories')
+        .select('id, name')
+        .in('id', categoryIds) : { data: [] }
+
+      const categoriesMap = new Map((categories || []).map((c: { id: string; name?: string | null }) => [c.id, c]))
+
+      const postsMap = new Map((posts || []).map((p: { id: string; title: string; status?: string; category_id?: string | null }) => [
+        p.id,
+        {
+          ...p,
+          category_name: p.category_id ? (categoriesMap.get(p.category_id)?.name || null) : null
+        }
+      ]))
 
       // Formater les demandes avec les informations complémentaires
       const requestsWithData = requestsData.map((req: { 
@@ -1801,15 +1841,8 @@ const Messages = () => {
       setBlockedUserIds(blockedIdsArray)
       const blockedIds = new Set(blockedIdsArray)
 
-      // Charger les match_requests dès l'entrée sur la page pour afficher
-      // les badges Matchs et Demandes immédiatement (comme les matchs)
-      const requestsData = await loadMatchRequests()
-      setMatchRequests(requestsData)
-
-      if (activeFilter === 'appointments') {
-        const appointmentsData = await loadAppointments()
-        setAppointments(appointmentsData)
-      }
+      // Les match_requests et rendez-vous sont chargés via des effets dédiés
+      // pour éviter les appels réseau doublés à chaque reload de conversations.
 
       // Pour l'onglet "Tout" : toutes les conversations (même sans messages)
       // Exclure uniquement les conversations supprimées (soft delete)
@@ -2101,7 +2134,7 @@ const Messages = () => {
         setLoading(false)
       }
     }
-  }, [user, activeFilter, loadMatchRequests, loadAppointments, isConversationView, loadConversationSummaries])
+  }, [user, activeFilter, isConversationView, loadConversationSummaries])
 
   const handleReportSubmit = async () => {
     if (!user || !selectedConversation || !reportReason) {
@@ -3476,7 +3509,7 @@ const Messages = () => {
                   <div className="conversation-reasons-list">
                     <button type="button" className={`conversation-reason-btn ${reportReason === 'suspect' ? 'active' : ''}`} onClick={() => setReportReason('suspect')}>Suspect</button>
                     <button type="button" className={`conversation-reason-btn ${reportReason === 'fraudeur' ? 'active' : ''}`} onClick={() => setReportReason('fraudeur')}>Fraudeur</button>
-                    <button type="button" className={`conversation-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`} onClick={() => setReportReason('fondant')}>Fondant / Inapproprié</button>
+                    <button type="button" className={`conversation-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`} onClick={() => setReportReason('fondant')}>Choquant / Inapproprié</button>
                     <button type="button" className={`conversation-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`} onClick={() => setReportReason('sexuel')}>Contenu sexuel</button>
                     <button type="button" className={`conversation-reason-btn ${reportReason === 'spam' ? 'active' : ''}`} onClick={() => setReportReason('spam')}>Spam</button>
                     <button type="button" className={`conversation-reason-btn ${reportReason === 'autre' ? 'active' : ''}`} onClick={() => setReportReason('autre')}>Autre</button>
@@ -4390,7 +4423,7 @@ const Messages = () => {
                     className={`conversation-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
                     onClick={() => setReportReason('fondant')}
                   >
-                    Fondant / Inapproprié
+                    Choquant / Inapproprié
                   </button>
                   <button
                     className={`conversation-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}
@@ -5354,7 +5387,7 @@ const Messages = () => {
         </div>
       </div>
 
-      <div className="messages-content">
+      <div className="messages-content" ref={messagesContentRef}>
         {missingNotice && (
           <div className="messages-missing-banner">
             {missingNotice}
@@ -5525,7 +5558,7 @@ const Messages = () => {
                   try {
                     const otherUserId = request.from_user_id === user.id ? request.to_user_id : request.from_user_id
                     if (request.conversation_id) {
-                      navigate(`/messages/${request.conversation_id}`)
+                      navigate(`/messages/${request.conversation_id}?filter=${activeFilter}`)
                       return
                     }
                     const conversation = await findOrCreateConversation(otherUserId, request.related_post_id || undefined)
@@ -5536,7 +5569,7 @@ const Messages = () => {
                         .eq('id', request.id)
                       await loadMatchRequests().then((requests) => setMatchRequests(requests))
                       loadConversations()
-                      navigate(`/messages/${(conversation as { id: string }).id}`)
+                      navigate(`/messages/${(conversation as { id: string }).id}?filter=${activeFilter}`)
                     } else {
                       alert('Erreur lors de la création de la conversation')
                     }
@@ -6094,6 +6127,7 @@ const Messages = () => {
           request={selectedMatchRequest}
           currentUserId={user.id}
           onClose={() => setSelectedMatchRequest(null)}
+          activeFilter={activeFilter}
           onUpdate={() => {
             loadMatchRequests().then((requests) => {
               setMatchRequests(requests)
@@ -6102,7 +6136,7 @@ const Messages = () => {
             setSelectedMatchRequest(null)
           }}
           onStartConversation={(conversationId) => {
-            navigate(`/messages/${conversationId}`)
+            navigate(`/messages/${conversationId}?filter=${activeFilter}`)
             setSelectedMatchRequest(null)
           }}
         />

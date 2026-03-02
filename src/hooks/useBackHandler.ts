@@ -30,6 +30,7 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
     }
 
     const path = location.pathname
+    const navState = (location.state || {}) as { from?: string; fromConsentLearnMore?: boolean; returnTo?: string }
     const pathParts = path.split('/').filter(Boolean)
     const mainTabRoots = [
       '/home',
@@ -45,15 +46,20 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
 
     // Détails d'annonce : un clic = un retour (historique navigateur)
     if (path.startsWith('/post/')) {
-      if (typeof window !== 'undefined' && window.history.length > 1) {
+      if (navState.from) {
         markNavigatingBack()
-        navigate(-1)
+        navigate(navState.from)
         return
       }
       const previousPath = getPreviousPath()
       if (canGoBack() && previousPath && !previousPath.startsWith('/post/')) {
         markNavigatingBack()
         navigate(previousPath)
+        return
+      }
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        markNavigatingBack()
+        navigate(-1)
         return
       }
       markNavigatingBack()
@@ -63,12 +69,11 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
 
     if (path.startsWith('/profile/')) {
       const previousPath = getPreviousPath()
-      const state = location.state as { fromConsentLearnMore?: boolean; returnTo?: string } | null
       const helpRoots = ['/profile/contact', '/profile/legal', '/profile/resources']
       const isHelpOrLegalPage = helpRoots.some((root) => path.startsWith(root))
-      if (isHelpOrLegalPage && state?.fromConsentLearnMore && state?.returnTo) {
+      if (isHelpOrLegalPage && navState.fromConsentLearnMore && navState.returnTo) {
         markNavigatingBack()
-        navigate(state.returnTo)
+        navigate(navState.returnTo)
         return
       }
       if (isHelpOrLegalPage && previousPath && !previousPath.startsWith('/profile/')) {
@@ -92,12 +97,24 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
       ]
       const isProfileIdRoute =
         pathParts.length === 2 && pathParts[0] === 'profile' && !profileSubRoutes.includes(pathParts[1])
-      const isPublicProfileRoute = path.startsWith('/profile/public/')
+      const isPublicProfileRoute = path.startsWith('/profile/public')
 
-      if ((isPublicProfileRoute || isProfileIdRoute) && previousPath && previousPath !== path) {
-        markNavigatingBack()
-        navigate(previousPath)
-        return
+      if (isPublicProfileRoute || isProfileIdRoute) {
+        if (navState.from) {
+          markNavigatingBack()
+          navigate(navState.from)
+          return
+        }
+        if (previousPath && previousPath !== path) {
+          markNavigatingBack()
+          navigate(previousPath)
+          return
+        }
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+          markNavigatingBack()
+          navigate(-1)
+          return
+        }
       }
       if (path === '/profile/contracts' && previousPath.startsWith('/messages')) {
         markNavigatingBack()

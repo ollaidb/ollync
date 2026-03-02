@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { PlusCircle } from 'lucide-react'
 import { getPublicationTypesWithSubSubCategories } from '../utils/publishDataConverter'
@@ -152,6 +152,8 @@ export default function Publish() {
   const [hasAttemptedPublish, setHasAttemptedPublish] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [hasRestoredNewDraft, setHasRestoredNewDraft] = useState(false)
+
+  const contentWrapperRef = useRef<HTMLDivElement | null>(null)
   const NEW_DRAFT_STEP_KEY = 'publishDraftStep:new'
   const NEW_DRAFT_DATA_KEY = 'publishDraftData:new'
 
@@ -486,6 +488,11 @@ export default function Publish() {
     sessionStorage.setItem(NEW_DRAFT_DATA_KEY, JSON.stringify(formData))
   }, [editPostId, formData, hasRestoredNewDraft, NEW_DRAFT_DATA_KEY])
 
+
+  useEffect(() => {
+    contentWrapperRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+  }, [step])
+
   // Validation des champs obligatoires
   const validation = useMemo(() => {
     return validatePublishForm(formData, false)
@@ -597,7 +604,7 @@ export default function Publish() {
         />
       </div>
 
-      <div className={`publish-content-wrapper ${step === 5 ? 'has-actions' : 'no-actions'}`}>
+      <div ref={contentWrapperRef} className={`publish-content-wrapper ${step === 5 ? 'has-actions' : 'no-actions'}`}>
         <div className="publish-content">
           {step === 0 && (
             <Step0OfferDemand

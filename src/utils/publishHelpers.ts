@@ -323,9 +323,16 @@ export const validatePublishForm = (
   }
 
   if (isStudioLieuCategory) {
-    const billingMinutes = parseTimeToMinutes(formData.billingHours)
-    if (!formData.billingHours || Number.isNaN(billingMinutes) || billingMinutes <= 0) {
-      errors.push('Le nombre d’heures est obligatoire pour une annonce de lieu')
+    // Le champ heures n'est requis que pour le cas "Visibilité contre service" + offre "service".
+    const requiresBillingHours =
+      formData.exchange_type === 'visibilite-contre-service' &&
+      formData.visibilite_offer_type === 'service'
+
+    if (requiresBillingHours) {
+      const billingMinutes = parseTimeToMinutes(formData.billingHours)
+      if (!formData.billingHours || Number.isNaN(billingMinutes) || billingMinutes <= 0) {
+        errors.push('Le nombre d’heures est obligatoire pour cette configuration de paiement')
+      }
     }
 
     const openingHours = Array.isArray(formData.businessOpeningHours) ? formData.businessOpeningHours : []

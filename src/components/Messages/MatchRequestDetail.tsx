@@ -39,6 +39,7 @@ interface MatchRequestDetailProps {
       id: string
       title: string
       status?: string
+      category_name?: string | null
     } | null
     request_type?: 'sent' | 'received'
   }
@@ -46,6 +47,7 @@ interface MatchRequestDetailProps {
   onClose: () => void
   onUpdate: () => void
   onStartConversation?: (conversationId: string) => void
+  activeFilter?: 'all' | 'posts' | 'matches' | 'match_requests' | 'groups' | 'appointments' | 'archived'
 }
 
 const MatchRequestDetail = ({ 
@@ -53,7 +55,8 @@ const MatchRequestDetail = ({
   currentUserId, 
   onClose, 
   onUpdate,
-  onStartConversation 
+  onStartConversation,
+  activeFilter = 'all'
 }: MatchRequestDetailProps) => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -279,7 +282,7 @@ const MatchRequestDetail = ({
     const postId = request.related_post?.id || request.related_post_id
     if (!postId) return
     onClose()
-    navigate(`/post/${postId}`)
+    navigate(`/post/${postId}`, { state: { from: `/messages?filter=${activeFilter}` } })
   }
 
   return (
@@ -295,7 +298,7 @@ const MatchRequestDetail = ({
               <button
                 type="button"
                 className="match-request-detail-name match-request-detail-name-link"
-                onClick={() => navigate(`/profile/public/${profileUserId}`)}
+                onClick={() => navigate(`/profile/public/${profileUserId}`, { state: { from: `/messages?filter=${activeFilter}` } })}
               >
                 {request.other_user?.full_name || request.other_user?.username || 'Utilisateur'}
               </button>
@@ -319,6 +322,11 @@ const MatchRequestDetail = ({
               >
                 {request.related_post?.status === 'active' ? request.related_post.title : 'Annonce supprimée'}
               </button>
+              {request.related_post?.category_name && (
+                <p className="match-request-detail-post-subtitle">
+                  Catégorie : {request.related_post.category_name}
+                </p>
+              )}
               {(!request.related_post || request.related_post.status !== 'active') && (
                 <p className="match-request-detail-removed-hint">Cette annonce a été supprimée.</p>
               )}

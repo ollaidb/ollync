@@ -157,13 +157,13 @@ const getDefaultContactMessage = (
   // ——— DEMANDE (annonceur cherche, le répondant propose) ———
   if (isRequest) {
     if (CREATION_CONTENU_SLUGS.has(cat)) {
-      return `${greeting} votre annonce nous intéresse. Seriez-vous disponible pour échanger ?`
+      return `${greeting} votre annonce m'intéresse. Seriez-vous disponible pour échanger ?`
     }
     if (EMPLOI_CATEGORY_SLUGS.has(cat)) {
-      return `${greeting} votre profil nous intéresse. Nous avons des postes ouverts. Êtes-vous toujours en recherche ?`
+      return `${greeting} votre profil m'intéresse. Êtes-vous toujours en recherche ?`
     }
     if (CASTING_SLUGS.has(cat) && (options.subSlug === 'figurant' || options.subSlug?.includes('figurant'))) {
-      return `${greeting} votre profil de figurant nous intéresse. Seriez-vous disponible pour échanger sur un projet ?`
+      return `${greeting} votre profil de figurant m'intéresse. Seriez-vous disponible pour échanger sur un projet ?`
     }
     if (MISSION_CATEGORY_SLUGS.has(cat)) {
       return `${greeting} votre mission m'intéresse. Je suis disponible.`
@@ -1367,7 +1367,7 @@ const PostDetails = () => {
       return
     }
 
-    if (contactIntent === 'apply' && isRequestListingPost && !requestCvDocument && !savedCandidateCvUrl) {
+    if (contactIntent === 'apply' && !requestCvDocument && !savedCandidateCvUrl) {
       alert('Le CV est obligatoire pour postuler. Ajoutez un CV ici ou dans votre espace candidature.')
       return
     }
@@ -1415,7 +1415,7 @@ const PostDetails = () => {
       let coverLetterUrl: string | null = null
       let coverLetterName: string | null = null
 
-      if (contactIntent === 'apply' && isRequestListingPost) {
+      if (contactIntent === 'apply') {
         if (requestCvDocument) {
           const uploadedCv = await uploadRequestFile(requestCvDocument, 'cv')
           cvUrl = uploadedCv.url
@@ -1435,26 +1435,49 @@ const PostDetails = () => {
       }
 
       const trimmedMessage = requestMessage.trim()
+      const payload = {
+        from_user_id: user.id,
+        to_user_id: post.user_id,
+        related_post_id: id,
+        status: 'pending',
+        request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
+        request_role: requestRole.trim() || null,
+        request_document_url: cvUrl,
+        request_document_name: cvName,
+        request_cover_letter_url: coverLetterUrl,
+        request_cover_letter_name: coverLetterName,
+        request_intent: contactIntent,
+        reservation_date: reservationDate || null,
+        reservation_time: reservationTime || null,
+        reservation_duration_minutes: contactIntent === 'reserve' ? reservationDurationToSave : null
+      }
+
+      // Permet de renvoyer une demande après annulation/refus :
+      // on réutilise la ligne existante au lieu d'échouer sur une contrainte unique.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from('match_requests') as any)
-        .insert({
-          from_user_id: user.id,
-          to_user_id: post.user_id,
-          related_post_id: id,
-          status: 'pending',
-          request_message: trimmedMessage.length > 0 ? trimmedMessage : null,
-          request_role: requestRole.trim() || null,
-          request_document_url: cvUrl,
-          request_document_name: cvName,
-          request_cover_letter_url: coverLetterUrl,
-          request_cover_letter_name: coverLetterName,
-          request_intent: contactIntent,
-          reservation_date: reservationDate || null,
-          reservation_time: reservationTime || null,
-          reservation_duration_minutes: contactIntent === 'reserve' ? reservationDurationToSave : null
-        })
-        .select()
-        .single()
+      const { data: existingRequest } = await (supabase.from('match_requests') as any)
+        .select('id')
+        .eq('from_user_id', user.id)
+        .eq('to_user_id', post.user_id)
+        .eq('related_post_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mutation = existingRequest?.id
+        ? (supabase.from('match_requests') as any)
+            .update(payload)
+            .eq('id', existingRequest.id)
+            .eq('from_user_id', user.id)
+            .select()
+            .single()
+        : (supabase.from('match_requests') as any)
+            .insert(payload)
+            .select()
+            .single()
+
+      const { data, error } = await mutation
 
       if (error) {
         console.error('Error sending match request:', error)
@@ -1771,8 +1794,6 @@ const PostDetails = () => {
   }
 
   const getActionButtonLabel = () => {
-    if (isRequestListingPost && !isCastingFigurantRequestPost) return 'Contacter'
-
     if (matchRequest?.status === 'pending') {
       if (contactIntent === 'reserve') return 'Demande envoyée'
       if (contactIntent === 'ticket') return 'Demande envoyée'
@@ -2672,7 +2693,7 @@ const PostDetails = () => {
                       className={`post-details-report-reason-btn ${reportReason === reason ? 'active' : ''}`}
                       onClick={() => setReportReason(reason)}
                     >
-                      {reason === 'suspect' ? 'Suspect' : reason === 'fraudeur' ? 'Fraudeur' : reason === 'fondant' ? 'Fondant / Inapproprié' : reason === 'sexuel' ? 'Contenu sexuel' : reason === 'spam' ? 'Spam' : 'Autre'}
+                      {reason === 'suspect' ? 'Suspect' : reason === 'fraudeur' ? 'Fraudeur' : reason === 'fondant' ? 'Choquant / Inapproprié' : reason === 'sexuel' ? 'Contenu sexuel' : reason === 'spam' ? 'Spam' : 'Autre'}
                     </button>
                   ))}
                 </div>
@@ -2711,9 +2732,7 @@ const PostDetails = () => {
             visible={showSendRequestModal}
             presentation="bottom-sheet"
             title={
-              isRequestListingPost && !isCastingFigurantRequestPost
-                ? 'Contacter'
-                : contactIntent === 'apply'
+              contactIntent === 'apply'
                 ? 'Postuler'
                 : contactIntent === 'reserve'
                   ? 'Envoyer une demande'
@@ -2724,12 +2743,8 @@ const PostDetails = () => {
                       : 'Message personnalisé'
             }
             message={
-              isRequestListingPost && !isCastingFigurantRequestPost
-                ? 'Votre message sera envoyé directement dans la messagerie.'
-                : contactIntent === 'apply' && isRequestListingPost
-                ? 'Envoyez votre candidature avec votre CV.'
-                : contactIntent === 'apply'
-                ? "Ajoutez un message pour contacter l'annonceur."
+              contactIntent === 'apply'
+                ? "Ajoutez un message pour votre candidature."
                 : contactIntent === 'reserve'
                   ? 'Renseignez la date, l’heure et la durée, puis envoyez votre demande.'
                   : contactIntent === 'ticket'
@@ -2756,9 +2771,7 @@ const PostDetails = () => {
             confirmLabel={
               loadingRequest
                 ? 'Envoi...'
-                : isRequestListingPost && !isCastingFigurantRequestPost
-                  ? 'Envoyer le message'
-                  : contactIntent === 'ticket'
+                : contactIntent === 'ticket'
                     ? 'Envoyer ma demande'
                     : contactIntent === 'reserve'
                       ? 'Envoyer ma demande'
@@ -2808,7 +2821,7 @@ const PostDetails = () => {
               <div className="confirmation-modal-hint">{requestMessage.length}/500</div>
             </div>
 
-            {isRequestListingPost && contactIntent === 'apply' && (
+            {contactIntent === 'apply' && (
               <>
                 <div className="confirmation-modal-field confirmation-upload-card confirmation-upload-card--required">
                   <div className="confirmation-upload-header">

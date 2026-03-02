@@ -31,7 +31,7 @@
 }
 
 .publish-content-wrapper.has-actions {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 118px);
 }
 
 .publish-content-wrapper::-webkit-scrollbar {
@@ -640,6 +640,10 @@
 
   .publish-content-wrapper {
     padding-top: calc(env(safe-area-inset-top, 0px) + 80px);
+  }
+
+  .publish-content-wrapper.has-actions {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 126px);
   }
 
   .publish-content {
