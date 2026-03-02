@@ -4830,6 +4830,28 @@ const Messages = () => {
                             setCustomReaction('')
                             setShowMessageActions(true)
                           }}
+
+                          onMouseDown={(event) => {
+                            if (event.button !== 0) return
+                            longPressTimerRef.current = window.setTimeout(() => {
+                              setActiveMessage(msg)
+                              setShowCustomReactionInput(false)
+                              setCustomReaction('')
+                              setShowMessageActions(true)
+                            }, 450)
+                          }}
+                          onMouseUp={() => {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }}
+                          onMouseLeave={() => {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }}
                           onTouchStart={(event) => {
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
