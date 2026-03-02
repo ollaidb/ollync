@@ -44,17 +44,13 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
     ]
     const isMainTabRoot = mainTabRoots.includes(path)
 
-    // Détails d'annonce : un clic = un retour (historique navigateur)
-    if (path.startsWith('/post/')) {
+
+    // Pages de listing (Utilisateurs / Annonces récentes):
+    // privilégier un vrai retour historique pour éviter les boucles aller-retour.
+    if (path === '/users' || path === '/recent') {
       if (navState.from) {
         markNavigatingBack()
-        navigate(navState.from)
-        return
-      }
-      const previousPath = getPreviousPath()
-      if (canGoBack() && previousPath && !previousPath.startsWith('/post/')) {
-        markNavigatingBack()
-        navigate(previousPath)
+        navigate(navState.from, { replace: true })
         return
       }
       if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -63,7 +59,30 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
         return
       }
       markNavigatingBack()
-      navigate('/home')
+      navigate('/home', { replace: true })
+      return
+    }
+
+    // Détails d'annonce : un clic = un retour (historique navigateur)
+    if (path.startsWith('/post/')) {
+      if (navState.from) {
+        markNavigatingBack()
+        navigate(navState.from, { replace: true })
+        return
+      }
+      const previousPath = getPreviousPath()
+      if (canGoBack() && previousPath && !previousPath.startsWith('/post/')) {
+        markNavigatingBack()
+        navigate(previousPath, { replace: true })
+        return
+      }
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        markNavigatingBack()
+        navigate(-1)
+        return
+      }
+      markNavigatingBack()
+      navigate('/home', { replace: true })
       return
     }
 
@@ -78,7 +97,7 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
       }
       if (isHelpOrLegalPage && previousPath && !previousPath.startsWith('/profile/')) {
         markNavigatingBack()
-        navigate(previousPath)
+        navigate(previousPath, { replace: true })
         return
       }
       const profileSubRoutes = [
@@ -102,12 +121,12 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
       if (isPublicProfileRoute || isProfileIdRoute) {
         if (navState.from) {
           markNavigatingBack()
-          navigate(navState.from)
+          navigate(navState.from, { replace: true })
           return
         }
         if (previousPath && previousPath !== path) {
           markNavigatingBack()
-          navigate(previousPath)
+          navigate(previousPath, { replace: true })
           return
         }
         if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -118,12 +137,12 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
       }
       if (path === '/profile/contracts' && previousPath.startsWith('/messages')) {
         markNavigatingBack()
-        navigate(previousPath)
+        navigate(previousPath, { replace: true })
         return
       }
       if (path.startsWith('/profile/public') && previousPath.startsWith('/post/')) {
         markNavigatingBack()
-        navigate(previousPath)
+        navigate(previousPath, { replace: true })
         return
       }
       if (path === '/profile/edit') {
@@ -152,7 +171,7 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
         return
       }
       markNavigatingBack()
-      navigate('/home')
+      navigate('/home', { replace: true })
       return
     }
 
@@ -164,7 +183,7 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
 
     if (isMainTabRoot) {
       markNavigatingBack()
-      navigate('/home')
+      navigate('/home', { replace: true })
       return
     }
 
@@ -175,17 +194,17 @@ export function useBackHandler(options: BackHandlerOptions = {}) {
     ]
     if (pathParts.length > 0 && categorySlugs.includes(pathParts[0])) {
       markNavigatingBack()
-      navigate('/home')
+      navigate('/home', { replace: true })
       return
     }
 
     const previousPath = getPreviousPath()
     if (canGoBack() && previousPath && previousPath !== path) {
       markNavigatingBack()
-      navigate(previousPath)
+      navigate(previousPath, { replace: true })
     } else {
       markNavigatingBack()
-      navigate('/home')
+      navigate('/home', { replace: true })
     }
   }
 
