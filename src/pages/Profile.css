@@ -156,15 +156,19 @@
 .profile-menu-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   margin-bottom: 12px;
+  background: var(--background);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .profile-menu-item {
   width: 100%;
   background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   padding: 10px 14px;
   display: flex;
   align-items: center;
@@ -817,4 +821,8 @@
 
 .profile-not-connected-link:hover {
   color: var(--accent);
+}
+
+.profile-menu-list > div:last-child .profile-menu-item {
+  border-bottom: none;
 }
