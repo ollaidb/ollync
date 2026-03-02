@@ -4868,7 +4868,7 @@ const Messages = () => {
                               setShowCustomReactionInput(false)
                             setCustomReaction('')
                             setShowMessageActions(true)
-                            }, 420)
+                            }, 500)
                           }}
                           onTouchMove={(event) => {
                             const touch = event.touches[0]
@@ -4878,7 +4878,7 @@ const Messages = () => {
                             const deltaY = touch.clientY - start.startY
                             start.deltaX = deltaX
                             start.deltaY = deltaY
-                            if (Math.abs(deltaX) > 16 || Math.abs(deltaY) > 16) {
+                            if (Math.abs(deltaX) > 24 || Math.abs(deltaY) > 24) {
                               if (longPressTimerRef.current) {
                                 window.clearTimeout(longPressTimerRef.current)
                                 longPressTimerRef.current = null
