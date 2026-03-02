@@ -15,7 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Créer la table si elle n'existe pas
 CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+  post_id UUID,
   -- Pour les conversations individuelles
   user1_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   user2_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -50,6 +50,13 @@ BEGIN
                  WHERE table_name = 'conversations' AND column_name = 'updated_at') THEN
     ALTER TABLE conversations ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
   END IF;
+
+
+  -- Ajouter deleted_at si elle n'existe pas
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'conversations' AND column_name = 'deleted_at') THEN
+    ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE;
+  END IF;
 END $$;
 
 -- Ajouter la contrainte si elle n'existe pas
@@ -64,6 +71,25 @@ BEGIN
       (is_group = true)
     );
   END IF;
+END $$;
+
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'posts'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'conversations_post_id_fkey'
+  ) THEN
+    ALTER TABLE conversations
+      ADD CONSTRAINT conversations_post_id_fkey
+      FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE;
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN
+    NULL;
 END $$;
 
 -- Index pour améliorer les performances
@@ -233,14 +259,25 @@ BEGIN
       AND table_name = 'messages' 
       AND column_name = 'post_id'
   ) THEN
-    EXECUTE 'ALTER TABLE messages ADD COLUMN post_id UUID REFERENCES posts(id) ON DELETE SET NULL';
+    EXECUTE 'ALTER TABLE messages ADD COLUMN post_id UUID';
+  END IF;
+
+  -- Ajouter la FK vers posts uniquement si la table posts existe
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'posts'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'messages_post_id_fkey'
+  ) THEN
+    EXECUTE 'ALTER TABLE messages ADD CONSTRAINT messages_post_id_fkey FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL';
   END IF;
 EXCEPTION
   WHEN duplicate_column THEN
-    -- La colonne existe déjà, ignorer
+    NULL;
+  WHEN duplicate_object THEN
     NULL;
   WHEN OTHERS THEN
-    -- Autre erreur, la propager
     RAISE;
 END $$;
 

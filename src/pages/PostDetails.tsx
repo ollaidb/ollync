@@ -163,7 +163,7 @@ const getDefaultContactMessage = (
       return `${greeting} votre profil m'intéresse. Êtes-vous toujours en recherche ?`
     }
     if (CASTING_SLUGS.has(cat) && (options.subSlug === 'figurant' || options.subSlug?.includes('figurant'))) {
-      return `${greeting} votre profil de figurant m'intéresse. Seriez-vous disponible pour échanger sur un projet ?`
+      return `${greeting} votre profil de figurant m'intéresse. Seriez-vous disponible pour échanger ?`
     }
     if (MISSION_CATEGORY_SLUGS.has(cat)) {
       return `${greeting} votre mission m'intéresse. Je suis disponible.`
@@ -182,7 +182,7 @@ const getDefaultContactMessage = (
     return `${greeting} je suis intéressé par votre casting et disponible aux dates indiquées.`
   }
   if (MISSION_CATEGORY_SLUGS.has(cat)) {
-    return `${greeting} votre mission m'intéresse. J'aimerais en discuter.`
+    return `${greeting} votre service m'intéresse. J'aimerais en discuter.`
   }
   if (VENTE_CATEGORY_SLUGS.has(cat)) {
     return `${greeting} votre annonce m'intéresse. Est-elle encore disponible ?`
@@ -192,7 +192,7 @@ const getDefaultContactMessage = (
     return `${greeting} je souhaite réserver pour ${dateTimeLabel}. Est-ce encore disponible ?`
   }
   if (EVENEMENT_CATEGORY_SLUGS.has(cat)) {
-    return `${greeting} je souhaite réserver des places pour votre événement. Est-ce encore disponible ?`
+    return `${greeting} je souhaite réserver une place pour votre événement. Est-ce encore disponible ?`
   }
   return `${greeting} votre annonce m'intéresse. Est-elle encore disponible ?`
 }
@@ -1683,7 +1683,6 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const contactIntent = getContactIntent(post?.category?.slug)
-  const isRequestListingPost = post?.listing_type === 'request'
   const catSlugForMessage = (post?.category?.slug || '').trim().toLowerCase()
 
   // Pour Lieu (réservation) : mettre à jour le message quand la date/heure choisie change
@@ -2712,14 +2711,14 @@ const PostDetails = () => {
           <div className="post-action-bar">
             <button 
               className={`post-action-btn post-action-btn-primary ${
-                (!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'pending'
+                matchRequest?.status === 'pending'
                   ? 'post-action-button-sent'
-                  : (!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'accepted'
+                  : matchRequest?.status === 'accepted'
                     ? 'post-action-button-accepted'
                     : ''
               }`}
               onClick={handleApply}
-              disabled={loadingRequest || ((!isRequestListingPost || isCastingFigurantRequestPost) && matchRequest?.status === 'accepted')}
+              disabled={loadingRequest || matchRequest?.status === 'accepted'}
             >
               {getActionButtonLabel()}
             </button>
@@ -2781,7 +2780,7 @@ const PostDetails = () => {
             }
             cancelLabel="Annuler"
           >
-            {(!isRequestListingPost || isCastingFigurantRequestPost) && !isEmploiPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
+            {!isEmploiPost && !isProjetsEquipeRequestPost && getProfileRolesList(post?.profile_roles).length > 0 && (
               <div className="confirmation-modal-field">
                 <label className="confirmation-modal-label">
                   Poste recherché
@@ -2940,7 +2939,7 @@ const PostDetails = () => {
               </>
             )}
 
-            {!isRequestListingPost && contactIntent === 'reserve' && (
+            {contactIntent === 'reserve' && (
               <>
                 <div className="confirmation-modal-field">
                   <label className="confirmation-modal-label" htmlFor="reservation-date-trigger">
