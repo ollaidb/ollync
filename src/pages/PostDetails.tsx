@@ -902,8 +902,6 @@ const PostDetails = () => {
 
   const checkMatchRequest = async () => {
     if (!user || !id || !post) return
-    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
-    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
     const subName = (post?.sub_category?.name || '').trim().toLowerCase()
     const isFigurant =
       (catSlug === 'casting-role' || catSlug === 'casting') &&
@@ -943,8 +941,6 @@ const PostDetails = () => {
       return
     }
 
-    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
-    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
     const subName = (post?.sub_category?.name || '').trim().toLowerCase()
     const isFigurant =
       (catSlug === 'casting-role' || catSlug === 'casting') &&
@@ -1312,67 +1308,6 @@ const PostDetails = () => {
 
   const handleSendRequest = async () => {
     if (!user || !id || !post) return
-    const isRequestListingPost = post.listing_type === 'request'
-    const catSlug = (post?.category?.slug || '').trim().toLowerCase()
-    const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
-    const subName = (post?.sub_category?.name || '').trim().toLowerCase()
-    // Figurant : flux demande uniquement (match_request), PAS de message direct.
-    // La conversation n'est créée qu'après acceptation de la demande.
-    const isCastingFigurant =
-      (catSlug === 'casting-role' || catSlug === 'casting') &&
-      post?.listing_type === 'request' &&
-      (subSlug === 'figurant' || subName.includes('figurant'))
-
-    if (false && isRequestListingPost && !isCastingFigurant) {
-      setLoadingRequest(true)
-      try {
-        const conversation = await findOrCreateDirectConversation(user!.id, post!.user_id, id)
-        if (!conversation || !(conversation as { id?: string }).id) {
-          alert('Impossible de créer la conversation')
-          return
-        }
-
-        const trimmedMessage = requestMessage.trim()
-        const fallbackMessage = getDefaultContactMessage(catSlug, 'offer', { reviewerName: '', subSlug })
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: messageError } = await (supabase.from('messages') as any).insert({
-          conversation_id: (conversation as { id: string }).id,
-          sender_id: user!.id,
-          message_type: 'text',
-          content: trimmedMessage.length > 0 ? trimmedMessage : fallbackMessage,
-          shared_post_id: id
-        })
-
-        if (messageError) {
-          console.error('Error sending direct contact message:', messageError)
-          alert(`Erreur lors de l'envoi du message: ${messageError.message}`)
-          return
-        }
-
-        setShowSendRequestModal(false)
-        setRequestMessage('')
-        setRequestRole('')
-        setRequestCvDocument(null)
-        setRequestCvDocumentName('')
-        setRequestCoverLetterDocument(null)
-        setRequestCoverLetterDocumentName('')
-        setReservationDate('')
-        setReservationTime('')
-        setReservationDurationMinutes(60)
-        setReservationDurationText('01:00')
-        setIsReservationDatePickerOpen(false)
-        showSuccess('Message envoyé')
-        navigate(`/messages/${(conversation as { id: string }).id}`)
-        return
-      } catch (error) {
-        console.error('Error sending direct contact message:', error)
-        alert('Erreur lors de l’envoi du message')
-        return
-      } finally {
-        setLoadingRequest(false)
-      }
-    }
 
     const availableRoles = isEmploiRequestPost ? [] : getProfileRolesList(post.profile_roles)
     if (availableRoles.length > 0 && !requestRole.trim()) {
@@ -1484,7 +1419,6 @@ const PostDetails = () => {
         .limit(1)
         .maybeSingle()
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mutation = existingRequest?.id
         ? (supabase.from('match_requests') as any)
             .update(payload)
@@ -1704,7 +1638,9 @@ const PostDetails = () => {
 
   const isOwner = user && post && post.user_id === user.id
   const contactIntent = getContactIntent(post?.category?.slug)
-  const catSlugForMessage = (post?.category?.slug || '').trim().toLowerCase()
+  const catSlug = (post?.category?.slug || '').trim().toLowerCase()
+  const subSlug = (post?.sub_category?.slug || '').trim().toLowerCase()
+  const catSlugForMessage = catSlug
 
   // Pour Lieu (réservation) : mettre à jour le message quand la date/heure choisie change
   useEffect(() => {

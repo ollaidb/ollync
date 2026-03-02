@@ -10,6 +10,7 @@ const STORAGE_LAST_ANY = 'ollync_reminder_last_dismissed_any'
 const STORAGE_PUBLISH_LAST_SHOWN = 'ollync_reminder_publish_last_shown'
 /** Dernière fois qu'on a affiché le rappel brouillon (max 1 fois/semaine) */
 const STORAGE_DRAFT_LAST_SHOWN = 'ollync_reminder_draft_last_shown'
+const STORAGE_DRAFT_LAST_PROMPTED_COUNT = 'ollync_reminder_draft_last_prompted_count_'
 const STORAGE_CONSENT_LAST_SHOWN = 'ollync_consent_last_shown'
 const STORAGE_FIRST_SEEN_MAIN = 'ollync_first_seen_main'
 const STORAGE_SPLASH_COMPLETED_AT = 'ollync_splash_completed_at'
@@ -19,8 +20,6 @@ const GLOBAL_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes
 const CONSENT_COOLDOWN_MS = 2 * 60 * 1000 // 2 minutes
 /** Aucun bloc de demande d'action (rappels) avant ce délai après la fin de l'écran de lancement. */
 const POST_SPLASH_REMINDER_DELAY_MS = 2 * 60 * 1000 // 2 minutes
-/** Temps minimum dans l'app (connecté) avant de proposer "Publier une annonce". */
-const PUBLISH_REMINDER_DELAY_MS = 90 * 1000 // 90 secondes
 const MESSAGES_THRESHOLD = 50
 const NOTIFICATIONS_THRESHOLD = 50
 const COOLDOWN_MS = {
@@ -87,14 +86,35 @@ function setDraftLastShown(): void {
   }
 }
 
-function getPublishLastShown(): number | null {
+function getDraftLastPromptedCount(userId: string): number | null {
   try {
-    const raw = localStorage.getItem(STORAGE_PUBLISH_LAST_SHOWN)
+    const raw = localStorage.getItem(`${STORAGE_DRAFT_LAST_PROMPTED_COUNT}${userId}`)
     if (!raw) return null
-    const t = parseInt(raw, 10)
-    return Number.isFinite(t) ? t : null
+    const value = parseInt(raw, 10)
+    return Number.isFinite(value) ? value : null
   } catch {
     return null
+  }
+}
+
+function setDraftLastPromptedCount(userId: string, count: number): void {
+  try {
+    localStorage.setItem(`${STORAGE_DRAFT_LAST_PROMPTED_COUNT}${userId}`, String(Math.max(0, count)))
+  } catch {
+    // ignore
+  }
+}
+
+
+
+function isInGlobalCooldown(): boolean {
+  try {
+    const raw = localStorage.getItem(STORAGE_LAST_ANY)
+    if (!raw) return false
+    const t = parseInt(raw, 10)
+    return Number.isFinite(t) ? Date.now() - t < GLOBAL_COOLDOWN_MS : false
+  } catch {
+    return false
   }
 }
 
@@ -103,19 +123,6 @@ function setPublishLastShown(): void {
     localStorage.setItem(STORAGE_PUBLISH_LAST_SHOWN, String(Date.now()))
   } catch {
     // ignore
-  }
-}
-
-/** Vrai si on vient de fermer un rappel (quel qu’il soit) : on n’en affiche pas un autre tout de suite. */
-function isInGlobalCooldown(): boolean {
-  try {
-    const raw = localStorage.getItem(STORAGE_LAST_ANY)
-    if (!raw) return false
-    const t = parseInt(raw, 10)
-    if (!Number.isFinite(t)) return false
-    return Date.now() - t < GLOBAL_COOLDOWN_MS
-  } catch {
-    return false
   }
 }
 
@@ -186,6 +193,10 @@ export function useReminder() {
 
     // Brouillons : maximum une fois par semaine ; si l'utilisateur a choisi "Ne plus demander", ne plus jamais afficher.
     if (!loading && draftCount > 0 && !isNeverAsk('draft')) {
+      const lastPromptedCount = getDraftLastPromptedCount(user.id)
+      if (lastPromptedCount != null && draftCount <= lastPromptedCount) {
+        return null
+      }
       const lastShown = getDraftLastShown()
       const dismissed = getDismissedAt('draft')
       const lastInteraction = lastShown != null && dismissed != null
@@ -231,34 +242,8 @@ export function useReminder() {
       }
     }
 
-    // Publier une annonce : afficher dès l’entrée si pas de brouillon ni messages en attente
-    if (false && !isNeverAsk('publish') && !isInCooldown('publish')) {
-      const publishLastShown = getPublishLastShown()
-      const oneWeekMs = COOLDOWN_MS.publish
-      const lastShownOk =
-        publishLastShown !== null ? Date.now() - (publishLastShown as number) < oneWeekMs : false
-      if (lastShownOk) {
-        // Déjà affiché cette semaine
-      } else {
-        try {
-          const firstSeenRaw = sessionStorage.getItem(STORAGE_FIRST_SEEN_MAIN)
-          const firstSeen =
-            firstSeenRaw === null ? 0 : parseInt(firstSeenRaw as string, 10)
-          const elapsed = Number.isFinite(firstSeen) ? Date.now() - firstSeen : 0
-          if (elapsed >= PUBLISH_REMINDER_DELAY_MS) {
-            return {
-              type: 'publish',
-              title: 'Publie une annonce',
-              message: 'Un projet en tête ? Publie une annonce et trouve les bons profils.',
-              buttonLabel: 'Publier une annonce',
-              href: '/publish'
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
+
+
 
     return null
   })()
@@ -284,10 +269,11 @@ export function useReminder() {
     if (reminder?.type === 'publish') {
       setPublishLastShown()
     }
-    if (reminder?.type === 'draft') {
+    if (reminder?.type === 'draft' && user?.id) {
       setDraftLastShown()
+      setDraftLastPromptedCount(user.id, draftCount)
     }
-  }, [reminder?.type])
+  }, [reminder?.type, user?.id, draftCount])
 
   return { reminder, dismiss, loading }
 }
