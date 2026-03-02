@@ -4821,7 +4821,8 @@ const Messages = () => {
                             transform: messageReplySwipeOffset?.id === msg.id
                               ? `translateX(${messageReplySwipeOffset.x}px)`
                               : undefined,
-                            transition: messageReplySwipeOffset?.id === msg.id ? 'none' : 'transform 0.2s ease-out'
+                            transition: messageReplySwipeOffset?.id === msg.id ? 'none' : 'transform 0.2s ease-out',
+                            touchAction: 'manipulation'
                           }}
                           onContextMenu={(event) => {
                             event.preventDefault()
@@ -4836,6 +4837,27 @@ const Messages = () => {
                             setShowCustomReactionInput(false)
                             setCustomReaction('')
                             setShowMessageActions(true)
+                          }}
+                          onPointerDown={(event) => {
+                            if (event.pointerType !== 'touch') return
+                            longPressTimerRef.current = window.setTimeout(() => {
+                              setActiveMessage(msg)
+                              setShowCustomReactionInput(false)
+                              setCustomReaction('')
+                              setShowMessageActions(true)
+                            }, 500)
+                          }}
+                          onPointerUp={() => {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
+                          }}
+                          onPointerCancel={() => {
+                            if (longPressTimerRef.current) {
+                              window.clearTimeout(longPressTimerRef.current)
+                              longPressTimerRef.current = null
+                            }
                           }}
 
                           onMouseDown={(event) => {

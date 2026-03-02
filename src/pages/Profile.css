@@ -342,6 +342,15 @@
   color: var(--foreground);
 }
 
+.profile-app-version-separator {
+  opacity: 0.6;
+}
+
+.profile-app-version::before,
+.profile-app-version::after {
+  content: none !important;
+}
+
 .profile-menu-end-spacer {
   height: calc(env(safe-area-inset-bottom, 0px) + 72px);
 }

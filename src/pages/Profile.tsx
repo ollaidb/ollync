@@ -605,6 +605,7 @@ const Profile = () => {
 
         <div className="profile-app-version">
           <span className="profile-app-version-label">Version</span>
+          <span className="profile-app-version-separator">-</span>
           <span className="profile-app-version-value">{appVersion}</span>
         </div>
         <div className="profile-menu-end-spacer" />
