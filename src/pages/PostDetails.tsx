@@ -1173,7 +1173,7 @@ const PostDetails = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: messageError } = await (supabase.from('messages') as any).insert({
           conversation_id: (conversation as { id: string }).id,
-          sender_id: user.id,
+          sender_id: user!.id,
           message_type: 'text',
           content: trimmed,
           shared_post_id: id
@@ -1310,10 +1310,10 @@ const PostDetails = () => {
       post?.listing_type === 'request' &&
       (subSlug === 'figurant' || subName.includes('figurant'))
 
-    if (isRequestListingPost && !isCastingFigurant) {
+    if (false && isRequestListingPost && !isCastingFigurant) {
       setLoadingRequest(true)
       try {
-        const conversation = await findOrCreateDirectConversation(user.id, post.user_id, id)
+        const conversation = await findOrCreateDirectConversation(user!.id, post!.user_id, id)
         if (!conversation || !(conversation as { id?: string }).id) {
           alert('Impossible de créer la conversation')
           return
@@ -1325,7 +1325,7 @@ const PostDetails = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: messageError } = await (supabase.from('messages') as any).insert({
           conversation_id: (conversation as { id: string }).id,
-          sender_id: user.id,
+          sender_id: user!.id,
           message_type: 'text',
           content: trimmedMessage.length > 0 ? trimmedMessage : fallbackMessage,
           shared_post_id: id
