@@ -4849,14 +4849,17 @@ const Messages = () => {
                             const deltaY = touch.clientY - start.startY
                             start.deltaX = deltaX
                             start.deltaY = deltaY
-                            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                            if (Math.abs(deltaX) > 16 || Math.abs(deltaY) > 16) {
                               if (longPressTimerRef.current) {
                                 window.clearTimeout(longPressTimerRef.current)
                                 longPressTimerRef.current = null
                               }
                             }
-                            if (isMobile && start.id === msg.id && deltaX < 0) {
-                              const capped = Math.max(deltaX, -40)
+                            const swipeDirectionOk = isOwn ? deltaX < 0 : deltaX > 0
+                            if (isMobile && start.id === msg.id && swipeDirectionOk && Math.abs(deltaX) > Math.abs(deltaY)) {
+                              const capped = isOwn
+                                ? Math.max(deltaX, -56)
+                                : Math.min(deltaX, 56)
                               setMessageReplySwipeOffset({ id: msg.id, x: capped })
                             }
                           }}
@@ -4868,7 +4871,10 @@ const Messages = () => {
                             if (isMobile && messageTouchRef.current?.id === msg.id) {
                               const { deltaX = 0, deltaY = 0 } = messageTouchRef.current
                               setMessageReplySwipeOffset(null)
-                              if (deltaX < -40 && Math.abs(deltaX) > 2 * Math.abs(deltaY)) {
+                              const passedSwipe = isOwn
+                                ? (deltaX <= -56 && Math.abs(deltaX) > 2 * Math.abs(deltaY))
+                                : (deltaX >= 56 && Math.abs(deltaX) > 2 * Math.abs(deltaY))
+                              if (passedSwipe) {
                                 hapticLight()
                                 setReplyingToMessage(msg)
                               }
