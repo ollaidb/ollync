@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "WR5724DCAN.com.ollync.mobile"
+        ],
+        "components": [
+          {
+            "/": "/post/*",
+            "comment": "Open post detail links in app"
+          },
+          {
+            "/": "/*",
+            "comment": "Fallback: allow other app routes"
+          }
+        ]
+      }
+    ]
+  }
+}
