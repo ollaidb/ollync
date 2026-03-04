@@ -913,6 +913,13 @@
   gap: 8px;
 }
 
+.venue-required-error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
 .venue-settings-entry-button {
   width: 100%;
   border: 1px solid var(--border);

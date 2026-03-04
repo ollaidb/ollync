@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './useSupabase'
+import { supabase } from '../lib/supabaseClient'
 
 const STORAGE_PREFIX = 'ollync_usage_'
 const USAGE_THRESHOLD_MS = 60 * 60 * 1000 // 1 heure
 const PERSIST_INTERVAL_MS = 30 * 1000 // Sauvegarder toutes les 30 secondes
-const COMPLETED_KEY = 'ollync_personalization_questionnaire_completed'
-const REMIND_LATER_KEY = 'ollync_personalization_remind_later_at'
+const QUESTIONNAIRE_VERSION = '1'
+const COMPLETED_KEY_PREFIX = 'ollync_personalization_questionnaire_completed_v'
+const REMIND_LATER_KEY_PREFIX = 'ollync_personalization_remind_later_at_v'
 const REMIND_LATER_HOURS_MS = 24 * 60 * 60 * 1000 // 24 heures
 
 export interface UsageState {
@@ -39,37 +41,45 @@ function saveUsage(userId: string, state: UsageState): void {
   }
 }
 
+function getCompletedKey(userId?: string): string {
+  return `${COMPLETED_KEY_PREFIX}${QUESTIONNAIRE_VERSION}${userId ? `_${userId}` : ''}`
+}
+
+function getRemindLaterKey(userId?: string): string {
+  return `${REMIND_LATER_KEY_PREFIX}${QUESTIONNAIRE_VERSION}${userId ? `_${userId}` : ''}`
+}
+
 /** Retourne true si l'utilisateur a déjà complété le questionnaire de personnalisation */
-export function hasCompletedPersonalizationQuestionnaire(): boolean {
+export function hasCompletedPersonalizationQuestionnaire(userId?: string): boolean {
   try {
-    return localStorage.getItem(COMPLETED_KEY) === 'true'
+    return localStorage.getItem(getCompletedKey(userId)) === 'true'
   } catch {
     return false
   }
 }
 
 /** Marque le questionnaire comme complété */
-export function markPersonalizationQuestionnaireCompleted(): void {
+export function markPersonalizationQuestionnaireCompleted(userId?: string): void {
   try {
-    localStorage.setItem(COMPLETED_KEY, 'true')
-    localStorage.removeItem(REMIND_LATER_KEY)
+    localStorage.setItem(getCompletedKey(userId), 'true')
+    localStorage.removeItem(getRemindLaterKey(userId))
   } catch {
     // ignore
   }
 }
 
 /** Enregistre "Répondre plus tard" ou fermeture (X) : on redemandera après 24 h */
-export function setPersonalizationRemindLater(): void {
+export function setPersonalizationRemindLater(userId?: string): void {
   try {
-    localStorage.setItem(REMIND_LATER_KEY, String(Date.now()))
+    localStorage.setItem(getRemindLaterKey(userId), String(Date.now()))
   } catch {
     // ignore
   }
 }
 
-function getRemindLaterAt(): number | null {
+function getRemindLaterAt(userId?: string): number | null {
   try {
-    const raw = localStorage.getItem(REMIND_LATER_KEY)
+    const raw = localStorage.getItem(getRemindLaterKey(userId))
     if (!raw) return null
     const t = parseInt(raw, 10)
     return Number.isFinite(t) ? t : null
@@ -97,66 +107,102 @@ export function useAppUsageTime(): {
       return
     }
 
-    if (hasCompletedPersonalizationQuestionnaire()) {
-      setShouldShow(false)
-      return
-    }
+    let disposed = false
 
-    const remindAt = getRemindLaterAt()
-    if (remindAt && Date.now() - remindAt < REMIND_LATER_HOURS_MS) {
-      setShouldShow(false)
-      return
-    }
+    const initialize = async () => {
+      if (hasCompletedPersonalizationQuestionnaire(user.id)) {
+        if (!disposed) setShouldShow(false)
+        return
+      }
 
-    // Charger l'état initial ou démarrer une nouvelle session
-    let state = loadUsage(user.id)
-    const now = Date.now()
-    if (!state) {
-      state = { totalMs: 0, sessionStartAt: now }
-      saveUsage(user.id, state)
-    }
+      // Sécurité: si le profil a déjà des préférences, considérer le questionnaire comme déjà traité
+      // même si le localStorage a été purgé après une mise à jour/appareil.
+      try {
+        const { data: profile } = await (supabase.from('profiles') as any)
+          .select('display_categories, display_subcategories, profile_type')
+          .eq('id', user.id)
+          .single()
 
-    const checkAndUpdate = () => {
+        const hasProfilePreferences =
+          (Array.isArray(profile?.display_categories) && profile.display_categories.length > 0) ||
+          (Array.isArray(profile?.display_subcategories) && profile.display_subcategories.length > 0) ||
+          (typeof profile?.profile_type === 'string' && profile.profile_type.trim().length > 0)
+
+        if (hasProfilePreferences) {
+          markPersonalizationQuestionnaireCompleted(user.id)
+          if (!disposed) setShouldShow(false)
+          return
+        }
+      } catch {
+        // ignore
+      }
+
+      const remindAt = getRemindLaterAt(user.id)
+      if (remindAt && Date.now() - remindAt < REMIND_LATER_HOURS_MS) {
+        if (!disposed) setShouldShow(false)
+        return
+      }
+
+      // Charger l'état initial ou démarrer une nouvelle session
+      let state = loadUsage(user.id)
       const now = Date.now()
-      const current = loadUsage(user.id) ?? state!
-      const elapsed = now - current.sessionStartAt
-      const nextTotal = current.totalMs + elapsed
-      const nextState: UsageState = { totalMs: nextTotal, sessionStartAt: now }
-      saveUsage(user.id, nextState)
-      const remindLater = getRemindLaterAt()
-      const withinRemindPeriod = remindLater && now - remindLater < REMIND_LATER_HOURS_MS
-      setShouldShow(nextTotal >= USAGE_THRESHOLD_MS && !withinRemindPeriod)
-    }
+      if (!state) {
+        state = { totalMs: 0, sessionStartAt: now }
+        saveUsage(user.id, state)
+      }
 
-    // Persister périodiquement
-    const interval = setInterval(checkAndUpdate, PERSIST_INTERVAL_MS)
+      const checkAndUpdate = () => {
+        const now = Date.now()
+        const current = loadUsage(user.id) ?? state!
+        const elapsed = now - current.sessionStartAt
+        const nextTotal = current.totalMs + elapsed
+        const nextState: UsageState = { totalMs: nextTotal, sessionStartAt: now }
+        saveUsage(user.id, nextState)
+        const remindLater = getRemindLaterAt(user.id)
+        const withinRemindPeriod = remindLater && now - remindLater < REMIND_LATER_HOURS_MS
+        if (!disposed) setShouldShow(nextTotal >= USAGE_THRESHOLD_MS && !withinRemindPeriod)
+      }
 
-    // Persister quand l'utilisateur quitte l'onglet
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        checkAndUpdate()
+      // Persister périodiquement
+      const interval = setInterval(checkAndUpdate, PERSIST_INTERVAL_MS)
+
+      // Persister quand l'utilisateur quitte l'onglet
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          checkAndUpdate()
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      // Vérification initiale
+      checkAndUpdate()
+
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
       }
     }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
 
-    // Vérification initiale
-    checkAndUpdate()
+    let cleanup: (() => void) | undefined
+    void initialize().then((fn) => {
+      cleanup = fn
+    })
 
     return () => {
-      clearInterval(interval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      disposed = true
+      if (cleanup) cleanup()
     }
   }, [user?.id])
 
   const markCompleted = useCallback(() => {
-    markPersonalizationQuestionnaireCompleted()
+    markPersonalizationQuestionnaireCompleted(user?.id)
     setShouldShow(false)
-  }, [])
+  }, [user?.id])
 
   const skipAndRemindLater = useCallback(() => {
-    setPersonalizationRemindLater()
+    setPersonalizationRemindLater(user?.id)
     setShouldShow(false)
-  }, [])
+  }, [user?.id])
 
   return { shouldShowQuestionnaire: shouldShow, markCompleted, skipAndRemindLater }
 }

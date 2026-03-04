@@ -282,7 +282,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
     setActiveTab(tab)
     const nextParams = new URLSearchParams(searchParams)
     nextParams.set('tab', tab)
-    setSearchParams(nextParams)
+    setSearchParams(nextParams, { replace: true })
   }
 
   // Remettre le contenu en haut à chaque changement d'onglet (après rendu) pour éviter le mouvement vertical
@@ -1557,7 +1557,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
 
         {/* Section centre : Nom et informations */}
         <div className="profile-center-section">
-          <h1 className="profile-full-name">{profile.full_name || 'nom de lutisateur'}</h1>
+          <h1 className="profile-full-name">{profile.full_name || "nom de l'utilisateur"}</h1>
           {profile.username && (
             <p className="profile-username-text">{profile.username}</p>
           )}
@@ -2341,7 +2341,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                       className={`report-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
                       onClick={() => setReportReason('fondant')}
                     >
-                      Fondant / Inapproprié
+                      Choquant / Inapproprié
                     </button>
                     <button
                       className={`report-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}
@@ -2433,7 +2433,7 @@ const PublicProfile = ({ userId, isOwnProfile = false }: { userId?: string; isOw
                           className={`report-reason-btn ${reportReason === 'fondant' ? 'active' : ''}`}
                           onClick={() => setReportReason('fondant')}
                         >
-                          Fondant / Inapproprié
+                          Choquant / Inapproprié
                         </button>
                         <button
                           className={`report-reason-btn ${reportReason === 'sexuel' ? 'active' : ''}`}

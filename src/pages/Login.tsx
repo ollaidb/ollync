@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Loader, Eye, EyeOff } from 'lucide-react'
+import { Loader, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { AuthBackground } from '../components/Auth/AuthBackground'
 import { PageMeta } from '../components/PageMeta'
 import { isSafeReturnTo } from '../utils/safeReturnTo'
 import './Auth.css'
+
+const LAST_APP_ROUTE_KEY = 'ollync-last-app-route'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -20,6 +22,15 @@ const Login = () => {
   const [error, setError] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const appBackTarget = (() => {
+    const safeReturnTo = isSafeReturnTo(returnTo) ? returnTo : ''
+    if (safeReturnTo) return safeReturnTo
+    if (typeof window !== 'undefined') {
+      const lastAppRoute = sessionStorage.getItem(LAST_APP_ROUTE_KEY)
+      if (lastAppRoute && !lastAppRoute.startsWith('/auth/')) return lastAppRoute
+    }
+    return '/home'
+  })()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,6 +158,10 @@ const Login = () => {
     }
   }
 
+  const handleBackNavigation = () => {
+    navigate(appBackTarget)
+  }
+
   if (authMethod === 'choice') {
     return (
       <>
@@ -157,6 +172,16 @@ const Login = () => {
           <div className="auth-container-wrap">
             <div className="auth-container">
               <div className="auth-header">
+                <button
+                  type="button"
+                  className="auth-back-button"
+                  onClick={handleBackNavigation}
+                  disabled={loading}
+                  aria-label="Retour"
+                  title="Retour"
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                </button>
                 <h1 className="auth-logo">Ollync</h1>
                 <p className="auth-subtitle">Connectez-vous à votre compte</p>
               </div>
@@ -210,7 +235,7 @@ const Login = () => {
           <div className="auth-footer">
             <p>
               Pas encore de compte ?{' '}
-              <Link to="/auth/register" className="auth-link">
+              <Link to={`/auth/register?returnTo=${encodeURIComponent(appBackTarget)}`} className="auth-link">
                 Créer un compte
               </Link>
             </p>
@@ -240,8 +265,10 @@ const Login = () => {
               setError('')
             }}
             disabled={loading}
+            aria-label="Retour"
+            title="Retour"
           >
-            ← Retour
+            <ArrowLeft size={16} aria-hidden="true" />
           </button>
           <h1 className="auth-logo">Ollync</h1>
           <p className="auth-subtitle">Connectez-vous avec votre email</p>
@@ -328,7 +355,7 @@ const Login = () => {
         <div className="auth-footer">
           <p>
             Pas encore de compte ?{' '}
-            <Link to="/auth/register" className="auth-link">
+            <Link to={`/auth/register?returnTo=${encodeURIComponent(appBackTarget)}`} className="auth-link">
               Créer un compte
             </Link>
           </p>
@@ -342,4 +369,3 @@ const Login = () => {
 }
 
 export default Login
-

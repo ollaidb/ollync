@@ -1,66 +1,85 @@
--- Empêche l'envoi de messages liés à une annonce (shared_post_id)
--- tant qu'aucune demande n'est acceptée entre les deux utilisateurs.
---
--- ⚠️ Ce guard ne bloque PAS la messagerie classique (messages sans shared_post_id).
--- Il ne vise que les premiers messages envoyés depuis une annonce.
+-- Guard messagerie liée aux annonces (version SAFE)
+-- Si les tables de messagerie n'existent pas encore, le script n'échoue pas.
 
-BEGIN;
-
-CREATE OR REPLACE FUNCTION public.enforce_post_message_requires_accepted_request()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  conv record;
-  has_accepted boolean;
+DO $do$
 BEGIN
-  -- Si pas de post lié, on laisse passer (messagerie normale)
-  IF NEW.shared_post_id IS NULL THEN
-    RETURN NEW;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'messages'
+  ) THEN
+    RAISE NOTICE 'Table public.messages absente. Exécutez d''abord create_messaging_tables.sql';
+    RETURN;
   END IF;
 
-  -- Récupérer les participants de la conversation
-  SELECT c.user1_id, c.user2_id, c.is_group
-  INTO conv
-  FROM public.conversations c
-  WHERE c.id = NEW.conversation_id;
-
-  IF conv IS NULL THEN
-    RAISE EXCEPTION 'Conversation introuvable';
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'conversations'
+  ) THEN
+    RAISE NOTICE 'Table public.conversations absente. Exécutez d''abord create_messaging_tables.sql';
+    RETURN;
   END IF;
 
-  -- Pas de restriction pour les groupes
-  IF COALESCE(conv.is_group, false) = true THEN
-    RETURN NEW;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'match_requests'
+  ) THEN
+    RAISE NOTICE 'Table public.match_requests absente. Exécutez d''abord create_messaging_tables.sql';
+    RETURN;
   END IF;
 
-  -- Exige une demande acceptée entre les 2 utilisateurs pour ce post
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.match_requests mr
-    WHERE mr.related_post_id = NEW.shared_post_id
-      AND mr.status = 'accepted'
-      AND (
-        (mr.from_user_id = conv.user1_id AND mr.to_user_id = conv.user2_id)
-        OR
-        (mr.from_user_id = conv.user2_id AND mr.to_user_id = conv.user1_id)
-      )
-  ) INTO has_accepted;
+  EXECUTE $sql$
+    CREATE OR REPLACE FUNCTION public.enforce_post_message_requires_accepted_request()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path = public
+    AS $func$
+    DECLARE
+      conv record;
+      has_accepted boolean;
+    BEGIN
+      IF NEW.shared_post_id IS NULL THEN
+        RETURN NEW;
+      END IF;
 
-  IF NOT has_accepted THEN
-    RAISE EXCEPTION 'Accès messagerie bloqué: la demande doit être acceptée avant tout message lié à une annonce.';
-  END IF;
+      SELECT c.user1_id, c.user2_id, c.is_group
+      INTO conv
+      FROM public.conversations c
+      WHERE c.id = NEW.conversation_id;
 
-  RETURN NEW;
-END;
-$$;
+      IF conv IS NULL THEN
+        RAISE EXCEPTION 'Conversation introuvable';
+      END IF;
 
-DROP TRIGGER IF EXISTS trg_enforce_post_message_requires_accepted_request ON public.messages;
-CREATE TRIGGER trg_enforce_post_message_requires_accepted_request
-BEFORE INSERT ON public.messages
-FOR EACH ROW
-EXECUTE FUNCTION public.enforce_post_message_requires_accepted_request();
+      IF COALESCE(conv.is_group, false) = true THEN
+        RETURN NEW;
+      END IF;
 
-COMMIT;
+      SELECT EXISTS (
+        SELECT 1
+        FROM public.match_requests mr
+        WHERE mr.related_post_id = NEW.shared_post_id
+          AND mr.status = 'accepted'
+          AND (
+            (mr.from_user_id = conv.user1_id AND mr.to_user_id = conv.user2_id)
+            OR
+            (mr.from_user_id = conv.user2_id AND mr.to_user_id = conv.user1_id)
+          )
+      ) INTO has_accepted;
+
+      IF NOT has_accepted THEN
+        RAISE EXCEPTION 'Accès messagerie bloqué: la demande doit être acceptée avant tout message lié à une annonce.';
+      END IF;
+
+      RETURN NEW;
+    END;
+    $func$;
+
+    DROP TRIGGER IF EXISTS trg_enforce_post_message_requires_accepted_request ON public.messages;
+    CREATE TRIGGER trg_enforce_post_message_requires_accepted_request
+    BEFORE INSERT ON public.messages
+    FOR EACH ROW
+    EXECUTE FUNCTION public.enforce_post_message_requires_accepted_request();
+  $sql$;
+END
+$do$;

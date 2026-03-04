@@ -134,7 +134,7 @@ export default function PersonalizationQuestionnaire({
       if (error) {
         console.error('Erreur mise à jour profil personnalisation:', error)
       }
-      markPersonalizationQuestionnaireCompleted()
+      markPersonalizationQuestionnaireCompleted(userId)
       onComplete()
     } finally {
       setSaving(false)

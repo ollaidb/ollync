@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useState, useRef } from 'react'
+import { Suspense, lazy, useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Footer from './components/Footer'
 import { prefetchRoute, mainNavPaths } from './utils/routePrefetch'
@@ -48,6 +48,8 @@ import { SplashScreen } from './components/SplashScreen/SplashScreen'
 import { AuthTransitionOverlay } from './components/AuthTransitionOverlay/AuthTransitionOverlay'
 import './App.css'
 
+const LAST_APP_ROUTE_KEY = 'ollync-last-app-route'
+
 function isReminderRoute(pathname: string): boolean {
   if (pathname === '/' || pathname === '/home') return true
   if (pathname === '/feed' || pathname === '/favorites' || pathname === '/likes') return true
@@ -83,6 +85,28 @@ function AppContent() {
   // sinon on voit un flash "Mon compte" en haut quand on change d’onglet sur un profil public
   const routeTransitionKey = location.pathname
   const isAuthPage = location.pathname.startsWith('/auth/')
+
+  // Évite le flash où le contenu passe sous les headers fixes au changement de page (mobile)
+  useLayoutEffect(() => {
+    const resetTop = () => {
+      window.scrollTo(0, 0)
+
+      const main = document.getElementById('main-content')
+      if (main) main.scrollTop = 0
+
+      // Réinitialiser les conteneurs scrollables les plus utilisés
+      document.querySelectorAll<HTMLElement>(
+        '.page-content, .publish-content-wrapper, .home-scrollable, .messages-content-wrapper, .profile-scrollable, .notifications-scrollable'
+      ).forEach((el) => {
+        el.scrollTop = 0
+      })
+    }
+
+    resetTop()
+    const raf = requestAnimationFrame(resetTop)
+    return () => cancelAnimationFrame(raf)
+  }, [location.pathname])
+
   const isMobile = useIsMobile()
   const prevAuthTransitionRef = useRef(showAuthTransition)
 
@@ -113,6 +137,17 @@ function AppContent() {
     reminder != null &&
     isReminderRoute(location.pathname) &&
     !cookiesConsent.showModal
+
+  // Conserver la dernière page de l'application (hors auth) pour le bouton retour des écrans auth.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (isAuthPage) return
+    try {
+      sessionStorage.setItem(LAST_APP_ROUTE_KEY, `${location.pathname}${location.search}${location.hash}`)
+    } catch {
+      // ignore
+    }
+  }, [isAuthPage, location.pathname, location.search, location.hash])
 
   useEffect(() => {
     if (isConsentInfoPage) return

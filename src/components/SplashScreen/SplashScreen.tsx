@@ -3,6 +3,7 @@
  * Phrase clé « Un projet, une annonce, une rencontre » affichée ligne par ligne.
  */
 import { useEffect } from 'react'
+import { AuthBackground } from '../Auth/AuthBackground'
 import './SplashScreen.css'
 
 const APP_NAME = 'Ollync'
@@ -21,6 +22,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
   return (
     <div className="splash-screen" role="img" aria-label="Ollync">
+      <AuthBackground />
       <div className="splash-screen__content">
         <h1 className="splash-screen__title">{APP_NAME}</h1>
         <p className="splash-screen__tagline" aria-hidden="true">
