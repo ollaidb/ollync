@@ -1,4 +1,5 @@
 .messages-page-container {
+  min-height: 100dvh;
   min-height: 100vh;
   background-color: var(--background);
   display: flex;
@@ -224,6 +225,7 @@
 
 /* Page de conversation (1-1) */
 .conversation-page {
+  height: 100dvh;
   height: 100vh;
   display: flex;
   flex-direction: column;

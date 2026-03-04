@@ -23,8 +23,15 @@
   isolation: isolate;
   transform: translateZ(0);
   contain: layout style paint;
-  background: var(--splash-bg);
+  background: transparent;
   animation: splash-evaporate 1.2s ease-out 4s forwards;
+}
+
+/* Le fond animé doit vivre dans la couche du splash (et non derrière l'app). */
+.splash-screen .auth-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
 
 /* iOS Safari : remplir la zone visible quand la barre d’URL est visible */

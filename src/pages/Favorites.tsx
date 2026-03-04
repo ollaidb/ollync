@@ -293,21 +293,42 @@ const Favorites = () => {
   }, [user, activeTab, fetchLikedPosts, fetchFollowedProfiles])
 
   useEffect(() => {
-    if (!headerRef.current || !containerRef.current) return
+    if (!user) return
+    const headerEl = headerRef.current
+    const containerEl = containerRef.current
+    if (!headerEl || !containerEl) return
+
     const updateOffset = () => {
-      const height = headerRef.current?.offsetHeight || 0
-      containerRef.current?.style.setProperty('--favorites-header-offset', `${height}px`)
+      const height = headerEl.getBoundingClientRect().height || 0
+      containerEl.style.setProperty('--favorites-header-offset', `${Math.ceil(height)}px`)
     }
+
     updateOffset()
+    const raf1 = requestAnimationFrame(updateOffset)
+    const raf2 = requestAnimationFrame(updateOffset)
+
     const observer =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null
-    observer?.observe(headerRef.current)
+    observer?.observe(headerEl)
+
+    const viewport = window.visualViewport
     window.addEventListener('resize', updateOffset)
+    window.addEventListener('orientationchange', updateOffset)
+    window.addEventListener('pageshow', updateOffset)
+    viewport?.addEventListener('resize', updateOffset)
+    viewport?.addEventListener('scroll', updateOffset)
+
     return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
       observer?.disconnect()
       window.removeEventListener('resize', updateOffset)
+      window.removeEventListener('orientationchange', updateOffset)
+      window.removeEventListener('pageshow', updateOffset)
+      viewport?.removeEventListener('resize', updateOffset)
+      viewport?.removeEventListener('scroll', updateOffset)
     }
-  }, [])
+  }, [user, activeTab])
   
   useEffect(() => {
     const nextTab = getTabFromParams()

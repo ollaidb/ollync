@@ -4,12 +4,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Send, Calendar, Plus, Loader, Film, X, Megaphone, FileText, ChevronUp, ChevronDown, Trash2, Reply } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { useConsent } from '../../hooks/useConsent'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import { checkModerationTextFromDb } from '../../utils/moderation'
 import { hapticSuccess } from '../../utils/haptic'
 import ConsentModal from '../ConsentModal'
 import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import CalendarPicker from './CalendarPicker'
 import PostSelector from './PostSelector'
+import { SmartSuggestionBar } from '../Mobile/SmartSuggestionBar'
 import './MessageInput.css'
 
 export interface MentionableMember {
@@ -173,25 +175,17 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
   const mediaInputRef = useRef<HTMLInputElement>(null)
-  const messageTextareaRef = useRef<HTMLTextAreaElement>(null)
-  const messageInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionStartIndex, setMentionStartIndex] = useState(0)
   const [mentionHighlightIndex, setMentionHighlightIndex] = useState(0)
+  const [messageCursorPosition, setMessageCursorPosition] = useState(0)
+  const isMobile = useIsMobile()
 
   // Hooks de consentement
   const mediaConsent = useConsent('media')
   const messagingConsent = useConsent('messaging')
-
-
-  useEffect(() => {
-    const textarea = messageTextareaRef.current
-    if (!textarea) return
-    textarea.style.height = '0px'
-    const nextHeight = Math.min(textarea.scrollHeight, 150)
-    textarea.style.height = `${Math.max(nextHeight, 24)}px`
-  }, [message])
 
   useEffect(() => {
     if (openCalendarOnMount) {
@@ -681,10 +675,11 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     return name.includes(mentionQuery.toLowerCase())
   })
 
-  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     const cursor = e.target.selectionStart ?? value.length
     setMessage(value)
+    setMessageCursorPosition(cursor)
     if (mentionableMembers.length === 0) return
     const textBeforeCursor = value.slice(0, cursor)
     const lastAt = textBeforeCursor.lastIndexOf('@')
@@ -718,7 +713,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     })
   }
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mentionOpen && filteredMentionMembers.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -741,18 +736,52 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
         return
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
       void sendMessageWithConsent('text')
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      if (!mentionOpen) void sendMessageWithConsent('text')
-    }
+  const handleInsertSuggestion = (suggestion: string) => {
+    const input = messageInputRef.current
+    const selectionStart = input?.selectionStart ?? messageCursorPosition ?? message.length
+    const selectionEnd = input?.selectionEnd ?? selectionStart
+    const before = message.slice(0, selectionStart)
+    const after = message.slice(selectionEnd)
+    const tokenMatch = before.match(/([A-Za-zÀ-ÖØ-öø-ÿ0-9'-]{1,32})$/)
+    const tokenStart = tokenMatch ? selectionStart - tokenMatch[1].length : selectionStart
+    const prefix = message.slice(0, tokenStart)
+    const nextMessage = `${prefix}${suggestion} ${after}`
+    const nextCursor = prefix.length + suggestion.length + 1
+
+    setMessage(nextMessage)
+    setMentionOpen(false)
+    setMentionQuery('')
+    setMessageCursorPosition(nextCursor)
+
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus()
+      messageInputRef.current?.setSelectionRange(nextCursor, nextCursor)
+    })
   }
+
+  useEffect(() => {
+    const input = messageInputRef.current
+    if (!input) return
+    const styles = window.getComputedStyle(input)
+    const lineHeight = parseFloat(styles.lineHeight || '22') || 22
+    const paddingTop = parseFloat(styles.paddingTop || '0') || 0
+    const paddingBottom = parseFloat(styles.paddingBottom || '0') || 0
+    const borderTop = parseFloat(styles.borderTopWidth || '0') || 0
+    const borderBottom = parseFloat(styles.borderBottomWidth || '0') || 0
+    const maxVisibleLines = isMobile ? 5 : 8
+    const maxHeight = (lineHeight * maxVisibleLines) + paddingTop + paddingBottom + borderTop + borderBottom
+
+    input.style.height = 'auto'
+    const nextHeight = Math.min(input.scrollHeight, maxHeight)
+    input.style.height = `${nextHeight}px`
+    input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden'
+  }, [message, isMobile])
 
   const handleCalendarSubmit = async () => {
     if (!appointmentDate || !appointmentTime || !appointmentTitle.trim()) {
@@ -1029,16 +1058,17 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           <Plus size={20} aria-hidden />
         </button>
         <div className="message-input-field-wrapper">
-          <input
+          <textarea
             ref={messageInputRef}
-            type="text"
             value={message}
             onChange={handleMessageChange}
             onKeyDown={handleInputKeyDown}
-            onKeyPress={handleKeyPress}
+            onSelect={(event) => setMessageCursorPosition((event.target as HTMLTextAreaElement).selectionStart ?? 0)}
+            onClick={(event) => setMessageCursorPosition((event.target as HTMLTextAreaElement).selectionStart ?? 0)}
             placeholder="Message..."
             disabled={disabled || sending}
             className="message-input-field"
+            rows={1}
           />
           {mentionOpen && mentionableMembers.length > 0 && (
             <div className="message-mention-dropdown" role="listbox">
@@ -1075,6 +1105,15 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           )}
         </button>
       </div>
+      {isMobile && (
+        <SmartSuggestionBar
+          value={message}
+          cursorPosition={messageCursorPosition}
+          context="message"
+          onSelectSuggestion={handleInsertSuggestion}
+          disabled={disabled || sending}
+        />
+      )}
 
       <input
         ref={mediaInputRef}

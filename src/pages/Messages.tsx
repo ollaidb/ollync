@@ -326,21 +326,40 @@ const Messages = () => {
   }, [activeFilter, markTypesAsRead, user])
 
   useEffect(() => {
-    if (!headerRef.current || !containerRef.current) return
+    const headerEl = headerRef.current
+    const containerEl = containerRef.current
+    if (!headerEl || !containerEl) return
+
     const updateOffset = () => {
-      const height = headerRef.current?.offsetHeight || 0
-      containerRef.current?.style.setProperty('--messages-header-offset', `${height}px`)
+      const height = headerEl.getBoundingClientRect().height || 0
+      containerEl.style.setProperty('--messages-header-offset', `${Math.ceil(height)}px`)
     }
+
     updateOffset()
+    const raf1 = requestAnimationFrame(updateOffset)
+    const raf2 = requestAnimationFrame(updateOffset)
     const observer =
       typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null
-    observer?.observe(headerRef.current)
+    observer?.observe(headerEl)
+
+    const viewport = window.visualViewport
     window.addEventListener('resize', updateOffset)
+    window.addEventListener('orientationchange', updateOffset)
+    window.addEventListener('pageshow', updateOffset)
+    viewport?.addEventListener('resize', updateOffset)
+    viewport?.addEventListener('scroll', updateOffset)
+
     return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
       observer?.disconnect()
       window.removeEventListener('resize', updateOffset)
+      window.removeEventListener('orientationchange', updateOffset)
+      window.removeEventListener('pageshow', updateOffset)
+      viewport?.removeEventListener('resize', updateOffset)
+      viewport?.removeEventListener('scroll', updateOffset)
     }
-  }, [])
+  }, [isConversationView, isInfoView, isMediaView, isAppointmentsView, isContractsView, isPostsView, user])
 
   useEffect(() => {
     if (user) {
@@ -488,25 +507,32 @@ const Messages = () => {
   }, [messages])
 
   useEffect(() => {
-    if (!inputContainerRef.current) return
+    const inputEl = inputContainerRef.current
+    const listEl = messagesListRef.current
+    if (!inputEl || !listEl) return
+
     const updateOffset = () => {
-      if (!inputContainerRef.current || !messagesListRef.current) return
-      const baseHeight = inputContainerRef.current.getBoundingClientRect().height + 16
+      const baseHeight = inputEl.getBoundingClientRect().height + 16
       let keyboardGap = 0
       if (window.visualViewport) {
         const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop
         keyboardGap = Math.max(0, window.innerHeight - viewportBottom)
       }
       const height = baseHeight + keyboardGap
-      messagesListRef.current.style.setProperty('--messages-input-offset', `${height}px`)
+      listEl.style.setProperty('--messages-input-offset', `${Math.ceil(height)}px`)
       if (shouldScrollToBottomRef.current || keyboardGap > 0) {
         scheduleScrollToBottom('end')
       }
     }
+
     updateOffset()
+    const raf = requestAnimationFrame(updateOffset)
     const observer = new ResizeObserver(updateOffset)
-    observer.observe(inputContainerRef.current)
+    observer.observe(inputEl)
     const viewport = window.visualViewport
+    window.addEventListener('resize', updateOffset)
+    window.addEventListener('orientationchange', updateOffset)
+    window.addEventListener('pageshow', updateOffset)
     if (viewport) {
       viewport.addEventListener('resize', updateOffset)
       viewport.addEventListener('scroll', updateOffset)
@@ -516,7 +542,11 @@ const Messages = () => {
     }
     window.addEventListener('focusin', handleFocusIn)
     return () => {
+      cancelAnimationFrame(raf)
       observer.disconnect()
+      window.removeEventListener('resize', updateOffset)
+      window.removeEventListener('orientationchange', updateOffset)
+      window.removeEventListener('pageshow', updateOffset)
       const viewport = window.visualViewport
       if (viewport) {
         viewport.removeEventListener('resize', updateOffset)
@@ -525,7 +555,7 @@ const Messages = () => {
       window.removeEventListener('focusin', handleFocusIn)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
-  }, [])
+  }, [isConversationView, conversationId, selectedConversation?.id])
 
   useEffect(() => {
     if (openAppointment && (selectedConversation || conversationId)) {
@@ -4827,8 +4857,8 @@ const Messages = () => {
                             transition: messageReplySwipeOffset?.id === msg.id ? 'none' : 'transform 0.2s ease-out',
                             touchAction: 'manipulation'
                           }}
-                          onContextMenu={(event) => {
-                            event.preventDefault()
+                          onDoubleClick={() => {
+                            if (isMobile) return
                             setActiveMessage(msg)
                             setShowCustomReactionInput(false)
                             setCustomReaction('')
@@ -4885,6 +4915,7 @@ const Messages = () => {
                             }
                           }}
                           onTouchStart={(event) => {
+                            if (!isMobile) return
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
                             setMessageReplySwipeOffset((prev) => (prev != null && prev.id !== msg.id ? null : prev))
@@ -4896,6 +4927,7 @@ const Messages = () => {
                             }, 500)
                           }}
                           onTouchMove={(event) => {
+                            if (!isMobile) return
                             const touch = event.touches[0]
                             const start = messageTouchRef.current
                             if (!start) return
@@ -5142,7 +5174,6 @@ const Messages = () => {
                 <Send size={18} />
                 Transférer
               </button>
-              {!isMobile && (
               <button
                 className="message-action-item danger"
                 type="button"
@@ -5154,7 +5185,6 @@ const Messages = () => {
                 <Trash2 size={18} />
                 Supprimer
               </button>
-              )}
               <button
                 className="message-actions-close"
                 type="button"

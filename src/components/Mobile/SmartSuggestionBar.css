@@ -1,0 +1,36 @@
+.smart-suggestion-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 2px;
+  scrollbar-width: none;
+}
+
+.smart-suggestion-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.smart-suggestion-chip {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--input));
+  color: var(--foreground);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.smart-suggestion-chip:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 18%, var(--input));
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.smart-suggestion-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+

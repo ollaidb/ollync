@@ -1,6 +1,7 @@
 .favorites-page {
   flex: 1;
-  min-height: 0;
+  min-height: 100dvh;
+  min-height: 100vh;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -33,7 +34,8 @@
 
 .favorites-page-container {
   flex: 1;
-  min-height: 0;
+  min-height: 100dvh;
+  min-height: 100vh;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
