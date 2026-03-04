@@ -4857,15 +4857,9 @@ const Messages = () => {
                             transition: messageReplySwipeOffset?.id === msg.id ? 'none' : 'transform 0.2s ease-out',
                             touchAction: 'manipulation'
                           }}
-                          onDoubleClick={() => {
-                            if (isMobile) return
-                            setActiveMessage(msg)
-                            setShowCustomReactionInput(false)
-                            setCustomReaction('')
-                            setShowMessageActions(true)
-                          }}
                           onDoubleClick={(event) => {
                             event.preventDefault()
+                            if (isMobile) return
                             setActiveMessage(msg)
                             setShowCustomReactionInput(false)
                             setCustomReaction('')
