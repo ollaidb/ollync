@@ -45,6 +45,11 @@
   width: min(90vw, 280px);
 }
 
+.confirmation-modal-content--compact.delete-message-confirm-modal {
+  max-width: 320px;
+  width: min(92vw, 320px);
+}
+
 .confirmation-modal-content--bottom-sheet {
   width: min(100%, 620px);
   max-width: 100%;
@@ -251,6 +256,11 @@
   .confirmation-modal-content--compact {
     max-width: 260px;
     width: min(90vw, 260px);
+  }
+
+  .confirmation-modal-content--compact.delete-message-confirm-modal {
+    max-width: 320px;
+    width: min(94vw, 320px);
   }
 
   .confirmation-modal-content--bottom-sheet {

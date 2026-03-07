@@ -257,6 +257,10 @@
   gap: 12px;
 }
 
+.conversation-page .conversation-header.conversation-header--system .conversation-header-center > :not(.conversation-header-text) {
+  display: none !important;
+}
+
 
 .conversation-back-button {
   background: none;
@@ -1478,6 +1482,12 @@
   gap: 8px;
 }
 
+.conversation-header-spacer {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
 .conversation-header-chevron {
   color: var(--muted-foreground);
   flex-shrink: 0;
@@ -1514,18 +1524,6 @@
 @keyframes conversation-online-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.65; }
-}
-
-.conversation-header-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
-.conversation-header-logo-icon {
-  height: 20px;
-  width: auto;
 }
 
 .conversation-header-name {

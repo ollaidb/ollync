@@ -4412,11 +4412,6 @@ const Messages = () => {
               }
             }}
           >
-            {isSystemConversation && (
-              <div className="conversation-header-logo">
-                <Logo className="conversation-header-logo-icon" width={40} height={20} />
-              </div>
-            )}
             <div className="conversation-header-text">
               <div className="conversation-header-name-row">
                 <h1 className="conversation-header-name">{headerName}</h1>
@@ -4440,6 +4435,7 @@ const Messages = () => {
               <ChevronRight className="conversation-header-chevron" size={20} aria-hidden />
             )}
           </div>
+          {isSystemConversation && <div className="conversation-header-spacer" aria-hidden />}
         </div>
         {!isSystemConversation && showReportModal && (
           <div
@@ -5168,6 +5164,7 @@ const Messages = () => {
             title="Supprimer le message"
             message="Supprimer pour vous uniquement ?"
             compact
+            contentClassName="delete-message-confirm-modal"
             onConfirm={() => handleDeleteMessage(activeMessage, false)}
             onCancel={() => setShowDeleteMessageConfirm(false)}
             confirmLabel="Supprimer"
