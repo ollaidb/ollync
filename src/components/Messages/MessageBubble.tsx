@@ -49,6 +49,20 @@ const truncateCardLabel = (value?: string | null, max = 25) => {
   if (!text) return ''
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text
 }
+const isSystemSender = (
+  sender?: { email?: string | null; username?: string | null; full_name?: string | null } | null,
+  systemSenderEmail?: string
+) => {
+  const email = (sender?.email || '').trim().toLowerCase()
+  const username = (sender?.username || '').trim().toLowerCase()
+  const fullName = (sender?.full_name || '').trim().toLowerCase()
+  const systemEmail = (systemSenderEmail || '').trim().toLowerCase()
+  return (
+    (email !== '' && email === systemEmail)
+    || username === 'ollync'
+    || fullName === 'ollync'
+  )
+}
 
 interface MessageBubbleProps {
   message: {
@@ -703,7 +717,7 @@ const MessageBubbleInner = ({ message, isOwn, showAvatar = false, systemSenderEm
     <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
       {!isOwn && !isStandaloneMedia && (
         showAvatar ? (
-          (message.sender?.email || '').toLowerCase() === (systemSenderEmail || '').toLowerCase() ? (
+          isSystemSender(message.sender, systemSenderEmail) ? (
             <div className="message-avatar message-avatar-system">
               <Logo className="message-avatar-logo" width={32} height={16} />
             </div>

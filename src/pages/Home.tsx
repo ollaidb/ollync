@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabaseClient'
 import { PageMeta } from '../components/PageMeta'
 import { PullToRefresh } from '../components/PullToRefresh/PullToRefresh'
 import { SCROLL_HOME_TOP_EVENT } from '../utils/scrollToHomeTop'
+import { useToastContext } from '../contexts/ToastContext'
 import './Home.css'
 
 interface Post {
@@ -45,6 +46,7 @@ interface Post {
 const Home = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { showSuccess } = useToastContext()
   const { user } = useAuth()
   const behavioralConsent = useConsent('behavioral_data')
   const { t } = useTranslation(['categories', 'home', 'common'])
@@ -111,6 +113,19 @@ const Home = () => {
   }, [])
 
   const isOnHomePage = location.pathname === '/home' || location.pathname === '/'
+
+  useEffect(() => {
+    const state = (location.state || null) as { authToast?: string; authTransition?: boolean } | null
+    const authToast = (state?.authToast || '').trim()
+    if (!authToast) return
+
+    showSuccess(authToast)
+
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: state?.authTransition ? { authTransition: state.authTransition } : {}
+    })
+  }, [location.hash, location.pathname, location.search, location.state, navigate, showSuccess])
 
   const scrollHomeToTop = useCallback(() => {
     const scrollEl = document.querySelector('.home-scrollable') as HTMLElement | null

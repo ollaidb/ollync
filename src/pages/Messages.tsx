@@ -31,6 +31,10 @@ const SYSTEM_SENDER_EMAIL = 'binta22116@gmail.com'
 const SYSTEM_SENDER_NAME = 'Ollync'
 const isSystemUserEmail = (email?: string | null) =>
   (email || '').trim().toLowerCase() === SYSTEM_SENDER_EMAIL
+const isSystemProfile = (profile?: { email?: string | null; username?: string | null; full_name?: string | null } | null) =>
+  isSystemUserEmail(profile?.email) ||
+  (profile?.username || '').trim().toLowerCase() === 'ollync' ||
+  (profile?.full_name || '').trim().toLowerCase() === SYSTEM_SENDER_NAME.toLowerCase()
 
 interface Conversation {
   id: string
@@ -2771,7 +2775,7 @@ const Messages = () => {
         ? (currentAlias || '').trim()
         : (otherUserName !== 'Utilisateur' ? otherUserName : (otherUserUsername ? `@${otherUserUsername}` : 'Utilisateur')))
     const otherUserId = selectedConversation?.other_user?.id
-    const isSystemConversation = (selectedConversation?.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+    const isSystemConversation = isSystemProfile(selectedConversation?.other_user)
     const headerName = isSystemConversation ? SYSTEM_SENDER_NAME : displayName
     const groupCreatorName = groupCreator?.full_name || groupCreator?.username || 'le créateur'
     const groupCreatedAtLabel = selectedConversation?.created_at
@@ -5876,7 +5880,7 @@ const Messages = () => {
         ) : (
           <div className="conversations-list">
             {filteredConversations.map((conv) => {
-              const isSystemConv = (conv.other_user?.email || '').toLowerCase() === SYSTEM_SENDER_EMAIL
+              const isSystemConv = isSystemProfile(conv.other_user)
               const isGroupConv = !!conv.is_group
               const groupName = (conv.group_name || conv.name || '').trim()
               const alias = (conversationAliases[conv.id] || '').trim()

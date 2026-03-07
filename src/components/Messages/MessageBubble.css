@@ -235,6 +235,7 @@
   min-width: 120px;
   display: inline-block;
   flex: 0 1 auto;
+  white-space: pre-line;
 }
 
 .message-bubble.own p {

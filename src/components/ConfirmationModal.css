@@ -29,8 +29,8 @@
   background: var(--card);
   padding: 18px;
   border-radius: 14px;
-  width: 85vw;
-  max-width: 460px;
+  width: min(92vw, 560px);
+  max-width: 560px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
   animation: searchSheetUp 0.22s ease-out;
@@ -243,7 +243,8 @@
 /* Responsive - mobile */
 @media (max-width: 768px) {
   .confirmation-modal-content {
-    width: 90vw;
+    width: 94vw;
+    max-width: 94vw;
     padding: 18px;
   }
 
@@ -274,7 +275,7 @@
 /* Tablette et desktop - légèrement plus large */
 @media (min-width: 769px) {
   .confirmation-modal-content {
-    max-width: 480px;
+    max-width: 560px;
   }
 
   .confirmation-modal-title {

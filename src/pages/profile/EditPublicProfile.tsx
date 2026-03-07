@@ -1312,11 +1312,6 @@ const EditPublicProfile = () => {
   const performSave = async () => {
     if (!user) return
 
-    if (!profile.bio.trim()) {
-      showError('La bio est obligatoire')
-      return
-    }
-
     setSaving(true)
     
     try {
@@ -1575,7 +1570,7 @@ const EditPublicProfile = () => {
 
             {/* Bio & Description */}
             <div className={`form-group ${fromProfileProgress && missingCompletionSections.bio ? 'profile-progress-missing' : ''}`}>
-              <label htmlFor="bio">Bio *</label>
+              <label htmlFor="bio">Bio</label>
               <textarea
                 id="bio"
                 value={profile.bio}

@@ -24,6 +24,8 @@ const Register = () => {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [submitAttempted, setSubmitAttempted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const appBackTarget = (() => {
@@ -163,9 +165,11 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccessMessage('')
+    setSubmitAttempted(true)
 
     // Validation de l'email
-    if (!validateEmail(email)) {
+    if (!email.trim() || !validateEmail(email)) {
       setError('Veuillez entrer une adresse email valide')
       return
     }
@@ -216,6 +220,7 @@ const Register = () => {
       if (authError) throw authError
 
       if (authData.user) {
+        const hasActiveSession = Boolean(authData.session?.access_token)
         // Le trigger crée automatiquement le profil
         // On attend un peu pour laisser le trigger s'exécuter, puis on vérifie
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -252,8 +257,25 @@ const Register = () => {
             .eq('id', authData.user.id)
         }
 
-        alert('Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.')
-        navigate(`/auth/login?returnTo=${encodeURIComponent(appBackTarget)}`)
+        if (hasActiveSession) {
+          // Fallback immédiat: si le trigger SQL prend du retard, on force l'envoi du message de bienvenue.
+          try {
+            await (supabase.rpc as any)('create_welcome_message', { p_user_id: authData.user.id })
+          } catch (welcomeErr) {
+            console.warn('Fallback welcome message failed:', welcomeErr)
+          }
+          navigate('/home', {
+            replace: true,
+            state: {
+              authTransition: true,
+              authToast: 'Connexion validée'
+            }
+          })
+          return
+        }
+
+        setSuccessMessage('Compte créé avec succès. Vérifiez votre email pour confirmer votre compte.')
+        return
       }
     } catch (err: unknown) {
       let errorMessage = 'Erreur lors de l\'inscription'
@@ -277,6 +299,12 @@ const Register = () => {
       setLoading(false)
     }
   }
+
+  const usernameHasError = submitAttempted && !username.trim()
+  const emailHasError = submitAttempted && (!email.trim() || !validateEmail(email))
+  const passwordHasError = submitAttempted && (!password || !passwordStrength.isValid)
+  const confirmPasswordHasError = submitAttempted && (!confirmPassword || password !== confirmPassword)
+  const conditionsHasError = submitAttempted && !acceptAllConditions
 
   return (
     <>
@@ -340,6 +368,20 @@ const Register = () => {
               {error}
             </div>
           )}
+          {successMessage && (
+            <div className="auth-success-card" role="status" aria-live="polite">
+              <h3>Inscription réussie</h3>
+              <p>{successMessage}</p>
+              <button
+                type="button"
+                className="auth-success-action"
+                onClick={() => navigate(`/auth/login?returnTo=${encodeURIComponent(appBackTarget)}`)}
+                disabled={loading}
+              >
+                Aller à la connexion
+              </button>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="username">Nom d'utilisateur *</label>
@@ -351,6 +393,7 @@ const Register = () => {
               placeholder="jeandupont"
               required
               disabled={loading}
+              className={usernameHasError ? 'input-error' : ''}
             />
           </div>
 
@@ -364,7 +407,7 @@ const Register = () => {
               placeholder="votre@email.com"
               required
               disabled={loading}
-              className={email && !validateEmail(email) ? 'input-error' : ''}
+              className={emailHasError || (email && !validateEmail(email)) ? 'input-error' : ''}
             />
             {email && !validateEmail(email) && (
               <span className="input-error-message">Format d'email invalide</span>
@@ -398,7 +441,7 @@ const Register = () => {
                 placeholder="••••••••"
                 required
                 disabled={loading}
-                className={`password-input ${password && !passwordStrength.isValid ? 'input-error' : ''}`}
+                className={`password-input ${passwordHasError || (password && !passwordStrength.isValid) ? 'input-error' : ''}`}
               />
               {password.length > 0 && (
               <button
@@ -449,7 +492,7 @@ const Register = () => {
                 required
                 minLength={6}
                 disabled={loading}
-                className="password-input"
+                className={`password-input ${confirmPasswordHasError ? 'input-error' : ''}`}
               />
               {confirmPassword.length > 0 && (
               <button
@@ -467,7 +510,7 @@ const Register = () => {
 
           {/* Bloc Conditions obligatoires - une seule fois en bas après le remplissage */}
           <div className="conditions-block">
-            <div className="condition-item">
+            <div className={`condition-item ${conditionsHasError ? 'input-error' : ''}`}>
               <label className="condition-label">
                 <input
                   type="checkbox"
@@ -498,15 +541,7 @@ const Register = () => {
           <button
             type="submit"
             className="auth-button"
-            disabled={
-              loading || 
-              !email.trim() ||
-              !validateEmail(email) ||
-              !username.trim() ||
-              !password ||
-              !passwordStrength.isValid ||
-              password !== confirmPassword
-            }
+            disabled={loading}
           >
             {loading ? (
               <>
