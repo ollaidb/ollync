@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import type { MouseEvent, TouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
-import { Users, Download, AlertCircle, Eye, Trash2, Share2, Search, Send, ChevronDown } from 'lucide-react'
+import { Users, Download, AlertCircle, Eye, Trash2, Share2, Search, Send, ChevronDown, Save } from 'lucide-react'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../hooks/useSupabase'
@@ -27,6 +27,13 @@ const getDraftDisplayName = (draft: ContractDraftSnapshot | null | undefined) =>
   if (contractName) return contractName
   const selectedOption = String(snapshot.selected_option || '')
   return selectedOption ? `Brouillon • ${selectedOption.replace(':', ' ')}` : 'Brouillon sans titre'
+}
+
+const isMissingContractDurationError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false
+  const maybeError = error as { message?: string; details?: string }
+  const text = `${maybeError.message || ''} ${maybeError.details || ''}`.toLowerCase()
+  return text.includes('contract_duration') && text.includes('does not exist')
 }
 
 interface ProfileSummary {
@@ -156,9 +163,8 @@ const Contracts = () => {
   const draftParam = searchParams.get('draft')
   const draftNameParam = searchParams.get('draftName')
   const shouldAcceptSharedContract = searchParams.get('acceptContract') === '1'
-  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create')
+  const [activeTab, setActiveTab] = useState<'create' | 'savedDrafts' | 'list'>('create')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentUserProfile, setCurrentUserProfile] = useState<ProfileSummary | null>(null)
 
@@ -226,7 +232,10 @@ const Contracts = () => {
   const [shareConversations, setShareConversations] = useState<ContractShareConversation[]>([])
   const [selectedShareConversationId, setSelectedShareConversationId] = useState<string | null>(null)
   const [sharingContract, setSharingContract] = useState(false)
-  const [showDraftsPanel, setShowDraftsPanel] = useState(false)
+  const [savingContract, setSavingContract] = useState(false)
+  const [contractToShare, setContractToShare] = useState<ContractRecord | null>(null)
+  const [draftActionTarget, setDraftActionTarget] = useState<ContractDraftRow | null>(null)
+  const [savedContractActionTarget, setSavedContractActionTarget] = useState<ContractRecord | null>(null)
   const [showContractPreviewPanel, setShowContractPreviewPanel] = useState(true)
   const [postSelectionWarning, setPostSelectionWarning] = useState(false)
 
@@ -615,7 +624,7 @@ const Contracts = () => {
   const loadContracts = useCallback(async () => {
     if (!user) return
     try {
-      const { data, error: contractsError } = await supabase
+      let { data, error: contractsError } = await supabase
         .from('contracts')
         .select(
           `
@@ -670,6 +679,65 @@ const Contracts = () => {
         )
         .or(`creator_id.eq.${user.id},counterparty_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
+
+      if (contractsError && isMissingContractDurationError(contractsError)) {
+        const fallback = await supabase
+          .from('contracts')
+          .select(
+            `
+            id,
+            post_id,
+            application_id,
+            creator_id,
+            counterparty_id,
+            contract_type,
+            payment_type,
+            price,
+            revenue_share_percentage,
+            exchange_service,
+            contract_content,
+            custom_clauses,
+            status,
+            agreement_confirmed,
+            created_at,
+            post:posts(title),
+            counterparty:profiles!contracts_counterparty_id_fkey(
+              id,
+              username,
+              full_name,
+              avatar_url,
+              email,
+              phone,
+              contract_full_name,
+              contract_email,
+              contract_phone,
+              contract_city,
+              contract_country,
+              contract_siren,
+              contract_signature
+            ),
+            creator:profiles!contracts_creator_id_fkey(
+              id,
+              username,
+              full_name,
+              avatar_url,
+              email,
+              phone,
+              contract_full_name,
+              contract_email,
+              contract_phone,
+              contract_city,
+              contract_country,
+              contract_siren,
+              contract_signature
+            )
+          `
+          )
+          .or(`creator_id.eq.${user.id},counterparty_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+        data = fallback.data
+        contractsError = fallback.error
+      }
 
       if (contractsError) {
         console.error('Error loading contracts:', contractsError)
@@ -789,6 +857,42 @@ const Contracts = () => {
     user
   ])
 
+  const sendContractShareMessageToConversation = useCallback(
+    async ({
+      contractId,
+      conversationId,
+      contractLabel,
+      contractContent,
+      contractStatus
+    }: {
+      contractId: string
+      conversationId: string
+      contractLabel?: string | null
+      contractContent?: string | null
+      contractStatus?: string | null
+    }) => {
+      if (!user) return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('messages') as any).insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        message_type: 'contract_share',
+        content: (contractLabel || '').trim() ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
+        shared_contract_id: contractId,
+        calendar_request_data: {
+          kind: 'contract_share_snapshot',
+          contract_title: (contractLabel || '').trim() || null,
+          contract_content: contractContent || null,
+          status: contractStatus || null
+        }
+      })
+      if (error) {
+        throw error
+      }
+    },
+    [user]
+  )
+
   const findOrCreateDirectConversation = useCallback(
     async (otherUserId: string, postId?: string | null) => {
       if (!user) return null
@@ -847,62 +951,15 @@ const Contracts = () => {
       const conversation = await findOrCreateDirectConversation(counterpartyId, postId || null)
       if (!conversation || !(conversation as { id?: string }).id) return
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('messages') as any).insert({
-        conversation_id: (conversation as { id: string }).id,
-        sender_id: user.id,
-        message_type: 'contract_share',
-        content: (contractLabel || '').trim() ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
-        shared_contract_id: contractId,
-        calendar_request_data: {
-          kind: 'contract_share_snapshot',
-          contract_title: (contractLabel || '').trim() || null,
-          contract_content: contractContent || null,
-          status: contractStatus || null
-        }
+      await sendContractShareMessageToConversation({
+        contractId,
+        conversationId: (conversation as { id: string }).id,
+        contractLabel,
+        contractContent,
+        contractStatus
       })
-
-      if (error) {
-        console.error('Error sending contract share message:', error)
-      }
     },
-    [findOrCreateDirectConversation, user]
-  )
-
-  const sendContractShareMessageToConversation = useCallback(
-    async ({
-      contractId,
-      conversationId,
-      contractLabel,
-      contractContent,
-      contractStatus
-    }: {
-      contractId: string
-      conversationId: string
-      contractLabel?: string | null
-      contractContent?: string | null
-      contractStatus?: string | null
-    }) => {
-      if (!user) return
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('messages') as any).insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        message_type: 'contract_share',
-        content: (contractLabel || '').trim() ? `Contrat partagé • ${contractLabel}` : 'Contrat partagé',
-        shared_contract_id: contractId,
-        calendar_request_data: {
-          kind: 'contract_share_snapshot',
-          contract_title: (contractLabel || '').trim() || null,
-          contract_content: contractContent || null,
-          status: contractStatus || null
-        }
-      })
-      if (error) {
-        throw error
-      }
-    },
-    [user]
+    [findOrCreateDirectConversation, sendContractShareMessageToConversation, user]
   )
 
   const loadShareConversations = useCallback(async () => {
@@ -2141,25 +2198,38 @@ const Contracts = () => {
       contractKind: resolvedContractType
     })
 
+    const basePayload = {
+      post_id: post.id,
+      application_id: applicationId || null,
+      creator_id: user?.id,
+      counterparty_id: counterparty.id,
+      contract_type: resolvedContractType,
+      payment_type: resolvedPaymentType,
+      price: priceValue ? Number(priceValue) : null,
+      revenue_share_percentage: revenueShare ? Number(revenueShare) : null,
+      exchange_service: exchangeService.trim() || null,
+      contract_content: contractContent,
+      custom_clauses: customClauses.trim() || null,
+      status: agreementConfirmed ? 'confirmed' : 'generated',
+      agreement_confirmed: agreementConfirmed
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: createdContracts, error: insertError } = await (supabase.from('contracts') as any)
+    let { data: createdContracts, error: insertError } = await (supabase.from('contracts') as any)
       .insert({
-        post_id: post.id,
-        application_id: applicationId || null,
-        creator_id: user?.id,
-        counterparty_id: counterparty.id,
-        contract_type: resolvedContractType,
-        payment_type: resolvedPaymentType,
-        price: priceValue ? Number(priceValue) : null,
-        revenue_share_percentage: revenueShare ? Number(revenueShare) : null,
-        exchange_service: exchangeService.trim() || null,
-        contract_content: contractContent,
-        custom_clauses: customClauses.trim() || null,
-        contract_duration: contractDuration.trim() || null,
-        status: agreementConfirmed ? 'confirmed' : 'generated',
-        agreement_confirmed: agreementConfirmed
+        ...basePayload,
+        contract_duration: contractDuration.trim() || null
       })
       .select()
+
+    if (insertError && isMissingContractDurationError(insertError)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fallback = await (supabase.from('contracts') as any)
+        .insert(basePayload)
+        .select()
+      createdContracts = fallback.data
+      insertError = fallback.error
+    }
 
     if (insertError) throw insertError
     const created = (createdContracts || [])[0] as ContractRecord | undefined
@@ -2167,86 +2237,52 @@ const Contracts = () => {
     return created || null
   }
 
-  const handleGenerateContracts = async () => {
-    if (!user || !selectedContext) return
-    setSaving(true)
-    setError(null)
+  const hydrateFormFromContract = (targetContract: ContractRecord) => {
+    let nextSelectedOption = ''
+    const applicantMatch = targetContract.application_id
+      ? acceptedAsApplicant.find((app) => app.id === targetContract.application_id)
+      : null
+    const ownerPostMatch = targetContract.post_id
+      ? ownedPosts.find((post) => post.id === targetContract.post_id)
+      : null
 
-    try {
-      const creatorWithContractDetails = resolveCreatorProfile()
-      if (!creatorWithContractDetails) {
-        setSaving(false)
-        return
+    if (applicantMatch) {
+      nextSelectedOption = `applicant:${applicantMatch.id}`
+      setSelectedApplicants({})
+    } else if (ownerPostMatch) {
+      nextSelectedOption = `owner:${ownerPostMatch.id}`
+      if (targetContract.application_id) {
+        setSelectedApplicants({ [targetContract.application_id]: true })
+      } else {
+        setSelectedApplicants({})
       }
-
-      if (selectedContext.mode === 'owner') {
-        if (selectedApplicantsList.length === 0) {
-          setError('Sélectionnez au moins un participant accepté.')
-          setSaving(false)
-          return
-        }
-
-        for (const application of selectedApplicantsList) {
-          if (!application.applicant) continue
-          const created = await createContractForCounterparty({
-            creatorWithContractDetails,
-            counterparty: application.applicant,
-            post: selectedContext.post,
-            applicationId: application.id
-          })
-
-          if (created) {
-            setContracts((prev) => [created, ...prev])
-            await sendContractShareMessage({
-              contractId: created.id,
-              counterpartyId: application.applicant.id,
-              postId: selectedContext.post.id,
-              contractLabel: buildCurrentContractTitle(),
-              contractContent: created.contract_content,
-              contractStatus: created.status
-            })
-          }
-        }
-      }
-
-      if (selectedContext.mode === 'applicant') {
-        const created = await createContractForCounterparty({
-          creatorWithContractDetails,
-          counterparty: selectedContext.owner,
-          post: selectedContext.post,
-          applicationId: selectedContext.application.id
-        })
-
-        if (created) {
-          setContracts((prev) => [created, ...prev])
-          await sendContractShareMessage({
-            contractId: created.id,
-            counterpartyId: selectedContext.owner.id,
-            postId: selectedContext.post.id,
-            contractLabel: buildCurrentContractTitle(),
-            contractContent: created.contract_content,
-            contractStatus: created.status
-          })
-        }
-      }
-
-      handleResetForm()
-      setActiveTab('list')
-      showSuccess('Contrat généré, enregistré et envoyé dans la messagerie.')
-    } catch (err) {
-      console.error('Error generating contract:', err)
-      setError('Impossible de générer le contrat pour le moment.')
-    } finally {
-      setSaving(false)
+    } else {
+      setError('Impossible de charger ce contrat (annonce/candidature manquante).')
+      return
     }
+
+    skipNextDraftSave.current = true
+    setActiveDraftId(null)
+    setSelectedOption(nextSelectedOption)
+    setContractType(targetContract.contract_type || 'auto')
+    setSelectedPaymentType(targetContract.payment_type || '')
+    setContractName(extractContractNameFromContent(targetContract.contract_content) || '')
+    setPriceValue(targetContract.price != null ? String(targetContract.price) : '')
+    setRevenueShare(targetContract.revenue_share_percentage != null ? String(targetContract.revenue_share_percentage) : '')
+    setExchangeService(targetContract.exchange_service || '')
+    setContractDuration(targetContract.contract_duration || '')
+    setCustomClauses(targetContract.custom_clauses || '')
+    setAgreementConfirmed(Boolean(targetContract.agreement_confirmed))
+    setActiveTab('create')
   }
 
-  const handleOpenShareModal = async () => {
-    if (!selectedContext) {
+  const handleOpenShareModal = async (existingContract?: ContractRecord | null) => {
+    if (!existingContract && !selectedContext) {
       flagMissingPostSelection()
       return
     }
     setError(null)
+    setContractToShare(existingContract || null)
     setShareConversations([])
     setShareConversationsLoading(true)
     setShareModalOpen(true)
@@ -2257,20 +2293,39 @@ const Contracts = () => {
 
   const handleShareContractToConversation = async () => {
     if (!user || !selectedShareConversationId) return
-    if (!selectedContext) {
+    if (!selectedContext && !contractToShare) {
       flagMissingPostSelection()
-      return
-    }
-    const selectedConversation = shareConversations.find((conv) => conv.id === selectedShareConversationId)
-    const targetProfile = selectedConversation?.other_user
-    if (!targetProfile?.id) {
-      setError('Impossible de déterminer le profil destinataire.')
       return
     }
 
     setSharingContract(true)
     setError(null)
     try {
+      if (contractToShare) {
+        await sendContractShareMessageToConversation({
+          contractId: contractToShare.id,
+          conversationId: selectedShareConversationId,
+          contractLabel: extractContractNameFromContent(contractToShare.contract_content) || null,
+          contractContent: contractToShare.contract_content,
+          contractStatus: contractToShare.status
+        })
+        setShareModalOpen(false)
+        setContractToShare(null)
+        showSuccess('Contrat partagé dans la conversation.')
+        return
+      }
+
+      const selectedConversation = shareConversations.find((conv) => conv.id === selectedShareConversationId)
+      const targetProfile = selectedConversation?.other_user
+      if (!targetProfile?.id) {
+        setError('Impossible de déterminer le profil destinataire.')
+        return
+      }
+      if (!selectedContext) {
+        flagMissingPostSelection()
+        return
+      }
+
       const creatorWithContractDetails = resolveCreatorProfile()
       if (!creatorWithContractDetails) return
 
@@ -2303,6 +2358,7 @@ const Contracts = () => {
 
       setContracts((prev) => [created, ...prev])
       setShareModalOpen(false)
+      setContractToShare(null)
       showSuccess('Contrat envoyé dans la conversation.')
     } catch (err) {
       console.error('Error sharing contract to conversation:', err)
@@ -2312,20 +2368,271 @@ const Contracts = () => {
     }
   }
 
-  const isGenerateDisabled = () => {
-    if (!selectedContext) return true
-    if (selectedContext.mode === 'owner' && selectedApplicantsList.length === 0) return true
-    if (shouldShowPrice && (!priceValue || Number(priceValue) <= 0)) return true
-    if (shouldShowRevenueShare && (!revenueShare || Number(revenueShare) <= 0 || Number(revenueShare) > 100)) {
-      return true
+  const handleSendContractByMessage = async () => {
+    if (!user || !selectedContext) {
+      flagMissingPostSelection()
+      return
     }
-    if (shouldShowExchange && exchangeService.trim().length === 0) return true
-    return false
+
+    setSharingContract(true)
+    setError(null)
+    try {
+      const creatorWithContractDetails = resolveCreatorProfile()
+      if (!creatorWithContractDetails) return
+
+      if (selectedContext.mode === 'owner') {
+        if (selectedApplicantsList.length === 0) {
+          setError('Sélectionnez au moins un participant accepté.')
+          return
+        }
+
+        for (const application of selectedApplicantsList) {
+          if (!application.applicant) continue
+          const created = await createContractForCounterparty({
+            creatorWithContractDetails,
+            counterparty: application.applicant,
+            post: selectedContext.post,
+            applicationId: application.id
+          })
+          if (!created) continue
+          setContracts((prev) => [created, ...prev])
+          await sendContractShareMessage({
+            contractId: created.id,
+            counterpartyId: application.applicant.id,
+            postId: selectedContext.post.id,
+            contractLabel: buildCurrentContractTitle(),
+            contractContent: created.contract_content,
+            contractStatus: created.status
+          })
+        }
+      } else {
+        const created = await createContractForCounterparty({
+          creatorWithContractDetails,
+          counterparty: selectedContext.owner,
+          post: selectedContext.post,
+          applicationId: selectedContext.application.id
+        })
+        if (!created) return
+        setContracts((prev) => [created, ...prev])
+        await sendContractShareMessage({
+          contractId: created.id,
+          counterpartyId: selectedContext.owner.id,
+          postId: selectedContext.post.id,
+          contractLabel: buildCurrentContractTitle(),
+          contractContent: created.contract_content,
+          contractStatus: created.status
+        })
+      }
+
+      showSuccess('Contrat envoyé par message.')
+      setActiveTab('list')
+    } catch (err) {
+      console.error('Error sending contract by message:', err)
+      setError('Impossible d’envoyer le contrat pour le moment.')
+    } finally {
+      setSharingContract(false)
+    }
   }
 
-  const canGenerateWithoutContext = !selectedContext
-  const isGenerateDisabledForFields =
-    saving || (Boolean(selectedContext) && isGenerateDisabled())
+  const handleSaveContractOnly = async () => {
+    if (!user || !selectedContext) {
+      flagMissingPostSelection()
+      return
+    }
+
+    setSavingContract(true)
+    setError(null)
+    try {
+      const creatorWithContractDetails = resolveCreatorProfile()
+      if (!creatorWithContractDetails) return
+
+      if (selectedContext.mode === 'owner') {
+        if (selectedApplicantsList.length === 0) {
+          setError('Sélectionnez au moins un participant accepté.')
+          return
+        }
+
+        for (const application of selectedApplicantsList) {
+          if (!application.applicant) continue
+          const created = await createContractForCounterparty({
+            creatorWithContractDetails,
+            counterparty: application.applicant,
+            post: selectedContext.post,
+            applicationId: application.id
+          })
+          if (created) {
+            setContracts((prev) => [created, ...prev])
+          }
+        }
+      } else {
+        const created = await createContractForCounterparty({
+          creatorWithContractDetails,
+          counterparty: selectedContext.owner,
+          post: selectedContext.post,
+          applicationId: selectedContext.application.id
+        })
+        if (created) {
+          setContracts((prev) => [created, ...prev])
+        }
+      }
+
+      setActiveTab('savedDrafts')
+      showSuccess('Contrat enregistré.')
+    } catch (err) {
+      console.error('Error saving contract:', err)
+      setError('Impossible d’enregistrer le contrat pour le moment.')
+    } finally {
+      setSavingContract(false)
+    }
+  }
+
+  const handleDeleteSavedContract = async (contractId: string) => {
+    if (!user) return
+    confirmation.confirm(
+      {
+        title: 'Supprimer le contrat',
+        message: 'Voulez-vous supprimer ce contrat ?',
+        confirmLabel: 'Supprimer',
+        cancelLabel: 'Annuler',
+        isDestructive: true
+      },
+      () => {
+        void (async () => {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: deleteError } = await (supabase.from('contracts') as any)
+              .delete()
+              .eq('id', contractId)
+              .eq('creator_id', user.id)
+
+            if (deleteError) throw deleteError
+            setContracts((prev) => prev.filter((contract) => contract.id !== contractId))
+            showSuccess('Contrat supprimé.')
+          } catch (error) {
+            console.error('Error deleting contract:', error)
+            setError('Impossible de supprimer ce contrat.')
+          }
+        })()
+      }
+    )
+  }
+
+  const createdContracts = useMemo(() => {
+    if (!user) return []
+    return contracts.filter((contract) => contract.creator_id === user.id)
+  }, [contracts, user])
+
+  const renderDraftItems = () => {
+    if (drafts.length === 0) {
+      return <div className="contracts-empty-inline">Aucun brouillon pour le moment.</div>
+    }
+
+    return (
+      <div className="contracts-drafts-list">
+        {drafts.map((draft) => {
+          const snapshot = draft.draft || {}
+          const label =
+            snapshot.contract_name?.trim() ||
+            (snapshot.selected_option ? `Brouillon • ${snapshot.selected_option.replace(':', ' ')}` : 'Brouillon sans titre')
+          return (
+            <div
+              key={draft.id}
+              className={`contracts-draft-item ${activeDraftId === draft.id ? 'active' : ''}`}
+            >
+              <button
+                type="button"
+                className="contracts-draft-main"
+                onClick={() => setDraftActionTarget(draft)}
+              >
+                <span className="contracts-draft-title">{label}</span>
+                <span className="contracts-draft-meta">
+                  Mis à jour le {formatDate(draft.updated_at)} {activeDraftId === draft.id ? '• actif' : ''}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="contracts-draft-delete"
+                aria-label="Supprimer définitivement le brouillon"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void handleDeleteDraft(draft.id)
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderSavedAndDraftsSection = () => {
+    return (
+      <div className="contracts-create">
+        <div className="contracts-section">
+          <h3>Contrats enr.</h3>
+          {createdContracts.length === 0 ? (
+            <div className="contracts-empty-inline">Aucun contrat enregistré pour le moment.</div>
+          ) : (
+            <div className="contracts-list">
+              {createdContracts.map((contract) => {
+                const contractTitle =
+                  paymentLabels[contract.contract_type] || paymentLabels[contract.payment_type || ''] || 'Contrat'
+                const counterpartyName = formatUserName(contract.counterparty)
+                return (
+                  <div
+                    key={contract.id}
+                    className="contracts-card contracts-card-clickable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSavedContractActionTarget(contract)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setSavedContractActionTarget(contract)
+                      }
+                    }}
+                  >
+                    <div className="contracts-card-header">
+                      <div>
+                        <h4>{contractTitle}</h4>
+                        <p>{contract.post?.title || 'Annonce supprimée'}</p>
+                      </div>
+                      <span className={`contracts-status ${contract.status}`}>{contract.status}</span>
+                    </div>
+                    <div className="contracts-card-details">
+                      <span>Avec : {counterpartyName}</span>
+                      <span>Créé le : {formatDate(contract.created_at)}</span>
+                    </div>
+                    <div className="contracts-card-actions">
+                      <button
+                        className="contracts-secondary-btn"
+                        onClick={() =>
+                          downloadContractPdf(
+                            contract.contract_content,
+                            `contrat_${contract.post?.title || 'collaboration'}.pdf`
+                          )
+                        }
+                      >
+                        <Download size={16} />
+                        Télécharger PDF
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="contracts-section">
+          <h3>Mes brou.</h3>
+          {renderDraftItems()}
+        </div>
+      </div>
+    )
+  }
 
   const renderContractsList = () => {
     if (contracts.length === 0) {
@@ -2432,6 +2739,12 @@ const Contracts = () => {
           Créer un contrat
         </button>
         <button
+          className={`contracts-tab ${activeTab === 'savedDrafts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('savedDrafts')}
+        >
+          Enr. / Brou.
+        </button>
+        <button
           className={`contracts-tab ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
@@ -2444,7 +2757,22 @@ const Contracts = () => {
       {activeTab === 'create' ? (
         <div className="contracts-create">
           <div className="contracts-section">
-            <h3>Informations contractuelles</h3>
+            <div className="contracts-section-header">
+              <h3>Informations contractuelles</h3>
+              <div className="contracts-section-header-actions">
+                <button
+                  type="button"
+                  className="contracts-icon-save"
+                  title="Enregistrer les informations contractuelles"
+                  aria-label="Enregistrer les informations contractuelles"
+                  onClick={handleSaveContractProfile}
+                  disabled={contractProfileSaving}
+                >
+                  <Save size={16} />
+                </button>
+                {contractProfileSaved && <span className="contracts-save-hint">Enregistré</span>}
+              </div>
+            </div>
             <p className="contracts-intro">
               {showContractIntro
                 ? 'Renseignez vos informations contractuelles. Elles seront réutilisées automatiquement lors de la création d’un contrat.'
@@ -2782,16 +3110,6 @@ const Contracts = () => {
                 </button>
               </label>
             </div>
-            <div className="contracts-actions">
-              <button
-                className="contracts-primary-btn"
-                onClick={handleSaveContractProfile}
-                disabled={contractProfileSaving}
-              >
-                {contractProfileSaving ? 'Enregistrement...' : 'Enregistrer les informations'}
-              </button>
-              {contractProfileSaved && <span className="contracts-save-hint">Enregistré</span>}
-            </div>
           </div>
 
           {selectedContext && (
@@ -2960,9 +3278,19 @@ const Contracts = () => {
               <button
                 type="button"
                 className="contracts-preview-share-icon"
+                title="Enregistrer le contrat"
+                aria-label="Enregistrer le contrat"
+                onClick={() => void handleSaveContractOnly()}
+                disabled={savingContract || sharingContract}
+              >
+                <Save size={16} />
+              </button>
+              <button
+                type="button"
+                className="contracts-preview-share-icon"
                 title="Envoyer ce contrat par message"
                 onClick={() => void handleOpenShareModal()}
-                disabled={saving}
+                disabled={savingContract || sharingContract}
               >
                 <Share2 size={16} />
               </button>
@@ -2999,16 +3327,12 @@ const Contracts = () => {
                   <button
                     type="button"
                     className="contracts-primary-btn contracts-preview-send-btn"
-                    disabled={isGenerateDisabledForFields && !canGenerateWithoutContext}
+                    disabled={savingContract || sharingContract}
                     onClick={() => {
-                      if (!selectedContext) {
-                        flagMissingPostSelection()
-                        return
-                      }
-                      void handleGenerateContracts()
+                      void handleSendContractByMessage()
                     }}
                   >
-                    {saving ? 'Envoi...' : 'Envoyer le contrat'}
+                    {sharingContract ? 'Envoi...' : 'Envoyer le contrat'}
                   </button>
                   <button
                     type="button"
@@ -3032,61 +3356,9 @@ const Contracts = () => {
             </div>
           )}
 
-          <div className="contracts-section">
-            <button
-              type="button"
-              className={`contracts-drafts-toggle ${showDraftsPanel ? 'open' : ''}`}
-              onClick={() => setShowDraftsPanel((prev) => !prev)}
-              aria-expanded={showDraftsPanel}
-            >
-              <span>{showDraftsPanel ? 'Masquer les brouillons' : 'Voir les brouillons'}</span>
-              <ChevronDown size={16} />
-            </button>
-
-            {showDraftsPanel && (
-              drafts.length === 0 ? (
-                <div className="contracts-empty-inline">Aucun brouillon pour le moment.</div>
-              ) : (
-                <div className="contracts-drafts-list">
-                  {drafts.map((draft) => {
-                    const snapshot = draft.draft || {}
-                    const label =
-                      snapshot.contract_name?.trim() ||
-                      (snapshot.selected_option ? `Brouillon • ${snapshot.selected_option.replace(':', ' ')}` : 'Brouillon sans titre')
-                    return (
-                      <div
-                        key={draft.id}
-                        className={`contracts-draft-item ${activeDraftId === draft.id ? 'active' : ''}`}
-                      >
-                        <button
-                          type="button"
-                          className="contracts-draft-main"
-                          onClick={() => handleLoadDraft(draft)}
-                        >
-                          <span className="contracts-draft-title">{label}</span>
-                          <span className="contracts-draft-meta">
-                            Mis à jour le {formatDate(draft.updated_at)} {activeDraftId === draft.id ? '• actif' : ''}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          className="contracts-draft-delete"
-                          aria-label="Supprimer définitivement le brouillon"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            void handleDeleteDraft(draft.id)
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            )}
-          </div>
         </div>
+      ) : activeTab === 'savedDrafts' ? (
+        renderSavedAndDraftsSection()
       ) : (
         renderContractsList()
       )}
@@ -3095,7 +3367,10 @@ const Contracts = () => {
         canUsePortal && createPortal((
           <div
             className="contracts-payment-sheet-overlay contracts-share-sheet-overlay"
-            onClick={() => setShareModalOpen(false)}
+            onClick={() => {
+              setShareModalOpen(false)
+              setContractToShare(null)
+            }}
           >
             <div
               className="contracts-payment-sheet contracts-share-sheet"
@@ -3152,6 +3427,80 @@ const Contracts = () => {
                 >
                   <Send size={16} />
                   {sharingContract ? 'Envoi...' : 'Envoyer le contrat'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ), document.body)
+      )}
+
+      {draftActionTarget && (
+        canUsePortal && createPortal((
+          <div className="contracts-modal-overlay" onClick={() => setDraftActionTarget(null)}>
+            <div className="contracts-modal" onClick={(event) => event.stopPropagation()}>
+              <h3>Brouillon</h3>
+              <div className="contracts-modal-actions">
+                <button
+                  className="contracts-primary-btn"
+                  type="button"
+                  onClick={() => {
+                    handleLoadDraft(draftActionTarget)
+                    setDraftActionTarget(null)
+                  }}
+                >
+                  Éditer
+                </button>
+                <button
+                  className="contracts-secondary-btn"
+                  type="button"
+                  onClick={() => {
+                    void handleDeleteDraft(draftActionTarget.id)
+                    setDraftActionTarget(null)
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        ), document.body)
+      )}
+
+      {savedContractActionTarget && (
+        canUsePortal && createPortal((
+          <div className="contracts-modal-overlay" onClick={() => setSavedContractActionTarget(null)}>
+            <div className="contracts-modal" onClick={(event) => event.stopPropagation()}>
+              <h3>Contrat</h3>
+              <div className="contracts-modal-actions">
+                <button
+                  className="contracts-primary-btn"
+                  type="button"
+                  onClick={() => {
+                    hydrateFormFromContract(savedContractActionTarget)
+                    setSavedContractActionTarget(null)
+                  }}
+                >
+                  Éditer
+                </button>
+                <button
+                  className="contracts-secondary-btn"
+                  type="button"
+                  onClick={() => {
+                    void handleOpenShareModal(savedContractActionTarget)
+                    setSavedContractActionTarget(null)
+                  }}
+                >
+                  Partager
+                </button>
+                <button
+                  className="contracts-secondary-btn"
+                  type="button"
+                  onClick={() => {
+                    void handleDeleteSavedContract(savedContractActionTarget.id)
+                    setSavedContractActionTarget(null)
+                  }}
+                >
+                  Supprimer
                 </button>
               </div>
             </div>

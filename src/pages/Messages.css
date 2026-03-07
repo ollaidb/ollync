@@ -242,7 +242,7 @@
 /* Header de conversation - uniquement dans la page de conversation */
 .conversation-page .conversation-header {
   position: fixed;
-  top: var(--messages-viewport-top, 0px);
+  top: 0;
   left: 0;
   right: 0;
   z-index: 100;

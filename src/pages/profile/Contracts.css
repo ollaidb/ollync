@@ -60,6 +60,24 @@
   font-size: 18px;
 }
 
+.contracts-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.contracts-section-header h3 {
+  margin: 0;
+}
+
+.contracts-section-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .contracts-section p {
   margin: 0 0 12px;
   color: var(--muted-foreground);
@@ -547,6 +565,24 @@
   cursor: not-allowed;
 }
 
+.contracts-icon-save {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.contracts-icon-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .contracts-preview {
   white-space: pre-wrap;
   border-radius: 14px;
@@ -887,6 +923,16 @@
 }
 
 @media (max-width: 640px) {
+  .contracts-tabs {
+    gap: 8px;
+    margin: 16px 0;
+  }
+
+  .contracts-tab {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
   .contracts-modal {
     width: min(380px, 100%);
     padding: 16px;
@@ -1027,6 +1073,14 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
+}
+
+.contracts-card-clickable {
+  cursor: pointer;
+}
+
+.contracts-card-clickable:hover {
+  border-color: var(--primary);
 }
 
 .contracts-card-highlight {

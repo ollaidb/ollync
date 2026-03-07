@@ -243,7 +243,7 @@
 /* Responsive - mobile */
 @media (max-width: 768px) {
   .confirmation-modal-content {
-    width: 85vw;
+    width: 90vw;
     padding: 18px;
   }
 

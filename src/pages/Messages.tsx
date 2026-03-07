@@ -515,16 +515,13 @@ const Messages = () => {
     const updateOffset = () => {
       const baseHeight = inputEl.getBoundingClientRect().height + 16
       let keyboardGap = 0
-      let viewportTop = 0
       if (window.visualViewport) {
         const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop
         keyboardGap = Math.max(0, window.innerHeight - viewportBottom)
-        viewportTop = Math.max(0, window.visualViewport.offsetTop)
       }
       const height = baseHeight + keyboardGap
       inputEl.style.setProperty('--messages-keyboard-gap', `${Math.ceil(keyboardGap)}px`)
       listEl.style.setProperty('--messages-input-offset', `${Math.ceil(height)}px`)
-      document.documentElement.style.setProperty('--messages-viewport-top', `${Math.ceil(viewportTop)}px`)
       if (shouldScrollToBottomRef.current || keyboardGap > 0) {
         scheduleScrollToBottom('end')
       }
@@ -560,7 +557,6 @@ const Messages = () => {
       window.removeEventListener('focusin', handleFocusIn)
       inputEl.style.removeProperty('--messages-keyboard-gap')
       listEl.style.removeProperty('--messages-input-offset')
-      document.documentElement.style.removeProperty('--messages-viewport-top')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
   }, [isConversationView, conversationId, selectedConversation?.id])
