@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, WifiOff, Trash2, UserMinus } from 'lucide-react'
@@ -292,7 +292,7 @@ const Favorites = () => {
     }
   }, [user, activeTab, fetchLikedPosts, fetchFollowedProfiles])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!user) return
     const headerEl = headerRef.current
     const containerEl = containerRef.current
@@ -327,6 +327,7 @@ const Favorites = () => {
       window.removeEventListener('pageshow', updateOffset)
       viewport?.removeEventListener('resize', updateOffset)
       viewport?.removeEventListener('scroll', updateOffset)
+      containerEl.style.removeProperty('--favorites-header-offset')
     }
   }, [user, activeTab])
   

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { Bell, Search, Sparkles, Plus, ArrowRight } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -60,6 +60,8 @@ const Home = () => {
   const [appNameClicked, setAppNameClicked] = useState(false)
   const [heroIndex, setHeroIndex] = useState(0)
   const heroSwipeStart = useRef<number | null>(null)
+  const headerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   // Sections d'annonces
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
@@ -128,6 +130,42 @@ const Home = () => {
     setTimeout(() => setAppNameClicked(false), 300)
     scrollHomeToTop()
   }, [scrollHomeToTop])
+
+  useLayoutEffect(() => {
+    const headerEl = headerRef.current
+    const containerEl = containerRef.current
+    if (!headerEl || !containerEl) return
+
+    const updateOffset = () => {
+      const height = headerEl.getBoundingClientRect().height || 0
+      containerEl.style.setProperty('--home-header-offset', `${Math.ceil(height)}px`)
+    }
+
+    updateOffset()
+    const raf1 = requestAnimationFrame(updateOffset)
+    const raf2 = requestAnimationFrame(updateOffset)
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null
+    observer?.observe(headerEl)
+
+    const viewport = window.visualViewport
+    window.addEventListener('resize', updateOffset)
+    window.addEventListener('orientationchange', updateOffset)
+    window.addEventListener('pageshow', updateOffset)
+    viewport?.addEventListener('resize', updateOffset)
+    viewport?.addEventListener('scroll', updateOffset)
+
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      observer?.disconnect()
+      window.removeEventListener('resize', updateOffset)
+      window.removeEventListener('orientationchange', updateOffset)
+      window.removeEventListener('pageshow', updateOffset)
+      viewport?.removeEventListener('resize', updateOffset)
+      viewport?.removeEventListener('scroll', updateOffset)
+      containerEl.style.removeProperty('--home-header-offset')
+    }
+  }, [isMobile, loading, unreadNotificationsCount])
 
   const HERO_SWIPE_THRESHOLD = 50
   const handleHeroSwipeStart = (clientX: number) => {
@@ -788,9 +826,9 @@ const Home = () => {
   if (loading) {
     return (
       <div className="app">
-        <div className="home-page">
+        <div className="home-page" ref={containerRef}>
           {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
-          <div className="home-header-fixed">
+          <div className="home-header-fixed" ref={headerRef}>
             {/* Nom app + Barre de recherche + Notifications (une seule ligne) */}
             <div className="home-header-top">
               <BackButton hideOnHome={true} className="home-back-button" />
@@ -879,9 +917,9 @@ const Home = () => {
     <>
       <PageMeta title={t('common:meta.home.title')} description={t('common:meta.home.description')} />
       <div className="app">
-      <div className="home-page">
+      <div className="home-page" ref={containerRef}>
         {/* HEADER FIXE - Logo, Boutons, Barre de recherche */}
-        <div className="home-header-fixed">
+        <div className="home-header-fixed" ref={headerRef}>
           {/* Nom app + Barre de recherche + Actions (une seule ligne) */}
           <div className="home-header-top">
             <BackButton hideOnHome={true} className="home-back-button" />

@@ -173,7 +173,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [appointmentDurationText, setAppointmentDurationText] = useState('01:00')
   const [appointmentTitle, setAppointmentTitle] = useState('')
   const [calendarStep, setCalendarStep] = useState<'date' | 'time'>('date')
-  const mediaInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
@@ -559,8 +558,8 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     })
   }
 
-  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleMediaSelect = async (inputEl: HTMLInputElement) => {
+    const file = inputEl.files?.[0]
     if (!file) return
 
     // Détecter automatiquement le type de fichier
@@ -574,7 +573,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       const isValidDuration = await checkVideoDuration(file)
       if (!isValidDuration) {
         alert('La vidéo ne doit pas dépasser 10 secondes')
-        e.target.value = ''
+        inputEl.value = ''
         return
       }
     } else if (
@@ -586,7 +585,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       fileType = 'document'
     } else {
       alert('Type de fichier non supporté. Veuillez sélectionner une image, une vidéo ou un document.')
-      e.target.value = ''
+      inputEl.value = ''
       return
     }
 
@@ -595,7 +594,34 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     }
 
     // Réinitialiser l'input pour permettre de sélectionner le même fichier
-    e.target.value = ''
+    inputEl.value = ''
+  }
+
+  const openMediaPicker = () => {
+    if (typeof document === 'undefined') return
+
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*,video/*,.pdf,.doc,.docx,.txt'
+    input.setAttribute('aria-hidden', 'true')
+    input.style.position = 'fixed'
+    input.style.left = '-9999px'
+    input.style.opacity = '0'
+    input.style.pointerEvents = 'none'
+
+    const cleanup = () => {
+      input.onchange = null
+      input.remove()
+    }
+
+    input.onchange = () => {
+      void handleMediaSelect(input).finally(() => {
+        cleanup()
+      })
+    }
+
+    document.body.appendChild(input)
+    input.click()
   }
 
   const handlePostSelect = async (postId: string) => {
@@ -978,7 +1004,7 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           <button
             className="message-option-btn"
             onClick={() => {
-              mediaInputRef.current?.click()
+              openMediaPicker()
               setShowOptions(false)
             }}
             title="Médias"
@@ -1077,14 +1103,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           )}
         </button>
       </div>
-      <input
-        ref={mediaInputRef}
-        type="file"
-        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-        onChange={handleMediaSelect}
-        style={{ display: 'none' }}
-      />
-
       {/* Modals de consentement */}
       <ConsentModal
         visible={mediaConsent.showModal}
