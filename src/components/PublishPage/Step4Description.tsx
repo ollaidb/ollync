@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarDays, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useIsMobile } from '../../hooks/useIsMobile'
 import { getPaymentOptionsForCategory, getPaymentOptionConfig } from '../../utils/publishHelpers'
 import { SOCIAL_NETWORKS_CONFIG } from '../../utils/socialNetworks'
 import { CustomList } from '../CustomList/CustomList'
-import { SmartSuggestionBar } from '../Mobile/SmartSuggestionBar'
 import './Step4Description.css'
 
 interface FormData {
@@ -143,11 +141,8 @@ export const Step4Description = ({
   const [isOpeningDaysOpen, setIsOpeningDaysOpen] = useState(false)
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const [keyboardInset, setKeyboardInset] = useState(0)
-  const [titleCursorPosition, setTitleCursorPosition] = useState(0)
-  const [descriptionCursorPosition, setDescriptionCursorPosition] = useState(0)
   const titleInputRef = useRef<HTMLInputElement | null>(null)
   const descriptionFieldRef = useRef<HTMLTextAreaElement | null>(null)
-  const isMobile = useIsMobile()
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const base = formData.deadline ? new Date(`${formData.deadline}T12:00:00`) : new Date()
     return new Date(base.getFullYear(), base.getMonth(), 1)
@@ -1069,36 +1064,6 @@ export const Step4Description = ({
     onContinue()
   }
 
-  const applySuggestionToField = (
-    field: 'title' | 'description',
-    suggestion: string,
-    cursorPosition: number,
-    ref: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>
-  ) => {
-    const currentValue = String(formData[field] || '')
-    const input = ref.current
-    const selectionStart = input?.selectionStart ?? cursorPosition ?? currentValue.length
-    const selectionEnd = input?.selectionEnd ?? selectionStart
-    const before = currentValue.slice(0, selectionStart)
-    const after = currentValue.slice(selectionEnd)
-    const tokenMatch = before.match(/([A-Za-zÀ-ÖØ-öø-ÿ0-9'-]{1,32})$/)
-    const tokenStart = tokenMatch ? selectionStart - tokenMatch[1].length : selectionStart
-    const prefix = currentValue.slice(0, tokenStart)
-    const nextValue = `${prefix}${suggestion} ${after}`
-    const nextCursor = prefix.length + suggestion.length + 1
-
-    onUpdateFormData({ [field]: nextValue } as Partial<FormData>)
-    if (field === 'title') setTitleCursorPosition(nextCursor)
-    if (field === 'description') setDescriptionCursorPosition(nextCursor)
-
-    requestAnimationFrame(() => {
-      const target = ref.current
-      if (!target) return
-      target.focus()
-      target.setSelectionRange(nextCursor, nextCursor)
-    })
-  }
-
   const renderBottomSheet = (
     open: boolean,
     onClose: () => void,
@@ -1151,23 +1116,9 @@ export const Step4Description = ({
           className={`form-input ${showError(titleInvalid) ? 'field-error' : ''}`}
           placeholder={titlePlaceholder}
           value={formData.title}
-          onChange={(e) => {
-            setTitleCursorPosition(e.target.selectionStart ?? e.target.value.length)
-            onUpdateFormData({ title: e.target.value })
-          }}
-          onSelect={(e) => setTitleCursorPosition((e.target as HTMLInputElement).selectionStart ?? 0)}
+          onChange={(e) => onUpdateFormData({ title: e.target.value })}
           maxLength={MAX_TITLE_CHARS}
         />
-        {isMobile && (
-          <SmartSuggestionBar
-            value={formData.title}
-            cursorPosition={titleCursorPosition}
-            context="publish"
-            onSelectSuggestion={(suggestion) =>
-              applySuggestionToField('title', suggestion, titleCursorPosition, titleInputRef)
-            }
-          />
-        )}
         <div className="form-field-meta">
           Minimum {MIN_TITLE_CHARS} caractères, maximum {MAX_TITLE_CHARS} ({titleLength}/{MAX_TITLE_CHARS})
         </div>
@@ -1254,24 +1205,10 @@ export const Step4Description = ({
             className={`form-textarea ${showError(descriptionInvalid) ? 'field-error' : ''}`}
             placeholder={descriptionPlaceholder}
             value={formData.description}
-            onChange={(e) => {
-              setDescriptionCursorPosition(e.target.selectionStart ?? e.target.value.length)
-              onUpdateFormData({ description: e.target.value })
-            }}
-            onSelect={(e) => setDescriptionCursorPosition((e.target as HTMLTextAreaElement).selectionStart ?? 0)}
+            onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
             maxLength={MAX_DESCRIPTION_CHARS}
           />
-          {isMobile && (
-            <SmartSuggestionBar
-              value={formData.description}
-              cursorPosition={descriptionCursorPosition}
-              context="publish"
-              onSelectSuggestion={(suggestion) =>
-                applySuggestionToField('description', suggestion, descriptionCursorPosition, descriptionFieldRef)
-              }
-            />
-          )}
           <div className="form-field-meta">
             Minimum {MIN_DESCRIPTION_CHARS} caractères, maximum {MAX_DESCRIPTION_CHARS} ({descriptionLength}/{MAX_DESCRIPTION_CHARS})
           </div>
@@ -1820,24 +1757,10 @@ export const Step4Description = ({
             className={`form-textarea ${showError(descriptionInvalid) ? 'field-error' : ''}`}
             placeholder={descriptionPlaceholder}
             value={formData.description}
-            onChange={(e) => {
-              setDescriptionCursorPosition(e.target.selectionStart ?? e.target.value.length)
-              onUpdateFormData({ description: e.target.value })
-            }}
-            onSelect={(e) => setDescriptionCursorPosition((e.target as HTMLTextAreaElement).selectionStart ?? 0)}
+            onChange={(e) => onUpdateFormData({ description: e.target.value })}
             rows={6}
             maxLength={MAX_DESCRIPTION_CHARS}
           />
-          {isMobile && (
-            <SmartSuggestionBar
-              value={formData.description}
-              cursorPosition={descriptionCursorPosition}
-              context="publish"
-              onSelectSuggestion={(suggestion) =>
-                applySuggestionToField('description', suggestion, descriptionCursorPosition, descriptionFieldRef)
-              }
-            />
-          )}
           <div className="form-field-meta">
             Minimum {MIN_DESCRIPTION_CHARS} caractères, maximum {MAX_DESCRIPTION_CHARS} ({descriptionLength}/{MAX_DESCRIPTION_CHARS})
           </div>

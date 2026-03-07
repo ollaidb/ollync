@@ -1,6 +1,6 @@
 .messages-page-container {
-  min-height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--background);
   display: flex;
   flex-direction: column;
@@ -225,8 +225,8 @@
 
 /* Page de conversation (1-1) */
 .conversation-page {
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2350,7 +2350,7 @@
 /* Container de l'input */
 .conversation-input-container {
   position: fixed;
-  bottom: 0;
+  bottom: var(--messages-keyboard-gap, 0px);
   left: 0;
   right: 0;
   z-index: 1000;
@@ -2386,8 +2386,9 @@
 .conversation-view {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 200px);
-  max-height: 800px;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
 }
 
 /* Conversations List */

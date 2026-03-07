@@ -6,6 +6,15 @@ import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import './i18n'
 import './index.css'
 
+const hideBootSplash = () => {
+  const bootSplash = document.getElementById('boot-splash')
+  if (!bootSplash) return
+  bootSplash.classList.add('boot-splash--hide')
+  window.setTimeout(() => {
+    bootSplash.remove()
+  }, 260)
+}
+
 const updateThemeColor = () => {
   const sample = document.createElement('div')
   sample.style.backgroundColor = 'var(--background)'
@@ -64,3 +73,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
+// Attendre un paint complet de l'app avant de retirer le pré-splash HTML.
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    hideBootSplash()
+  })
+})

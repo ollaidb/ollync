@@ -519,6 +519,7 @@ const Messages = () => {
         keyboardGap = Math.max(0, window.innerHeight - viewportBottom)
       }
       const height = baseHeight + keyboardGap
+      inputEl.style.setProperty('--messages-keyboard-gap', `${Math.ceil(keyboardGap)}px`)
       listEl.style.setProperty('--messages-input-offset', `${Math.ceil(height)}px`)
       if (shouldScrollToBottomRef.current || keyboardGap > 0) {
         scheduleScrollToBottom('end')
@@ -553,6 +554,8 @@ const Messages = () => {
         viewport.removeEventListener('scroll', updateOffset)
       }
       window.removeEventListener('focusin', handleFocusIn)
+      inputEl.style.removeProperty('--messages-keyboard-gap')
+      listEl.style.removeProperty('--messages-input-offset')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleScrollToBottom intentionally excluded
   }, [isConversationView, conversationId, selectedConversation?.id])
@@ -4865,59 +4868,21 @@ const Messages = () => {
                             setCustomReaction('')
                             setShowMessageActions(true)
                           }}
-                          onPointerDown={(event) => {
-                            if (event.pointerType !== 'touch') return
-                            messageLongPressTimerRef.current = window.setTimeout(() => {
-                              setActiveMessage(msg)
-                              setShowCustomReactionInput(false)
-                              setCustomReaction('')
-                              setShowMessageActions(true)
-                            }, 500)
-                          }}
-                          onPointerUp={() => {
-                            if (messageLongPressTimerRef.current) {
-                              window.clearTimeout(messageLongPressTimerRef.current)
-                              messageLongPressTimerRef.current = null
-                            }
-                          }}
-                          onPointerCancel={() => {
-                            if (messageLongPressTimerRef.current) {
-                              window.clearTimeout(messageLongPressTimerRef.current)
-                              messageLongPressTimerRef.current = null
-                            }
-                          }}
-
-                          onMouseDown={(event) => {
-                            if (event.button !== 0) return
-                            messageLongPressTimerRef.current = window.setTimeout(() => {
-                              setActiveMessage(msg)
-                              setShowCustomReactionInput(false)
-                              setCustomReaction('')
-                              setShowMessageActions(true)
-                            }, 450)
-                          }}
-                          onMouseUp={() => {
-                            if (messageLongPressTimerRef.current) {
-                              window.clearTimeout(messageLongPressTimerRef.current)
-                              messageLongPressTimerRef.current = null
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (messageLongPressTimerRef.current) {
-                              window.clearTimeout(messageLongPressTimerRef.current)
-                              messageLongPressTimerRef.current = null
-                            }
-                          }}
                           onTouchStart={(event) => {
                             if (!isMobile) return
+                            const target = event.target as HTMLElement | null
+                            if (target?.closest('button, a, input, textarea, [role="button"]')) return
                             const touch = event.touches[0]
                             messageTouchRef.current = { id: msg.id, startX: touch.clientX, startY: touch.clientY }
                             setMessageReplySwipeOffset((prev) => (prev != null && prev.id !== msg.id ? null : prev))
+                            if (messageLongPressTimerRef.current) {
+                              window.clearTimeout(messageLongPressTimerRef.current)
+                            }
                             messageLongPressTimerRef.current = window.setTimeout(() => {
                               setActiveMessage(msg)
                               setShowCustomReactionInput(false)
-                            setCustomReaction('')
-                            setShowMessageActions(true)
+                              setCustomReaction('')
+                              setShowMessageActions(true)
                             }, 500)
                           }}
                           onTouchMove={(event) => {
@@ -4929,7 +4894,7 @@ const Messages = () => {
                             const deltaY = touch.clientY - start.startY
                             start.deltaX = deltaX
                             start.deltaY = deltaY
-                            if (Math.abs(deltaX) > 34 || Math.abs(deltaY) > 34) {
+                            if (Math.abs(deltaX) > 12 || Math.abs(deltaY) > 12) {
                               if (messageLongPressTimerRef.current) {
                                 window.clearTimeout(messageLongPressTimerRef.current)
                                 messageLongPressTimerRef.current = null
@@ -4959,6 +4924,7 @@ const Messages = () => {
                                 setReplyingToMessage(msg)
                               }
                             }
+                            messageTouchRef.current = null
                           }}
                           onTouchCancel={() => {
                             if (messageLongPressTimerRef.current) {
@@ -4966,6 +4932,7 @@ const Messages = () => {
                               messageLongPressTimerRef.current = null
                             }
                             setMessageReplySwipeOffset(null)
+                            messageTouchRef.current = null
                           }}
                         >
                           <MessageBubble

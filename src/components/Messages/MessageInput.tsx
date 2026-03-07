@@ -11,7 +11,6 @@ import ConsentModal from '../ConsentModal'
 import { CONSENT_TO_LEGAL_PAGE } from '../../utils/consentLegalPages'
 import CalendarPicker from './CalendarPicker'
 import PostSelector from './PostSelector'
-import { SmartSuggestionBar } from '../Mobile/SmartSuggestionBar'
 import './MessageInput.css'
 
 export interface MentionableMember {
@@ -180,7 +179,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionStartIndex, setMentionStartIndex] = useState(0)
   const [mentionHighlightIndex, setMentionHighlightIndex] = useState(0)
-  const [messageCursorPosition, setMessageCursorPosition] = useState(0)
   const isMobile = useIsMobile()
 
   // Hooks de consentement
@@ -679,7 +677,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
     const value = e.target.value
     const cursor = e.target.selectionStart ?? value.length
     setMessage(value)
-    setMessageCursorPosition(cursor)
     if (mentionableMembers.length === 0) return
     const textBeforeCursor = value.slice(0, cursor)
     const lastAt = textBeforeCursor.lastIndexOf('@')
@@ -740,29 +737,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
       e.preventDefault()
       void sendMessageWithConsent('text')
     }
-  }
-
-  const handleInsertSuggestion = (suggestion: string) => {
-    const input = messageInputRef.current
-    const selectionStart = input?.selectionStart ?? messageCursorPosition ?? message.length
-    const selectionEnd = input?.selectionEnd ?? selectionStart
-    const before = message.slice(0, selectionStart)
-    const after = message.slice(selectionEnd)
-    const tokenMatch = before.match(/([A-Za-zÀ-ÖØ-öø-ÿ0-9'-]{1,32})$/)
-    const tokenStart = tokenMatch ? selectionStart - tokenMatch[1].length : selectionStart
-    const prefix = message.slice(0, tokenStart)
-    const nextMessage = `${prefix}${suggestion} ${after}`
-    const nextCursor = prefix.length + suggestion.length + 1
-
-    setMessage(nextMessage)
-    setMentionOpen(false)
-    setMentionQuery('')
-    setMessageCursorPosition(nextCursor)
-
-    requestAnimationFrame(() => {
-      messageInputRef.current?.focus()
-      messageInputRef.current?.setSelectionRange(nextCursor, nextCursor)
-    })
   }
 
   useEffect(() => {
@@ -1063,8 +1037,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
             value={message}
             onChange={handleMessageChange}
             onKeyDown={handleInputKeyDown}
-            onSelect={(event) => setMessageCursorPosition((event.target as HTMLTextAreaElement).selectionStart ?? 0)}
-            onClick={(event) => setMessageCursorPosition((event.target as HTMLTextAreaElement).selectionStart ?? 0)}
             placeholder="Message..."
             disabled={disabled || sending}
             className="message-input-field"
@@ -1105,16 +1077,6 @@ const MessageInput = ({ conversationId, senderId, onMessageSent, disabled = fals
           )}
         </button>
       </div>
-      {isMobile && (
-        <SmartSuggestionBar
-          value={message}
-          cursorPosition={messageCursorPosition}
-          context="message"
-          onSelectSuggestion={handleInsertSuggestion}
-          disabled={disabled || sending}
-        />
-      )}
-
       <input
         ref={mediaInputRef}
         type="file"

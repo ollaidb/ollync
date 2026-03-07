@@ -177,10 +177,17 @@
   position: relative;
   flex: 1;
   min-width: 0;
+  width: 100%;
+  display: flex;
 }
 
 .message-input-field {
   flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  box-sizing: border-box;
   border: none;
   background: transparent;
   font-size: 16px;
